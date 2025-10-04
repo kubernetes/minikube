@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io"
@@ -52,6 +53,19 @@ type MiniTestDockerDeployer struct {
 
 	sshTempDir     string
 	remoteUserName string
+}
+
+func NewMiniTestDockerDeployerFromConfigFile(path string) MiniTestDeployer {
+	config := MiniTestDockerConfig{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		klog.Fatalf("failed to read config file %s: %v", path, err)
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		klog.Fatalf("failed to parse config file %s: %v", path, err)
+	}
+	return NewMiniTestDockerDeployer(&config)
+
 }
 
 func NewMiniTestDockerDeployer(config *MiniTestDockerConfig) MiniTestDeployer {
@@ -167,8 +181,13 @@ func (m *MiniTestDockerDeployer) Execute(args ...string) error {
 	return executeSSHCommand(m.ctx, m.remoteUserName, "localhost", m.sshAdditionalArgs(), args...)
 }
 
-func (m *MiniTestDockerDeployer) Sync(src string, dst string) error {
-	return executeRsyncSSHCommand(m.ctx, m.remoteUserName, "localhost", m.sshAdditionalArgs(), src, dst,nil)
+func (m *MiniTestDockerDeployer) SyncToRemote(src string, dst string) error {
+	return executeRsyncSSHCommand(m.ctx, m.remoteUserName, "localhost", m.sshAdditionalArgs(), src, dst, nil)
+}
+
+
+func (m *MiniTestDockerDeployer) SyncToHost(src string, dst string) error{
+	return executeScpCommand(m.ctx, m.remoteUserName, "localhost", m.scpAdditionalArgs(), src, dst)
 }
 
 func (m *MiniTestDockerDeployer) executeDockerShellCommand(user string, args ...string) error {
@@ -262,4 +281,8 @@ func (m *MiniTestDockerDeployer) sshSetUp() error {
 
 func (m *MiniTestDockerDeployer) sshAdditionalArgs() []string {
 	return []string{"-i", m.sshPrivateKeyFile, "-p", m.sshPort}
+}
+
+func (m *MiniTestDockerDeployer) scpAdditionalArgs() []string {
+	return []string{"-i", m.sshPrivateKeyFile, "-P", m.sshPort}
 }

@@ -1,10 +1,6 @@
-package deployer
+package tester
 
-type MiniTestDeployer interface {
-	// Up should provision the environment for testing
-	Up() error
-	// Down should tear down the environment if any
-	Down() error
+type MiniTestRunner interface {
 	// IsUp should return true if a test cluster is successfully provisioned
 	IsUp() (bool, error)
 	// Execute execute a command in the deployed environment
@@ -13,5 +9,9 @@ type MiniTestDeployer interface {
 	SyncToRemote(src string, dst string) error
 	// SyncToRemote copy files from src on remote to host
 	SyncToHost(src string, dst string) error
+}
 
+type MiniTestTester interface {
+	// Run should run the actual tests
+	Run(MiniTestRunner) error
 }

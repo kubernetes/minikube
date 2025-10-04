@@ -11,9 +11,9 @@ EXTRA_START_ARGS="--force"
 EXTRA_TEST_ARGS="-gvisor" # We pick kvm as our gvisor testbed because it is fast & reliable
 JOB_NAME="KVM_Linux"
 
-apt-get update
-apt-get -y install qemu-system libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
-adduser $(whoami) libvirt || true
+sudo apt-get update
+sudo apt-get -y install qemu-system libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
+sudo adduser $(whoami) libvirt || true
 
 # start libvirtd 
 systemctl start libvirtd

@@ -15,7 +15,7 @@ const ssh = "ssh"
 const rsync = "rsync"
 
 func executeLocalCommand(ctx context.Context, name string, args ...string) error {
-	cmd := exec.CommandContext(ctx, name,args...)
+	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	klog.Infof("Executing: %v", cmd.Args)
@@ -57,6 +57,18 @@ func executeRsyncSSHCommand(ctx context.Context, user string, addr string, sshAr
 	allArgs = append(allArgs, rsyncArgs...)
 	allArgs = append(allArgs, src, fmt.Sprintf("%s@%s:%s", user, addr, dst))
 	cmd := exec.CommandContext(ctx, rsync, allArgs...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	klog.Infof("Executing: %v", cmd.Args)
+	return cmd.Run()
+}
+
+func executeScpCommand(ctx context.Context, user string, addr string, sshArguments []string, src string, dst string) error {
+	allArgs := []string{"-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"}
+	allArgs = append(allArgs, sshArguments...)
+
+	allArgs = append(allArgs, fmt.Sprintf("%s@%s:%s", user, addr, src), dst)
+	cmd := exec.CommandContext(ctx, "scp", allArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	klog.Infof("Executing: %v", cmd.Args)

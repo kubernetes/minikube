@@ -41,7 +41,8 @@ function check_and_install_golang() {
     install_golang "$VERSION_TO_INSTALL" "$INSTALL_PATH"
     return
   fi
-
+  
+  sudo chown -R $USER:$USER "$INSTALL_PATH"/go
 
   # golang has been installed and check its version
   if [[ $(go version | cut -d' ' -f 3) =~ go(([0-9]+)\.([0-9]+).([0-9]+)*) ]]; then
