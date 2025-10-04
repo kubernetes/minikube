@@ -39,6 +39,7 @@ import (
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -295,6 +296,29 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig, options *run.CommandOption
 	if err := k.tunnelToAPIServer(cfg, options); err != nil {
 		klog.Warningf("apiserver tunnel failed: %v", err)
 	}
+
+	// Ensure system Services (e.g., kube-dns) have correct IP families immediately after init.
+	cp, err := config.ControlPlane(cfg)
+	if err != nil {
+		klog.Warningf("get control-plane node failed: %v", err)
+	} else {
+		hostname, _, port, derr := driver.ControlPlaneEndpoint(&cfg, &cp, cfg.Driver)
+		if derr != nil {
+			klog.Warningf("resolve control-plane endpoint failed: %v", derr)
+		} else {
+			client, cerr := k.client(hostname, port)
+			if cerr != nil {
+				klog.Warningf("build k8s client failed: %v", cerr)
+			} else {
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+				defer cancel()
+				if err := k.ensureSystemServicesIPFamilies(ctx, client, desiredFamilyFromCfg(cfg)); err != nil {
+					klog.Warningf("ensureSystemServicesIPFamilies failed: %v", err)
+				}
+			}
+		}
+	}
+
 
 	return nil
 }
@@ -633,6 +657,10 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		adviseNodePressure(err, cfg.Name, cfg.Driver)
 		return errors.Wrap(err, "node pressure")
 	}
+
+        ctx2, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+        defer cancel()
+	_ = k.ensureSystemServicesIPFamilies(ctx2, client, desiredFamilyFromCfg(cfg))
 	return nil
 }
 
@@ -744,6 +772,14 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "system pods")
 	}
+
+	// Re-ensure IP families after restart/reconfigure as well.
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+ 	if err := k.ensureSystemServicesIPFamilies(ctx, client, desiredFamilyFromCfg(cfg)); err != nil {
+		klog.Warningf("ensureSystemServicesIPFamilies (restart) failed: %v", err)
+	}
+
 
 	if err := kverify.NodePressure(client); err != nil {
 		adviseNodePressure(err, cfg.Name, cfg.Driver)
@@ -1319,4 +1355,93 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.ErrLn("")
 		return
 	}
+}
+
+// detectClusterFamily returns "dual" | "ipv6" | "ipv4" based on Node.Spec.PodCIDRs.
+func (k *Bootstrapper) detectClusterFamily(ctx context.Context, cs kubernetes.Interface) (string, error) {
+	nodes, err := cs.CoreV1().Nodes().List(ctx, meta.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+	if len(nodes.Items) == 0 {
+		return "", fmt.Errorf("no nodes found")
+	}
+	podCIDRs := nodes.Items[0].Spec.PodCIDRs
+	switch {
+	case len(podCIDRs) >= 2:
+		return "dual", nil
+	case len(podCIDRs) == 1 && strings.Contains(podCIDRs[0], ":"):
+		return "ipv6", nil
+	default:
+		return "ipv4", nil
+	}
+}
+
+func (k *Bootstrapper) patchServiceForFamily(ctx context.Context, cs kubernetes.Interface, ns, name, family string) error {
+	var patch []byte
+	switch family {
+	case "dual":
+		patch = []byte(`{"spec":{"ipFamilyPolicy":"PreferDualStack","ipFamilies":["IPv4","IPv6"]}}`)
+	case "ipv6":
+		patch = []byte(`{"spec":{"ipFamilyPolicy":"SingleStack","ipFamilies":["IPv6"]}}`)
+	default:
+		patch = []byte(`{"spec":{"ipFamilyPolicy":"SingleStack","ipFamilies":["IPv4"]}}`)
+	}
+	_, err := cs.CoreV1().Services(ns).Patch(ctx, name, types.MergePatchType, patch, meta.PatchOptions{})
+	return err
+}
+
+// desiredFamilyFromCfg returns "dual"|"ipv6"|"ipv4" from cfg, or "" if unknown.
+func desiredFamilyFromCfg(cfg config.ClusterConfig) string {
+       f := strings.ToLower(cfg.KubernetesConfig.IPFamily)
+       switch f {
+       case "dual", "ipv6", "ipv4":
+               return f
+       default:
+               return ""
+       }
+}
+
+// ensureSystemServicesIPFamilies waits for kube-dns Service and patches it to the right families.
+// Add more Services here if you want them defaulted too.
+func (k *Bootstrapper) ensureSystemServicesIPFamilies(ctx context.Context, cs kubernetes.Interface, family string) error {
+	// wait until kube-dns Service exists (kubeadm creates it)
+	if err := wait.PollUntilContextTimeout(ctx, 2*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+		_, err := cs.CoreV1().Services("kube-system").Get(ctx, "kube-dns", meta.GetOptions{})
+		return err == nil, nil
+	}); err != nil {
+		return fmt.Errorf("waiting for kube-dns service: %w", err)
+	}
+
+       // Prefer the configured family; if empty, fall back to kube-proxy config, then node CIDRs.
+       if family == "" {
+               if cm, err := cs.CoreV1().ConfigMaps("kube-system").Get(ctx, "kube-proxy", meta.GetOptions{}); err == nil {
+                       // config key is usually "config.conf"; older variants used "kubeproxy.config"
+                       if cfgTxt, ok := cm.Data["config.conf"]; ok {
+                               if strings.Contains(cfgTxt, ",") && strings.Contains(cfgTxt, ":") {
+                                       family = "dual"
+                               } else if strings.Contains(cfgTxt, ":") {
+                                       family = "ipv6"
+                               } else {
+                                       family = "ipv4"
+                               }
+                       } else if cfgTxt, ok := cm.Data["kubeproxy.config"]; ok {
+                               if strings.Contains(cfgTxt, ",") && strings.Contains(cfgTxt, ":") {
+                                       family = "dual"
+                               } else if strings.Contains(cfgTxt, ":") {
+                                       family = "ipv6"
+                               } else {
+                                       family = "ipv4"
+                               }
+                       }
+               }
+       }
+       if family == "" { if f, _ := k.detectClusterFamily(ctx, cs); f != "" { family = f } else { family = "ipv4" } }
+ 
+
+	if err := k.patchServiceForFamily(ctx, cs, "kube-system", "kube-dns", family); err != nil {
+		klog.Warningf("failed to patch kube-dns for %s: %v", family, err)
+		return err
+	}
+	return nil
 }

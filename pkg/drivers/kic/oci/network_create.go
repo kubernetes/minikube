@@ -76,65 +76,158 @@ func CreateNetwork(ociBin, networkName, subnet, staticIP string) (net.IP, error)
 	return CreateNetworkWithIPFamily(ociBin, networkName, subnet, "", staticIP, "", "ipv4")
 }
 
+
 func CreateNetworkWithIPFamily(ociBin, networkName, subnet, subnetv6, staticIP, staticIPv6, ipFamily string) (net.IP, error) {
-	bridgeName := defaultBridgeName(ociBin)
-	if networkName == bridgeName {
-		klog.Infof("skipping creating network since default network %s was specified", networkName)
-		return nil, nil
-	}
+    bridgeName := defaultBridgeName(ociBin)
+    if networkName == bridgeName {
+        klog.Infof("skipping creating network since default network %s was specified", networkName)
+        return nil, nil
+    }
 
-	// For IPv6-only or dual-stack networks, use the v6/dual creator
-    	if ipFamily == "ipv6" || ipFamily == "dual" {
-        	return createV6OrDualNetwork(ociBin, networkName, subnet, subnetv6, ipFamily)
-    	}
+    // If already exists, reuse.
+    if info, err := containerNetworkInspect(ociBin, networkName); err == nil {
+        klog.Infof("Found existing network %+v", info)
+        return info.gateway, nil
+    }
 
-	// check if the network already exists
-	info, err := containerNetworkInspect(ociBin, networkName)
-	if err == nil {
-		klog.Infof("Found existing network %+v", info)
-		return info.gateway, nil
-	}
+    // Learn MTU from the default bridge (best effort)
+    bridgeInfo, berr := containerNetworkInspect(ociBin, bridgeName)
+    if berr != nil {
+        klog.Warningf("failed to get mtu information from the %s's default network %q: %v", ociBin, bridgeName, berr)
+    }
+    // ----- IPv6/dual flow -----
+    if ipFamily == "ipv6" || ipFamily == "dual" {
+        // Decide v6 subnet
+        if subnetv6 == "" {
+            if staticIPv6 != "" {
+                if s, err := cidr64ForIP(staticIPv6); err == nil {
+                    subnetv6 = s
+                } else {
+                    return nil, errors.Wrap(err, "derive /64 from --static-ipv6")
+                }
+            } else {
+                subnetv6 = firstSubnetAddrv6(subnetv6) // default fd00::/64
+            }
+        }
 
-	// will try to get MTU from the docker network to avoid issue with systems with exotic MTU settings.
-	// related issue #9528
-	info, err = containerNetworkInspect(ociBin, bridgeName)
-	if err != nil {
-		klog.Warningf("failed to get mtu information from the %s's default network %q: %v", ociBin, bridgeName, err)
-	}
+        // Build args; enable IPv6 always in this branch
+        args := []string{"network", "create", "--driver=bridge", "--ipv6"}
 
-	tries := 20
+        // For dual, also choose a free IPv4 subnet similar to the v4-only flow
+        if ipFamily == "dual" {
+            tries := 20
+            start := firstSubnetAddr(subnet)
+            if staticIP != "" {
+                tries = 1
+                start = staticIP
+            }
 
-	// we don't want to increment the subnet IP on network creation failure if the user specifies a static IP, so set tries to 1
-	if staticIP != "" {
-		tries = 1
-		subnet = staticIP
-	}
+            // Try up to 5 candidate /24s starting at start, stepping by 9 (as before)
+            var lastErr error
+            for attempts, subnetAddr := 0, start; attempts < 5; attempts++ {
+                var p *network.Parameters
+                p, lastErr = network.FreeSubnet(subnetAddr, 9, tries)
+                if lastErr != nil {
+                    klog.Errorf("failed to find free IPv4 subnet for %s network %s after %d attempts: %v", ociBin, networkName, 20, lastErr)
+                    return nil, fmt.Errorf("un-retryable: %w", lastErr)
+                }
 
-	// retry up to 5 times to create container network
-	for attempts, subnetAddr := 0, firstSubnetAddr(subnet); attempts < 5; attempts++ {
-		// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
-		// will be like 192.168.49.0/24,..., 192.168.220.0/24 (in increment steps of 9)
-		var subnet *network.Parameters
-		subnet, err = network.FreeSubnet(subnetAddr, 9, tries)
-		if err != nil {
-			klog.Errorf("failed to find free subnet for %s network %s after %d attempts: %v", ociBin, networkName, 20, err)
-			return nil, fmt.Errorf("un-retryable: %w", err)
-		}
-		info.gateway, err = tryCreateDockerNetwork(ociBin, subnet, info.mtu, networkName)
-		if err == nil {
-			klog.Infof("%s network %s %s created", ociBin, networkName, subnet.CIDR)
-			return info.gateway, nil
-		}
-		// don't retry if error is not address is taken
-		if !errors.Is(err, ErrNetworkSubnetTaken) && !errors.Is(err, ErrNetworkGatewayTaken) {
-			klog.Errorf("error while trying to create %s network %s %s: %v", ociBin, networkName, subnet.CIDR, err)
-			return nil, fmt.Errorf("un-retryable: %w", err)
-		}
-		klog.Warningf("failed to create %s network %s %s, will retry: %v", ociBin, networkName, subnet.CIDR, err)
-		subnetAddr = subnet.IP
-	}
-	return info.gateway, fmt.Errorf("failed to create %s network %s: %w", ociBin, networkName, err)
+                argsWithV4 := append([]string{}, args...)
+                argsWithV4 = append(argsWithV4, "--subnet", p.CIDR, "--gateway", p.Gateway)
+                argsWithV4 = append(argsWithV4, "--subnet", subnetv6)
+		if ociBin == Docker && bridgeInfo.mtu > 0 {
+            		argsWithV4 = append(argsWithV4, "-o", fmt.Sprintf("com.docker.network.driver.mtu=%d", bridgeInfo.mtu))
+         	}
+                argsWithV4 = append(argsWithV4,
+                    fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"),
+                    fmt.Sprintf("--label=%s=%s", ProfileLabelKey, networkName),
+                    networkName,
+                )
+
+                rr, err := runCmd(exec.Command(ociBin, argsWithV4...))
+                if err == nil {
+                    ni, _ := containerNetworkInspect(ociBin, networkName)
+                    return ni.gateway, nil
+                }
+
+                out := rr.Output()
+                // Respect same retry conditions as v4-only
+                if strings.Contains(out, "Pool overlaps") ||
+                   (strings.Contains(out, "failed to allocate gateway") && strings.Contains(out, "Address already in use")) ||
+                   strings.Contains(out, "is being used by a network interface") ||
+                   strings.Contains(out, "is already used on the host or by another config") {
+                    klog.Warningf("failed to create %s network %s %s (dual): %v; retrying with next IPv4 subnet", ociBin, networkName, p.CIDR, err)
+                    subnetAddr = p.IP
+                    continue
+                }
+                // Non-retryable
+                klog.Errorf("error creating dual-stack network %s: %v", networkName, err)
+                return nil, fmt.Errorf("un-retryable: %w", err)
+            }
+            return nil, fmt.Errorf("failed to create %s network %s (dual): %w", ociBin, networkName, lastErr)
+        }
+
+        // ipv6-only (no IPv4)
+        args = append(args, "--subnet", subnetv6)
+	if ociBin == Docker && bridgeInfo.mtu > 0 {
+            args = append(args, "-o", fmt.Sprintf("com.docker.network.driver.mtu=%d", bridgeInfo.mtu))
+        }
+        args = append(args,
+            fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"),
+            fmt.Sprintf("--label=%s=%s", ProfileLabelKey, networkName),
+            networkName,
+        )
+
+        if _, err := runCmd(exec.Command(ociBin, args...)); err != nil {
+            klog.Warningf("failed to create %s network %q (ipv6-only): %v", ociBin, networkName, err)
+            return nil, fmt.Errorf("create %s network %q: %w", ociBin, networkName, err)
+        }
+        ni, _ := containerNetworkInspect(ociBin, networkName)
+        return ni.gateway, nil
+    }
+
+    // ----- IPv4-only flow (existing logic) -----
+    // keep current implementation
+    tries := 20
+    if staticIP != "" {
+        tries = 1
+        subnet = staticIP
+    }
+    var lastErr error
+    for attempts, subnetAddr := 0, firstSubnetAddr(subnet); attempts < 5; attempts++ {
+        var p *network.Parameters
+        p, lastErr = network.FreeSubnet(subnetAddr, 9, tries)
+        if lastErr != nil {
+            klog.Errorf("failed to find free subnet for %s network %s after %d attempts: %v", ociBin, networkName, 20, lastErr)
+            return nil, fmt.Errorf("un-retryable: %w", lastErr)
+        }
+        gw, err := tryCreateDockerNetwork(ociBin, p, bridgeInfo.mtu, networkName)
+        if err == nil {
+            klog.Infof("%s network %s %s created", ociBin, networkName, p.CIDR)
+            return gw, nil
+        }
+        if !errors.Is(err, ErrNetworkSubnetTaken) && !errors.Is(err, ErrNetworkGatewayTaken) {
+            klog.Errorf("error while trying to create %s network %s %s: %v", ociBin, networkName, p.CIDR, err)
+            return nil, fmt.Errorf("un-retryable: %w", err)
+        }
+        klog.Warningf("failed to create %s network %s %s, will retry: %v", ociBin, networkName, p.CIDR, err)
+        subnetAddr = p.IP
+    }
+    return nil, fmt.Errorf("failed to create %s network %s: %w", ociBin, networkName, lastErr)
+ 
 }
+
+// cidr64ForIP returns a /64 CIDR string covering the provided IPv6 address.
+func cidr64ForIP(ipStr string) (string, error) {
+    ip := net.ParseIP(ipStr)
+    if ip == nil || ip.To16() == nil || ip.To4() != nil {
+        return "", fmt.Errorf("not a valid IPv6 address: %q", ipStr)
+    }
+    mask := net.CIDRMask(64, 128)
+    ipMasked := ip.Mask(mask)
+    return (&net.IPNet{IP: ipMasked, Mask: mask}).String(), nil
+}
+
 
 // createV6OrDualNetwork creates a user-defined bridge network with IPv6 enabled,
 // and adds both subnets when ipFamily == "dual". Returns the gateway reported by inspect (may be nil for v6-only).

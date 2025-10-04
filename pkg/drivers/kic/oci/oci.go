@@ -199,10 +199,26 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 
  	// For IPv6/dual clusters, enable forwarding inside the node container
         // (safe sysctl; avoid disable_ipv6 which may be blocked by Docker's safe list)
-        if p.IPFamily == "ipv6" || p.IPFamily == "dual" {
-                runArgs = append(runArgs, "--sysctl", "net.ipv6.conf.all.forwarding=1")
-        }
 
+	// Ensure service rules apply to bridged traffic inside the node container.
+       // Do both families; harmless if already set.
+       runArgs = append(runArgs,
+               "--sysctl", "net.ipv4.ip_forward=1",
+               "--sysctl", "net.bridge.bridge-nf-call-iptables=1",
+               // Allow kube-proxy/IPVS or iptables to program and accept IPv4 Service VIPs.
+               "--sysctl", "net.ipv4.ip_nonlocal_bind=1",
+       )
+       // IPv6/dual clusters need IPv6 forwarding and IPv6 bridge netfilter, too.
+       if p.IPFamily == "ipv6" || p.IPFamily == "dual" {
+               runArgs = append(runArgs,
+                       "--sysctl", "net.ipv6.conf.all.forwarding=1",
+                       "--sysctl", "net.bridge.bridge-nf-call-ip6tables=1",
+		       // Allow kube-proxy/IPVS or iptables to program and accept Service VIPs.
+	               "--sysctl", "net.ipv4.ip_nonlocal_bind=1",
+        	       // Same for IPv6 VIPs.
+               	       "--sysctl", "net.ipv6.ip_nonlocal_bind=1",
+               )
+       }
 	switch p.GPUs {
 	case "all", "nvidia":
 		runArgs = append(runArgs, "--gpus", "all", "--env", "NVIDIA_DRIVER_CAPABILITIES=all")

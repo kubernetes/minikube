@@ -142,9 +142,9 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
         if family == "ipv6" && n.IPv6 != "" {
                 advertiseAddress = n.IPv6
                 nodeIP = n.IPv6
-        } else if family == "dual" {
+        } else if family == "dual"  {
                 // let kubelet auto-detect both; don’t force a single family
-                nodeIP = ""
+		nodeIP = ""
         }
 
 	cpEndpoint := fmt.Sprintf("%s:%d", constants.ControlPlaneAlias, nodePort)
@@ -152,7 +152,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
         	cpEndpoint = fmt.Sprintf("[%s]:%d", advertiseAddress, nodePort)
 	}
 
-if family == "ipv6" {
+if family == "ipv6" || family == "dual" {
     ensured := false
     for i := range componentOpts {
         // match "apiServer" regardless of accidental casing

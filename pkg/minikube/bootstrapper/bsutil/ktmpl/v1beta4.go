@@ -36,9 +36,11 @@ bootstrapTokens:
 nodeRegistration:
   criSocket: {{if .CRISocket}}{{if .PrependCriSocketUnix}}unix://{{end}}{{.CRISocket}}{{else}}{{if .PrependCriSocketUnix}}unix://{{end}}/var/run/dockershim.sock{{end}}
   name: "{{.NodeName}}"
+{{- if .NodeIP }}
   kubeletExtraArgs:
     - name: "node-ip"
       value: "{{.NodeIP}}"
+{{- end }}
   taints: []
 ---
 apiVersion: kubeadm.k8s.io/v1beta4
