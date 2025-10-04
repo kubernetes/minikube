@@ -9881,6 +9881,21 @@ spec:
               name: kubernetes-services-endpoint
               optional: true
           env:
+
+            - name: FELIX_IPV6SUPPORT
+              value: '{{ if or (eq .IPFamily "ipv6") (eq .IPFamily "dual") }}true{{ else }}false{{ end }}'
+            - name: IP
+              value: "autodetect"
+            - name: IP6
+              value: '{{ if or (eq .IPFamily "ipv6") (eq .IPFamily "dual") }}autodetect{{ else }}none{{ end }}'
+            - name: CALICO_IPV4POOL_CIDR
+              value: "{{ .PodCIDR }}"
+            - name: CALICO_IPV6POOL_CIDR
+              value: "{{ .PodCIDRv6 }}"
+            - name: CALICO_IPV4POOL_NAT_OUTGOING
+              value: "Enabled"
+            - name: CALICO_IPV6POOL_NAT_OUTGOING
+              value: "Disabled"
             - name: KUBERNETES_NODE_NAME
               valueFrom:
                 fieldRef:
@@ -10175,6 +10190,10 @@ spec:
       labels:
         k8s-app: calico-kube-controllers
     spec:
+      {{- if eq .IPFamily "ipv6" }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
       nodeSelector:
         kubernetes.io/os: linux
       tolerations:
@@ -10197,9 +10216,17 @@ spec:
           env:
             # Choose which controllers to run.
             - name: ENABLED_CONTROLLERS
-              value: node,loadbalancer
+              value: '{{ if eq .IPFamily "ipv6" }}node{{ else }}node,loadbalancer{{ end }}'
             - name: DATASTORE_TYPE
               value: kubernetes
+            {{- if eq .IPFamily "ipv6" }}
+            # Avoid DNS and Service VIPs during IPv6 bootstrap:
+            # kube-controllers runs with hostNetwork, so loopback reaches the local apiserver.
+            - name: KUBERNETES_SERVICE_HOST
+              value: "::1"
+            - name: KUBERNETES_SERVICE_PORT
+              value: "{{ .APIServerPort }}"
+            {{- end }}
           livenessProbe:
             exec:
               command:
