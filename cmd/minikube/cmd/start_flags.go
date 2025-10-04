@@ -565,10 +565,19 @@ func normalizeAndValidateIPFamily(cc *config.ClusterConfig) {
     }
 
     if s := cc.KubernetesConfig.PodCIDRv6; s != "" {
-    	if _, _, err := net.ParseCIDR(s); err != nil {
-       		exit.Message(reason.Usage, "--pod-cidr-v6 must be a valid IPv6 CIDR: {{.e}}", out.V{"e": err})
-    	}
+        if _, _, err := net.ParseCIDR(s); err != nil {
+                exit.Message(reason.Usage, "--pod-cidr-v6 must be a valid IPv6 CIDR: {{.e}}", out.V{"e": err})
+        }
     }
+
+    // validate static IPv6 if provided
+    if s := cc.StaticIPv6; s != "" {
+        ip := net.ParseIP(s)
+        if ip == nil || ip.To4() != nil {
+            exit.Message(reason.Usage, "--static-ipv6 must be a valid IPv6 address")
+        }
+    }
+
 
     // Docker driver guardrails: Linux daemon + IPv6 must be enabled
     if driver.IsDocker(cc.Driver) && fam != "ipv4" {
