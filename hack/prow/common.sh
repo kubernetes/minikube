@@ -31,7 +31,6 @@ mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
-export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 
 function print_test_info() {
     echo ">> Starting at $(date)"
@@ -48,7 +47,7 @@ function print_test_info() {
     # Setting KUBECONFIG prevents the version check from erroring out due to permission issues
     echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client)"
     echo "docker:    $(docker version --format '{{ .Client.Version }}')"
-    echo "podman:    $(podman version --format '{{.Version}}' || true)"
+    echo "podman:    $(sudo podman version --format '{{.Version}}' || true)"
     echo "go:        $(go version || true)"
 
     case "${DRIVER}" in
@@ -72,7 +71,7 @@ function print_test_info() {
 function install_dependencies() {
     # We need pstree for the restart cronjobs
     if [ "$(uname)" != "Darwin" ]; then
-        apt-get -y install lsof psmisc dnsutils
+        sudo apt-get -y install lsof psmisc dnsutils
     else
         brew install pstree coreutils pidof
         ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
@@ -80,20 +79,21 @@ function install_dependencies() {
 
     # install gotestsum if not present
     GOROOT="/usr/local/go" hack/prow/installer/check_install_gotestsum.sh || true
-    # todo: do we need to install cron jobs?
+    # instal docker if not present
+    sudo ARCH="$ARCH" ./installers/check_install_docker.sh || true
 
     # install jq
     if ! type "jq" >/dev/null; then
         echo ">> Installing jq"
         if [ "${ARCH}" == "arm64" && "${OS}" == "linux" ]; then
-            apt-get install jq -y
+            sudo apt-get install jq -y
         elif [ "${ARCH}" == "arm64" ]; then
             echo "Unable to install 'jq' automatically for arm64 on Darwin, please install 'jq' manually."
             exit 5
         elif [ "${OS}" != "darwin" ]; then
-            curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 &&  install jq-linux64 /usr/local/bin/jq
+            curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 &&sudo  install jq-linux64 /usr/local/bin/jq
         else
-            curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 &&  install jq-osx-amd64 /usr/local/bin/jq
+            curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 && sudo install jq-osx-amd64 /usr/local/bin/jq
         fi
     fi
 
@@ -193,6 +193,6 @@ elapsed=$min.$sec
 #todo: currently we skip gopogh upload , we shall add it back
 
 # according to prow's requirement, upload the test report to $ARTIFACTS
-cp ${TEST_OUT} $ARTIFACTS
-cp ${JSON_OUT} $ARTIFACTS
-cp ${JUNIT_OUT} $ARTIFACTS
+cp ${TEST_OUT} .
+cp ${JSON_OUT} .
+cp ${JUNIT_OUT} .

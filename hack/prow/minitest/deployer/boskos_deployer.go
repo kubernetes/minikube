@@ -2,6 +2,7 @@ package deployer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -39,6 +40,18 @@ type MiniTestBosKosDeployer struct {
 	// this channel serves as a signal channel for the hearbeat goroutine
 	// so that it can be explicitly closed
 	boskosHeartbeatClose chan struct{}
+}
+
+func NewMiniTestBosKosDeployerFromConfigFile(path string) MiniTestDeployer {
+	config := MiniTestBoskosConfig{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		klog.Fatalf("failed to read config file %s: %v", path, err)
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		klog.Fatalf("failed to parse config file %s: %v", path, err)
+	}
+	return NewMiniTestBosKosDeployer(&config)
 }
 
 func NewMiniTestBosKosDeployer(config *MiniTestBoskosConfig) MiniTestDeployer {
@@ -112,9 +125,14 @@ func (m *MiniTestBosKosDeployer) Execute(args ...string) error {
 	return executeSSHCommand(m.ctx, m.remoteUserName, m.sshAddr, nil, args...)
 }
 
-func (m *MiniTestBosKosDeployer) Sync(src string, dst string) error {
+func (m *MiniTestBosKosDeployer) SyncToRemote(src string, dst string) error {
 	return executeRsyncSSHCommand(m.ctx, m.remoteUserName, m.sshAddr, nil, src, dst, nil)
 }
+
+func (m *MiniTestBosKosDeployer) SyncToHost(src string, dst string) error{
+	return executeScpCommand(m.ctx, m.remoteUserName, m.sshAddr, nil, src, dst)
+}
+
 
 func (m *MiniTestBosKosDeployer) requestGCPProject() error {
 
