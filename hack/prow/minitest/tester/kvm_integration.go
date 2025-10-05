@@ -21,8 +21,8 @@ func (k *KVMIntegrationTester) Run(runner MiniTestRunner) error {
 	if err := runner.SyncToRemote(".", "~/minikube"); err != nil {
 		klog.Errorf("failed to sync file in docker deployer: %v", err)
 	}
-	// install docker first then run the test in a new shell
-	if err := runner.Execute("cd minikube && ./hack/prow/installer/check_install_docker.sh"); err != nil {
+	// install docker and libvirtd first then run the test in a new shell
+	if err := runner.Execute("cd minikube && ./hack/prow/linux_integration_kvm_pre.sh"); err != nil {
 		klog.Errorf("failed to install docker in env: %v", err)
 		return err
 	}

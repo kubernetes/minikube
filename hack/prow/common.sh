@@ -80,9 +80,7 @@ function install_dependencies() {
     sudo hack/prow/installer/check_install_golang.sh /usr/local 1.24.5 || true
     # install gotestsum if not present
     GOROOT="/usr/local/go" hack/prow/installer/check_install_gotestsum.sh || true
-    # instal docker if not present
-    ARCH="$ARCH" hack/prow/installer/check_install_docker.sh || true
-    sudo adduser $(whoami) docker || true
+
 
     # install jq
     if ! type "jq" >/dev/null; then
