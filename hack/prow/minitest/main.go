@@ -33,13 +33,15 @@ func main() {
 	tester := getTester(*testerName)
 
 	if err := dep.Up(); err != nil {
-		klog.Errorf("failed to start deployer: %v", err)
+		klog.Fatalf("failed to start deployer: %v", err)
 	}
 
-	tester.Run(dep)
+	if err:=tester.Run(dep);err!=nil{
+		klog.Fatalf("failed to run tests: %v", err)
+	}
 	
 	if err := dep.Down(); err != nil {
-		klog.Errorf("failed to stop deployer: %v", err)
+		klog.Fatalf("failed to stop deployer: %v", err)
 	}
 
 	// config := &deployer.MiniTestBoskosConfig{
