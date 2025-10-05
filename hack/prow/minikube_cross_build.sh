@@ -11,8 +11,8 @@ ARCH=$3
 readonly OS_ARCH="${OS}-${ARCH}"
 
 
-hack/prow/installer/check_install_golang.sh /usr/local $GO_VERSION
-declare -rx GOPATH="$HOME/go"
+# hack/prow/installer/check_install_golang.sh /usr/local $GO_VERSION
+# declare -rx GOPATH="$HOME/go"
 
 declare -rx BUILD_IN_DOCKER=y
 make -j 16 \

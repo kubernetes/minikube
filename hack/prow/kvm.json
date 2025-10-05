@@ -1,5 +1,4 @@
 {
-    // config for kvm integration test
     "GCPZone": "us-central1-b",
     "InstanceImage": "ubuntu-os-cloud/ubuntu-2404-lts-amd64",
     "InstanceType": "n4-standard-16",
