@@ -162,7 +162,8 @@ echo ">> Starting ${E2E_BIN} at $(date)"
 set -x
 
 EXTRA_START_ARGS="${EXTRA_START_ARGS} --container-runtime=${CONTAINER_RUNTIME}"
-
+echo $PATH
+ls /usr/local/go/bin/
 gotestsum --jsonfile "${JSON_OUT}" --junitfile="${JUNIT_OUT}" -f standard-verbose --raw-command -- \
     go tool test2json -t \
     ${E2E_BIN} \
