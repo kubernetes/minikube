@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+set -x
 
 OS="linux"
 ARCH="amd64"
@@ -16,10 +17,10 @@ sudo apt-get -y install qemu-system libvirt-clients libvirt-daemon-system ebtabl
 sudo adduser $(whoami) libvirt || true
 
 # start libvirtd 
-systemctl start libvirtd
+sudo systemctl start libvirtd
 sleep 5  # wait for libvirtd to be running
 echo "=========libvirtd status=========="
-systemctl status libvirtd
+sudo systemctl status libvirtd
 
 source ./hack/prow/common.sh 
 
