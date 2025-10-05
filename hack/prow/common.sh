@@ -82,9 +82,7 @@ function install_dependencies() {
     GOROOT="/usr/local/go" hack/prow/installer/check_install_gotestsum.sh || true
     # instal docker if not present
     ARCH="$ARCH" hack/prow/installer/check_install_docker.sh || true
-    sudo usermod -aG docker minitest || true
     sudo adduser $(whoami) docker || true
-    newgrp docker
 
     # install jq
     if ! type "jq" >/dev/null; then
