@@ -81,7 +81,7 @@ function install_dependencies() {
     # install gotestsum if not present
     GOROOT="/usr/local/go" hack/prow/installer/check_install_gotestsum.sh || true
     # instal docker if not present
-    sudo ARCH="$ARCH" hack/prow/installer/check_install_docker.sh || true
+    ARCH="$ARCH" hack/prow/installer/check_install_docker.sh || true
 
     # install jq
     if ! type "jq" >/dev/null; then
