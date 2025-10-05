@@ -23,8 +23,8 @@ echo "Installing latest docker"
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 rm get-docker.sh
-sudo adduser minitest docker || true
-newgrp docker
+sudo usermod -aG docker minitest
+
 
 echo "Installing latest kubectl"
 curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/${ARCH}/kubectl"
