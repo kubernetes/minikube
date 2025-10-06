@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"k8s.io/klog/v2"
@@ -40,13 +41,36 @@ type Data struct {
 	LatestVersion string
 }
 
+// bookwormDateTag matches Debian bookworm slim tags that include an 8-digit
+// date stamp (for example, bookworm-20250929-slim).
+var bookwormDateTag = regexp.MustCompile(`^bookworm-\d{8}-slim$`)
+
+// latestBookwormSlimTag returns the newest bookworm slim tag that includes a
+// date suffix. The updater now requires a dated tag to be present so that the
+// resulting image digest remains stable and predictable between runs.
 func latestBookwormSlimTag(tags []string) (string, error) {
+	var newestDateTag string
 	for _, tag := range tags {
-		if strings.Contains(tag, "bookworm-slim") {
-			return tag, nil
+		// Skip anything that isn't a bookworm slim tag to avoid matching other
+		// Debian variants.
+		if !strings.HasPrefix(tag, "bookworm-") || !strings.HasSuffix(tag, "-slim") {
+			continue
+		}
+
+		// Track the lexicographically greatest dated tag, which corresponds to
+		// the most recent date stamp provided by Debian.
+		if bookwormDateTag.MatchString(tag) {
+			if newestDateTag == "" || tag > newestDateTag {
+				newestDateTag = tag
+			}
 		}
 	}
-	return "", fmt.Errorf("no tag found that matches: bookworm-slim")
+
+	// Prefer a dated tag when available.
+	if newestDateTag != "" {
+		return newestDateTag, nil
+	}
+	return "", fmt.Errorf("no dated tag found that matches: %s", bookwormDateTag.String())
 }
 
 func main() {
