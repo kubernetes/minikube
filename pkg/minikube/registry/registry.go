@@ -25,6 +25,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // Priority is how we determine what driver to default to
@@ -66,7 +67,7 @@ type Registry interface {
 }
 
 // Configurator emits a struct to be marshalled into JSON for Machine Driver
-type Configurator func(config.ClusterConfig, config.Node) (interface{}, error)
+type Configurator func(config.ClusterConfig, config.Node, *run.Options) (interface{}, error)
 
 // Loader is a function that loads a byte stream and creates a driver.
 type Loader func() drivers.Driver

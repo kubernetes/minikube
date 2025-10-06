@@ -40,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/translate"
 	"k8s.io/minikube/pkg/version"
 )
@@ -351,4 +352,11 @@ func applyToAllCommands(cmd *cobra.Command, f func(subCmd *cobra.Command)) {
 			applyToAllCommands(c, f)
 		}
 	}
+}
+
+// commandOptions creates minikube runtime options from the command line flags.
+// Flags that must be handled outside of the cmd package must be added to
+// run.Options.
+func commandOptions() *run.Options {
+	return &run.Options{}
 }

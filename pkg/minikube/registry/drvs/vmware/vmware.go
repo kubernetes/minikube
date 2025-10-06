@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func init() {
@@ -43,7 +44,7 @@ func init() {
 	}
 }
 
-func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interface{}, error) {
 	d := vmware.NewDriver(config.MachineName(cc, n), localpath.MiniPath()).(*vmware.Driver)
 	d.Boot2DockerURL = download.LocalISOResource(cc.MinikubeISO)
 	d.Memory = cc.Memory

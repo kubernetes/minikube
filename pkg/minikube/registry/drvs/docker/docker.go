@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -58,7 +59,7 @@ func init() {
 	}
 }
 
-func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interface{}, error) {
 	mounts := make([]oci.Mount, len(cc.ContainerVolumeMounts))
 	for i, spec := range cc.ContainerVolumeMounts {
 		var err error

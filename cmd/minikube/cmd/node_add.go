@@ -90,7 +90,7 @@ var nodeAddCmd = &cobra.Command{
 		}
 
 		register.Reg.SetStep(register.InitialSetup)
-		if err := node.Add(cc, n, deleteNodeOnFailure); err != nil {
+		if err := node.Add(cc, n, deleteNodeOnFailure, commandOptions()); err != nil {
 			_, err := maybeDeleteAndRetry(cmd, *cc, n, nil, err)
 			if err != nil {
 				exit.Error(reason.GuestNodeAdd, "failed to add node", err)

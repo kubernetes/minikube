@@ -386,7 +386,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		ssh.SetDefaultClient(ssh.External)
 	}
 
-	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, viper.GetBool(deleteOnFailure))
+	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, viper.GetBool(deleteOnFailure), commandOptions())
 	if err != nil {
 		return node.Starter{}, err
 	}
@@ -496,6 +496,8 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		numCPNodes = 3
 	}
 
+	options := commandOptions()
+
 	// apart from starter, add any additional existing or new nodes
 	for i := 1; i < numNodes; i++ {
 		var n config.Node
@@ -516,7 +518,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		}
 
 		out.Ln("") // extra newline for clarity on the command line
-		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure)); err != nil {
+		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
 			return nil, errors.Wrap(err, "adding node")
 		}
 	}
@@ -649,8 +651,10 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 		// Re-generate the cluster config, just in case the failure was related to an old config format
 		cc := updateExistingConfigFromFlags(cmd, &existing)
 		var configInfo *kubeconfig.Settings
+		options := commandOptions()
+
 		for _, n := range cc.Nodes {
-			r, p, m, h, err := node.Provision(&cc, &n, false)
+			r, p, m, h, err := node.Provision(&cc, &n, false, options)
 			s := node.Starter{
 				Runner:         r,
 				PreExists:      p,

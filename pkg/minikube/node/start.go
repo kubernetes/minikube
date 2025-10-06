@@ -64,6 +64,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/network"
@@ -367,7 +368,7 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 }
 
 // Provision provisions the machine/container for the node
-func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
+func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool, options *run.Options) (command.Runner, bool, libmachine.API, *host.Host, error) {
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
 
@@ -404,7 +405,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool) (comman
 		waitDownloadKicBaseImage(&kicGroup)
 	}
 
-	return startMachine(cc, n, delOnFail)
+	return startMachine(cc, n, delOnFail, options)
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.
@@ -654,12 +655,12 @@ func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, cluste
 }
 
 // StartMachine starts a VM
-func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) (runner command.Runner, preExists bool, machineAPI libmachine.API, hostInfo *host.Host, err error) {
+func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, options *run.Options) (runner command.Runner, preExists bool, machineAPI libmachine.API, hostInfo *host.Host, err error) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to get machine client")
 	}
-	hostInfo, preExists, err = startHostInternal(m, cfg, node, delOnFail)
+	hostInfo, preExists, err = startHostInternal(m, cfg, node, delOnFail, options)
 	if err != nil {
 		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to start host")
 	}
@@ -706,8 +707,8 @@ func getPort() (int, error) {
 }
 
 // startHostInternal starts a new minikube host using a VM or None
-func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
-	hostInfo, exists, err := machine.StartHost(api, cc, n)
+func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool, options *run.Options) (*host.Host, bool, error) {
+	hostInfo, exists, err := machine.StartHost(api, cc, n, options)
 	if err == nil {
 		return hostInfo, exists, nil
 	}
@@ -739,7 +740,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 		}
 	}
 
-	hostInfo, exists, err = machine.StartHost(api, cc, n)
+	hostInfo, exists, err = machine.StartHost(api, cc, n, options)
 	if err == nil {
 		return hostInfo, exists, nil
 	}

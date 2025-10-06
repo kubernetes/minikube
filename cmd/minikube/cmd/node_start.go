@@ -56,7 +56,7 @@ var nodeStartCmd = &cobra.Command{
 		}
 
 		register.Reg.SetStep(register.InitialSetup)
-		r, p, m, h, err := node.Provision(cc, n, viper.GetBool(deleteOnFailure))
+		r, p, m, h, err := node.Provision(cc, n, viper.GetBool(deleteOnFailure), commandOptions())
 		if err != nil {
 			exit.Error(reason.GuestNodeProvision, "provisioning host for node", err)
 		}

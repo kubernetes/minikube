@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
@@ -118,7 +119,7 @@ func qemuVersion() (semver.Version, error) {
 	return semver.Make(v)
 }
 
-func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interface{}, error) {
 	name := config.MachineName(cc, n)
 	qemuSystem, err := qemuSystemProgram()
 	if err != nil {

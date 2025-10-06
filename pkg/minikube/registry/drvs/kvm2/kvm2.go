@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -74,7 +75,7 @@ type kvmDriver struct {
 	ExtraDisks     int
 }
 
-func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interface{}, error) {
 	name := config.MachineName(cc, n)
 	return kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
