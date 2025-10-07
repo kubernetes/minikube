@@ -358,5 +358,7 @@ func applyToAllCommands(cmd *cobra.Command, f func(subCmd *cobra.Command)) {
 // Flags that must be handled outside of the cmd package must be added to
 // run.Options.
 func commandOptions() *run.Options {
-	return &run.Options{}
+	return &run.Options{
+		NonInteractive: !viper.GetBool(interactive),
+	}
 }

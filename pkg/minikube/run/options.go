@@ -17,4 +17,8 @@ limitations under the License.
 package run
 
 // Options are minikube command line options.
-type Options struct{}
+type Options struct {
+	// NonInteractive is true if the minikube command run with the
+	// --interactive=false flag and we can not interact with the user.
+	NonInteractive bool
+}
