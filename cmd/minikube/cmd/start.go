@@ -170,7 +170,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 	go download.CleanUpOlderPreloads()
 
 	// Avoid blocking execution on optional HTTP fetches
-	go notify.MaybePrintUpdateTextFromGithub()
+	go notify.MaybePrintUpdateTextFromGithub(options)
 
 	displayEnviron(os.Environ())
 	if viper.GetBool(force) {
