@@ -83,6 +83,6 @@ func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interfac
 	return d, nil
 }
 
-func status() registry.State {
+func status(_ *run.Options) registry.State {
 	return registry.State{Installed: true, Healthy: true}
 }

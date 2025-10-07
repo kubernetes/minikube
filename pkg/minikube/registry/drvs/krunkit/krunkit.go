@@ -91,7 +91,7 @@ func configure(cfg config.ClusterConfig, n config.Node, _ *run.Options) (interfa
 	}, nil
 }
 
-func status() registry.State {
+func status(_ *run.Options) registry.State {
 	if runtime.GOOS != "darwin" && runtime.GOARCH != "arm64" {
 		err := errors.New("the krunkit driver is only supported on macOS arm64 machines")
 		return registry.State{Error: err, Fix: "Use another driver", Doc: docURL}

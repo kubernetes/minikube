@@ -193,7 +193,7 @@ func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interfac
 	}, nil
 }
 
-func status() registry.State {
+func status(_ *run.Options) registry.State {
 	qemuSystem, err := qemuSystemProgram()
 	if err != nil {
 		return registry.State{Error: err, Doc: docURL}

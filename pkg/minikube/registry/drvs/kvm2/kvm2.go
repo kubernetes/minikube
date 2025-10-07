@@ -116,7 +116,7 @@ func defaultURI() string {
 	return "qemu:///system"
 }
 
-func status() registry.State {
+func status(_ *run.Options) registry.State {
 	// Allow no more than 6 seconds for querying state
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()

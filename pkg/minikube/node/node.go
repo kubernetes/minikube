@@ -84,7 +84,7 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool, options *run.O
 		ExistingAddons: nil,
 	}
 
-	_, err = Start(s)
+	_, err = Start(s, options)
 	return err
 }
 

@@ -82,7 +82,7 @@ func configure(cfg config.ClusterConfig, n config.Node, _ *run.Options) (interfa
 	return d, nil
 }
 
-func status() registry.State {
+func status(_ *run.Options) registry.State {
 	path, err := exec.LookPath("powershell")
 	if err != nil {
 		return registry.State{Error: err}

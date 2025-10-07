@@ -93,7 +93,7 @@ type Starter struct {
 }
 
 // Start spins up a guest and starts the Kubernetes node.
-func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
+func Start(starter Starter, options *run.Options) (*kubeconfig.Settings, error) { // nolint:gocyclo
 	var wg sync.WaitGroup
 	stopk8s, err := handleNoKubernetes(starter)
 	if err != nil {
@@ -221,7 +221,7 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 
 	// discourage use of the virtualbox driver
 	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) {
-		warnVirtualBox()
+		warnVirtualBox(options)
 	}
 
 	// special ops for "none" driver on control-plane node, like change minikube directory
@@ -980,9 +980,9 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 }
 
 // prints a warning to the console against the use of the 'virtualbox' driver, if alternatives are available and healthy
-func warnVirtualBox() {
+func warnVirtualBox(options *run.Options) {
 	var altDriverList strings.Builder
-	for _, choice := range driver.Choices(true) {
+	for _, choice := range driver.Choices(true, options) {
 		if !driver.IsVirtualBox(choice.Name) && choice.Priority != registry.Discouraged && choice.State.Installed && choice.State.Healthy {
 			altDriverList.WriteString(fmt.Sprintf("\n\t- %s", choice.Name))
 		}

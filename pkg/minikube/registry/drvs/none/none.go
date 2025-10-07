@@ -54,7 +54,7 @@ func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interfac
 	}), nil
 }
 
-func status() registry.State {
+func status(_ *run.Options) registry.State {
 	_, err := exec.LookPath("iptables")
 	if err != nil {
 		return registry.State{Running: true, Error: err, Fix: "iptables must be installed", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}

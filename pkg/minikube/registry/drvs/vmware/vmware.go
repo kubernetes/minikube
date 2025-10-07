@@ -57,7 +57,7 @@ func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interfac
 	return d, nil
 }
 
-func status() registry.State {
+func status(_ *run.Options) registry.State {
 	_, err := exec.LookPath("vmrun")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Install vmrun", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/"}

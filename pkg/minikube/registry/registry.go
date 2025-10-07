@@ -73,7 +73,7 @@ type Configurator func(config.ClusterConfig, config.Node, *run.Options) (interfa
 type Loader func() drivers.Driver
 
 // StatusChecker checks if a driver is available, offering a
-type StatusChecker func() State
+type StatusChecker func(*run.Options) State
 
 // State is the current state of the driver and its dependencies
 type State struct {

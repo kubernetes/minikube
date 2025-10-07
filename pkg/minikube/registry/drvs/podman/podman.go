@@ -101,7 +101,7 @@ func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interfac
 	}), nil
 }
 
-func status() registry.State {
+func status(_ *run.Options) registry.State {
 	podman, err := exec.LookPath(oci.Podman)
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Podman", Doc: docURL}

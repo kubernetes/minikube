@@ -96,7 +96,7 @@ func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interfac
 	}), nil
 }
 
-func status() (retState registry.State) {
+func status(_ *run.Options) (retState registry.State) {
 	version, state := dockerVersionOrState()
 	if state.Error != nil {
 		return state
