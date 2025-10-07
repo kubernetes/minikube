@@ -45,6 +45,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
@@ -314,7 +315,7 @@ func ClusterFlagValue() string {
 }
 
 // generateClusterConfig generate a config.ClusterConfig based on flags or existing cluster config
-func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, rtime string, drvName string) (config.ClusterConfig, config.Node, error) {
+func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, rtime string, drvName string, options *run.CommandOptions) (config.ClusterConfig, config.Node, error) {
 	var cc config.ClusterConfig
 	if existing != nil {
 		cc = updateExistingConfigFromFlags(cmd, existing)
@@ -325,7 +326,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 	} else {
 		klog.Info("no existing cluster config was found, will generate one from the flags ")
-		cc = generateNewConfigFromFlags(cmd, k8sVersion, rtime, drvName)
+		cc = generateNewConfigFromFlags(cmd, k8sVersion, rtime, drvName, options)
 
 		cnm, err := cni.New(&cc)
 		if err != nil {
@@ -484,12 +485,12 @@ func getCNIConfig(cmd *cobra.Command) string {
 	return chosenCNI
 }
 
-func getNetwork(driverName string) string {
+func getNetwork(driverName string, options *run.CommandOptions) string {
 	n := viper.GetString(network)
 	if driver.IsQEMU(driverName) {
 		return validateQemuNetwork(n)
 	} else if driver.IsVFKit(driverName) {
-		return validateVfkitNetwork(n)
+		return validateVfkitNetwork(n, options)
 	}
 	return n
 }
@@ -526,7 +527,7 @@ func validateQemuNetwork(n string) string {
 	return n
 }
 
-func validateVfkitNetwork(n string) string {
+func validateVfkitNetwork(n string, options *run.CommandOptions) string {
 	if runtime.GOOS != "darwin" {
 		exit.Message(reason.Usage, "The vfkit driver is only supported on macOS")
 	}
@@ -535,7 +536,7 @@ func validateVfkitNetwork(n string) string {
 		// always available
 	case "vmnet-shared":
 		// "vment-shared" provides access between machines, with lower performance compared to "nat".
-		if err := vmnet.ValidateHelper(); err != nil {
+		if err := vmnet.ValidateHelper(options); err != nil {
 			vmnetErr := err.(*vmnet.Error)
 			exit.Message(vmnetErr.Kind, "failed to validate {{.network}} network: {{.reason}}", out.V{"network": n, "reason": err})
 		}
@@ -549,7 +550,7 @@ func validateVfkitNetwork(n string) string {
 }
 
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
-func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string) config.ClusterConfig {
+func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string, options *run.CommandOptions) config.ClusterConfig {
 	var cc config.ClusterConfig
 
 	// networkPlugin cni deprecation warning
@@ -574,7 +575,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		EmbedCerts:              viper.GetBool(embedCerts),
 		MinikubeISO:             viper.GetString(isoURL),
 		KicBaseImage:            viper.GetString(kicBaseImage),
-		Network:                 getNetwork(drvName),
+		Network:                 getNetwork(drvName, options),
 		Subnet:                  viper.GetString(subnet),
 		Memory:                  getMemorySize(cmd, drvName),
 		CPUs:                    getCPUCount(drvName),

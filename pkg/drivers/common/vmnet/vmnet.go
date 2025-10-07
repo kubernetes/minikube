@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -71,7 +72,7 @@ type interfaceInfo struct {
 // ValidateHelper checks if vmnet-helper is installed and we can run it as root.
 // The returned error.Kind can be used to provide a suggestion for resolving the
 // issue.
-func ValidateHelper() error {
+func ValidateHelper(options *run.CommandOptions) error {
 	// Ideally minikube will not try to validate in download-only mode, but this
 	// is called from different places in different drivers, so the easier way
 	// to skip validation is to skip it here.
@@ -93,7 +94,7 @@ func ValidateHelper() error {
 	stdout, err := cmd.Output()
 	if err != nil {
 		// Can we interact with the user?
-		if !viper.GetBool("interactive") {
+		if options.NonInteractive {
 			if exitErr, ok := err.(*exec.ExitError); ok {
 				stderr := strings.TrimSpace(string(exitErr.Stderr))
 				err = fmt.Errorf("%w: %s", err, stderr)

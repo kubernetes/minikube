@@ -346,7 +346,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	rtime := getContainerRuntime(existing)
-	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName)
+	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName, options)
 	if err != nil {
 		return node.Starter{}, errors.Wrap(err, "Failed to generate cluster config")
 	}

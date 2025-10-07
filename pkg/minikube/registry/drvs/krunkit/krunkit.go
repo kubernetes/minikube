@@ -93,7 +93,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func status(_ *run.CommandOptions) registry.State {
+func status(options *run.CommandOptions) registry.State {
 	if runtime.GOOS != "darwin" && runtime.GOARCH != "arm64" {
 		err := errors.New("the krunkit driver is only supported on macOS arm64 machines")
 		return registry.State{Error: err, Fix: "Use another driver", Doc: docURL}
@@ -101,7 +101,7 @@ func status(_ *run.CommandOptions) registry.State {
 	if _, err := exec.LookPath("krunkit"); err != nil {
 		return registry.State{Error: err, Fix: "Run 'brew tap slp/krunkit && brew install krunkit'", Doc: docURL}
 	}
-	if err := vmnet.ValidateHelper(); err != nil {
+	if err := vmnet.ValidateHelper(options); err != nil {
 		vmnetErr := err.(*vmnet.Error)
 		return registry.State{Error: vmnetErr.Err, Fix: "Install and configure vment-helper", Doc: docURL}
 	}
