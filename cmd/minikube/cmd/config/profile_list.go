@@ -57,7 +57,7 @@ var profileListCmd = &cobra.Command{
 		options := flags.CommandOptions()
 		output := strings.ToLower(profileOutput)
 		out.SetJSON(output == "json")
-		go notify.MaybePrintUpdateTextFromGithub()
+		go notify.MaybePrintUpdateTextFromGithub(options)
 
 		switch output {
 		case "json":

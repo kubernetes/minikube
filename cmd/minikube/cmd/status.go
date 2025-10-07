@@ -92,7 +92,7 @@ var statusCmd = &cobra.Command{
 
 		options := flags.CommandOptions()
 		out.SetJSON(output == "json")
-		go notify.MaybePrintUpdateTextFromGithub()
+		go notify.MaybePrintUpdateTextFromGithub(options)
 
 		cname := ClusterFlagValue()
 		api, cc := mustload.Partial(cname, options)
