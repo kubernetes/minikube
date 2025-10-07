@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -41,7 +42,7 @@ var nodeStartCmd = &cobra.Command{
 			exit.Message(reason.Usage, "Usage: minikube node start [name]")
 		}
 
-		options := commandOptions()
+		options := flags.Options()
 
 		api, cc := mustload.Partial(ClusterFlagValue())
 		name := args[0]

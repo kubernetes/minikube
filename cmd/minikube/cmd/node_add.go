@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -43,7 +44,7 @@ var nodeAddCmd = &cobra.Command{
 	Short: "Adds a node to the given cluster.",
 	Long:  "Adds a node to the given cluster config, and starts it.",
 	Run: func(cmd *cobra.Command, _ []string) {
-		options := commandOptions()
+		options := flags.Options()
 
 		co := mustload.Healthy(ClusterFlagValue())
 		cc := co.Config
