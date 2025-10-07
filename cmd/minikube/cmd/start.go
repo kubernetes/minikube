@@ -353,7 +353,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	klog.Infof("cluster config:\n%+v", cc)
 
 	if firewall.IsBootpdBlocked(cc) {
-		if err := firewall.UnblockBootpd(); err != nil {
+		if err := firewall.UnblockBootpd(options); err != nil {
 			klog.Warningf("failed unblocking bootpd from firewall: %v", err)
 		}
 	}
