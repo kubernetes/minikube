@@ -28,6 +28,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/drivers/qemu"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -119,7 +120,7 @@ func qemuVersion() (semver.Version, error) {
 	return semver.Make(v)
 }
 
-func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interface{}, error) {
+func configure(cc config.ClusterConfig, n config.Node, options *run.Options) (interface{}, error) {
 	name := config.MachineName(cc, n)
 	qemuSystem, err := qemuSystemProgram()
 	if err != nil {
@@ -169,6 +170,9 @@ func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interfac
 			MachineName: name,
 			StorePath:   localpath.MiniPath(),
 			SSHUser:     "docker",
+		},
+		CommonDriver: &common.CommonDriver{
+			Options: *options,
 		},
 		Boot2DockerURL:        download.LocalISOResource(cc.MinikubeISO),
 		DiskSize:              cc.DiskSize,

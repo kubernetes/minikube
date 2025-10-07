@@ -28,6 +28,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/google/uuid"
 
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/krunkit"
@@ -56,7 +57,7 @@ func init() {
 	}
 }
 
-func configure(cfg config.ClusterConfig, n config.Node, _ *run.Options) (interface{}, error) {
+func configure(cfg config.ClusterConfig, n config.Node, options *run.Options) (interface{}, error) {
 	machineName := config.MachineName(cfg, n)
 	storePath := localpath.MiniPath()
 
@@ -77,6 +78,9 @@ func configure(cfg config.ClusterConfig, n config.Node, _ *run.Options) (interfa
 			MachineName: machineName,
 			StorePath:   storePath,
 			SSHUser:     "docker",
+		},
+		CommonDriver: &common.CommonDriver{
+			Options: *options,
 		},
 		Boot2DockerURL: download.LocalISOResource(cfg.MinikubeISO),
 		DiskSize:       cfg.DiskSize,
