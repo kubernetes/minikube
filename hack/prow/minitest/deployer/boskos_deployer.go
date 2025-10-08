@@ -129,10 +129,9 @@ func (m *MiniTestBosKosDeployer) SyncToRemote(src string, dst string) error {
 	return executeRsyncSSHCommand(m.ctx, m.remoteUserName, m.sshAddr, nil, src, dst, nil)
 }
 
-func (m *MiniTestBosKosDeployer) SyncToHost(src string, dst string) error{
+func (m *MiniTestBosKosDeployer) SyncToHost(src string, dst string) error {
 	return executeScpCommand(m.ctx, m.remoteUserName, m.sshAddr, nil, src, dst)
 }
-
 
 func (m *MiniTestBosKosDeployer) requestGCPProject() error {
 
@@ -177,6 +176,7 @@ func (m *MiniTestBosKosDeployer) gcpVMSetUp() error {
 	description := fmt.Sprintf("%s instance (login ID: %q)", m.instanceName, m.remoteUserName)
 	instImgPair := strings.SplitN(m.config.InstanceImage, "/", 2)
 	if err := m.executeLocalGloudCommand("compute", "instances", "create",
+		"--enable-nested-virtualization",
 		"--zone="+m.config.GCPZone,
 		"--description="+description,
 		"--network="+m.networkName,
@@ -185,6 +185,7 @@ func (m *MiniTestBosKosDeployer) gcpVMSetUp() error {
 		"--machine-type="+m.config.InstanceType,
 		fmt.Sprintf("--boot-disk-size=%dGiB", m.config.DiskGiB),
 		"--metadata=block-project-ssh-keys=TRUE",
+
 		m.instanceName,
 	); err != nil {
 		klog.Errorf("failed to start a gcp vm: %v", err)
