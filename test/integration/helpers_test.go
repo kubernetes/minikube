@@ -44,6 +44,8 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
 )
 
 // RunResult stores the result of an cmd.Run call
@@ -703,4 +705,17 @@ func CopyDir(src, dst string) error {
 	}
 
 	return nil
+}
+
+// GetKubernetesTestVersions returns a deduplicated list of Kubernetes versions for integration tests.
+func GetKubernetesTestVersions() []string {
+	versions := []string{
+		constants.OldestKubernetesVersion,
+		constants.DefaultKubernetesVersion,
+	}
+	// Always add newest version
+	if constants.NewestKubernetesVersion != constants.DefaultKubernetesVersion {
+		versions = append(versions, constants.NewestKubernetesVersion)
+	}
+	return util.RemoveDuplicateStrings(versions)
 }
