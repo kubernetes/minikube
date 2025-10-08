@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -129,12 +130,7 @@ func checkEnv(ip string, env string) bool {
 
 // isValidEnv checks if the env for proxy settings
 func isValidEnv(env string) bool {
-	for _, e := range EnvVars {
-		if e == env {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(EnvVars, env)
 }
 
 // UpdateTransport takes a k8s client *rest.config and returns a config without a proxy.

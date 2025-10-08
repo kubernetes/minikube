@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -174,11 +175,9 @@ func kicbaseImages(ctx context.Context, ociBin string) ([]string, error) {
 
 	var result []string
 	for _, img := range allImages {
-		for _, kicImg := range kicImagesRepo {
-			if kicImg == strings.Split(img, ":")[0] {
-				result = append(result, img)
-				break
-			}
+		imgName := strings.Split(img, ":")[0]
+		if slices.Contains(kicImagesRepo, imgName) {
+			result = append(result, img)
 		}
 	}
 	return result, nil

@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -253,14 +254,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 					}
 				} else {
 					// proxy must in config
-					found := false
-					for _, v := range config.DockerEnv {
-						if v == proxyEnv {
-							found = true
-							break
-						}
-					}
-					if !found {
+					if !slices.Contains(config.DockerEnv, proxyEnv) {
 						t.Fatalf("Value %s expected in dockerEnv but not occurred", test.proxy)
 					}
 				}
