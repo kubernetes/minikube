@@ -53,7 +53,10 @@ func binaryWithChecksumURL(binaryName, version, osName, archName, binaryURL stri
 
 // Binary will download a binary onto the host
 func Binary(binary, version, osName, archName, binaryURL string) (string, error) {
-	targetDir := localpath.MakeMiniPath("cache", osName, archName, version)
+	targetDir := localpath.MakeMiniPath("cache", "bin", osName, archName, version)
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		return "", errors.Wrapf(err, "failed to create target dir %s", targetDir)
+	}
 	targetFilepath := path.Join(targetDir, binary)
 	targetLock := targetFilepath + ".lock"
 
