@@ -41,7 +41,7 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${KICBASE_IMAGE} AS kicbase
 
-ARG BUILDKIT_VERSION="v0.18.1"
+ARG BUILDKIT_VERSION="v0.25.1"
 ARG CRIO_VERSION="v1.34"
 ARG CRICTL_VERSION="v1.34.0"
 ARG CRI_DOCKERD_VERSION="v0.4.0"
