@@ -18,14 +18,16 @@ package machine
 
 import (
 	"net/http"
-	"os"
-	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
 
+	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
@@ -34,6 +36,53 @@ type CacheImageTestCase struct {
 	description string
 	images      [][]cruntime.ListImage
 	expected    []cruntime.ListImage
+}
+
+type fakeAPI struct{}
+
+func (f *fakeAPI) GetMachinesDir() string {
+	return ""
+}
+
+func (f *fakeAPI) Close() error {
+	return nil
+}
+
+func (f *fakeAPI) Exists(name string) (bool, error) {
+	return true, nil
+}
+
+func (f *fakeAPI) Create(h *host.Host) error {
+	return nil
+}
+
+func (f *fakeAPI) Load(name string) (*host.Host, error) {
+	// return a minimal host.Host, only need commandRunnerFunc to be set
+	return &host.Host{
+		Name: name,
+	}, nil
+}
+
+// NewHost implements the NewHost method required by the libmachine.API interface.
+func (f *fakeAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
+	return &host.Host{
+		Name: "dummy-host",
+	}, nil
+}
+
+// List implements the List method required by the libmachine.API interface.
+func (f *fakeAPI) List() ([]string, error) {
+	return []string{}, nil
+}
+
+// Remove implements the Remove method required by the libmachine.API interface.
+func (f *fakeAPI) Remove(name string) error {
+	return nil
+}
+
+// Save implements the Save method required by the libmachine.API interface.
+func (f *fakeAPI) Save(host *host.Host) error {
+	return nil
 }
 
 func TestMergeImageLists(t *testing.T) {
@@ -264,48 +313,6 @@ func TestMergeImageLists(t *testing.T) {
 	}
 }
 
-func createDummyDocker(t *testing.T, dir string) string {
-	dummyPath := filepath.Join(dir, "docker")
-	script := `#!/bin/bash
-if [[ "$1" == "pull" ]]; then
-  echo "429 Too Many Requests"
-  exit 1
-else
-  echo "dummy docker $@"
-  exit 0
-fi`
-	if err := os.WriteFile(dummyPath, []byte(script), 0755); err != nil {
-		t.Fatalf("failed to write dummy docker: %v", err)
-	}
-	return dummyPath
-}
-
-func TestPullImages_RateLimitWithDummyDocker(t *testing.T) {
-	tmpDir := t.TempDir()
-	createDummyDocker(t, tmpDir)
-
-	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", "/home/henry/dummy-docker-bin:"+oldPath)
-	defer os.Setenv("PATH", oldPath)
-
-	profile := &config.Profile{
-		Name: "minikube",
-		Config: &config.ClusterConfig{
-			KubernetesConfig: config.KubernetesConfig{
-				ContainerRuntime: "docker",
-			},
-			Nodes: []config.Node{
-				{Name: "dummy-node"},
-			},
-		},
-	}
-
-	err := PullImages([]string{"busybox:latest"}, profile)
-	if err == nil {
-		t.Errorf("expected error due to rate limit, got nil")
-	}
-}
-
 func TestPullImages_RateLimit(t *testing.T) {
 	profile := &config.Profile{Name: "test-cluster"}
 	images := []string{"busybox:latest"}
@@ -315,28 +322,44 @@ func TestPullImages_RateLimit(t *testing.T) {
 	defer func() { pullImages = orig }()
 
 	pullImages = func(crMgr cruntime.Manager, imgs []string) error {
-		t.Logf("mock pullImages called with imgs: %v", imgs)
+		klog.Infof("mock pullImages called with imgs: %v", imgs)
 		return &transport.Error{
 			StatusCode: http.StatusTooManyRequests, // 429
 		}
 	}
 
-	// 2. mock config.Load
+	// mock config.Load
 	origLoad := loadConfig
 	defer func() { loadConfig = origLoad }()
 
 	loadConfig = func(name string, miniHome ...string) (*config.ClusterConfig, error) {
 		return &config.ClusterConfig{
+			Nodes: []config.Node{{Name: "node1"}},
 			KubernetesConfig: config.KubernetesConfig{
 				ContainerRuntime: "docker",
 			},
 		}, nil
 	}
+	origStatus := statusFunc
+	defer func() { statusFunc = origStatus }()
+	statusFunc = func(api libmachine.API, name string) (string, error) {
+		return state.Running.String(), nil
+	}
+
+	origNewAPIClient := newAPIClient
+	defer func() { newAPIClient = origNewAPIClient }()
+
+	newAPIClient = func(_ ...string) (libmachine.API, error) {
+		return &fakeAPI{}, nil
+	}
+
+	origCmd := commandRunnerFunc
+	defer func() { commandRunnerFunc = origCmd }()
+	commandRunnerFunc = func(h *host.Host) (command.Runner, error) {
+		return nil, nil
+	}
 
 	err := PullImages(images, profile)
-	// expect a transport.Error with StatusCode 429
-	klog.Infof("PullImages() = %v", err)
-
 	if terr, ok := err.(*transport.Error); !ok || terr.StatusCode != http.StatusTooManyRequests {
 		t.Fatalf("expected 429 transport.Error, got %v", err)
 	}

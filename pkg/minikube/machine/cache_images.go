@@ -62,6 +62,14 @@ var loadImageLock sync.Mutex
 // saveRoot is where images should be saved from within the guest VM
 var saveRoot = path.Join(vmpath.GuestPersistentDir, "images")
 
+// function variable so tests can override
+var (
+	loadConfig        = config.Load
+	newAPIClient      = NewAPIClient
+	commandRunnerFunc = CommandRunner
+	statusFunc        = Status
+)
+
 // CacheImagesForBootstrapper will cache images for a bootstrapper
 func CacheImagesForBootstrapper(imageRepository, version string) error {
 	images, err := bootstrapper.GetCachedImageList(imageRepository, version)
@@ -554,12 +562,9 @@ var pullImages = func(crMgr cruntime.Manager, imgs []string) error {
 	return nil
 }
 
-// function variable so tests can override
-var loadConfig = config.Load
-
 // PullImages pulls images to all nodes in profile
 func PullImages(images []string, profile *config.Profile) error {
-	api, err := NewAPIClient()
+	api, err := newAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "error creating api client")
 	}
@@ -579,7 +584,7 @@ func PullImages(images []string, profile *config.Profile) error {
 	for _, n := range c.Nodes {
 		m := config.MachineName(*c, n)
 
-		status, err := Status(api, m)
+		status, err := statusFunc(api, m)
 		if err != nil {
 			klog.Warningf("error getting status for %s: %v", m, err)
 			continue
@@ -591,7 +596,7 @@ func PullImages(images []string, profile *config.Profile) error {
 				klog.Warningf("Failed to load machine %q: %v", m, err)
 				continue
 			}
-			runner, err := CommandRunner(h)
+			runner, err := commandRunnerFunc(h)
 			if err != nil {
 				return err
 			}
@@ -606,6 +611,7 @@ func PullImages(images []string, profile *config.Profile) error {
 					if terr.StatusCode == http.StatusTooManyRequests {
 						// This confirms it's a 429 rate limit error
 						out.Styled(style.Notice, "Kicbase images have not been deleted. To delete images run:")
+						return terr
 					}
 				}
 				klog.Warningf("Failed to pull images for profile %s %v", pName, err.Error())
