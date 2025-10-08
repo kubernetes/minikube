@@ -12,6 +12,13 @@ EXTRA_START_ARGS="--force"
 EXTRA_TEST_ARGS="-gvisor" # We pick kvm as our gvisor testbed because it is fast & reliable
 JOB_NAME="KVM_Linux"
 
-source ./hack/prow/common.sh 
+sleep 5  # wait for libvirtd to be running
+echo "=========libvirtd status=========="
+sudo systemctl status libvirtd
+echo "=========Check virtualization support=========="
+grep -E -q 'vmx|svm' /proc/cpuinfo && echo yes || echo no 
+echo "=========virt-host-validate=========="
+virt-host-validate
 
+source ./hack/prow/common.sh 
 

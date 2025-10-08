@@ -53,7 +53,7 @@ func executeRsyncSSHCommand(ctx context.Context, user string, addr string, sshAr
 	sshArgs := []string{ssh, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"}
 	sshArgs = append(sshArgs, sshArguments...)
 
-	allArgs := []string{"-e", strings.Join(sshArgs, " "), "-avz", "--progress"}
+	allArgs := []string{"-e", strings.Join(sshArgs, " "), "-avz"}
 	allArgs = append(allArgs, rsyncArgs...)
 	allArgs = append(allArgs, src, fmt.Sprintf("%s@%s:%s", user, addr, dst))
 	cmd := exec.CommandContext(ctx, rsync, allArgs...)
