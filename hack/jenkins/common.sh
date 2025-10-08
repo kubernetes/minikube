@@ -89,6 +89,13 @@ if [ "$(uname)" = "Darwin" ]; then
   fi
 fi
 
+## set sysctl params for inotify, to avoid "too many open files" errors
+## ref: https://cloud.google.com/kubernetes-engine/distributed-cloud/bare-metal/docs/installing/configure-os/ubuntu
+if [ "$OS" == "linux" ]; then
+  sudo sysctl -w fs.inotify.max_user_instances=8192
+  sudo sysctl -w fs.inotify.max_user_watches=524288
+fi
+
 # We need pstree for the restart cronjobs
 if [ "$(uname)" != "Darwin" ]; then
   sudo apt-get -y install lsof psmisc dnsutils
@@ -493,7 +500,7 @@ if [ -z "${EXTERNAL}" ]; then
   echo ">> uploading ${SUMMARY_OUT} to gs://${JOB_GCS_BUCKET}_summary.json"
   echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}_summary.json"
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
-else 
+else
   # Otherwise, put the results in a predictable spot so the upload job can find them
   REPORTS_PATH=test_reports
   mkdir -p "$REPORTS_PATH"

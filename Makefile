@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.37.0
+ISO_VERSION ?= v1.37.0-1758198818-20370
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -188,7 +188,7 @@ endef
 
 # $(call DOCKER, image, command)
 define DOCKER
-	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app:Z -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
+	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app:Z -v $(GOPATH):/go:Z --init $(1) /bin/bash -c '$(2)'
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -1133,9 +1133,9 @@ update-runc-version:
 update-docker-version:
 	cd hack && go run update/docker_version/docker_version.go
 
-.PHONY: update-ubuntu-version
-update-ubuntu-version:
-	cd hack && go run update/ubuntu_version/ubuntu_version.go
+.PHONY: update-debian-version
+update-debian-version:
+	cd hack && go run update/debian_version/debian_version.go
 
 .PHONY: update-cni-plugins-version
 update-cni-plugins-version:
@@ -1213,7 +1213,7 @@ update-kong-ingress-controller-version:
 update-nvidia-device-plugin-version:
 	cd hack && go run update/nvidia_device_plugin_version/nvidia_device_plugin_version.go
 
-# for amd gpu 
+# for amd gpu
 .PHONY: update-amd-device-plugin-version
 update-amd-device-plugin-version:
 	cd hack && go run update/amd_device_gpu_plugin_version/amd_device_gpu_plugin_version.go

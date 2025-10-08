@@ -17,15 +17,11 @@ limitations under the License.
 package machine
 
 import (
-	"path"
 	"runtime"
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
-	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/download"
 )
 
@@ -60,22 +56,4 @@ func CacheBinariesForBootstrapper(version string, excludeBinaries []string, bina
 		})
 	}
 	return g.Wait()
-}
-
-// CopyBinary copies a locally cached binary to the guest VM
-func CopyBinary(cr command.Runner, src string, dest string) error {
-	f, err := assets.NewFileAsset(src, path.Dir(dest), path.Base(dest), "0755")
-	if err != nil {
-		return errors.Wrap(err, "new file asset")
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
-		}
-	}()
-
-	if err := cr.Copy(f); err != nil {
-		return errors.Wrapf(err, "copy")
-	}
-	return nil
 }

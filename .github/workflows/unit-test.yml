@@ -4,6 +4,7 @@ on:
   push:
     branches: [ master ]
     paths:
+      - .github/workflows/unit-test.yml
       - go.mod
       - '**/*.go'
       - Makefile
@@ -13,6 +14,7 @@ on:
       - '!**/*.json'
   pull_request:
     paths:
+      - .github/workflows/unit-test.yml
       - go.mod
       - '**/*.go'
       - Makefile
@@ -35,21 +37,21 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-22.04, macos-13, windows-2022]
+                os: [ubuntu-22.04, macos-15, windows-2022]
         runs-on: ${{ matrix.os }}
         steps:
         - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
           with:
             go-version: ${{env.GO_VERSION}}
-            cache: true      
+            cache: true
         - name: Download Dependencies
           run: go mod download
         # needed because pkg/drivers/kvm/domain.go:28:2:
         - name: Install libvirt (Linux)
           if: runner.os == 'Linux'
           run: |
-              sudo apt-get update              
+              sudo apt-get update
               sudo apt-get install -y libvirt-dev
         - name: Install make (Windows)
           if: runner.os == 'Windows'
