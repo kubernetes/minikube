@@ -75,7 +75,7 @@ var dependencies = map[string]dependency{
 	"nvidia-device-plugin":    {addonsFile, `nvidia/k8s-device-plugin:(.*)@`},
 	"registry":                {addonsFile, `registry:(.*)@`},
 	"runc":                    {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
-	"ubuntu":                  {dockerfile, `ubuntu:jammy-(.*)"`},
+	"debian":                  {dockerfile, `debian:bookworm-(.*)-slim`},
 	"volcano":                 {addonsFile, `volcanosh/vc-webhook-manager:(.*)@`},
 	"yakd":                    {addonsFile, `marcnuri/yakd:(.*)@`},
 }
