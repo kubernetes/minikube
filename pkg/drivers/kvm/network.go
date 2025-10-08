@@ -26,7 +26,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/docker/machine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/log"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util/retry"

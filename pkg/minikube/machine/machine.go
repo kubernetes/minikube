@@ -22,9 +22,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
-	libprovision "github.com/docker/machine/libmachine/provision"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/host"
+	libprovision "k8s.io/minikube/pkg/libmachine/provision"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"

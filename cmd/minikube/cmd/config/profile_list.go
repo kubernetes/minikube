@@ -33,7 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 
-	"github.com/docker/machine/libmachine"
+	"k8s.io/minikube/pkg/libmachine"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
