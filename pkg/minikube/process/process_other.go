@@ -24,16 +24,7 @@ import (
 )
 
 func pidExists(pid int) (bool, error) {
-	// Never fails and we get a process in "done" state that returns
-	// os.ErrProcessDone from Signal or Wait.
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		return true, err
-	}
-	if process.Signal(syscall.Signal(0)) == os.ErrProcessDone {
-		return false, nil
-	}
-	return true, nil
+	return PIDExists(pid)
 }
 
 func terminatePid(pid int) error {

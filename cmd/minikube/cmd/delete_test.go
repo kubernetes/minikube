@@ -288,7 +288,7 @@ func main() {
 		t.Fatalf("timed out waiting for process %d to exit", pid)
 	}
 
-	exists, err := process.ExistsPID(pid)
+	exists, err := process.PIDExists(pid)
 	if err != nil {
 		t.Fatalf("error checking process existence for pid %d: %v", pid, err)
 	}
