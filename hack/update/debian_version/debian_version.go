@@ -66,7 +66,6 @@ func latestBookwormSlimTag(tags []string) (string, error) {
 		}
 	}
 
-	// Prefer a dated tag when available.
 	if newestDateTag != "" {
 		return newestDateTag, nil
 	}
