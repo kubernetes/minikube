@@ -19,6 +19,7 @@ package driver
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 	"sort"
 	"strconv"
@@ -79,6 +80,7 @@ const (
 var (
 	// systemdResolvConf is path to systemd's DNS configuration. https://github.com/kubernetes/minikube/issues/3511
 	systemdResolvConf = "/run/systemd/resolve/resolv.conf"
+	HasSudo           = realHasSudo
 )
 
 // SupportedDrivers returns a list of supported drivers
@@ -319,6 +321,14 @@ func FlagDefaults(name string) FlagHints {
 func Choices(vm bool) []registry.DriverState {
 	options := registry.Available(vm)
 
+	if !HasSudo() {
+		for i := range options {
+			if options[i].NeedsSudo {
+				options[i].Priority = registry.Discouraged
+			}
+		}
+	}
+
 	// Descending priority for predictability and appearance
 	sort.Slice(options, func(i, j int) bool {
 		return options[i].Priority > options[j].Priority
@@ -392,10 +402,11 @@ func Status(name string) registry.DriverState {
 	select {
 	case s := <-stateChannel:
 		return registry.DriverState{
-			Name:     d.Name,
-			Default:  d.Default,
-			Priority: d.Priority,
-			State:    s,
+			Name:      d.Name,
+			Default:   d.Default,
+			Priority:  d.Priority,
+			State:     s,
+			NeedsSudo: d.NeedsSudo,
 		}
 	case <-timeoutChannel:
 		klog.Infof("time out when checking for status of %s driver", name)
@@ -437,4 +448,9 @@ func IndexFromMachineName(machineName string) int {
 		return i // minion node
 	}
 	return 1 // master node
+}
+
+func realHasSudo() bool {
+	err := exec.Command("sudo", "-n", "true").Run()
+	return err == nil
 }

@@ -49,6 +49,8 @@ func init() {
 		Default:  true,
 		Priority: registry.Fallback,
 		Init:     func() drivers.Driver { return virtualbox.NewDriver("", "") },
+		// VirtualBox driver requires sudo
+		NeedsSudo: true,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
