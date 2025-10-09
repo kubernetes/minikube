@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"k8s.io/klog/v2"
@@ -109,7 +110,7 @@ func (es *ExtraOptionSlice) String() string {
 // component is not specified, all of the components are used.
 func (es *ExtraOptionSlice) Get(key string, component ...string) string {
 	for _, opt := range *es {
-		if component == nil || ContainsParam(component, opt.Component) {
+		if component == nil || slices.Contains(component, opt.Component) {
 			if opt.Key == key {
 				return opt.Value
 			}
@@ -139,17 +140,6 @@ func (es *ExtraOptionSlice) Type() string {
 // Get returns the extra option map of keys to values for the specified component
 func (cm ComponentExtraOptionMap) Get(component string) map[string]string {
 	return cm[component]
-}
-
-// ContainsParam checks if a given slice of strings contains the provided string.
-// If a modifier func is provided, it is called with the slice item before the comparison.
-func ContainsParam(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
 }
 
 // NewUnversionedOption returns a VersionedExtraOption that applies to all versions.
