@@ -314,24 +314,6 @@ func (d *Driver) Start() error {
 		log.Debugf("starting domain XML:\n%s", domXML)
 	}
 
-	// libvirt/qemu creates a console log file owned by root:root and permissions 0600,
-	// so we pre-create it (and close it immediately), just to be able to read it later
-	logPath := consoleLogPath(*d)
-	f, err := os.Create(logPath)
-	if err != nil {
-		log.Debugf("failed to create console log file %q: %v", logPath, err)
-	} else {
-		f.Close()
-	}
-	// ensure console log file is cleaned up
-	defer func() {
-		if _, err := os.Stat(logPath); err == nil {
-			if err := os.Remove(logPath); err != nil {
-				log.Debugf("failed removing console log file %q: %v", logPath, err)
-			}
-		}
-	}()
-
 	if err := dom.Create(); err != nil {
 		return errors.Wrap(err, "creating domain")
 	}
@@ -355,12 +337,6 @@ func (d *Driver) Start() error {
 	return nil
 }
 
-// consoleLogPath returns the path to the console log file for the given machine name.
-func consoleLogPath(d Driver) string {
-	// return fmt.Sprintf("%s-console.log", machineName)
-	return d.ResolveStorePath("console.log")
-}
-
 // waitForDomainState waits maxTime for the domain to reach a target state.
 func (d *Driver) waitForDomainState(targetState state.State, maxTime time.Duration) error {
 	query := func() error {
@@ -377,25 +353,9 @@ func (d *Driver) waitForDomainState(targetState state.State, maxTime time.Durati
 		return fmt.Errorf("last domain state: %q", currentState.String())
 	}
 	if err := retry.Local(query, maxTime); err != nil {
-		dumpConsoleLogs(consoleLogPath(*d))
 		return fmt.Errorf("timed out waiting %v for domain to reach %q state: %w", maxTime, targetState.String(), err)
 	}
 	return nil
-}
-
-// dumpConsoleLogs prints out the console log.
-func dumpConsoleLogs(logPath string) {
-	if _, err := os.Stat(logPath); err != nil {
-		log.Debugf("failed checking console log file %q: %v", logPath, err)
-		return
-	}
-
-	data, err := os.ReadFile(logPath)
-	if err != nil {
-		log.Debugf("failed dumping console log file %q: %v", logPath, err)
-		return
-	}
-	log.Debugf("console log:\n%s", data)
 }
 
 // waitForStaticIP waits for IP address of domain that has been created & starting and then makes that IP static.
@@ -416,7 +376,6 @@ func (d *Driver) waitForStaticIP(conn *libvirt.Connect, maxTime time.Duration) e
 		return nil
 	}
 	if err := retry.Local(query, maxTime); err != nil {
-		dumpConsoleLogs(consoleLogPath(*d))
 		return fmt.Errorf("domain %s didn't return IP after %v", d.MachineName, maxTime)
 	}
 

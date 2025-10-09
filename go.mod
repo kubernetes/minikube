@@ -18,7 +18,7 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.16.0
 	github.com/containerd/errdefs v1.0.0
 	github.com/distribution/reference v0.6.0
-	github.com/docker/cli v28.3.3+incompatible
+	github.com/docker/cli v28.4.0+incompatible
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/docker/go-units v0.5.0
@@ -30,7 +30,7 @@ require (
 	github.com/google/go-github/v74 v74.0.0
 	github.com/google/slowjam v1.1.2
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/go-getter v1.7.9
+	github.com/hashicorp/go-getter v1.8.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hooklift/iso9660 v1.0.0
 	github.com/icza/dyno v0.0.0-20230330125955-09f820a8d9c0
@@ -104,7 +104,24 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/aregm/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
-	github.com/aws/aws-sdk-go v1.44.122 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.36.3 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.10 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.29.15 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.68 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.30 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.34 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.7.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.15 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.18.15 // indirect
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.80.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.25.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.30.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.33.20 // indirect
+	github.com/aws/smithy-go v1.22.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/c4milo/gotoolkit v0.0.0-20190525173301-67483a18c17a // indirect
@@ -147,6 +164,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.15.0 // indirect
 	github.com/gookit/color v1.5.2 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
+	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.65 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
@@ -154,7 +172,6 @@ require (
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/juju/errors v0.0.0-20220203013757-bd733f3c86b9 // indirect

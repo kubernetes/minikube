@@ -19,6 +19,7 @@ package bsutil
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -87,7 +88,7 @@ func CreateFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
 	// kubeadm allows only a small set of parameters to be supplied from the command line when the --config param
 	// is specified, here we remove those that are not allowed
 	for opt := range kubeadmExtraOpts {
-		if !config.ContainsParam(KubeadmExtraArgsAllowed[KubeadmCmdParam], opt) {
+		if !slices.Contains(KubeadmExtraArgsAllowed[KubeadmCmdParam], opt) {
 			// kubeadmExtraOpts is a copy so safe to delete
 			delete(kubeadmExtraOpts, opt)
 		}

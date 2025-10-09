@@ -85,7 +85,7 @@ jobs:
             ifconfig
             docker version
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
         with:
           go-version-file: go.mod
           cache: true
@@ -112,7 +112,7 @@ jobs:
         if: matrix.driver == 'vfkit'
         run: |
           brew install vfkit
-          curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | bash -s
+          curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
       - name: Install qemu and socket_vmnet (macos)
         if: matrix.os == 'macos-13' && matrix.driver == 'qemu'
         run: |

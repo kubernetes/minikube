@@ -55,7 +55,6 @@ const domainTmpl = `
       <source file='{{.DiskPath}}'/>
       <target dev='hda' bus='virtio'/>
     </disk>
-    <controller type='virtio-serial'/>
     <interface type='network'>
       <source network='{{.PrivateNetwork}}'/>
       <model type='virtio'/>
@@ -66,13 +65,9 @@ const domainTmpl = `
     </interface>
     <serial type='pty'>
       <target port='0'/>
-      <log file='{{.ConsoleLogPath}}' append='on'/>
     </serial>
     <console type='pty'>
       <target type='serial' port='0'/>
-    </console>
-    <console type='pty'>
-      <target type="virtio" port="1"/>
     </console>
     <rng model='virtio'>
       <backend model='random'>/dev/random</backend>
