@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -54,7 +55,7 @@ func init() {
 	}
 }
 
-func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cfg config.ClusterConfig, n config.Node, _ *run.Options) (interface{}, error) {
 	d := hyperv.NewDriver(config.MachineName(cfg, n), localpath.MiniPath())
 	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
 	d.VSwitch = cfg.HypervVirtualSwitch
@@ -81,7 +82,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	return d, nil
 }
 
-func status() registry.State {
+func status(_ *run.Options) registry.State {
 	path, err := exec.LookPath("powershell")
 	if err != nil {
 		return registry.State{Error: err}

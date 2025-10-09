@@ -1,7 +1,5 @@
-//go:build !darwin
-
 /*
-Copyright 2024 The Kubernetes Authors All rights reserved.
+Copyright 2025 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,16 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vmnet
+package flags
 
 import (
-	"fmt"
-	"runtime"
-
-	"k8s.io/minikube/pkg/minikube/reason"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/run"
 )
 
-func ValidateHelper(_ *run.Options) error {
-	return &Error{Kind: reason.Usage, Err: fmt.Errorf("vmnet-helper is not available on %q", runtime.GOOS)}
+// Flag names passed to minikube via run.Options.
+const (
+	Interactive = "interactive"
+)
+
+// Options returns minikube runtime options from command line flags. Flags that
+// must be handled outside of the cmd package must be added to run.Options.
+func Options() *run.Options {
+	return &run.Options{
+		NonInteractive: !viper.GetBool(Interactive),
+	}
 }

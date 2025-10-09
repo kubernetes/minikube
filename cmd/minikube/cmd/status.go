@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -84,13 +85,15 @@ var statusCmd = &cobra.Command{
 	Exit status contains the status of minikube's VM, cluster and Kubernetes encoded on it's bits in this order from right to left.
 	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for Kubernetes NOK)`,
 	Run: func(cmd *cobra.Command, _ []string) {
+		options := flags.Options()
+
 		output = strings.ToLower(output)
 		if output != "text" && statusFormat != defaultStatusFormat {
 			exit.Message(reason.Usage, "Cannot use both --output and --format options")
 		}
 
 		out.SetJSON(output == "json")
-		go notify.MaybePrintUpdateTextFromGithub()
+		go notify.MaybePrintUpdateTextFromGithub(options)
 
 		cname := ClusterFlagValue()
 		api, cc := mustload.Partial(cname)

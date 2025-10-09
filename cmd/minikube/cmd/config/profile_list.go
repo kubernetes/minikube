@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -52,9 +53,11 @@ var profileListCmd = &cobra.Command{
 	Short: "Lists all minikube profiles.",
 	Long:  "Lists all valid minikube profiles and detects all possible invalid profiles.",
 	Run: func(_ *cobra.Command, _ []string) {
+		options := flags.Options()
+
 		output := strings.ToLower(profileOutput)
 		out.SetJSON(output == "json")
-		go notify.MaybePrintUpdateTextFromGithub()
+		go notify.MaybePrintUpdateTextFromGithub(options)
 
 		switch output {
 		case "json":

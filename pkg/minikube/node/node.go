@@ -36,13 +36,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 // Add adds a new node config to an existing cluster.
-func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
+func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool, options *run.Options) error {
 	profiles, err := config.ListValidProfiles()
 	if err != nil {
 		return err
@@ -69,7 +70,7 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 		return errors.Wrap(err, "save node")
 	}
 
-	r, p, m, h, err := Provision(cc, &n, delOnFail)
+	r, p, m, h, err := Provision(cc, &n, delOnFail, options)
 	if err != nil {
 		return err
 	}
@@ -83,7 +84,7 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 		ExistingAddons: nil,
 	}
 
-	_, err = Start(s)
+	_, err = Start(s, options)
 	return err
 }
 

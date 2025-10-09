@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -55,7 +56,7 @@ func init() {
 	}
 }
 
-func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cc config.ClusterConfig, n config.Node, _ *run.Options) (interface{}, error) {
 	d := virtualbox.NewDriver(config.MachineName(cc, n), localpath.MiniPath())
 	d.Boot2DockerURL = download.LocalISOResource(cc.MinikubeISO)
 	d.Memory = cc.Memory
@@ -71,7 +72,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return d, nil
 }
 
-func status() registry.State {
+func status(_ *run.Options) registry.State {
 	// Reuse this function as it's particularly helpful for Windows
 	tryPath := driver.VBoxManagePath()
 	path, err := exec.LookPath(tryPath)

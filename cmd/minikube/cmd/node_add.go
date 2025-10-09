@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -43,6 +44,8 @@ var nodeAddCmd = &cobra.Command{
 	Short: "Adds a node to the given cluster.",
 	Long:  "Adds a node to the given cluster config, and starts it.",
 	Run: func(cmd *cobra.Command, _ []string) {
+		options := flags.Options()
+
 		co := mustload.Healthy(ClusterFlagValue())
 		cc := co.Config
 
@@ -90,8 +93,8 @@ var nodeAddCmd = &cobra.Command{
 		}
 
 		register.Reg.SetStep(register.InitialSetup)
-		if err := node.Add(cc, n, deleteNodeOnFailure); err != nil {
-			_, err := maybeDeleteAndRetry(cmd, *cc, n, nil, err)
+		if err := node.Add(cc, n, deleteNodeOnFailure, options); err != nil {
+			_, err := maybeDeleteAndRetry(cmd, *cc, n, nil, err, options)
 			if err != nil {
 				exit.Error(reason.GuestNodeAdd, "failed to add node", err)
 			}

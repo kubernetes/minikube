@@ -537,7 +537,7 @@ func (d *Driver) Start() error {
 		if !isBootpdError(err) {
 			return errors.Wrap(err, "IP address never found in dhcp leases file")
 		}
-		if unblockErr := firewall.UnblockBootpd(); unblockErr != nil {
+		if unblockErr := firewall.UnblockBootpd(&d.Options); unblockErr != nil {
 			klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
 			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
 		}

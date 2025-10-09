@@ -35,6 +35,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -85,7 +86,9 @@ func CreateRawDisk(diskPath string, sizeMB int) error {
 }
 
 // CommonDriver is the common driver base class
-type CommonDriver struct{}
+type CommonDriver struct {
+	Options run.Options `json:"-"`
+}
 
 // GetCreateFlags is not implemented yet
 func (d *CommonDriver) GetCreateFlags() []mcnflag.Flag {

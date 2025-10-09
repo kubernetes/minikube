@@ -64,6 +64,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/network"
@@ -92,7 +93,7 @@ type Starter struct {
 }
 
 // Start spins up a guest and starts the Kubernetes node.
-func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
+func Start(starter Starter, options *run.Options) (*kubeconfig.Settings, error) { // nolint:gocyclo
 	var wg sync.WaitGroup
 	stopk8s, err := handleNoKubernetes(starter)
 	if err != nil {
@@ -220,7 +221,7 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 
 	// discourage use of the virtualbox driver
 	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) {
-		warnVirtualBox()
+		warnVirtualBox(options)
 	}
 
 	// special ops for "none" driver on control-plane node, like change minikube directory
@@ -367,7 +368,7 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 }
 
 // Provision provisions the machine/container for the node
-func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
+func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool, options *run.Options) (command.Runner, bool, libmachine.API, *host.Host, error) {
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
 
@@ -404,7 +405,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool) (comman
 		waitDownloadKicBaseImage(&kicGroup)
 	}
 
-	return startMachine(cc, n, delOnFail)
+	return startMachine(cc, n, delOnFail, options)
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.
@@ -654,12 +655,12 @@ func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, cluste
 }
 
 // StartMachine starts a VM
-func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) (runner command.Runner, preExists bool, machineAPI libmachine.API, hostInfo *host.Host, err error) {
+func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, options *run.Options) (runner command.Runner, preExists bool, machineAPI libmachine.API, hostInfo *host.Host, err error) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to get machine client")
 	}
-	hostInfo, preExists, err = startHostInternal(m, cfg, node, delOnFail)
+	hostInfo, preExists, err = startHostInternal(m, cfg, node, delOnFail, options)
 	if err != nil {
 		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to start host")
 	}
@@ -706,8 +707,8 @@ func getPort() (int, error) {
 }
 
 // startHostInternal starts a new minikube host using a VM or None
-func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
-	hostInfo, exists, err := machine.StartHost(api, cc, n)
+func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool, options *run.Options) (*host.Host, bool, error) {
+	hostInfo, exists, err := machine.StartHost(api, cc, n, options)
 	if err == nil {
 		return hostInfo, exists, nil
 	}
@@ -739,7 +740,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 		}
 	}
 
-	hostInfo, exists, err = machine.StartHost(api, cc, n)
+	hostInfo, exists, err = machine.StartHost(api, cc, n, options)
 	if err == nil {
 		return hostInfo, exists, nil
 	}
@@ -979,9 +980,9 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 }
 
 // prints a warning to the console against the use of the 'virtualbox' driver, if alternatives are available and healthy
-func warnVirtualBox() {
+func warnVirtualBox(options *run.Options) {
 	var altDriverList strings.Builder
-	for _, choice := range driver.Choices(true) {
+	for _, choice := range driver.Choices(true, options) {
 		if !driver.IsVirtualBox(choice.Name) && choice.Priority != registry.Discouraged && choice.State.Installed && choice.State.Healthy {
 			altDriverList.WriteString(fmt.Sprintf("\n\t- %s", choice.Name))
 		}
