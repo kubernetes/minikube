@@ -69,20 +69,25 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
                 return "127.0.0.1", net.IPv4(127, 0, 0, 1), cc.APIServerPort, nil
 	}
 
-	// Default: use the node IP (literal or resolvable name)
-	host := cp.IP
+	// Default: choose node IP by requested family; for dual keep IPv4 (back-compat).
+	chosenNodeIP := cp.IP
+	if strings.ToLower(cc.KubernetesConfig.IPFamily) == "ipv6" && cp.IPv6 != "" {
+		chosenNodeIP = cp.IPv6
+	}
+	// Host sent back to callers may be overridden by APIServerName.
+	host := chosenNodeIP
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
 		host = cc.KubernetesConfig.APIServerName
 	}
 
 	var ips []net.IP
-	if ip := net.ParseIP(cp.IP); ip != nil {
+	if ip := net.ParseIP(chosenNodeIP); ip != nil {
 		ips = []net.IP{ip}
 	} else {
 		var err error
-		ips, err = net.LookupIP(cp.IP)
+		ips, err = net.LookupIP(chosenNodeIP)
 		if err != nil || len(ips) == 0 {
-			return host, nil, cp.Port, fmt.Errorf("failed to lookup ip for %q", cp.IP)
+			return host, nil, cp.Port, fmt.Errorf("failed to lookup ip for %q", chosenNodeIP)
 		}
 	}
 

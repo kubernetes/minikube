@@ -34,6 +34,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -78,6 +81,22 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	d.DiskSize = cfg.DiskSize
 	d.SSHUser = "docker"
 	d.DisableDynamicMemory = true // default to disable dynamic memory as minikube is unlikely to work properly with dynamic memory
+
+	// If the user requested IPv6/dual, warn early when the selected vSwitch likely has no IPv6 on the host vEthernet.
+	fam := strings.ToLower(strings.TrimSpace(cfg.KubernetesConfig.IPFamily))
+	if (fam == "ipv6" || fam == "dual") && d.VSwitch != "" {
+		ok, err := vSwitchHasIPv6(d.VSwitch)
+		if err != nil {
+			klog.Warningf("IPv6 preflight for Hyper-V switch %q failed (will continue): %v", d.VSwitch, err)
+		} else if !ok {
+			out.WarningT("Hyper-V switch {{.sw}} appears to have no IPv6 address on the host vEthernet interface. "+
+				"An IPv6/dual-stack cluster may fail to start. Consider using an External switch with IPv6.",
+				out.V{"sw": d.VSwitch})
+			out.Styled(style.Tip, `To check:
+  PowerShell (Admin): Get-NetIPAddress -AddressFamily IPv6 | where {$_.InterfaceAlias -like "vEthernet ({{.sw}})"} | ft`,
+				out.V{"sw": d.VSwitch})
+		}
+	}
 	return d, nil
 }
 
@@ -138,4 +157,26 @@ func status() registry.State {
 	}
 
 	return registry.State{Installed: true, Healthy: true}
+}
+
+// vSwitchHasIPv6 returns true if the host's vEthernet (SwitchName) has any non-link-local IPv6 address.
+func vSwitchHasIPv6(switchName string) (bool, error) {
+	if switchName == "" {
+		return false, nil
+	}
+	ps, err := exec.LookPath("powershell")
+	if err != nil {
+		return false, err
+	}
+	iface := fmt.Sprintf("vEthernet (%s)", switchName)
+	// True if any IPv6 other than fe80::/10 exists on the vEthernet interface for this switch.
+	script := fmt.Sprintf(`@(Get-NetIPAddress -AddressFamily IPv6 -InterfaceAlias '%s' | Where-Object {$_.IPAddress -notlike 'fe80*'} | Select-Object -First 1) -ne $null`, iface)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, ps, "-NoProfile", "-NonInteractive", script)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return false, fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out)
+	}
+	return strings.TrimSpace(string(out)) == "True", nil
 }

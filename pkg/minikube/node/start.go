@@ -58,6 +58,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/machine/guestnet"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -133,6 +134,23 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 	} else if err := machine.AddHostAlias(starter.Runner, constants.HostAlias, hostIP); err != nil {
 		klog.Errorf("Unable to add minikube host alias: %v", err)
 	}
+
+	// Detect the guest's IPs (works for Hyper-V and other VM drivers).
+	// This must happen before kubeadm config is generated so n.IPv6 can be used.
+	if driver.IsVM(starter.Cfg.Driver) && !driver.IsKIC(starter.Cfg.Driver) {
+		if ip4, ip6, _ := guestnet.DetectIPs(starter.Runner); ip6 != "" || ip4 != "" {
+			if ip6 != "" {
+				starter.Node.IPv6 = ip6
+				klog.Infof("Detected node IPv6 inside guest: %s", starter.Node.IPv6)
+			}
+			// Fail fast if the user asked for IPv6/dual but the VM has no IPv6.
+			guestnet.RequireIPv6IfRequested(*starter.Cfg, starter.Node.IPv6)
+		} else {
+			// Still enforce the requirement if requested even when detection produced nothing.
+			guestnet.RequireIPv6IfRequested(*starter.Cfg, "")
+		}
+	}
+
 
 	var kcs *kubeconfig.Settings
 	var bs bootstrapper.Bootstrapper
