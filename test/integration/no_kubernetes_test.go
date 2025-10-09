@@ -85,7 +85,7 @@ func TestNoKubernetes(t *testing.T) {
 func VerifyNoK8sDownloadCache(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	cachePath := filepath.Join(localpath.MiniPath(), "cache", "linux", runtime.GOARCH, "v0.0.0")
+	cachePath := filepath.Join(localpath.MiniPath(), "cache", runtime.GOOS, runtime.GOARCH, constants.NoKubernetesVersion)
 
 	// Check if the cache directory exists at all
 	t.Logf("Checking cache directory: %s", cachePath)
