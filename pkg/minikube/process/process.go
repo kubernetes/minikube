@@ -61,7 +61,7 @@ func Exists(pid int, executable string) (bool, error) {
 	}
 
 	// Slow path if pid exist, depending on the platform. On windows and darwin
-	// this fetch all processes from the krenel and find a process with pid. On
+	// this fetch all processes from the kernel and find a process with pid. On
 	// linux this reads /proc/pid/stat
 	entry, err := ps.FindProcess(pid)
 	if err != nil {
@@ -71,6 +71,15 @@ func Exists(pid int, executable string) (bool, error) {
 		return false, nil
 	}
 	return entry.Executable() == executable, nil
+}
+
+// PIDExists reports whether a process with the given pid exists (PID-only).
+func PIDExists(pid int) (bool, error) {
+	entry, err := ps.FindProcess(pid)
+	if err != nil {
+		return true, err
+	}
+	return entry != nil, nil
 }
 
 // Terminate a process with pid and matching name. Returns os.ErrProcessDone if

@@ -21,10 +21,7 @@ import (
 )
 
 func pidExists(pid int) (bool, error) {
-	// Fails with "OpenProcess: The parameter is incorrect" if the process does
-	// not exist.
-	_, err := os.FindProcess(pid)
-	return err == nil, nil
+	return PIDExists(pid)
 }
 
 func terminatePid(pid int) error {
