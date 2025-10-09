@@ -44,8 +44,6 @@ func minAcceptableDriverVersion(driverName string, mkVer semver.Version) semver.
 			return *minHyperkitVersion
 		}
 		return mkVer
-	case driver.KVM2:
-		return mkVer
 	default:
 		klog.Warningf("Unexpected driver: %v", driverName)
 		return mkVer

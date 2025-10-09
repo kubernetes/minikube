@@ -49,7 +49,6 @@ If you are running KVM in a nested virtualization environment ensure your config
 * Run `virt-host-validate` and check for the suggestions.
 * Run ``ls -la `which virsh` ``, `virsh uri`, `sudo virsh net-list --all` and `ip a s` to collect additional information for debugging.
 * Run `minikube start --alsologtostderr -v=9` to debug crashes.
-* Run `docker-machine-driver-kvm2 version` to verify the kvm2 driver executes properly.
 * Read [How to debug Virtualization problems](https://fedoraproject.org/wiki/How_to_debug_Virtualization_problems)
 
 ### Troubleshooting KVM/libvirt networks
