@@ -40,6 +40,3 @@ if [[ "${failed}" -ne 0 ]]; then
   exit "${failed}"
 fi
 
-cp -r test/integration/testdata out/
-
-cp out/gvisor-addon out/testdata/

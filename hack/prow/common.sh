@@ -23,7 +23,9 @@ export MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE=true
 
 readonly TIMEOUT=120m
 
-mkdir -p out/ testdata/
+cp -r test/integration/testdata .
+cp out/gvisor-addon testdata/
+
 # Add the out/ directory to the PATH, for using new drivers.
 export PATH="$(pwd)/out/":$PATH
 mkdir -p "${TEST_ROOT}"
@@ -113,11 +115,11 @@ function docker_setup() {
 
 function gvisor_image_build() {
     # Build the gvisor image so that we can integration test changes to pkg/gvisor
-    chmod +x out/testdata/gvisor-addon
+    chmod +x testdata/gvisor-addon
     # skipping gvisor mac because ofg https://github.com/kubernetes/minikube/issues/5137
     if [ "$(uname)" != "Darwin" ]; then
         # Should match GVISOR_IMAGE_VERSION in Makefile
-        docker build -t gcr.io/k8s-minikube/gvisor-addon:2 -f out/testdata/gvisor-addon-Dockerfile ./out/testdata
+        docker build -t gcr.io/k8s-minikube/gvisor-addon:2 -f testdata/gvisor-addon-Dockerfile ./testdata
     fi
 }
 
@@ -176,13 +178,7 @@ set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 
-if [[ $result -eq 0 ]]; then
-    status="success"
-    echo "minikube: SUCCESS"
-else
-    status="failure"
-    echo "minikube: FAIL"
-fi
+
 
 # calculate the time took to finish running e2e binary test.
 e2e_end_time="$(date -u +%s)"
@@ -197,3 +193,11 @@ elapsed=$min.$sec
 cp ${TEST_OUT} .
 cp ${JSON_OUT} .
 cp ${JUNIT_OUT} .
+
+
+if [[ $result -eq 0 ]]; then
+    echo "minikube: SUCCESS"
+else
+    echo "minikube: FAIL"
+fi
+exit "$result"
