@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2019 The Kubernetes Authors All rights reserved.
+# Copyright 2025 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,25 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-# This script runs the integration tests on a Linux machine for the KVM Driver
-
-# The script expects the following env variables:
-# MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
-# COMMIT: Actual commit ID from upstream build
-# EXTRA_BUILD_ARGS (optional): Extra args to be passed into the minikube integrations tests
-# access_token: The GitHub API access token. Injected by the Jenkins credential provider.
-
 set -e
+set -x
 
 OS="linux"
 ARCH="amd64"
 DRIVER="kvm2"
-JOB_NAME="KVM_Linux_containerd"
-CONTAINER_RUNTIME="containerd"
+CONTAINER_RUNTIME="docker"
+# in prow, if you want libvirtd to be run, you have to start a privileged container as root
+EXTRA_START_ARGS="" 
+EXTRA_TEST_ARGS="-gvisor" # We pick kvm as our gvisor testbed because it is fast & reliable
+JOB_NAME="KVM_Linux"
+
+
+# install docker if not present
+ARCH="$ARCH" hack/prow/installer/check_install_docker.sh || true
+sudo adduser $(whoami) docker || true
 
 sudo apt-get update
 sudo apt-get -y install qemu-system qemu-kvm libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
-sudo adduser jenkins libvirt || true
+sudo adduser $(whoami) libvirt || true
 
-source ./common.sh
+# start libvirtd 
+sudo systemctl start libvirtd
