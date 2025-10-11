@@ -1,3 +1,19 @@
+/*
+Copyright 2025 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package deployer
 
 import (
@@ -130,7 +146,7 @@ func (m *MiniTestBosKosDeployer) SyncToRemote(src string, dst string, excludedPa
 	for _, pattern := range excludedPattern {
 		excludedArgs = append(excludedArgs, "--exclude", pattern)
 	}
-	dstRemote:=fmt.Sprintf("%s@%s:%s", m.remoteUserName, m.sshAddr, dst)
+	dstRemote := fmt.Sprintf("%s@%s:%s", m.remoteUserName, m.sshAddr, dst)
 	return executeRsyncSSHCommand(m.ctx, nil, src, dstRemote, excludedArgs)
 }
 
@@ -139,7 +155,7 @@ func (m *MiniTestBosKosDeployer) SyncToHost(src string, dst string, excludedPatt
 	for _, pattern := range excludedPattern {
 		excludedArgs = append(excludedArgs, "--exclude", pattern)
 	}
-	srcRemote := fmt.Sprintf("%s@%s:%s", m.remoteUserName,  m.sshAddr, src)
+	srcRemote := fmt.Sprintf("%s@%s:%s", m.remoteUserName, m.sshAddr, src)
 	return executeRsyncSSHCommand(m.ctx, nil, srcRemote, dst, excludedArgs)
 }
 

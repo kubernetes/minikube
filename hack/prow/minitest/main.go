@@ -1,11 +1,27 @@
+/*
+Copyright 2025 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
 	"minitest/deployer"
 	"minitest/tester"
 
-	"os"
 	"flag"
+	"os"
 
 	"k8s.io/klog/v2"
 )
@@ -27,20 +43,22 @@ func main() {
 	klog.InitFlags(flagSet)
 	flagSet.Parse(os.Args[1:])
 
-
 	dep := getDeployer(*deployerName)(*config)
 	tester := getTester(*testerName)
 
 	if err := dep.Up(); err != nil {
 		klog.Fatalf("failed to start deployer: %v", err)
 	}
-
-	if err:=tester.Run(dep);err!=nil{
-		klog.Fatalf("failed to run tests: %v", err)
+	var testErr error
+	if testErr = tester.Run(dep); testErr != nil {
+		klog.Errorf("failed to run tests: %v", testErr)
 	}
-	
+
 	if err := dep.Down(); err != nil {
 		klog.Fatalf("failed to stop deployer: %v", err)
+	}
+	if testErr != nil {
+		os.Exit(1)
 	}
 
 }
