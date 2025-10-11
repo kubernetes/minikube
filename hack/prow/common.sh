@@ -9,32 +9,6 @@
 # EXTRA_TEST_ARGS: additional flags to pass into go test
 # JOB_NAME: the name of the logfile and check name to update on github
 
-
-MINIKUBE_LOCATION="minikube_location" #what should we set here
-
-readonly OS_ARCH="${OS}-${ARCH}"
-readonly TEST_ROOT="${HOME}/minikube-integration"
-readonly TEST_HOME="${TEST_ROOT}/${MINIKUBE_LOCATION}-$$"
-
-export GOPATH="$HOME/go"
-export KUBECONFIG="${TEST_HOME}/kubeconfig"
-export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
-export MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE=true
-
-readonly TIMEOUT=120m
-
-cp -r test/integration/testdata .
-cp out/gvisor-addon testdata/
-ls testdata
-
-# Add the out/ directory to the PATH, for using new drivers.
-export PATH="$(pwd)/out/":$PATH
-mkdir -p "${TEST_ROOT}"
-mkdir -p "${TEST_HOME}"
-export MINIKUBE_HOME="${TEST_HOME}/.minikube"
-export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
-export E2E_BIN="out/e2e-${OS_ARCH}"
-
 function print_test_info() {
     echo ">> Starting at $(date)"
     echo ""
@@ -124,30 +98,39 @@ function gvisor_image_build() {
     fi
 }
 
-function sleep_on_high_load() {
-    readonly LOAD=$(uptime | grep -E -o "load average.*: [0-9]+" | cut -d" " -f3)
-    if [[ "${LOAD}" -gt 2 ]]; then
-        echo ""
-        echo "********************** LOAD WARNING ********************************"
-        echo "Load average is very high (${LOAD}), which may cause failures. Top:"
-        if [[ "$(uname)" == "Darwin" ]]; then
-            # Two samples, macOS does not calculate CPU usage on the first one
-            top -l 2 -o cpu -n 5 | tail -n 15
-        else
-            top -b -n1 | head -n 15
-        fi
-        echo "********************** LOAD WARNING ********************************"
-        echo "Sleeping 30s to see if load goes down ...."
-        sleep 30
-        uptime
-    fi
-}
+
+
+# this is where the script starts
+MINIKUBE_LOCATION="minikube_location" 
+
+readonly OS_ARCH="${OS}-${ARCH}"
+readonly TEST_ROOT="${HOME}/minikube-integration"
+readonly TEST_HOME="${TEST_ROOT}/${MINIKUBE_LOCATION}-$$"
+
+export GOPATH="$HOME/go"
+export KUBECONFIG="${TEST_HOME}/kubeconfig"
+export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
+export MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE=true
+
+readonly TIMEOUT=120m
+
+cp -r test/integration/testdata .
+cp out/gvisor-addon testdata/
+ls testdata
+
+# Add the out/ directory to the PATH, for using new drivers.
+export PATH="$(pwd)/out/":$PATH
+mkdir -p "${TEST_ROOT}"
+mkdir -p "${TEST_HOME}"
+export MINIKUBE_HOME="${TEST_HOME}/.minikube"
+export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
+export E2E_BIN="out/e2e-${OS_ARCH}"
+
 
 install_dependencies
 docker_setup
 print_test_info
 gvisor_image_build
-sleep_on_high_load
 
 readonly TEST_OUT="${TEST_HOME}/testout.txt"
 readonly JSON_OUT="${TEST_HOME}/test.json"
@@ -164,7 +147,6 @@ set -x
 
 EXTRA_START_ARGS="${EXTRA_START_ARGS} --container-runtime=${CONTAINER_RUNTIME}"
 echo $PATH
-ls /usr/local/go/bin/
 gotestsum --jsonfile "${JSON_OUT}" --junitfile="${JUNIT_OUT}" -f standard-verbose --raw-command -- \
     go tool test2json -t \
     ${E2E_BIN} \
@@ -189,16 +171,19 @@ sec=$(tail -c 3 <<<$((${elapsed}00 / 60)))
 elapsed=$min.$sec
 
 #todo: currently we skip gopogh upload , we shall add it back
+#upload_to_goph
 
 # according to prow's requirement, upload the test report to $ARTIFACTS
 cp ${TEST_OUT} .
 cp ${JSON_OUT} .
 cp ${JUNIT_OUT} .
-
-
 if [[ $result -eq 0 ]]; then
     echo "minikube: SUCCESS"
 else
     echo "minikube: FAIL"
 fi
+
 exit "$result"
+
+
+

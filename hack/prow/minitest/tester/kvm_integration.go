@@ -28,7 +28,7 @@ func (k *KVMIntegrationTester) Run(runner MiniTestRunner) error {
 	}
 	if err := runner.Execute("cd minikube && ./hack/prow/linux_integration_kvm.sh"); err != nil {
 		klog.Errorf("failed to execute command in env: %v", err)
-		return err
+		// don't return here, we still want to collect the test reports
 	}
 	artifactLocation := os.Getenv("ARTIFACTS")
 	klog.Infof("copying to %s", artifactLocation)

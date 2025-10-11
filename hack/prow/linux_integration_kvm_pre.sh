@@ -18,7 +18,7 @@ ARCH="$ARCH" hack/prow/installer/check_install_docker.sh || true
 sudo adduser $(whoami) docker || true
 
 sudo apt-get update
-sudo apt-get -y install qemu-system libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
+sudo apt-get -y install qemu-system qemu-kvm libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
 sudo adduser $(whoami) libvirt || true
 
 # start libvirtd 
