@@ -125,12 +125,22 @@ func (m *MiniTestBosKosDeployer) Execute(args ...string) error {
 	return executeSSHCommand(m.ctx, m.remoteUserName, m.sshAddr, nil, args...)
 }
 
-func (m *MiniTestBosKosDeployer) SyncToRemote(src string, dst string) error {
-	return executeRsyncSSHCommand(m.ctx, m.remoteUserName, m.sshAddr, nil, src, dst, nil)
+func (m *MiniTestBosKosDeployer) SyncToRemote(src string, dst string, excludedPattern []string) error {
+	excludedArgs := make([]string, 0, len(excludedPattern)*2)
+	for _, pattern := range excludedPattern {
+		excludedArgs = append(excludedArgs, "--exclude", pattern)
+	}
+	dstRemote:=fmt.Sprintf("%s@%s:%s", m.remoteUserName, m.sshAddr, dst)
+	return executeRsyncSSHCommand(m.ctx, nil, src, dstRemote, excludedArgs)
 }
 
-func (m *MiniTestBosKosDeployer) SyncToHost(src string, dst string) error {
-	return executeScpCommand(m.ctx, m.remoteUserName, m.sshAddr, nil, src, dst)
+func (m *MiniTestBosKosDeployer) SyncToHost(src string, dst string, excludedPattern []string) error {
+	excludedArgs := make([]string, 0, len(excludedPattern)*2)
+	for _, pattern := range excludedPattern {
+		excludedArgs = append(excludedArgs, "--exclude", pattern)
+	}
+	srcRemote := fmt.Sprintf("%s@%s:%s", m.remoteUserName,  m.sshAddr, src)
+	return executeRsyncSSHCommand(m.ctx, nil, srcRemote, dst, excludedArgs)
 }
 
 func (m *MiniTestBosKosDeployer) requestGCPProject() error {

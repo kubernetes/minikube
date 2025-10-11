@@ -49,13 +49,13 @@ func sshConnectionCheck(ctx context.Context, user string, addr string, sshArgume
 	return fmt.Errorf("failed to connect to vm: %v", err)
 }
 
-func executeRsyncSSHCommand(ctx context.Context, user string, addr string, sshArguments []string, src string, dst string, rsyncArgs []string) error {
+func executeRsyncSSHCommand(ctx context.Context, sshArguments []string, src string, dst string, rsyncArgs []string) error {
 	sshArgs := []string{ssh, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"}
 	sshArgs = append(sshArgs, sshArguments...)
 
 	allArgs := []string{"-e", strings.Join(sshArgs, " "), "-avz"}
 	allArgs = append(allArgs, rsyncArgs...)
-	allArgs = append(allArgs, src, fmt.Sprintf("%s@%s:%s", user, addr, dst))
+	allArgs = append(allArgs, src, dst)
 	cmd := exec.CommandContext(ctx, rsync, allArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

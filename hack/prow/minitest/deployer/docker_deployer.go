@@ -181,13 +181,23 @@ func (m *MiniTestDockerDeployer) Execute(args ...string) error {
 	return executeSSHCommand(m.ctx, m.remoteUserName, "localhost", m.sshAdditionalArgs(), args...)
 }
 
-func (m *MiniTestDockerDeployer) SyncToRemote(src string, dst string) error {
-	return executeRsyncSSHCommand(m.ctx, m.remoteUserName, "localhost", m.sshAdditionalArgs(), src, dst, nil)
+func (m *MiniTestDockerDeployer) SyncToRemote(src string, dst string, excludedPattern []string) error {
+	excludedArgs := make([]string, 0, len(excludedPattern)*2)
+	for _, pattern := range excludedPattern {
+		excludedArgs = append(excludedArgs, "--exclude", pattern)
+	}
+	dstRemote := fmt.Sprintf("%s@%s:%s", m.remoteUserName, "localhost", dst)
+	return executeRsyncSSHCommand(m.ctx, m.sshAdditionalArgs(), src, dstRemote, excludedArgs)
 }
 
-
-func (m *MiniTestDockerDeployer) SyncToHost(src string, dst string) error{
-	return executeScpCommand(m.ctx, m.remoteUserName, "localhost", m.scpAdditionalArgs(), src, dst)
+func (m *MiniTestDockerDeployer) SyncToHost(src string, dst string, excludedPattern []string) error {
+	excludedArgs := make([]string, 0, len(excludedPattern)*2)
+	for _, pattern := range excludedPattern {
+		excludedArgs = append(excludedArgs, "--exclude", pattern)
+	}
+	srcRemote := fmt.Sprintf("%s@%s:%s", m.remoteUserName, "localhost", src)
+	return executeRsyncSSHCommand(m.ctx, m.sshAdditionalArgs(), srcRemote, dst, excludedArgs)
+	//return executeScpCommand(m.ctx, m.remoteUserName, "localhost", m.scpAdditionalArgs(), src, dst)
 }
 
 func (m *MiniTestDockerDeployer) executeDockerShellCommand(user string, args ...string) error {

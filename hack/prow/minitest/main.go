@@ -28,7 +28,6 @@ func main() {
 	flagSet.Parse(os.Args[1:])
 
 
-
 	dep := getDeployer(*deployerName)(*config)
 	tester := getTester(*testerName)
 
@@ -44,39 +43,6 @@ func main() {
 		klog.Fatalf("failed to stop deployer: %v", err)
 	}
 
-	// config := &deployer.MiniTestBoskosConfig{
-	// 	GCPZone:                        "us-central1-b",
-	// 	InstanceImage:                  "ubuntu-os-cloud/ubuntu-2404-lts-amd64",
-	// 	InstanceType:                   "n2-standard-8",
-	// 	DiskGiB:                        300,
-	// 	BoskosAcquireTimeoutSeconds:    3 * 60,
-	// 	BoskosHeartbeatIntervalSeconds: 10,
-	// 	BoskosLocation:                 "http://boskos.test-pods.svc.cluster.local",
-	// }
-	// klog.Infof("Startring deployer with config %v", config)
-	// if err := dep.Execute("sudo", "apt", "install", "-y", "rsync"); err != nil {
-	// 	klog.Errorf("failed to execute command in docker deployer: %v", err)
-	// }
-
-	// config := &deployer.MiniTestDockerConfig{
-	// 	Image: "debian",
-	// }
-	// dockerDeployer := deployer.NewMiniTestDockerDeployer(config)
-	// if err := dockerDeployer.Up(); err != nil {
-	// 	klog.Errorf("failed to start docker deployer: %v", err)
-	// }
-
-	// if err := dockerDeployer.Execute("whoami"); err != nil {
-	// 	klog.Errorf("failed to execute command in docker deployer: %v", err)
-	// }
-	// if err := dockerDeployer.Sync(".", "~/minikube"); err != nil {
-	// 	klog.Errorf("failed to sync file in docker deployer: %v", err)
-	// }
-
-	// if err := dockerDeployer.Down(); err != nil {
-	// 	klog.Errorf("failed to stop docker deployer: %v", err)
-	// }
-	// klog.Infof("Startring docker deployer with config %v", config)
 }
 
 func getDeployer(name string) func(string) deployer.MiniTestDeployer {
