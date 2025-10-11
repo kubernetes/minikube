@@ -25,6 +25,7 @@ readonly TIMEOUT=120m
 
 cp -r test/integration/testdata .
 cp out/gvisor-addon testdata/
+ls testdata
 
 # Add the out/ directory to the PATH, for using new drivers.
 export PATH="$(pwd)/out/":$PATH
