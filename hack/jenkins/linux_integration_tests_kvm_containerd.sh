@@ -32,7 +32,7 @@ JOB_NAME="KVM_Linux_containerd"
 CONTAINER_RUNTIME="containerd"
 
 sudo apt-get update
-sudo apt-get -y install qemu-system qemu-kvm libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
+sudo apt-get -y install qemu-system libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
 sudo adduser jenkins libvirt || true
 
 source ./common.sh
