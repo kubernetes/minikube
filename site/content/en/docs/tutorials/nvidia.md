@@ -57,6 +57,10 @@ date: 2018-01-02
     minikube start --driver docker --container-runtime docker --gpus nvidia.com
     ```
 
+- Install NVIDIA's device plugin:
+  ```shell
+  minikube addons enable nvidia-device-plugin
+  ```
 {{% /tab %}}
 {{% tab none %}}
 ## Using the 'none' driver
