@@ -268,6 +268,10 @@ func runStart(cmd *cobra.Command, _ []string) {
 
 	validateBuiltImageVersion(starter.Runner, ds.Name)
 
+	if viper.GetBool(createMount) {
+		warnAboutMountFlag()
+	}
+
 	if existing != nil && driver.IsKIC(existing.Driver) && viper.GetString(mountString) != "" {
 		old := ""
 		if len(existing.ContainerVolumeMounts) > 0 {
@@ -2108,4 +2112,23 @@ func contains(sl []string, s string) bool {
 
 	}
 	return false
+}
+
+func warnAboutMountFlag() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		out.WarningT("Failed to get home directory: {{.err}}", out.V{"err": err})
+	}
+
+	// Detect usage of --mount without --mount-string
+	if viper.Get(mountString) == "" {
+		out.WarningT("The --mount flag is ignored.")
+		out.Styled(style.Tip, "To mount a host folder, please use the --mount-string flag.")
+		out.Styled(style.Option, "Example: minikube start --mount-string=\"{{.home}}/shared:/mnt/shared\"", out.V{"home": homeDir})
+	}
+
+	// Detect usage of --mount with --mount-string
+	if viper.Get(mountString) != "" {
+		out.WarningT("The --mount flag is ignored when --mount-string is specified and is not needed.")
+	}
 }
