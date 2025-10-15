@@ -123,9 +123,6 @@ GVISOR_TAG ?= v0.0.2
 # auto-pause-hook tag to push changes to
 AUTOPAUSE_HOOK_TAG ?= v0.0.5
 
-# prow-test tag to push changes to
-PROW_TEST_TAG ?= v0.0.7
-
 # storage provisioner tag to push changes to
 # NOTE: you will need to bump the PreloadVersion if you change this
 STORAGE_PROVISIONER_TAG ?= v5
@@ -1000,13 +997,6 @@ push-auto-pause-hook-image: docker-multi-arch-build
 	docker login gcr.io/k8s-minikube
 	docker buildx create --name multiarch --bootstrap
 	docker buildx build --push --builder multiarch --platform $(KICBASE_ARCH) -t $(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) -f ./deploy/addons/auto-pause/Dockerfile .
-	docker buildx rm multiarch
-
-.PHONY: push-prow-test-image
-push-prow-test-image: docker-multi-arch-build
-	docker login gcr.io/k8s-minikube
-	docker buildx create --name multiarch --bootstrap
-	docker buildx build --push --builder multiarch --build-arg "GO_VERSION=$(GO_VERSION)" --platform linux/amd64,linux/arm64 -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) -t $(REGISTRY)/prow-test:latest ./deploy/prow
 	docker buildx rm multiarch
 
 .PHONY: out/performance-bot
