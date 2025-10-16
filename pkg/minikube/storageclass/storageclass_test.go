@@ -252,11 +252,8 @@ func TestGetStoragev1(t *testing.T) {
 }
 
 func setK8SConfig(t *testing.T, config, kubeconfigPath string) error {
-	if err := os.MkdirAll(filepath.Dir(kubeconfigPath), 0o755); err != nil {
-		return fmt.Errorf("failed to create kubeconfig directory: %w", err)
-	}
 	if err := os.WriteFile(kubeconfigPath, []byte(config), 0o644); err != nil {
-		return fmt.Errorf("unexpected error when writing to %v: %w", kubeconfigPath, err)
+		t.Fatalf("unexpected error when writing to %v: %v", kubeconfigPath, err)
 	}
 	t.Setenv("KUBECONFIG", kubeconfigPath)
 	return nil
