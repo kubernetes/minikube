@@ -53,6 +53,8 @@ func init() {
 		Status:   status,
 		Default:  true,
 		Priority: priority,
+		// QEMU2 driver does not require sudo
+		NeedsSudo: false,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}

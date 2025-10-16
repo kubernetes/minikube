@@ -37,6 +37,8 @@ func init() {
 		Priority: registry.Deprecated,
 		Init:     func() drivers.Driver { return vmware.NewDriver("", "") },
 		Status:   status,
+		// VMware driver requires sudo
+		NeedsSudo: true,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))

@@ -54,6 +54,8 @@ func init() {
 		Status:   status,
 		Default:  true,
 		Priority: priority,
+		// VFKit driver requires sudo
+		NeedsSudo: true,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}

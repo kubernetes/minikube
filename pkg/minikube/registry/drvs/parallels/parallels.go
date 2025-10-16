@@ -39,6 +39,8 @@ func init() {
 		Default:  true,
 		Priority: registry.Default,
 		Init:     func() drivers.Driver { return parallels.NewDriver("", "") },
+		// Parallels driver requires sudo
+		NeedsSudo: true,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
