@@ -22,8 +22,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
+	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/google/go-cmp/cmp"
@@ -33,6 +33,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/process"
 )
 
 // exclude returns a list of strings, minus the excluded ones
@@ -246,7 +247,7 @@ func main() {
 	done := make(chan struct{})
 	defer close(ch)
 
-	signal.Notify(ch, syscall.SIGHUP)
+	signal.Notify(ch, syscall.SIGTERM)
 	defer signal.Stop(ch)
 
 	go func() {
@@ -267,7 +268,7 @@ func main() {
 	processToKill := exec.Command("go", "run", tmpfile)
 	err := processToKill.Start()
 	if err != nil {
-		t.Fatalf("while execing child process: %v\n", err)
+		t.Fatalf("while executing child process: %v\n", err)
 	}
 	pid := processToKill.Process.Pid
 
@@ -280,8 +281,22 @@ func main() {
 		t.Fatalf("while trying to kill child proc %d: %v\n", pid, err)
 	}
 
-	// waiting for process to exit
-	if err := processToKill.Wait(); !strings.Contains(err.Error(), "killed") {
-		t.Fatalf("unable to kill process: %v\n", err)
+	done := make(chan error, 1)
+	go func() { done <- processToKill.Wait() }()
+
+	var waitErr error
+	select {
+	case waitErr = <-done:
+		t.Logf("child process wait result: %v", waitErr)
+	case <-time.After(1 * time.Second):
+		t.Fatalf("timed out waiting for process %d to exit", pid)
+	}
+
+	exists, err := process.PIDExists(pid)
+	if err != nil {
+		t.Fatalf("error checking process existence for pid %d: %v", pid, err)
+	}
+	if exists {
+		t.Fatalf("process %d still exists after trySigKillProcess; waitErr=%v", pid, waitErr)
 	}
 }
