@@ -22,6 +22,7 @@ minikube start supports additional hyperkit specific flags:
 * **`--uuid`**: Provide VM UUID to restore MAC address
 
 ## Issues
+* hyperkit has been deprecated for mac osX. The recommended alternatives for macOS are vfit, qemu, krunkit, and docker
 
 ### Local DNS server conflict
 
