@@ -226,7 +226,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 
 	useForce := viper.GetBool(force)
 
-	starter, err := provisionWithDriver(cmd, ds, existing)
+	starter, err := provisionWithDriver(cmd, ds, existing, specified)
 	if err != nil {
 		node.ExitIfFatal(err, useForce)
 		machine.MaybeDisplayAdvice(err, ds.Name)
@@ -253,7 +253,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
-				starter, err = provisionWithDriver(cmd, ds, existing)
+				starter, err = provisionWithDriver(cmd, ds, existing, false)
 				if err != nil {
 					continue
 				}
@@ -300,7 +300,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) (node.Starter, error) {
+func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, driverManuallySpecified bool) (node.Starter, error) {
 	driverName := ds.Name
 	klog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
@@ -342,7 +342,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	rtime := getContainerRuntime(existing)
-	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName)
+	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName, !driverManuallySpecified)
 	if err != nil {
 		return node.Starter{}, errors.Wrap(err, "Failed to generate cluster config")
 	}
