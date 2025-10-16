@@ -2,8 +2,8 @@ name: "update-debian-version"
 on:
   workflow_dispatch:
   schedule:
-    # every Monday at around 3 am pacific/10 am UTC
-    - cron: "0 10 * * 1"
+    # every Saturday at 1:00 Pacific/8:00 UTC
+    - cron: "0 8 * * 6"
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.24.6'
