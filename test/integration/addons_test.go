@@ -153,6 +153,7 @@ func TestAddons(t *testing.T) {
 			{"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
 			{"Yakd", validateYakdAddon},
 			{"AmdGpuDevicePlugin", validateAmdGpuDevicePlugin},
+			{"MetalLB", validateMetalLBAddon},
 		}
 
 		for _, tc := range tests {
@@ -188,6 +189,115 @@ func TestAddons(t *testing.T) {
 		}
 	})
 }
+
+// validateMetalLBAddon tests MetalLB by exposing a tiny HTTP pod via a LoadBalancer
+// and verifying it receives an external IP and is reachable from the host.
+func validateMetalLBAddon(ctx context.Context, t *testing.T, profile string) {
+       // MetalLB exercises host<->cluster L2/L3 path; skip where that’s not viable.
+       if NoneDriver() {
+               t.Skipf("skipping: metallb not supported on 'none' driver in this test")
+       }
+       if NeedsPortForward() {
+               t.Skipf("skipping metallb test: environment requires port-forwarding")
+       }
+       defer disableAddon(t, "metallb", profile)
+       defer PostMortemLogs(t, profile)
+
+       client, err := kapi.Client(profile)
+       if err != nil {
+               t.Fatalf("failed to get Kubernetes client: %v", err)
+       }
+
+       // Enable MetalLB
+       if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "metallb", "-p", profile, "--alsologtostderr", "-v=1")); err != nil {
+               t.Fatalf("failed to enable metallb addon: args %q : %v", rr.Command(), err)
+       }
+
+       // Wait for controller to stabilize. Name differs across versions:
+       // try "controller" first, fall back to "metallb-controller".
+       start := time.Now()
+       waitController := func(name string) error {
+               return kapi.WaitForDeploymentToStabilize(client, "metallb-system", name, Minutes(6))
+       }
+       if err := waitController("controller"); err != nil {
+               t.Logf("metallb deployment 'controller' not ready (%v); trying 'metallb-controller'", err)
+               if err2 := waitController("metallb-controller"); err2 != nil {
+                       t.Fatalf("metallb controller failed to stabilize: %v / %v", err, err2)
+               }
+       }
+       t.Logf("metallb controller stabilized in %s", time.Since(start))
+
+       // Create a tiny HTTP server pod (busybox httpd) with a unique label to avoid collisions.
+       // We avoid YAML here to keep the patch small and independent of other tests' resources.
+       if rr, err := Run(t, exec.CommandContext(
+               ctx, "kubectl", "--context", profile,
+               "run", "mlb-http",
+               "--image=gcr.io/k8s-minikube/busybox",
+               "--labels", "app=mlb-http",
+               "--restart=Never",
+               "--command", "--", "sh", "-c", "httpd -f -p 80")); err != nil {
+               t.Fatalf("failed to create mlb-http pod: args %q : %v", rr.Command(), err)
+       }
+
+       if _, err := PodWait(ctx, t, profile, "default", "app=mlb-http", Minutes(6)); err != nil {
+               t.Fatalf("failed waiting for mlb-http pod: %v", err)
+       }
+
+       // Expose it as a LoadBalancer service.
+       if rr, err := Run(t, exec.CommandContext(
+               ctx, "kubectl", "--context", profile,
+               "expose", "pod", "mlb-http",
+               "--name", "mlb-http-lb",
+               "--type", "LoadBalancer",
+               "--port", "80",
+               "--target-port", "80")); err != nil {
+               t.Fatalf("failed to expose mlb-http-lb service: args %q : %v", rr.Command(), err)
+       }
+       t.Cleanup(func() {
+               // best-effort cleanup
+               Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "svc", "mlb-http-lb", "--now"))
+               Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pod", "mlb-http", "--now"))
+       })
+
+       // Wait for an external IP from MetalLB.
+       var lbIP string
+       waitExternalIP := func() error {
+               rr, err := Run(t, exec.CommandContext(
+                       ctx, "kubectl", "--context", profile,
+                       "-n", "default", "get", "svc", "mlb-http-lb",
+                       "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
+               if err != nil {
+                       return err
+               }
+               ip := strings.TrimSpace(rr.Stdout.String())
+               if ip == "" || strings.EqualFold(ip, "<pending>") {
+                       return fmt.Errorf("external IP not allocated yet")
+               }
+               lbIP = ip
+               return nil
+       }
+       if err := retry.Expo(waitExternalIP, 2*time.Second, Minutes(5)); err != nil {
+               t.Fatalf("failed waiting for LoadBalancer external IP: %v", err)
+       }
+       t.Logf("mlb-http-lb external IP: %s", lbIP)
+
+       // Verify it serves HTTP 200 from the host.
+       endpoint := fmt.Sprintf("http://%s", lbIP)
+       checkLB := func() error {
+               resp, err := retryablehttp.Get(endpoint)
+               if err != nil {
+                       return err
+               }
+               if resp.StatusCode != http.StatusOK {
+                       return fmt.Errorf("%s = status %d, want 200", endpoint, resp.StatusCode)
+               }
+               return nil
+       }
+       if err := retry.Expo(checkLB, 500*time.Millisecond, Minutes(3)); err != nil {
+               t.Errorf("failed reaching LoadBalancer %s: %v", endpoint, err)
+       }
+}
+
 
 // validateIngressAddon tests the ingress addon by deploying a default nginx pod
 func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
