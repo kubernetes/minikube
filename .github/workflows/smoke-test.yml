@@ -126,6 +126,34 @@ jobs:
               --driver ${{ matrix.driver }} \
               ${{ matrix.network_flag }} \
               ${{ env.LOG_ARGS }}
+      - name: Copy testdata for image build
+        run: |
+          cp -r test/integration/testdata ./out
+      - name: minikube image pull
+        run: |
+          ./out/minikube image pull registry.k8s.io/pause ${{ env.LOG_ARGS }}
+      - name: minikube image save
+        run: |
+          echo ">>> Saving registry.k8s.io/pause image to pause.tar"
+          ./out/minikube image save registry.k8s.io/pause pause.tar ${{ env.LOG_ARGS }}
+      - name: minikube image build
+        run: |
+          ./out/minikube image build -t test-image ./out/testdata/docker-env ${{ env.LOG_ARGS }}
+      - name: minikube image tag
+        run: |
+          echo ">>> Tagging test-image as test-image:smoke"
+          ./out/minikube image tag test-image test-image:smoke ${{ env.LOG_ARGS }}
+      - name: minikube image ls
+        run: |
+          ./out/minikube image ls ${{ env.LOG_ARGS }}
+      - name: minikube image rm
+        run: |
+          echo ">>> Removing test-image"
+          ./out/minikube image rm test-image ${{ env.LOG_ARGS }}
+      - name: minikube image load pause.tar
+        run: |
+          echo ">>> Loading image from pause.tar into minikube"
+          ./out/minikube image load pause.tar ${{ env.LOG_ARGS }}
       - name: Inspect minikube
         if: always()
         run: |
