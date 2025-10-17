@@ -4,6 +4,7 @@ Release: 0
 Summary: Machine driver for KVM
 License: ASL 2.0
 Group: Development/Tools
+Vendor: The Kubernetes Authors
 URL: https://github.com/kubernetes/minikube
 #Requires: <determined automatically by rpm>
 
