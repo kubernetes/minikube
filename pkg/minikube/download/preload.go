@@ -173,6 +173,11 @@ func PreloadExistsGH(k8sVersion, containerRuntime string) bool {
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload ...bool) bool {
+	// Prevent preload logic in --no-kubernetes mode
+	if viper.GetBool("no-kubernetes") {
+		klog.Infof("Skipping preload logic due to --no-kubernetes flag")
+		return false
+	}
 	// TODO (#8166): Get rid of the need for this and viper at all
 	force := false
 	if len(forcePreload) > 0 {
