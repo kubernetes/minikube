@@ -126,6 +126,13 @@ jobs:
               --driver ${{ matrix.driver }} \
               ${{ matrix.network_flag }} \
               ${{ env.LOG_ARGS }}
+      - name: minikube image load
+        run: |
+          ./out/minikube image load docker.io/library/alpine ${{ env.LOG_ARGS }}
+      - name: minikube image build
+        run: |
+          ./out/minikube image build -t test-image . ${{ env.LOG_ARGS }}
+          
       - name: Inspect minikube
         if: always()
         run: |
