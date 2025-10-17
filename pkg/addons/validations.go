@@ -19,6 +19,7 @@ package addons
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/spf13/viper"
@@ -66,7 +67,7 @@ func isVolumesnapshotsEnabled(cc *config.ClusterConfig, _, value string) error {
 	// assets.Addons[].IsEnabled() returns the current status of the addon or default value.
 	// config.AddonList contains list of addons to be enabled.
 	addonList := viper.GetStringSlice(config.AddonListFlag)
-	isVolumesnapshotsEnabled := assets.Addons[volumesnapshotsAddon].IsEnabled(cc) || contains(addonList, volumesnapshotsAddon)
+	isVolumesnapshotsEnabled := assets.Addons[volumesnapshotsAddon].IsEnabled(cc) || slices.Contains(addonList, volumesnapshotsAddon)
 	if isCsiDriverEnabled && !isVolumesnapshotsEnabled {
 		// just print out a warning directly, we don't want to return any errors since
 		// that would prevent the addon from being enabled (callbacks wouldn't be run)
@@ -93,13 +94,4 @@ func isAddonValid(name string) (*Addon, bool) {
 		}
 	}
 	return nil, false
-}
-
-func contains(slice []string, val string) bool {
-	for _, item := range slice {
-		if item == val {
-			return true
-		}
-	}
-	return false
 }

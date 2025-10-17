@@ -2,8 +2,8 @@ name: "update-debian-version"
 on:
   workflow_dispatch:
   schedule:
-    # every Monday at around 3 am pacific/10 am UTC
-    - cron: "0 10 * * 1"
+    # every Saturday at 1:00 Pacific/8:00 UTC
+    - cron: "0 8 * * 6"
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.24.6'
@@ -21,9 +21,9 @@ jobs:
       - name: Bump Ubuntu version
         id: bumpBaseOsImage
         run: |
-          echo "OLD_VERSION=$(DEP=ubuntu make get-dependency-version)" >> "$GITHUB_OUTPUT"
+          echo "OLD_VERSION=$(DEP=debian make get-dependency-version)" >> "$GITHUB_OUTPUT"
           make update-debian-version
-          echo "NEW_VERSION=$(DEP=ubuntu make get-dependency-version)" >> "$GITHUB_OUTPUT"
+          echo "NEW_VERSION=$(DEP=debian make get-dependency-version)" >> "$GITHUB_OUTPUT"
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
           echo "changes<<EOF" >> "$GITHUB_OUTPUT"
           echo "$(git status --porcelain)" >> "$GITHUB_OUTPUT"

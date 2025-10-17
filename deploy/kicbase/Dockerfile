@@ -49,7 +49,7 @@ ARG CRI_DOCKERD_COMMIT="b9b889355f3002c01db294427964e454dfbc3feb"
 ARG CNI_PLUGINS_VERSION="v1.4.0"
 ARG TARGETARCH
 ARG NERDCTL_VERSION="1.7.7"
-ARG NERDCTLD_VERSION="0.6.1"
+ARG NERDCTLD_VERSION="0.7.0"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
@@ -91,7 +91,7 @@ RUN echo "Ensuring scripts are executable ..." \
     && chmod +x /usr/local/bin/clean-install /usr/local/bin/entrypoint \
  && echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
-      systemd \
+      systemd dbus \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
       libseccomp2 pigz \
       bash ca-certificates curl rsync \

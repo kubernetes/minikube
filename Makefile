@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.37.0-1758198818-20370
+ISO_VERSION ?= v1.37.0-1760609724-21757
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -123,9 +123,6 @@ GVISOR_TAG ?= v0.0.2
 # auto-pause-hook tag to push changes to
 AUTOPAUSE_HOOK_TAG ?= v0.0.5
 
-# prow-test tag to push changes to
-PROW_TEST_TAG ?= v0.0.7
-
 # storage provisioner tag to push changes to
 # NOTE: you will need to bump the PreloadVersion if you change this
 STORAGE_PROVISIONER_TAG ?= v5
@@ -188,7 +185,7 @@ endef
 
 # $(call DOCKER, image, command)
 define DOCKER
-	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app:Z -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
+	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app:Z -v $(GOPATH):/go:Z --init $(1) /bin/bash -c '$(2)'
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -1002,13 +999,6 @@ push-auto-pause-hook-image: docker-multi-arch-build
 	docker buildx build --push --builder multiarch --platform $(KICBASE_ARCH) -t $(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) -f ./deploy/addons/auto-pause/Dockerfile .
 	docker buildx rm multiarch
 
-.PHONY: push-prow-test-image
-push-prow-test-image: docker-multi-arch-build
-	docker login gcr.io/k8s-minikube
-	docker buildx create --name multiarch --bootstrap
-	docker buildx build --push --builder multiarch --build-arg "GO_VERSION=$(GO_VERSION)" --platform linux/amd64,linux/arm64 -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) -t $(REGISTRY)/prow-test:latest ./deploy/prow
-	docker buildx rm multiarch
-
 .PHONY: out/performance-bot
 out/performance-bot:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/pr-bot/bot.go
@@ -1213,7 +1203,7 @@ update-kong-ingress-controller-version:
 update-nvidia-device-plugin-version:
 	cd hack && go run update/nvidia_device_plugin_version/nvidia_device_plugin_version.go
 
-# for amd gpu 
+# for amd gpu
 .PHONY: update-amd-device-plugin-version
 update-amd-device-plugin-version:
 	cd hack && go run update/amd_device_gpu_plugin_version/amd_device_gpu_plugin_version.go

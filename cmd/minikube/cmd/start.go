@@ -28,6 +28,7 @@ import (
 	"os/user"
 	"regexp"
 	"runtime"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1373,8 +1374,8 @@ func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 
 	// check that kubeadm extra args contain only allowed parameters
 	for param := range config.ExtraOptions.AsMap().Get(bsutil.Kubeadm) {
-		if !config.ContainsParam(bsutil.KubeadmExtraArgsAllowed[bsutil.KubeadmCmdParam], param) &&
-			!config.ContainsParam(bsutil.KubeadmExtraArgsAllowed[bsutil.KubeadmConfigParam], param) {
+		if !slices.Contains(bsutil.KubeadmExtraArgsAllowed[bsutil.KubeadmCmdParam], param) &&
+			!slices.Contains(bsutil.KubeadmExtraArgsAllowed[bsutil.KubeadmConfigParam], param) {
 			exit.Message(reason.Usage, "Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config", out.V{"parameter_name": param})
 		}
 	}
@@ -1812,7 +1813,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	}
 	if nvs.GT(newestVersion) {
 		out.WarningT("Specified Kubernetes version {{.specified}} is newer than the newest supported version: {{.newest}}. Use `minikube config defaults kubernetes-version` for details.", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
-		if contains(constants.ValidKubernetesVersions, kubernetesVer) {
+		if slices.Contains(constants.ValidKubernetesVersions, kubernetesVer) {
 			out.Styled(style.Check, "Kubernetes version {{.specified}} found in version list", out.V{"specified": nvs})
 		} else {
 			out.WarningT("Specified Kubernetes version {{.specified}} not found in Kubernetes version list", out.V{"specified": nvs})
@@ -2097,15 +2098,4 @@ func startNerdctld() {
 	if rest, err := runner.RunCmd(envSetupCommand); err != nil {
 		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s", rest.Output()), err)
 	}
-}
-
-// contains checks whether the parameter slice contains the parameter string
-func contains(sl []string, s string) bool {
-	for _, k := range sl {
-		if s == k {
-			return true
-		}
-
-	}
-	return false
 }
