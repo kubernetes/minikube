@@ -23,7 +23,8 @@ import (
 
 // Flag names passed to minikube via run.Options.
 const (
-	Interactive = "interactive"
+	Interactive  = "interactive"
+	DownloadOnly = "download-only"
 )
 
 // Options returns minikube runtime options from command line flags. Flags that
@@ -31,5 +32,6 @@ const (
 func Options() *run.Options {
 	return &run.Options{
 		NonInteractive: !viper.GetBool(Interactive),
+		DownloadOnly:   viper.GetBool(DownloadOnly),
 	}
 }

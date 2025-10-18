@@ -387,7 +387,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool, options
 	}
 
 	if driver.IsKIC(cc.Driver) {
-		beginDownloadKicBaseImage(&kicGroup, cc, viper.GetBool("download-only"))
+		beginDownloadKicBaseImage(&kicGroup, cc, options.DownloadOnly)
 	}
 
 	if !driver.BareMetal(cc.Driver) {
@@ -400,7 +400,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool, options
 		return nil, false, nil, nil, errors.Wrap(err, "Failed to save config")
 	}
 
-	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver)
+	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver, options)
 	if driver.IsKIC(cc.Driver) {
 		waitDownloadKicBaseImage(&kicGroup)
 	}
