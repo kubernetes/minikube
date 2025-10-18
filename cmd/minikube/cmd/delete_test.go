@@ -33,6 +33,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // exclude returns a list of strings, minus the excluded ones
@@ -87,6 +88,7 @@ func TestDeleteProfile(t *testing.T) {
 		{"partial-mach", "p8_partial_machine_config", []string{"p8_partial_machine_config"}},
 	}
 
+	options := &run.Options{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv(localpath.MinikubeHome, td)
@@ -106,7 +108,7 @@ func TestDeleteProfile(t *testing.T) {
 			}
 
 			hostAndDirsDeleter = hostAndDirsDeleterMock
-			errs := DeleteProfiles([]*config.Profile{profile})
+			errs := DeleteProfiles([]*config.Profile{profile}, options)
 			if len(errs) > 0 {
 				HandleDeletionErrors(errs)
 				t.Errorf("Errors while deleting profiles: %v", errs)
@@ -197,7 +199,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 	profiles := validProfiles
 	profiles = append(profiles, inValidProfiles...)
 	hostAndDirsDeleter = hostAndDirsDeleterMock
-	errs := DeleteProfiles(profiles)
+	errs := DeleteProfiles(profiles, &run.Options{})
 
 	if errs != nil {
 		t.Errorf("errors while deleting all profiles: %v", errs)
