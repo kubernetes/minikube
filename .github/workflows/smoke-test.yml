@@ -126,13 +126,24 @@ jobs:
               --driver ${{ matrix.driver }} \
               ${{ matrix.network_flag }} \
               ${{ env.LOG_ARGS }}
+      - name: Copy testdata for image build
+        run: |
+          echo ">>> Copying testdata to ./out"
+          cp -r test/integration/testdata ./out
       - name: minikube image load
         run: |
           ./out/minikube image load docker.io/library/alpine ${{ env.LOG_ARGS }}
+      - name: minikube image save
+        run: |
+          echo ">>> Saving alpine image to alpine.tar"
+          ./out/minikube image save docker.io/library/alpine alpine.tar ${{ env.LOG_ARGS }}
+      - name: minikube image load alpine.tar
+        run: |
+          echo ">>> Loading image from alpine.tar into minikube"
+          ./out/minikube image load alpine.tar ${{ env.LOG_ARGS }}
       - name: minikube image build
         run: |
-          ./out/minikube image build -t test-image . ${{ env.LOG_ARGS }}
-          
+          ./out/minikube image build -t test-image ./out/testdata/docker-env ${{ env.LOG_ARGS }}
       - name: Inspect minikube
         if: always()
         run: |
