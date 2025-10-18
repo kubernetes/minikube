@@ -1326,6 +1326,11 @@ spec:
                   kube-proxy always accepts endpoint slices. This option will be removed in
                   the next release.
                 type: boolean
+              bpfKubeProxyHealtzPort:
+                description: |-
+                  BPFKubeProxyHealtzPort, in BPF mode, controls the port that Felix's embedded kube-proxy health check server binds to.
+                  The health check server is used by external load balancers to determine if this node should receive traffic.  [Default: 10256]
+                type: integer
               bpfKubeProxyIptablesCleanupEnabled:
                 description: |-
                   BPFKubeProxyIptablesCleanupEnabled, if enabled in BPF mode, Felix will proactively clean up the upstream
@@ -1463,6 +1468,10 @@ spec:
                 - Enabled
                 - Disabled
                 - L2Only
+                type: string
+              cgroupV2Path:
+                description: CgroupV2Path overrides the default location where to
+                  find the cgroup hierarchy.
                 type: string
               chainInsertMode:
                 description: |-
