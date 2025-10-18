@@ -21,4 +21,9 @@ type CommandOptions struct {
 	// NonInteractive is true if the minikube command run with the
 	// --interactive=false flag and we can not interact with the user.
 	NonInteractive bool
+
+	// DownloadOnly is true if the minikube command run with the --download-only
+	// flag and we should If only download and cache files for later use and
+	// don't install or start anything.
+	DownloadOnly bool
 }
