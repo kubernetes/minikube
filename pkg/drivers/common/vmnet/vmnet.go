@@ -32,7 +32,6 @@ import (
 
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -76,7 +75,7 @@ func ValidateHelper(options *run.CommandOptions) error {
 	// Ideally minikube will not try to validate in download-only mode, but this
 	// is called from different places in different drivers, so the easier way
 	// to skip validation is to skip it here.
-	if viper.GetBool("download-only") {
+	if options.DownloadOnly {
 		log.Debug("Skipping vmnet-helper validation in download-only mode")
 		return nil
 	}

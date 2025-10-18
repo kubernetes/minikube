@@ -933,7 +933,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	}
 
 	// if we are only downloading artifacts for a driver, we can stop validation here
-	if viper.GetBool("download-only") {
+	if viper.GetBool(flags.DownloadOnly) {
 		return
 	}
 

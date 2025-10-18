@@ -75,9 +75,9 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 }
 
 // handleDownloadOnly caches appropariate binaries and images
-func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, containerRuntime, driverName string) {
+func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, containerRuntime, driverName string, options *run.CommandOptions) {
 	// If --download-only, complete the remaining downloads and exit.
-	if !viper.GetBool("download-only") {
+	if !options.DownloadOnly {
 		return
 	}
 
