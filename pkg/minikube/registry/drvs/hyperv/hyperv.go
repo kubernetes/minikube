@@ -25,9 +25,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/machine/drivers/hyperv"
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/drivers/hyperv"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"

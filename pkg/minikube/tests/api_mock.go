@@ -22,9 +22,9 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/docker/machine/libmachine/auth"
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/swarm"
+	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/swarm"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 

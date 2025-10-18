@@ -30,11 +30,11 @@ function prepend() {
     local file_headers=""
 
     if [ "${headers}" != "" ]; then
-      file_headers="$(cat ${f} | grep ${headers})"
+      file_headers="$(cat ${f} | grep -E ${headers})"
     fi
 
     if [ "${file_headers}" != "" ]; then
-        fileContent="$(cat ${f} | grep -v ${headers})"
+        fileContent="$(cat ${f} | grep -v -E ${headers})"
         printf '%s\n\n%s\n%s\n' "$file_headers" "${copyright}" "$fileContent" > ${f}
     else
       fileContent="$(cat ${f})"
@@ -44,7 +44,7 @@ function prepend() {
     done
 }
 
-prepend "\.go" "go" "go:build"
+prepend "\.go" "go" "go:build|\+build"
 prepend "\.py" "py"
 prepend "\.sh" "sh" "#!"
 prepend Makefile Makefile
