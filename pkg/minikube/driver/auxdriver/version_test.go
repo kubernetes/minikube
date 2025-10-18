@@ -33,7 +33,6 @@ func Test_minDriverVersion(t *testing.T) {
 	}{
 		{"Hyperkit", driver.HyperKit, "1.1.1", *minHyperkitVersion},
 		{"Invalid", "_invalid_", "1.1.1", v("1.1.1")},
-		{"KVM2", driver.KVM2, "1.1.1", v("1.1.1")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
