@@ -16,6 +16,12 @@ limitations under the License.
 
 package tester
 
+import (
+	"os"
+
+	"k8s.io/klog/v2"
+)
+
 type MiniTestRunner interface {
 	// IsUp should return true if a test cluster is successfully provisioned
 	IsUp() (bool, error)
@@ -30,4 +36,35 @@ type MiniTestRunner interface {
 type MiniTestTester interface {
 	// Run should run the actual tests
 	Run(MiniTestRunner) error
+}
+
+func copyFileToArtifact(runner MiniTestRunner) error {
+	artifactLocation := os.Getenv("ARTIFACTS")
+	klog.Infof("copying to %s", artifactLocation)
+
+	if err := runner.SyncToHost("~/minikube/testout.txt", artifactLocation, nil); err != nil {
+		klog.Errorf("failed to sync testout.txt from deployer: %v", err)
+		return err
+	}
+	if err := runner.SyncToHost("~/minikube/test.json", artifactLocation, nil); err != nil {
+		klog.Errorf("failed to sync test.json in from deployer: %v", err)
+		return err
+	}
+
+	if err := runner.SyncToHost("~/minikube/junit-unit.xml", artifactLocation, nil); err != nil {
+		klog.Errorf("failed to sync junit-unit.xml in from deployer: %v", err)
+		return err
+	}
+
+	if err := runner.SyncToHost("~/minikube/test.html", artifactLocation, nil); err != nil {
+		klog.Errorf("failed to sync test.html in from deployer: %v", err)
+		return err
+	}
+
+	if err := runner.SyncToHost("~/minikube/test_summary.json", artifactLocation, nil); err != nil {
+		klog.Errorf("failed to sync test_summary.json in from deployer: %v", err)
+		return err
+	}
+	return nil
+
 }

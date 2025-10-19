@@ -26,6 +26,9 @@ EXTRA_START_ARGS=""
 EXTRA_TEST_ARGS=""
 JOB_NAME="KVM_Linux"
 
+COMMIT=$(git rev-parse HEAD)
+MINIKUBE_LOCATION=$COMMIT
+
 set +e
 sleep 5  # wait for libvirtd to be running
 echo "=========libvirtd status=========="

@@ -27,11 +27,14 @@ import (
 )
 
 var deployers = map[string]func(string) deployer.MiniTestDeployer{
+	// boskos deployer will require a gcp project and start instances in it to run the test
+	// the whole gcp project will be cleaned up after tests are done
 	"boskos": deployer.NewMiniTestBosKosDeployerFromConfigFile,
+	//docker deployer is for testing minitest. This should never be used for testing minikube
 	"docker": deployer.NewMiniTestDockerDeployerFromConfigFile,
 }
 var testers = map[string]tester.MiniTestTester{
-	"kvm-integration": &tester.KVMIntegrationTester{},
+	"kvm-docker-linux-amd64-integration": &tester.KVMDockerLinuxAmd64IntegrationTester{},
 }
 
 func main() {
@@ -39,7 +42,7 @@ func main() {
 	flagSet := flag.CommandLine
 	deployerName := flagSet.String("deployer", "boskos", "deployer to use. Options: [boskos, docker]")
 	config := flagSet.String("config", "", "path to deployer config file")
-	testerName := flagSet.String("tester", "kvm-integration", "tester to use. Options: [kvm-integration]")
+	testerName := flagSet.String("tester", "kvm-docker-linux-amd64-integration", "tester to use. Options: [kvm-docker-linux-amd64-integration]")
 	klog.InitFlags(flagSet)
 	flagSet.Parse(os.Args[1:])
 

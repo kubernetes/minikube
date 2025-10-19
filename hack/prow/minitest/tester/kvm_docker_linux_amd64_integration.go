@@ -17,23 +17,22 @@ limitations under the License.
 package tester
 
 import (
-	"os"
-
 	"k8s.io/klog/v2"
 )
 
-var _ MiniTestTester = &KVMIntegrationTester{}
+var _ MiniTestTester = &KVMDockerLinuxAmd64IntegrationTester{}
 
-type KVMIntegrationTester struct {
+// this runs the integration tests with kvm2 driver and a docker container runtime.
+type KVMDockerLinuxAmd64IntegrationTester struct {
 }
 
 // Run implements MiniTestTester.
-func (k *KVMIntegrationTester) Run(runner MiniTestRunner) error {
+func (k *KVMDockerLinuxAmd64IntegrationTester) Run(runner MiniTestRunner) error {
 
 	if up, err := runner.IsUp(); err != nil || !up {
 		klog.Errorf("tester: deployed environment is not up: %v", err)
 	}
-	if err := runner.SyncToRemote(".", "~/minikube", []string{".cache", ".git"}); err != nil {
+	if err := runner.SyncToRemote(".", "~/minikube", []string{".cache"}); err != nil {
 		klog.Errorf("failed to sync file in docker deployer: %v", err)
 	}
 
@@ -48,23 +47,10 @@ func (k *KVMIntegrationTester) Run(runner MiniTestRunner) error {
 		// don't return here, we still want to collect the test reports
 	}
 
-	artifactLocation := os.Getenv("ARTIFACTS")
-	klog.Infof("copying to %s", artifactLocation)
-
-	if err := runner.SyncToHost("~/minikube/testout.txt", artifactLocation, nil); err != nil {
-		klog.Errorf("failed to sync testout.txt from deployer: %v", err)
+	// prow requires result file to be copied to $ARTIFACTS. All other files will not be persisted.
+	if err := copyFileToArtifact(runner); err != nil {
 		return err
 	}
-	if err := runner.SyncToHost("~/minikube/test.json", artifactLocation, nil); err != nil {
-		klog.Errorf("failed to sync test.json in from deployer: %v", err)
-		return err
-	}
-
-	if err := runner.SyncToHost("~/minikube/junit-unit.xml", artifactLocation, nil); err != nil {
-		klog.Errorf("failed to sync junit-unit.xml in from deployer: %v", err)
-		return err
-	}
-
 	return testErr
 
 }
