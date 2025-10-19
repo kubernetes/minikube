@@ -51,6 +51,7 @@ import (
 	"k8s.io/klog/v2"
 
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
@@ -534,7 +535,7 @@ func updateDriver(driverName string) {
 	v, err := version.GetSemverVersion()
 	if err != nil {
 		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := auxdriver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
+	} else if err := auxdriver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(flags.Interactive), viper.GetBool(autoUpdate)); err != nil {
 		if errors.Is(err, auxdriver.ErrAuxDriverVersionCommandFailed) {
 			exit.Error(reason.DrvAuxNotHealthy, "Aux driver "+driverName, err)
 		}
@@ -1052,7 +1053,7 @@ func validateUser(drvName string) {
 
 	// None driver works with root and without root on Linux
 	if runtime.GOOS == "linux" && drvName == driver.None {
-		if !viper.GetBool(interactive) {
+		if !viper.GetBool(flags.Interactive) {
 			test := exec.Command("sudo", "-n", "echo", "-n")
 			if err := test.Run(); err != nil {
 				exit.Message(reason.DrvNeedsRoot, `sudo requires a password, and --interactive=false`)
