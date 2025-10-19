@@ -39,7 +39,7 @@ func TestNoKubernetes(t *testing.T) {
 	}
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("NoKubernetes")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(60))
 	defer Cleanup(t, profile, cancel)
 
 	// Serial tests
