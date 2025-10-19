@@ -137,9 +137,7 @@ RUN clean-install \
     gnupg \
     sudo \
     openssh-server \
-    dnsutils \
-    # libglib2.0-0 is required for conmon, which is required for podman
-    libglib2.0-0
+    dnsutils
 
 # Add support for rsa1 in sshd
 # modern debian-based OSs dont support rsa1 by default, so we need to enable it to support older ssh clients
@@ -194,7 +192,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && systemctl enable buildkit.socket
 
 # install podman
-RUN clean-install podman && \
+RUN clean-install podman catatonit crun && \
     addgroup --system podman && \
     mkdir -p /etc/systemd/system/podman.socket.d && \
     printf "[Socket]\nSocketMode=0660\nSocketUser=root\nSocketGroup=podman\n" \
@@ -222,17 +220,6 @@ RUN export ARCH=$(dpkg --print-architecture) && \
     else \
       echo "Skipping crictl install for armhf: No asset available in v1.34.0"; \
     fi   
-# install cri-o dependencies:
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/Release.key | \
-        gpg --dearmor --yes -o /etc/apt/keyrings/libcontainers-archive-keyring.gpg && \
-    sh -c "echo 'deb [signed-by=/etc/apt/keyrings/libcontainers-archive-keyring.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    if [ "$ARCH" != "ppc64le" ]; then \
-        clean-install catatonit crun; \
-    else \
-        clean-install crun; \
-    fi
 # install containernetworking-plugins
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') && \
     curl -LO "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" && \
