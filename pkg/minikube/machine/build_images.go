@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -42,8 +43,8 @@ import (
 var buildRoot = path.Join(vmpath.GuestPersistentDir, "build")
 
 // BuildImage builds image to all profiles
-func BuildImage(srcPath string, file string, tag string, push bool, env []string, opt []string, profiles []*config.Profile, allNodes bool, nodeName string) error {
-	api, err := NewAPIClient()
+func BuildImage(srcPath string, file string, tag string, push bool, env []string, opt []string, profiles []*config.Profile, allNodes bool, nodeName string, options *run.CommandOptions) error {
+	api, err := NewAPIClient(options)
 	if err != nil {
 		return errors.Wrap(err, "api")
 	}

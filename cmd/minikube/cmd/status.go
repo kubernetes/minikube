@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -89,11 +90,12 @@ var statusCmd = &cobra.Command{
 			exit.Message(reason.Usage, "Cannot use both --output and --format options")
 		}
 
+		options := flags.CommandOptions()
 		out.SetJSON(output == "json")
 		go notify.MaybePrintUpdateTextFromGithub()
 
 		cname := ClusterFlagValue()
-		api, cc := mustload.Partial(cname)
+		api, cc := mustload.Partial(cname, options)
 
 		duration := watch
 		if !cmd.Flags().Changed("watch") || watch < 0 {

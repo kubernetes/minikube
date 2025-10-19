@@ -50,6 +50,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // NewRPCClient gets a new client.
@@ -60,7 +61,7 @@ func NewRPCClient(storePath, certsDir string) libmachine.API {
 }
 
 // NewAPIClient gets a new client.
-func NewAPIClient(miniHome ...string) (libmachine.API, error) {
+func NewAPIClient(options *run.CommandOptions, miniHome ...string) (libmachine.API, error) {
 	storePath := localpath.MiniPath()
 	if len(miniHome) > 0 {
 		storePath = miniHome[0]
@@ -68,11 +69,12 @@ func NewAPIClient(miniHome ...string) (libmachine.API, error) {
 	certsDir := localpath.MakeMiniPath("certs")
 
 	return &LocalClient{
-		certsDir:     certsDir,
-		storePath:    storePath,
-		Filestore:    persist.NewFilestore(storePath, certsDir, certsDir),
-		legacyClient: NewRPCClient(storePath, certsDir),
-		flock:        fslock.New(localpath.MakeMiniPath("machine_client.lock")),
+		certsDir:       certsDir,
+		storePath:      storePath,
+		Filestore:      persist.NewFilestore(storePath, certsDir, certsDir),
+		legacyClient:   NewRPCClient(storePath, certsDir),
+		flock:          fslock.New(localpath.MakeMiniPath("machine_client.lock")),
+		commandOptions: options,
 	}, nil
 }
 
@@ -84,6 +86,9 @@ type LocalClient struct {
 	*persist.Filestore
 	legacyClient libmachine.API
 	flock        *fslock.Lock
+	// TODO: Consider removing when libmachine API is part of minikube:
+	// https://github.com/kubernetes/minikube/issues/21789
+	commandOptions *run.CommandOptions
 }
 
 // NewHost creates a new Host
@@ -95,7 +100,7 @@ func (api *LocalClient) NewHost(drvName string, rawDriver []byte) (*host.Host, e
 	if def.Init == nil {
 		return api.legacyClient.NewHost(drvName, rawDriver)
 	}
-	d := def.Init()
+	d := def.Init(api.commandOptions)
 	err := json.Unmarshal(rawDriver, d)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error getting driver %s", string(rawDriver))
@@ -139,7 +144,7 @@ func (api *LocalClient) Load(name string) (*host.Host, error) {
 	if def.Init == nil {
 		return api.legacyClient.Load(name)
 	}
-	h.Driver = def.Init()
+	h.Driver = def.Init(api.commandOptions)
 	return h, json.Unmarshal(h.RawDriver, h.Driver)
 }
 
@@ -248,11 +253,11 @@ func (api *LocalClient) Create(h *host.Host) error {
 }
 
 // StartDriver starts the driver
-func StartDriver() {
+func StartDriver(options *run.CommandOptions) {
 	cert.SetCertGenerator(&CertGenerator{})
 	check.DefaultConnChecker = &ConnChecker{}
 	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
-		registerDriver(os.Getenv(localbinary.PluginEnvDriverName))
+		registerDriver(os.Getenv(localbinary.PluginEnvDriverName), options)
 	}
 
 	localbinary.CurrentBinaryIsDockerMachine = true
@@ -296,10 +301,10 @@ func (cg *CertGenerator) ValidateCertificate(addr string, authOptions *auth.Opti
 	return true, nil
 }
 
-func registerDriver(drvName string) {
+func registerDriver(drvName string, options *run.CommandOptions) {
 	def := registry.Driver(drvName)
 	if def.Empty() {
 		exit.Message(reason.Usage, "unsupported or missing driver: {{.name}}", out.V{"name": drvName})
 	}
-	plugin.RegisterDriver(def.Init())
+	plugin.RegisterDriver(def.Init(options))
 }

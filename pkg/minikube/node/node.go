@@ -36,13 +36,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 // Add adds a new node config to an existing cluster.
-func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
+func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool, options *run.CommandOptions) error {
 	profiles, err := config.ListValidProfiles()
 	if err != nil {
 		return err
@@ -69,7 +70,7 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 		return errors.Wrap(err, "save node")
 	}
 
-	r, p, m, h, err := Provision(cc, &n, delOnFail)
+	r, p, m, h, err := Provision(cc, &n, delOnFail, options)
 	if err != nil {
 		return err
 	}
@@ -83,13 +84,13 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 		ExistingAddons: nil,
 	}
 
-	_, err = Start(s)
+	_, err = Start(s, options)
 	return err
 }
 
 // teardown drains, then resets and finally deletes node from cluster.
 // ref: https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#tear-down
-func teardown(cc config.ClusterConfig, name string) (*config.Node, error) {
+func teardown(cc config.ClusterConfig, name string, options *run.CommandOptions) (*config.Node, error) {
 	// get runner for named node - has to be done before node is drained
 	n, _, err := Retrieve(cc, name)
 	if err != nil {
@@ -97,7 +98,7 @@ func teardown(cc config.ClusterConfig, name string) (*config.Node, error) {
 	}
 	m := config.MachineName(cc, *n)
 
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
 		return n, errors.Wrap(err, "get api client")
 	}
@@ -113,7 +114,7 @@ func teardown(cc config.ClusterConfig, name string) (*config.Node, error) {
 	}
 
 	// get runner for healthy control-plane node
-	cpr := mustload.Healthy(cc.Name).CP.Runner
+	cpr := mustload.Healthy(cc.Name, options).CP.Runner
 
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 
@@ -183,14 +184,14 @@ func teardown(cc config.ClusterConfig, name string) (*config.Node, error) {
 }
 
 // Delete calls teardownNode to remove node from cluster and deletes the host.
-func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
-	n, err := teardown(cc, name)
+func Delete(cc config.ClusterConfig, name string, options *run.CommandOptions) (*config.Node, error) {
+	n, err := teardown(cc, name, options)
 	if err != nil {
 		return n, err
 	}
 
 	m := config.MachineName(cc, *n)
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
 		return n, err
 	}

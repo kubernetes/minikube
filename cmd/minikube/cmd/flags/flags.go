@@ -21,7 +21,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/run"
 )
 
-// Flag names passed to minikube via run.Options.
+// Flag names passed to minikube via run.CommandOptions.
 const (
 	Interactive = "interactive"
 )

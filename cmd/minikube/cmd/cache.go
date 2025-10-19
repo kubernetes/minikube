@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	cmdConfig "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
@@ -49,8 +50,9 @@ var addCacheCmd = &cobra.Command{
 	Long:  "Add an image to local cache.",
 	Run: func(_ *cobra.Command, args []string) {
 		out.WarningT("\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"")
+		options := flags.CommandOptions()
 		// Cache and load images into docker daemon
-		if err := machine.CacheAndLoadImages(args, cacheAddProfiles(), false); err != nil {
+		if err := machine.CacheAndLoadImages(args, cacheAddProfiles(), false, options); err != nil {
 			exit.Error(reason.InternalCacheLoad, "Failed to cache and load images", err)
 		}
 		// Add images to config file
@@ -103,7 +105,8 @@ var reloadCacheCmd = &cobra.Command{
 	Short: "reload cached images.",
 	Long:  "reloads images previously added using the 'cache add' subcommand",
 	Run: func(_ *cobra.Command, _ []string) {
-		err := node.CacheAndLoadImagesInConfig(cacheAddProfiles())
+		options := flags.CommandOptions()
+		err := node.CacheAndLoadImagesInConfig(cacheAddProfiles(), options)
 		if err != nil {
 			exit.Error(reason.GuestCacheLoad, "Failed to reload cached images", err)
 		}
