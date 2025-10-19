@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -44,7 +45,7 @@ const (
 func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.HyperV,
-		Init:     func() drivers.Driver { return hyperv.NewDriver("", "") },
+		Init:     func(_ *run.CommandOptions) drivers.Driver { return hyperv.NewDriver("", "") },
 		Config:   configure,
 		Status:   status,
 		Default:  true,
@@ -81,7 +82,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	return d, nil
 }
 
-func status() registry.State {
+func status(_ *run.CommandOptions) registry.State {
 	path, err := exec.LookPath("powershell")
 	if err != nil {
 		return registry.State{Error: err}

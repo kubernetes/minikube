@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/viper"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -43,10 +44,11 @@ var unpauseCmd = &cobra.Command{
 	Aliases: []string{"resume"},
 	Short:   "unpause Kubernetes",
 	Run: func(_ *cobra.Command, _ []string) {
+		options := flags.CommandOptions()
 		cname := ClusterFlagValue()
 		register.SetEventLogPath(localpath.EventLog(cname))
 
-		co := mustload.Running(cname)
+		co := mustload.Running(cname, options)
 		out.SetJSON(outputFormat == "json")
 		register.Reg.SetStep(register.Unpausing)
 
