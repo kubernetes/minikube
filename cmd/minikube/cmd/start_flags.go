@@ -28,6 +28,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -106,7 +107,6 @@ const (
 	waitComponents          = "wait"
 	force                   = "force"
 	dryRun                  = "dry-run"
-	interactive             = "interactive"
 	waitTimeout             = "wait-timeout"
 	nativeSSH               = "native-ssh"
 	minUsableMem            = 1800 // Kubernetes (kubeadm) will not start with less
@@ -160,7 +160,7 @@ func initMinikubeFlags() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
-	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
+	startCmd.Flags().Bool(flags.Interactive, true, "Allow user prompts for more information")
 	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does not mutate system state")
 
 	startCmd.Flags().String(cpus, "2", fmt.Sprintf("Number of CPUs allocated to Kubernetes. Use %q to use the maximum number of CPUs. Use %q to not specify a limit (Docker/Podman only)", constants.MaxResources, constants.NoLimit))
