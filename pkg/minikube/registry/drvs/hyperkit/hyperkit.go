@@ -27,7 +27,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 	"github.com/google/uuid"
 
 	"k8s.io/minikube/pkg/drivers/hyperkit"

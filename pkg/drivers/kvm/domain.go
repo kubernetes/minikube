@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/docker/machine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/log"
 	"github.com/pkg/errors"
 	"libvirt.org/go/libvirt"
 )

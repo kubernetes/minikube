@@ -26,8 +26,8 @@ import (
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"

@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"os/exec"
 
-	parallels "github.com/Parallels/docker-machine-parallels/v2"
-	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/drivers/parallels"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"

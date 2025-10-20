@@ -26,7 +26,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/docker/machine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/log"
 )
 
 var sysFsPCIDevicesPath = "/sys/bus/pci/devices/"

@@ -26,11 +26,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/machine/libmachine/mcnerror"
+	"k8s.io/minikube/pkg/libmachine/mcnerror"
 	"github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
 
-	"github.com/docker/machine/libmachine"
+	"k8s.io/minikube/pkg/libmachine"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"

@@ -34,7 +34,7 @@ var (
 	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy|test/integration/testdata|hack/benchmark/image-build/minikube-image-benchmark|hack/benchmark/time-to-k8s/time-to-k8s-repo`)
 	windowdNewLine = regexp.MustCompile(`\r`)
 	txtExtension   = regexp.MustCompile(`\.txt`)
-	goBuildTag     = regexp.MustCompile(`(?m)^(//go:build.*\n)+\n`)
+	goBuildTag     = regexp.MustCompile(`(?m)^(//go:build.*\n|// +build.*\n)+\n`)
 	shebang        = regexp.MustCompile(`(?m)^(#!.*\n)\n*`)
 	copyright      = regexp.MustCompile(`Copyright YEAR`)
 	copyrightReal  = regexp.MustCompile(`Copyright \d{4}`)
