@@ -178,7 +178,7 @@ func HyperkitDriver() bool {
 
 // NeedsAuxDriver Returns true if the driver needs an auxiliary driver (kvm, hyperkit,..)
 func NeedsAuxDriver() bool {
-	return HyperkitDriver() || KVMDriver()
+	return HyperkitDriver()
 }
 
 // VMDriver checks if the driver is a VM
