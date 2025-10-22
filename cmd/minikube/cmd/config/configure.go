@@ -156,10 +156,9 @@ func loadAddonConfigFile(addon, configFilePath string) (ac *addonConfig) {
 			exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
 				fmt.Sprintf("error reading config file: %v", err))
 		}
-
-		return &cf.Addons
 	}
-	return nil
+
+	return &cf.Addons
 }
 
 // Processes metallb addon config from configFile if it exists otherwise resorts to default behavior
