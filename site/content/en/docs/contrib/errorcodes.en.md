@@ -260,10 +260,10 @@ minikube failed to locate specified driver
 minikube could not find a valid driver  
 
 "DRV_AUX_NOT_FOUND" (Exit code ExDriverNotFound)  
-aux drivers (kvm or hyperkit) were not found  
+aux drivers (hyperkit) were not found  
 
 "DRV_AUX_NOT_HEALTHY" (Exit code ExDriverError)  
-aux drivers (kvm or hyperkit) were found but not healthy  
+aux drivers (hyperkit) were found but not healthy  
 
 "DRV_NOT_HEALTHY" (Exit code ExDriverNotFound)  
 minikube found drivers but none were ready to use  
