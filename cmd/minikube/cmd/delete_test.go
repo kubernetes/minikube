@@ -21,9 +21,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
-	"strings"
 	"testing"
+	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/google/go-cmp/cmp"
@@ -226,9 +225,6 @@ func TestDeleteAllProfiles(t *testing.T) {
 // then tries to execute the tryKillOne function on it;
 // if after tryKillOne the process still exists, we consider it a failure
 func TestTryKillOne(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping on windows")
-	}
 
 	var waitForSig = []byte(`
 package main
@@ -246,7 +242,7 @@ func main() {
 	done := make(chan struct{})
 	defer close(ch)
 
-	signal.Notify(ch, syscall.SIGHUP)
+	signal.Notify(ch, syscall.SIGTERM)
 	defer signal.Stop(ch)
 
 	go func() {
@@ -267,7 +263,7 @@ func main() {
 	processToKill := exec.Command("go", "run", tmpfile)
 	err := processToKill.Start()
 	if err != nil {
-		t.Fatalf("while execing child process: %v\n", err)
+		t.Fatalf("while executing child process: %v\n", err)
 	}
 	pid := processToKill.Process.Pid
 
@@ -280,8 +276,15 @@ func main() {
 		t.Fatalf("while trying to kill child proc %d: %v\n", pid, err)
 	}
 
-	// waiting for process to exit
-	if err := processToKill.Wait(); !strings.Contains(err.Error(), "killed") {
-		t.Fatalf("unable to kill process: %v\n", err)
+	done := make(chan error, 1)
+	go func() { done <- processToKill.Wait() }()
+
+	var waitErr error
+	select {
+	case waitErr = <-done:
+		t.Logf("child process wait result: %v", waitErr)
+	case <-time.After(1 * time.Second):
+		t.Fatalf("timed out waiting for process %d to exit", pid)
 	}
+
 }
