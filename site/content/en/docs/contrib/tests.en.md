@@ -102,9 +102,6 @@ makes sure the MINIKUBE_FORCE_SYSTEMD environment variable works just as well as
 ## TestDockerEnvContainerd
 makes sure that minikube docker-env command works when the runtime is containerd
 
-## TestKVMDriverInstallOrUpdate
-makes sure our docker-machine-driver-kvm2 binary can be installed properly
-
 ## TestHyperKitDriverInstallOrUpdate
 makes sure our docker-machine-driver-hyperkit binary can be installed properly
 
