@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 
 	"k8s.io/klog/v2"
@@ -39,6 +40,12 @@ import (
 
 // TransferBinaries transfers all required Kubernetes binaries
 func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.Manager, binariesURL string) error {
+	// Skip binary transfer in --no-kubernetes mode
+	if viper.GetBool("no-kubernetes") {
+		klog.Info("Skipping Kubernetes binary transfer due to --no-kubernetes flag")
+		return nil
+	}
+
 	ok, err := binariesExist(cfg, c)
 	if err == nil && ok {
 		klog.Info("Found k8s binaries, skipping transfer")
