@@ -27,8 +27,10 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
+	"github.com/fatih/color"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
+	pkgcolor "k8s.io/minikube/pkg/minikube/color"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -93,26 +95,22 @@ var stringFromStatus = func(addonStatus bool) string {
 var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	addonNames := slices.Sorted(maps.Keys(assets.Addons))
 	table := tablewriter.NewWriter(os.Stdout)
-
 	table.Options(
 		tablewriter.WithHeaderAutoFormat(tw.On),
 	)
 
-	// Create table header
-	var tHeader []string
-	if cc == nil {
-		tHeader = []string{"Addon Name", "Maintainer"}
-	} else {
-		tHeader = []string{"Addon Name", "Profile", "Status", "Maintainer"}
+	// Table header
+	theader := []string{"Addon Name", "Maintainer"}
+	if cc != nil {
+		theader = []string{"Addon Name", "Enabled", "Maintainer"}
 	}
 	if printDocs {
-		tHeader = append(tHeader, "Docs")
+		theader = append(theader, "Docs")
 	}
-	table.Header(tHeader)
+	table.Header(theader)
 
-	// Create table data
-	var tData [][]string
-	var temp []string
+	var rows [][]string
+
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
 		maintainer := addonBundle.Maintainer
@@ -123,28 +121,44 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 		if docs == "" {
 			docs = "n/a"
 		}
+
+		// Step 1: build row
+		var row []string
 		if cc == nil {
-			temp = []string{addonName, maintainer}
+			row = []string{addonName, maintainer}
 		} else {
 			enabled := addonBundle.IsEnabled(cc)
-			temp = []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer}
+			status := iconFromStatus(enabled)
+			row = []string{addonName, status, maintainer}
+			if printDocs {
+				row = append(row, docs)
+			}
+
+			// Step 2: apply coloring
+			switch {
+			case enabled:
+				pkgcolor.ColorRow(row, color.GreenString)
+			default:
+				pkgcolor.ColorRow(row, color.WhiteString)
+			}
 		}
-		if printDocs {
-			temp = append(temp, docs)
+
+		if cc == nil && printDocs {
+			row = append(row, docs)
 		}
-		tData = append(tData, temp)
+
+		rows = append(rows, row)
 	}
-	if err := table.Bulk(tData); err != nil {
+
+	if err := table.Bulk(rows); err != nil {
 		klog.Error("Error rendering table (bulk)", err)
 	}
 	if err := table.Render(); err != nil {
 		klog.Error("Error rendering table", err)
 	}
-	v, _, err := config.ListProfiles()
-	if err != nil {
-		klog.Errorf("list profiles returned error: %v", err)
-	}
-	if len(v) > 1 {
+
+	// Profiles hint
+	if v, _, err := config.ListProfiles(); err == nil && len(v) > 1 {
 		out.Styled(style.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")
 	}
 }
