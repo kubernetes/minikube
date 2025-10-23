@@ -47,7 +47,8 @@ func MiniPath() string {
 		return filepath.Join(homedir.HomeDir(), ".minikube")
 	}
 	if filepath.Base(minikubeHomeEnv) == ".minikube" {
-		return minikubeHomeEnv
+		// Normalize to platform-specific separators for consistency on Windows.
+		return filepath.Clean(filepath.FromSlash(minikubeHomeEnv))
 	}
 	return filepath.Join(minikubeHomeEnv, ".minikube")
 }
