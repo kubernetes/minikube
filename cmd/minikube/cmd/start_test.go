@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/viper"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/config"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -856,4 +857,60 @@ func TestValidateAutoPause(t *testing.T) {
 			t.Errorf("interval of %q passed validation; expected it to fail: %v", input, err)
 		}
 	}
+}
+
+func TestDnsDomainFlagAndConfig(t *testing.T) {
+	tests := []struct {
+		flagDnsDomain           string
+		configDnsDomain         string
+		newConfigDnsDomain      string
+		existingConfigHasConfig string
+	}{
+		{"flagdomain.example.com", "configdomain.example.com", "flagdomain.example.com", "flagdomain.example.com"},
+		{"flagdomain.example.com", "", "flagdomain.example.com", "flagdomain.example.com"},
+		{"", "configdomain.example.com", "configdomain.example.com", "configdomain.example.com"},
+		{"", "", constants.DefaultDNSDomain, constants.DefaultDNSDomain},
+	}
+
+	k8sVersion := constants.NewestKubernetesVersion
+	rtime := constants.DefaultContainerRuntime
+
+	viper.SetDefault(config.DefaultDNSDomain, constants.DefaultDNSDomain)
+
+	for test := range tests {
+		defer viper.Reset()
+		cmd := &cobra.Command{}
+		cmd.Flags().String(dnsDomain, constants.DefaultDNSDomain, "Copied from initKubernetesFlags")
+
+		if tests[test].configDnsDomain != "" {
+			viper.Set(config.DefaultDNSDomain, tests[test].configDnsDomain)
+		}
+
+		// Cannot set flag....?????!!!????
+		if tests[test].flagDnsDomain == "" {
+			cmd.ParseFlags([]string{"--" + dnsDomain + "=" + tests[test].flagDnsDomain})
+		}
+		new_config := generateNewConfigFromFlags(cmd, k8sVersion, rtime, driver.Mock)
+		// t.Errorf("config: %#v", new_config.KubernetesConfig)
+
+		if new_config.KubernetesConfig.DNSDomain != tests[test].newConfigDnsDomain {
+			// t.Errorf("flagdomain: %s", tests[test].flagDnsDomain)
+			// t.Errorf("configdomain: %s", tests[test].configDnsDomain)
+			// t.Errorf("newConfigDnsDomain: %s", tests[test].newConfigDnsDomain)
+			// t.Errorf("existingConfigHasConfig: %s", tests[test].existingConfigHasConfig)
+
+			// clusterDNSDomain := viper.GetString(config.DefaultDNSDomain)
+			// t.Errorf("rrrr: %#v", clusterDNSDomain)
+			// t.Errorf("ssss: %#v", cmd.Flags().Changed(dnsDomain))
+			// s, err := cmd.Flags().GetString(dnsDomain)
+			// if err != nil {
+			// }
+			// t.Errorf("ssss: %#v", s)
+			// updateStringFromFlag(cmd, &clusterDNSDomain, dnsDomain)
+			// t.Errorf("tttt: %#v", clusterDNSDomain)
+
+			t.Errorf("dns-domain flag %q and config %q resulted in new config dns domain of %q, expected %q", tests[test].flagDnsDomain, tests[test].configDnsDomain, new_config.KubernetesConfig.DNSDomain, tests[test].newConfigDnsDomain)
+		}
+	}
+
 }
