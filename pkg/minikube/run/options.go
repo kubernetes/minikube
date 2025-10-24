@@ -30,4 +30,8 @@ type CommandOptions struct {
 	// ProfileName is set if the minikube command run with the --profile flag, using
 	// specific minikube instance.
 	ProfileName string
+
+	// Force is true if the minikube command run with the --force flag and can
+	// perform possibly dangerous operations.
+	Force bool
 }

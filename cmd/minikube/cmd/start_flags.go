@@ -105,7 +105,6 @@ const (
 	dnsProxy                = "dns-proxy"
 	hostDNSResolver         = "host-dns-resolver"
 	waitComponents          = "wait"
-	force                   = "force"
 	dryRun                  = "dry-run"
 	waitTimeout             = "wait-timeout"
 	nativeSSH               = "native-ssh"
@@ -159,7 +158,7 @@ func initMinikubeFlags() {
 	// e.g. iso-url => $ENVPREFIX_ISO_URL
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
-	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
+	startCmd.Flags().Bool(flags.Force, false, "Force minikube to perform possibly dangerous operations")
 	startCmd.Flags().Bool(flags.Interactive, true, "Allow user prompts for more information")
 	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does not mutate system state")
 
@@ -317,7 +316,7 @@ func ClusterFlagValue() string {
 func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, rtime string, drvName string, options *run.CommandOptions) (config.ClusterConfig, config.Node, error) {
 	var cc config.ClusterConfig
 	if existing != nil {
-		cc = updateExistingConfigFromFlags(cmd, existing)
+		cc = updateExistingConfigFromFlags(cmd, existing, options)
 
 		// identify appropriate cni then configure cruntime accordingly
 		if _, err := cni.New(&cc); err != nil {
@@ -382,7 +381,7 @@ func getCPUCount(drvName string) int {
 	return si.CPUs
 }
 
-func getMemorySize(cmd *cobra.Command, drvName string) int {
+func getMemorySize(cmd *cobra.Command, drvName string, options *run.CommandOptions) int {
 	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
 		klog.Warningf("Unable to query memory limits: %+v", err)
@@ -406,7 +405,7 @@ func getMemorySize(cmd *cobra.Command, drvName string) int {
 			exit.Message(reason.Usage, "{{.driver_name}} has only {{.container_limit}}MB memory but you specified {{.specified_memory}}MB", out.V{"container_limit": containerLimit, "specified_memory": mem, "driver_name": driver.FullName(drvName)})
 		}
 	} else {
-		validateRequestedMemorySize(mem, drvName)
+		validateRequestedMemorySize(mem, drvName, options)
 		klog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
 	}
 
@@ -576,7 +575,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		KicBaseImage:            viper.GetString(kicBaseImage),
 		Network:                 getNetwork(drvName, options),
 		Subnet:                  viper.GetString(subnet),
-		Memory:                  getMemorySize(cmd, drvName),
+		Memory:                  getMemorySize(cmd, drvName, options),
 		CPUs:                    getCPUCount(drvName),
 		DiskSize:                getDiskSize(),
 		Driver:                  drvName,
@@ -749,7 +748,7 @@ func checkNumaCount(k8sVersion string) {
 }
 
 // upgradeExistingConfig upgrades legacy configuration files
-func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig) {
+func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig, options *run.CommandOptions) {
 	if cc == nil {
 		return
 	}
@@ -772,7 +771,7 @@ func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig) {
 
 	if cc.Memory == 0 && !driver.IsKIC(cc.Driver) {
 		klog.Info("Existing config file was missing memory. (could be an old minikube config), will use the default value")
-		memInMB := getMemorySize(cmd, cc.Driver)
+		memInMB := getMemorySize(cmd, cc.Driver, options)
 		cc.Memory = memInMB
 	}
 
@@ -783,8 +782,8 @@ func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig) {
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
 // skipping updating existing docker env, docker opt, InsecureRegistry, registryMirror, extra-config, apiserver-ips
-func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig { //nolint to suppress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
-	validateFlags(cmd, existing.Driver)
+func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig, options *run.CommandOptions) config.ClusterConfig { //nolint to suppress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
+	validateFlags(cmd, existing.Driver, options)
 
 	cc := *existing
 
@@ -802,7 +801,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		updateIntFromFlag(cmd, &cc.APIServerPort, apiServerPort)
 	}
 
-	if cmd.Flags().Changed(memory) && getMemorySize(cmd, cc.Driver) != cc.Memory {
+	if cmd.Flags().Changed(memory) && getMemorySize(cmd, cc.Driver, options) != cc.Memory {
 		out.WarningT("You cannot change the memory size for an existing minikube cluster. Please first delete the cluster.")
 	}
 
@@ -811,7 +810,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	// validate the memory size in case user changed their system memory limits (example change docker desktop or upgraded memory.)
-	validateRequestedMemorySize(cc.Memory, cc.Driver)
+	validateRequestedMemorySize(cc.Memory, cc.Driver, options)
 
 	if cmd.Flags().Changed(humanReadableDiskSize) && getDiskSize() != existing.DiskSize {
 		out.WarningT("You cannot change the disk size for an existing minikube cluster. Please first delete the cluster.")

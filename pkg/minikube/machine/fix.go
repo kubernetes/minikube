@@ -61,7 +61,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, optio
 	if err != nil {
 		return h, errors.Wrap(err, "error loading existing host. Please try running [minikube delete], then run [minikube start] again")
 	}
-	defer postStartValidations(h, cc.Driver)
+	defer postStartValidations(h, cc.Driver, options)
 
 	driverName := h.Driver.DriverName()
 
