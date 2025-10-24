@@ -25,6 +25,7 @@ import (
 	// Driver used by testdata
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
 	"k8s.io/minikube/pkg/minikube/run"
 
@@ -32,15 +33,20 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-func createMockDriverHost(_ config.ClusterConfig, _ config.Node) (interface{}, error) {
-	return nil, nil
+func createMockDriverHost(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
+	return &tests.MockDriver{
+		BaseDriver: drivers.BaseDriver{
+			MachineName: config.MachineName(cfg, n),
+			StorePath:   localpath.MiniPath(),
+			SSHUser:     "docker",
+		},
+	}, nil
 }
 
 func RegisterMockDriver(t *testing.T) {
@@ -66,38 +72,39 @@ func RegisterMockDriver(t *testing.T) {
 }
 
 var defaultClusterConfig = config.ClusterConfig{
-	Name:      viper.GetString("profile"),
+	Name:      constants.DefaultClusterName,
 	Driver:    driver.Mock,
 	DockerEnv: []string{"MOCK_MAKE_IT_PROVISION=true"},
-	Nodes:     []config.Node{{Name: "minikube"}},
+	Nodes:     []config.Node{{Name: constants.DefaultClusterName}},
 }
 
 func TestCreateHost(t *testing.T) {
 	tests.MakeTempDir(t)
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
-	exists, _ := api.Exists(viper.GetString("profile"))
+	exists, _ := api.Exists(options.ProfileName)
 	if exists {
 		t.Fatal("Machine already exists.")
 	}
 
-	_, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
+	_, err := createHost(api, &defaultClusterConfig, &config.Node{Name: options.ProfileName}, options)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
-	exists, err = api.Exists(viper.GetString("profile"))
+	exists, err = api.Exists(options.ProfileName)
 	if err != nil {
-		t.Fatalf("exists failed for %q: %v", viper.GetString("profile"), err)
+		t.Fatalf("exists failed for %q: %v", options.ProfileName, err)
 	}
 	if !exists {
-		t.Fatalf("%q does not exist, but should.", viper.GetString("profile"))
+		t.Fatalf("%q does not exist, but should.", options.ProfileName)
 	}
 
-	h, err := api.Load(viper.GetString("profile"))
+	h, err := api.Load(options.ProfileName)
 	if err != nil {
 		t.Fatalf("Error loading machine: %v", err)
 	}
@@ -122,13 +129,14 @@ func TestCreateHost(t *testing.T) {
 func TestStartHostExists(t *testing.T) {
 	tests.MakeTempDir(t)
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
 	// Create an initial host.
-	ih, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
+	ih, err := createHost(api, &defaultClusterConfig, &config.Node{Name: options.ProfileName}, options)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -146,12 +154,12 @@ func TestStartHostExists(t *testing.T) {
 	mc.Name = ih.Name
 
 	// This should pass without calling Create because the host exists already.
-	h, _, err := StartHost(api, &mc, &(mc.Nodes[0]))
+	h, _, err := StartHost(api, &mc, &(mc.Nodes[0]), options)
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
-	if h.Name != viper.GetString("profile") {
-		t.Fatalf("GetMachineName()=%q, want %q", viper.GetString("profile"), h.Name)
+	if h.Name != options.ProfileName {
+		t.Fatalf("GetMachineName()=%q, want %q", options.ProfileName, h.Name)
 	}
 	if s, _ := h.Driver.GetState(); s != state.Running {
 		t.Fatalf("Machine not started.")
@@ -161,13 +169,14 @@ func TestStartHostExists(t *testing.T) {
 func TestStartHostErrMachineNotExist(t *testing.T) {
 	tests.MakeTempDir(t)
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
 	api.NotExistError = true
-	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
+	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"}, options)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -181,7 +190,7 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	n := config.Node{Name: h.Name}
 
 	// This should pass with creating host, while machine does not exist.
-	h, _, err = StartHost(api, &mc, &n)
+	h, _, err = StartHost(api, &mc, &n, options)
 	if err != nil {
 		if err != constants.ErrMachineMissing {
 			t.Fatalf("Error starting host: %v", err)
@@ -194,13 +203,13 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	n.Name = h.Name
 
 	// Second call. This should pass without calling Create because the host exists already.
-	h, _, err = StartHost(api, &mc, &n)
+	h, _, err = StartHost(api, &mc, &n, options)
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
 
-	if h.Name != viper.GetString("profile") {
-		t.Fatalf("GetMachineName()=%q, want %q", viper.GetString("profile"), h.Name)
+	if h.Name != options.ProfileName {
+		t.Fatalf("GetMachineName()=%q, want %q", options.ProfileName, h.Name)
 	}
 	if s, _ := h.Driver.GetState(); s != state.Running {
 		t.Fatalf("Machine not started.")
@@ -210,12 +219,13 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 func TestStartStoppedHost(t *testing.T) {
 	tests.MakeTempDir(t)
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	// Create an initial host.
-	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
+	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: options.ProfileName}, options)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -228,11 +238,11 @@ func TestStartStoppedHost(t *testing.T) {
 	mc := defaultClusterConfig
 	mc.Name = h.Name
 	n := config.Node{Name: h.Name}
-	h, _, err = StartHost(api, &mc, &n)
+	h, _, err = StartHost(api, &mc, &n, options)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
-	if h.Name != viper.GetString("profile") {
+	if h.Name != options.ProfileName {
 		t.Fatalf("Machine created with incorrect name: %s", h.Name)
 	}
 
@@ -249,6 +259,7 @@ func TestStartStoppedHost(t *testing.T) {
 func TestStartHost(t *testing.T) {
 	tests.MakeTempDir(t)
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
@@ -257,12 +268,12 @@ func TestStartHost(t *testing.T) {
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
 
-	h, _, err := StartHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
+	h, _, err := StartHost(api, &defaultClusterConfig, &config.Node{Name: options.ProfileName}, options)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
-	if h.Name != viper.GetString("profile") {
-		t.Fatalf("GetMachineName()=%q, want %q", viper.GetString("profile"), h.Name)
+	if h.Name != options.ProfileName {
+		t.Fatalf("GetMachineName()=%q, want %q", options.ProfileName, h.Name)
 	}
 	if exists, _ := api.Exists(h.Name); !exists {
 		t.Fatal("Machine not saved.")
@@ -281,6 +292,7 @@ func TestStartHost(t *testing.T) {
 func TestStartHostConfig(t *testing.T) {
 	tests.MakeTempDir(t)
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
@@ -295,7 +307,7 @@ func TestStartHostConfig(t *testing.T) {
 		DockerOpt: []string{"param=value"},
 	}
 
-	h, _, err := StartHost(api, &cfg, &config.Node{Name: "minikube"})
+	h, _, err := StartHost(api, &cfg, &config.Node{Name: options.ProfileName}, options)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -317,7 +329,7 @@ func TestStartHostConfig(t *testing.T) {
 func TestStopHostError(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-	if err := StopHost(api, viper.GetString("profile")); err == nil {
+	if err := StopHost(api, constants.DefaultClusterName); err == nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
 }
@@ -325,16 +337,17 @@ func TestStopHostError(t *testing.T) {
 func TestStopHost(t *testing.T) {
 	tests.MakeTempDir(t)
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
+	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: options.ProfileName}, options)
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
 	cc := defaultClusterConfig
-	cc.Name = viper.GetString("profile")
-	m := config.MachineName(cc, config.Node{Name: "minikube"})
+	cc.Name = options.ProfileName
+	m := config.MachineName(cc, config.Node{Name: options.ProfileName})
 	if err := StopHost(api, m); err != nil {
 		t.Fatalf("Unexpected error stopping machine: %v", err)
 	}
@@ -346,16 +359,17 @@ func TestStopHost(t *testing.T) {
 func TestDeleteHost(t *testing.T) {
 	tests.MakeTempDir(t)
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-	if _, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"}); err != nil {
+	if _, err := createHost(api, &defaultClusterConfig, &config.Node{Name: options.ProfileName}, options); err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
 	cc := defaultClusterConfig
-	cc.Name = viper.GetString("profile")
+	cc.Name = options.ProfileName
 
-	if err := DeleteHost(api, config.MachineName(cc, config.Node{Name: "minikube"}), false); err != nil {
+	if err := DeleteHost(api, config.MachineName(cc, config.Node{Name: options.ProfileName}), false); err != nil {
 		t.Fatalf("Unexpected error deleting host: %v", err)
 	}
 }
@@ -363,9 +377,10 @@ func TestDeleteHost(t *testing.T) {
 func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	tests.MakeTempDir(t)
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
+	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: options.ProfileName}, options)
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
@@ -373,7 +388,7 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	d := &tests.MockDriver{RemoveError: true, T: t}
 	h.Driver = d
 
-	if err := DeleteHost(api, config.MachineName(defaultClusterConfig, config.Node{Name: "minikube"}), false); err == nil {
+	if err := DeleteHost(api, config.MachineName(defaultClusterConfig, config.Node{Name: options.ProfileName}), false); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -381,14 +396,15 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 	tests.MakeTempDir(t)
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	api.RemoveError = true
-	if _, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"}); err != nil {
+	if _, err := createHost(api, &defaultClusterConfig, &config.Node{Name: options.ProfileName}, options); err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api, config.MachineName(defaultClusterConfig, config.Node{Name: "minikube"}), false); err == nil {
+	if err := DeleteHost(api, config.MachineName(defaultClusterConfig, config.Node{Name: options.ProfileName}), false); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -396,30 +412,32 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 func TestDeleteHostErrMachineNotExist(t *testing.T) {
 	tests.MakeTempDir(t)
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
 	api.NotExistError = true
-	_, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
+	_, err := createHost(api, &defaultClusterConfig, &config.Node{Name: options.ProfileName}, options)
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api, config.MachineName(defaultClusterConfig, config.Node{Name: "minikube"}), false); err == nil {
-		t.Fatal("Expected error deleting host.")
+	if err := DeleteHost(api, config.MachineName(defaultClusterConfig, config.Node{Name: options.ProfileName}), false); err != nil {
+		t.Fatal("Deleting host with missing machine should not fail")
 	}
 }
 
 func TestStatus(t *testing.T) {
 	tests.MakeTempDir(t)
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
 	cc := defaultClusterConfig
-	cc.Name = viper.GetString("profile")
+	cc.Name = options.ProfileName
 
-	m := config.MachineName(cc, config.Node{Name: "minikube"})
+	m := config.MachineName(cc, config.Node{Name: options.ProfileName})
 
 	checkState := func(expected string, machineName string) {
 		s, err := Status(api, machineName)
@@ -433,13 +451,13 @@ func TestStatus(t *testing.T) {
 
 	checkState(state.None.String(), m)
 
-	if _, err := createHost(api, &cc, &config.Node{Name: "minikube"}); err != nil {
+	if _, err := createHost(api, &cc, &config.Node{Name: options.ProfileName}, options); err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	cc.Name = viper.GetString("profile")
+	cc.Name = options.ProfileName
 
-	m = config.MachineName(cc, config.Node{Name: "minikube"})
+	m = config.MachineName(cc, config.Node{Name: options.ProfileName})
 
 	checkState(state.Running.String(), m)
 
