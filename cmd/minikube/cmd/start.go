@@ -204,7 +204,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 	if existing != nil {
 		upgradeExistingConfig(cmd, existing)
 	} else {
-		validateProfileName()
+		validateProfileName(options)
 	}
 
 	validateSpecifiedDriver(existing, options)
@@ -846,8 +846,8 @@ func hostDriver(existing *config.ClusterConfig, options *run.CommandOptions) str
 }
 
 // validateProfileName makes sure that new profile name not duplicated with any of machine names in existing multi-node clusters.
-func validateProfileName() {
-	profiles, err := config.ListValidProfiles()
+func validateProfileName(options *run.CommandOptions) {
+	profiles, err := config.ListValidProfiles(options)
 	if err != nil {
 		exit.Message(reason.InternalListConfig, "Unable to list profiles: {{.error}}", out.V{"error": err})
 	}

@@ -30,6 +30,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/util/templates"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/audit"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -64,6 +65,7 @@ var RootCmd = &cobra.Command{
 	Short: "minikube quickly sets up a local Kubernetes cluster",
 	Long:  `minikube provisions and manages local Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(_ *cobra.Command, _ []string) {
+		options := flags.CommandOptions()
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
 				exit.Error(reason.HostHomeMkdir, "Error creating minikube directory", err)
@@ -75,7 +77,7 @@ var RootCmd = &cobra.Command{
 			exit.Message(reason.Usage, "User name must be 60 chars or less.")
 		}
 		var err error
-		auditID, err = audit.LogCommandStart()
+		auditID, err = audit.LogCommandStart(options)
 		if err != nil {
 			klog.Warningf("failed to log command start to audit: %v", err)
 		}

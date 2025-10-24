@@ -24,7 +24,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -36,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -69,7 +69,7 @@ func showNoK8sVersionInfo(cr cruntime.Manager) {
 }
 
 // configureMounts configures any requested filesystem mounts
-func configureMounts(wg *sync.WaitGroup, cc config.ClusterConfig) {
+func configureMounts(wg *sync.WaitGroup, cc config.ClusterConfig, options *run.CommandOptions) {
 	wg.Add(1)
 	defer wg.Done()
 
@@ -79,7 +79,7 @@ func configureMounts(wg *sync.WaitGroup, cc config.ClusterConfig) {
 
 	out.Step(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": cc.MountString})
 	path := os.Args[0]
-	profile := viper.GetString("profile")
+	profile := options.ProfileName
 
 	args := generateMountArgs(profile, cc)
 	mountCmd := exec.Command(path, args...)

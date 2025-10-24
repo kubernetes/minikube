@@ -95,7 +95,7 @@ type Starter struct {
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, error) { // nolint:gocyclo
 	var wg sync.WaitGroup
-	stopk8s, err := handleNoKubernetes(starter)
+	stopk8s, err := handleNoKubernetes(starter, options)
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +105,8 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 
 		showNoK8sVersionInfo(cr)
 
-		configureMounts(&wg, *starter.Cfg)
-		return nil, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+		configureMounts(&wg, *starter.Cfg, options)
+		return nil, config.Write(options.ProfileName, starter.Cfg)
 	}
 
 	// wait for preloaded tarball to finish downloading before configuring runtimes
@@ -193,7 +193,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		}
 	}
 
-	go configureMounts(&wg, *starter.Cfg)
+	go configureMounts(&wg, *starter.Cfg, options)
 
 	wg.Add(1)
 	go func() {
@@ -254,11 +254,11 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 
 	// Write enabled addons to the config before completion
 	klog.Infof("writing updated cluster config ...")
-	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+	return kcs, config.Write(options.ProfileName, starter.Cfg)
 }
 
 // handleNoKubernetes handles starting minikube without Kubernetes.
-func handleNoKubernetes(starter Starter) (bool, error) {
+func handleNoKubernetes(starter Starter, options *run.CommandOptions) (bool, error) {
 	// Do not bootstrap cluster if --no-kubernetes.
 	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion {
 		// Stop existing Kubernetes node if applicable.
@@ -269,7 +269,7 @@ func handleNoKubernetes(starter Starter) (bool, error) {
 			}
 			kubeadm.StopKubernetes(starter.Runner, cr)
 		}
-		return true, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+		return true, config.Write(options.ProfileName, starter.Cfg)
 	}
 	return false, nil
 }
@@ -396,7 +396,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool, options
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satisfy pkg/provision/buildroot.
 	// Hence, SaveProfile must be called before startHost, and again afterwards when we know the IP.
-	if err := config.SaveProfile(viper.GetString(config.ProfileName), cc); err != nil {
+	if err := config.SaveProfile(options.ProfileName, cc); err != nil {
 		return nil, false, nil, nil, errors.Wrap(err, "Failed to save config")
 	}
 
@@ -660,7 +660,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	if err != nil {
 		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to get machine client")
 	}
-	hostInfo, preExists, err = startHostInternal(m, cfg, node, delOnFail)
+	hostInfo, preExists, err = startHostInternal(m, cfg, node, delOnFail, options)
 	if err != nil {
 		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to start host")
 	}
@@ -707,8 +707,8 @@ func getPort() (int, error) {
 }
 
 // startHostInternal starts a new minikube host using a VM or None
-func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
-	hostInfo, exists, err := machine.StartHost(api, cc, n)
+func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool, options *run.CommandOptions) (*host.Host, bool, error) {
+	hostInfo, exists, err := machine.StartHost(api, cc, n, options)
 	if err == nil {
 		return hostInfo, exists, nil
 	}
@@ -740,7 +740,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 		}
 	}
 
-	hostInfo, exists, err = machine.StartHost(api, cc, n)
+	hostInfo, exists, err = machine.StartHost(api, cc, n, options)
 	if err == nil {
 		return hostInfo, exists, nil
 	}

@@ -26,4 +26,8 @@ type CommandOptions struct {
 	// flag and we should If only download and cache files for later use and
 	// don't install or start anything.
 	DownloadOnly bool
+
+	// ProfileName is set if the minikube command run with the --profile flag, using
+	// specific minikube instance.
+	ProfileName string
 }

@@ -24,6 +24,8 @@ import (
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
@@ -45,7 +47,7 @@ func mapsEqual(a, b map[string]string) bool {
 
 func TestParseMapString(t *testing.T) {
 	cases := map[string]map[string]string{
-		"Aardvark=1,B=2,Cantaloupe=3":         {"Aardvark": "1", "B": "2", "Cantaloupe": "3"},
+		"Aardvark=1,B=2,Cantaloupe=3":        {"Aardvark": "1", "B": "2", "Cantaloupe": "3"},
 		"A=,B=2,C=":                          {"A": "", "B": "2", "C": ""},
 		"":                                   {},
 		"malformed,good=howdy,manyequals==,": {"good": "howdy"},
@@ -156,9 +158,10 @@ func TestSelectAndPersistImages(t *testing.T) {
 	gcpAuth := Addons["gcp-auth"]
 	gcpAuthImages := gcpAuth.Images
 
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	// this test will write to ~/.minikube/profiles/minikube/config.json so need to create the file
 	home := tests.MakeTempDir(t)
-	profilePath := filepath.Join(home, "profiles", "minikube")
+	profilePath := filepath.Join(home, "profiles", options.ProfileName)
 	if err := os.MkdirAll(profilePath, 0777); err != nil {
 		t.Fatalf("failed to create profile directory: %v", err)
 	}
@@ -176,7 +179,7 @@ func TestSelectAndPersistImages(t *testing.T) {
 	}
 
 	test := func(t *testing.T, cc *config.ClusterConfig, e expected) (images, registries map[string]string) {
-		images, registries, err := SelectAndPersistImages(gcpAuth, cc)
+		images, registries, err := SelectAndPersistImages(gcpAuth, cc, options)
 		if err != nil {
 			t.Fatal(err)
 		}

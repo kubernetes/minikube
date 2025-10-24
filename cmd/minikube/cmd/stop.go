@@ -84,7 +84,7 @@ func runStop(_ *cobra.Command, _ []string) {
 	// new code
 	var profilesToStop []string
 	if stopAll {
-		validProfiles, _, err := config.ListProfiles()
+		validProfiles, _, err := config.ListProfiles(options)
 		if err != nil {
 			klog.Warningf("'error loading profiles in minikube home %q: %v", localpath.MiniPath(), err)
 		}

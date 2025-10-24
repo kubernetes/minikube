@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // cacheImageConfigKey is the config field name used to store which images we have previously cached
@@ -52,7 +53,7 @@ var addCacheCmd = &cobra.Command{
 		out.WarningT("\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"")
 		options := flags.CommandOptions()
 		// Cache and load images into docker daemon
-		if err := machine.CacheAndLoadImages(args, cacheAddProfiles(), false, options); err != nil {
+		if err := machine.CacheAndLoadImages(args, cacheAddProfiles(options), false, options); err != nil {
 			exit.Error(reason.InternalCacheLoad, "Failed to cache and load images", err)
 		}
 		// Add images to config file
@@ -66,18 +67,18 @@ func addCacheCmdFlags() {
 	addCacheCmd.Flags().Bool(allFlag, false, "Add image to cache for all running minikube clusters")
 }
 
-func cacheAddProfiles() []*config.Profile {
+func cacheAddProfiles(options *run.CommandOptions) []*config.Profile {
 	if viper.GetBool(allFlag) {
-		validProfiles, _, err := config.ListProfiles() // need to load image to all profiles
+		validProfiles, _, err := config.ListProfiles(options) // need to load image to all profiles
 		if err != nil {
 			klog.Warningf("error listing profiles: %v", err)
 		}
 		return validProfiles
 	}
-	profile := viper.GetString(config.ProfileName)
-	p, err := config.LoadProfile(profile)
+	p, err := config.LoadProfile(options.ProfileName)
 	if err != nil {
-		exit.Message(reason.Usage, "{{.profile}} profile is not valid: {{.err}}", out.V{"profile": profile, "err": err})
+		exit.Message(reason.Usage, "{{.profile}} profile is not valid: {{.err}}",
+			out.V{"profile": options.ProfileName, "err": err})
 	}
 	return []*config.Profile{p}
 }
@@ -106,7 +107,7 @@ var reloadCacheCmd = &cobra.Command{
 	Long:  "reloads images previously added using the 'cache add' subcommand",
 	Run: func(_ *cobra.Command, _ []string) {
 		options := flags.CommandOptions()
-		err := node.CacheAndLoadImagesInConfig(cacheAddProfiles(), options)
+		err := node.CacheAndLoadImagesInConfig(cacheAddProfiles(options), options)
 		if err != nil {
 			exit.Error(reason.GuestCacheLoad, "Failed to reload cached images", err)
 		}
