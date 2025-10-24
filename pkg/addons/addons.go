@@ -48,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util"
@@ -65,7 +66,7 @@ var Refresh = false
 var ErrSkipThisAddon = errors.New("skipping this addon")
 
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
-func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
+func RunCallbacks(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
 	klog.Infof("Setting %s=%s in profile %q", name, value, cc.Name)
 	a, valid := isAddonValid(name)
 	if !valid {
@@ -73,7 +74,7 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
 	}
 
 	// Run any additional validations for this property
-	if err := run(cc, name, value, a.validations); err != nil {
+	if err := invoke(cc, name, value, a.validations, options); err != nil {
 		if errors.Is(err, ErrSkipThisAddon) {
 			return err
 		}
@@ -83,7 +84,7 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
 	preStartMessages(name, value)
 
 	// Run any callbacks for this property
-	if err := run(cc, name, value, a.callbacks); err != nil {
+	if err := invoke(cc, name, value, a.callbacks, options); err != nil {
 		if errors.Is(err, ErrSkipThisAddon) {
 			return err
 		}
@@ -172,29 +173,29 @@ func Deprecations(name string) (bool, string, string) {
 }
 
 // Set sets a value in the config (not threadsafe)
-func Set(cc *config.ClusterConfig, name string, value string) error {
+func Set(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
 	a, valid := isAddonValid(name)
 	if !valid {
 		return errors.Errorf("%s is not a valid addon", name)
 	}
-	return a.set(cc, name, value)
+	return a.set(cc, name, value, options)
 }
 
 // SetAndSave sets a value and saves the config
-func SetAndSave(profile string, name string, value string) error {
+func SetAndSave(profile string, name string, value string, options *run.CommandOptions) error {
 	cc, err := config.Load(profile)
 	if err != nil {
 		return errors.Wrap(err, "loading profile")
 	}
 
-	if err := RunCallbacks(cc, name, value); err != nil {
+	if err := RunCallbacks(cc, name, value, options); err != nil {
 		if errors.Is(err, ErrSkipThisAddon) {
 			return err
 		}
 		return errors.Wrap(err, "run callbacks")
 	}
 
-	if err := Set(cc, name, value); err != nil {
+	if err := Set(cc, name, value, options); err != nil {
 		return errors.Wrap(err, "set")
 	}
 
@@ -203,10 +204,10 @@ func SetAndSave(profile string, name string, value string) error {
 }
 
 // Runs all the validation or callback functions and collects errors
-func run(cc *config.ClusterConfig, name string, value string, fns []setFn) error {
+func invoke(cc *config.ClusterConfig, name string, value string, fns []setFn, options *run.CommandOptions) error {
 	var errs []error
 	for _, fn := range fns {
-		err := fn(cc, name, value)
+		err := fn(cc, name, value, options)
 		if err != nil {
 			if errors.Is(err, ErrSkipThisAddon) {
 				return ErrSkipThisAddon
@@ -221,7 +222,7 @@ func run(cc *config.ClusterConfig, name string, value string, fns []setFn) error
 }
 
 // SetBool sets a bool value in the config (not threadsafe)
-func SetBool(cc *config.ClusterConfig, name string, val string) error {
+func SetBool(cc *config.ClusterConfig, name string, val string, _ *run.CommandOptions) error {
 	b, err := strconv.ParseBool(val)
 	if err != nil {
 		return err
@@ -234,7 +235,7 @@ func SetBool(cc *config.ClusterConfig, name string, val string) error {
 }
 
 // EnableOrDisableAddon updates addon status executing any commands necessary
-func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) error {
+func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string, options *run.CommandOptions) error {
 	klog.Infof("Setting addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
@@ -250,7 +251,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		}
 	}
 
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
 		return errors.Wrap(err, "machine client")
 	}
@@ -467,15 +468,15 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 	return retry.Expo(apply, 250*time.Millisecond, 2*time.Minute)
 }
 
-func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error {
+func verifyAddonStatus(cc *config.ClusterConfig, name string, val string, options *run.CommandOptions) error {
 	ns := "kube-system"
 	if name == "ingress" {
 		ns = "ingress-nginx"
 	}
-	return verifyAddonStatusInternal(cc, name, val, ns)
+	return verifyAddonStatusInternal(cc, name, val, ns, options)
 }
 
-func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string, ns string) error {
+func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string, ns string, _ *run.CommandOptions) error {
 	klog.Infof("Verifying addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
@@ -504,7 +505,7 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 // Since Enable is called asynchronously (so is not thread-safe for concurrent addons map updating/reading), to avoid race conditions,
 // ToEnable should be called synchronously before Enable to get complete list of addons to enable, and
 // UpdateConfig should be called synchronously after Enable to update the config with successfully enabled addons.
-func Enable(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bool, enabled chan<- []string) {
+func Enable(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bool, enabled chan<- []string, options *run.CommandOptions) {
 	defer wg.Done()
 
 	start := time.Now()
@@ -531,7 +532,7 @@ func Enable(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bo
 	for _, a := range toEnableList {
 		awg.Add(1)
 		go func(name string) {
-			err := RunCallbacks(cc, name, "true")
+			err := RunCallbacks(cc, name, "true", options)
 			if err != nil && !errors.Is(err, ErrSkipThisAddon) {
 				out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": name, "error": err})
 			} else {
@@ -585,24 +586,24 @@ func ToEnable(cc *config.ClusterConfig, existing map[string]bool, additional []s
 
 // UpdateConfigToEnable tries to update config with all enabled addons (not thread-safe).
 // Any error will be logged and it will continue.
-func UpdateConfigToEnable(cc *config.ClusterConfig, enabled []string) {
+func UpdateConfigToEnable(cc *config.ClusterConfig, enabled []string, options *run.CommandOptions) {
 	for _, a := range enabled {
-		if err := Set(cc, a, "true"); err != nil {
+		if err := Set(cc, a, "true", options); err != nil {
 			klog.Errorf("store failed: %v", err)
 		}
 	}
 }
 
-func UpdateConfigToDisable(cc *config.ClusterConfig) {
+func UpdateConfigToDisable(cc *config.ClusterConfig, options *run.CommandOptions) {
 	for name := range assets.Addons {
-		if err := Set(cc, name, "false"); err != nil {
+		if err := Set(cc, name, "false", options); err != nil {
 			klog.Errorf("store failed: %v", err)
 		}
 	}
 }
 
 // VerifyNotPaused verifies the cluster is not paused before enable/disable an addon.
-func VerifyNotPaused(profile string, enable bool) error {
+func VerifyNotPaused(profile string, enable bool, options *run.CommandOptions) error {
 	klog.Info("checking whether the cluster is paused")
 
 	cc, err := config.Load(profile)
@@ -610,7 +611,7 @@ func VerifyNotPaused(profile string, enable bool) error {
 		return errors.Wrap(err, "loading profile")
 	}
 
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
 		return errors.Wrap(err, "machine client")
 	}

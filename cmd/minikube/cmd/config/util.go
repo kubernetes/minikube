@@ -25,8 +25,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-// Runs all the validation or callback functions and collects errors
-func run(name string, value string, fns []setFn) error {
+// Invoke all the validation or callback functions and collects errors
+func invoke(name string, value string, fns []setFn) error {
 	var errors []error
 	for _, fn := range fns {
 		err := fn(name, value)

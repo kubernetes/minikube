@@ -35,6 +35,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -85,7 +86,14 @@ func CreateRawDisk(diskPath string, sizeMB int) error {
 }
 
 // CommonDriver is the common driver base class
-type CommonDriver struct{}
+type CommonDriver struct {
+	// CommandOptions keeps the minikube command line options shared with the
+	// minikube packages. This is initialized when loading the driver and should
+	// not be persisted.
+	// TODO: Consider removing when libmachine API is part of minikube:
+	// https://github.com/kubernetes/minikube/issues/21789
+	CommandOptions run.CommandOptions `json:"-"`
+}
 
 // GetCreateFlags is not implemented yet
 func (d *CommonDriver) GetCreateFlags() []mcnflag.Flag {

@@ -61,6 +61,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -171,7 +172,7 @@ func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) {
 }
 
 // init initialises primary control-plane using kubeadm.
-func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) init(cfg config.ClusterConfig, options *run.CommandOptions) error {
 	ver, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
@@ -291,7 +292,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	wg.Wait()
 
 	// tunnel apiserver to guest
-	if err := k.tunnelToAPIServer(cfg); err != nil {
+	if err := k.tunnelToAPIServer(cfg, options); err != nil {
 		klog.Warningf("apiserver tunnel failed: %v", err)
 	}
 
@@ -395,7 +396,7 @@ func (k *Bootstrapper) unpause(cfg config.ClusterConfig) error {
 }
 
 // StartCluster starts the cluster
-func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig, options *run.CommandOptions) error {
 	start := time.Now()
 	klog.Infof("StartCluster: %+v", cfg)
 	defer func() {
@@ -409,7 +410,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	if err := bsutil.ExistingConfig(k.c); err == nil {
 		// if the guest already exists and was stopped, re-establish the apiserver tunnel so checks pass
-		if err := k.tunnelToAPIServer(cfg); err != nil {
+		if err := k.tunnelToAPIServer(cfg, options); err != nil {
 			klog.Warningf("apiserver tunnel failed: %v", err)
 		}
 
@@ -431,7 +432,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "cp")
 	}
 
-	err := k.init(cfg)
+	err := k.init(cfg, options)
 	if err == nil {
 		return nil
 	}
@@ -442,13 +443,13 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 			klog.Warningf("delete failed: %v", err)
 		}
-		return k.init(cfg)
+		return k.init(cfg, options)
 	}
 	return err
 }
 
 // tunnelToAPIServer creates ssh tunnel between apiserver:port inside control-plane node and host on port 8443.
-func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig, options *run.CommandOptions) error {
 	if cfg.APIServerPort == 0 {
 		return fmt.Errorf("apiserver port not set")
 	}
@@ -458,7 +459,7 @@ func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	m, err := machine.NewAPIClient()
+	m, err := machine.NewAPIClient(options)
 	if err != nil {
 		return errors.Wrapf(err, "create libmachine api client")
 	}

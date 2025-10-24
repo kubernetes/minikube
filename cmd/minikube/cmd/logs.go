@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -33,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -63,6 +65,7 @@ var logsCmd = &cobra.Command{
 	Short: "Returns logs to debug a local Kubernetes cluster",
 	Long:  `Gets the logs of the running instance, used for debugging minikube, not user code.`,
 	Run: func(_ *cobra.Command, _ []string) {
+		options := flags.CommandOptions()
 		logOutput := os.Stdout
 		var err error
 
@@ -94,11 +97,11 @@ var logsCmd = &cobra.Command{
 		}
 		logs.OutputOffline(numberOfLines, logOutput)
 
-		if shouldSilentFail() {
+		if shouldSilentFail(options) {
 			return
 		}
 
-		co := mustload.Running(ClusterFlagValue())
+		co := mustload.Running(ClusterFlagValue(), options)
 
 		bs, err := cluster.Bootstrapper(co.API, viper.GetString(cmdcfg.Bootstrapper), *co.Config, co.CP.Runner)
 		if err != nil {
@@ -131,12 +134,12 @@ var logsCmd = &cobra.Command{
 // shouldSilentFail returns true if the user specifies the --file flag and the host isn't running
 // This is to prevent outputting the message 'The control plane node must be running for this command' which confuses
 // many users while gathering logs to report their issue as the message makes them think the log file wasn't generated
-func shouldSilentFail() bool {
+func shouldSilentFail(options *run.CommandOptions) bool {
 	if fileOutput == "" {
 		return false
 	}
 
-	api, cc := mustload.Partial(ClusterFlagValue())
+	api, cc := mustload.Partial(ClusterFlagValue(), options)
 
 	cp, err := config.ControlPlane(*cc)
 	if err != nil {

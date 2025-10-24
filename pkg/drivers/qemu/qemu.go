@@ -47,6 +47,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/firewall"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util/retry"
@@ -144,7 +145,7 @@ func (d *Driver) GetURL() (string, error) {
 	return fmt.Sprintf("tcp://%s:%d", ip, port), nil
 }
 
-func NewDriver(hostName, storePath string) drivers.Driver {
+func NewDriver(hostName, storePath string, options *run.CommandOptions) drivers.Driver {
 	return &Driver{
 		BIOS:           runtime.GOARCH != "arm64",
 		PrivateNetwork: privateNetworkName,
@@ -152,6 +153,9 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 			SSHUser:     defaultSSHUser,
 			MachineName: hostName,
 			StorePath:   storePath,
+		},
+		CommonDriver: &common.CommonDriver{
+			CommandOptions: *options,
 		},
 	}
 }
@@ -537,7 +541,7 @@ func (d *Driver) Start() error {
 		if !isBootpdError(err) {
 			return errors.Wrap(err, "IP address never found in dhcp leases file")
 		}
-		if unblockErr := firewall.UnblockBootpd(); unblockErr != nil {
+		if unblockErr := firewall.UnblockBootpd(&d.CommandOptions); unblockErr != nil {
 			klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
 			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
 		}

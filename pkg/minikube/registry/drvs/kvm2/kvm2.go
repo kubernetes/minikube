@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -52,7 +53,7 @@ func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.KVM2,
 		Alias:    []string{driver.AliasKVM},
-		Init:     func() drivers.Driver { return kvm.NewDriver("", "") },
+		Init:     func(_ *run.CommandOptions) drivers.Driver { return kvm.NewDriver("", "") },
 		Config:   configure,
 		Status:   status,
 		Default:  true,
@@ -103,7 +104,7 @@ func defaultURI() string {
 	return "qemu:///system"
 }
 
-func status() registry.State {
+func status(_ *run.CommandOptions) registry.State {
 	if !slices.Contains(supportedArchictures, runtime.GOARCH) {
 		rs := registry.State{
 			Error: fmt.Errorf("KVM is not supported on %q, contributions are welcome", runtime.GOARCH),

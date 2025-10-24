@@ -27,6 +27,7 @@ import (
 	pt "path"
 	"strings"
 
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -54,17 +55,18 @@ Example Command : "minikube cp a.txt /home/docker/b.txt" +
                   "minikube cp minikube-m01:a.txt minikube-m02:/home/docker/b.txt"`,
 	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 2 {
-			exit.Message(reason.Usage, `Please specify the path to copy: 
+			exit.Message(reason.Usage, `Please specify the path to copy:
 	minikube cp <source file path> <target file absolute path> (example: "minikube cp a/b.txt /copied.txt")`)
 		}
 
+		options := flags.CommandOptions()
 		srcPath := args[0]
 		dstPath := setDstFileNameFromSrc(args[1], srcPath)
 		src := newRemotePath(srcPath)
 		dst := newRemotePath(dstPath)
 		validateArgs(src, dst)
 
-		co := mustload.Running(ClusterFlagValue())
+		co := mustload.Running(ClusterFlagValue(), options)
 		var runner command.Runner
 
 		if dst.node != "" {

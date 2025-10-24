@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/homedir"
 
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -50,8 +51,9 @@ var sshHostCmd = &cobra.Command{
 }
 
 func appendKnownHelper(nodeName string, appendKnown bool) {
+	options := flags.CommandOptions()
 	cname := ClusterFlagValue()
-	co := mustload.Running(cname)
+	co := mustload.Running(cname, options)
 	if co.CP.Host.DriverName == driver.None {
 		exit.Message(reason.Usage, "'none' driver does not support 'minikube ssh-host' command")
 	}

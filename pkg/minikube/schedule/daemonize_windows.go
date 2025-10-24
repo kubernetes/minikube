@@ -28,21 +28,22 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // KillExisting will kill existing scheduled stops
-func KillExisting(profiles []string) {
+func KillExisting(profiles []string, options *run.CommandOptions) {
 	for _, profile := range profiles {
-		if err := killExisting(profile); err != nil {
+		if err := killExisting(profile, options); err != nil {
 			klog.Errorf("error terminating scheduled stop for profile %s: %v", profile, err)
 		}
 	}
 }
 
-func killExisting(profile string) error {
+func killExisting(profile string, options *run.CommandOptions) error {
 	klog.Infof("trying to kill existing schedule stop for profile %s...", profile)
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
 		return errors.Wrapf(err, "getting api client for profile %s", profile)
 	}
@@ -64,9 +65,9 @@ func killExisting(profile string) error {
 
 // to daemonize on windows, we schedule the stop within minikube itself
 // starting the minikube-scheduled-stop systemd service kicks off the scheduled stop
-func daemonize(profiles []string, duration time.Duration) error {
+func daemonize(profiles []string, duration time.Duration, options *run.CommandOptions) error {
 	for _, profile := range profiles {
-		if err := startSystemdService(profile, duration); err != nil {
+		if err := startSystemdService(profile, duration, options); err != nil {
 			return errors.Wrapf(err, "implementing scheduled stop for %s", profile)
 		}
 	}
@@ -77,10 +78,10 @@ func daemonize(profiles []string, duration time.Duration) error {
 // before shutting down minikube from within
 // we do this by setting the SLEEP environment variable in the environment file to the users
 // requested duration
-func startSystemdService(profile string, duration time.Duration) error {
+func startSystemdService(profile string, duration time.Duration, options *run.CommandOptions) error {
 	// get ssh runner
 	klog.Infof("starting systemd service for profile %s...", profile)
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
 		return errors.Wrapf(err, "getting api client for profile %s", profile)
 	}

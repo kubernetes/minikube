@@ -35,6 +35,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -51,6 +52,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/sshagent"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -211,6 +213,8 @@ func runDelete(_ *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.Message(reason.Usage, "Usage: minikube delete")
 	}
+
+	options := flags.CommandOptions()
 	out.SetJSON(outputFormat == "json")
 	register.Reg.SetStep(register.Deleting)
 	download.CleanUpOlderPreloads()
@@ -236,7 +240,7 @@ func runDelete(_ *cobra.Command, args []string) {
 		deleteContainersAndVolumes(delCtx, oci.Docker)
 		deleteContainersAndVolumes(delCtx, oci.Podman)
 
-		errs := DeleteProfiles(profilesToDelete)
+		errs := DeleteProfiles(profilesToDelete, options)
 		register.Reg.SetStep(register.Done)
 
 		if len(errs) > 0 {
@@ -258,7 +262,7 @@ func runDelete(_ *cobra.Command, args []string) {
 			orphan = true
 		}
 
-		errs := DeleteProfiles([]*config.Profile{profile})
+		errs := DeleteProfiles([]*config.Profile{profile}, options)
 		register.Reg.SetStep(register.Done)
 
 		if len(errs) > 0 {
@@ -297,22 +301,22 @@ func purgeMinikubeDirectory() {
 }
 
 // DeleteProfiles deletes one or more profiles
-func DeleteProfiles(profiles []*config.Profile) []error {
+func DeleteProfiles(profiles []*config.Profile, options *run.CommandOptions) []error {
 	klog.Infof("DeleteProfiles")
 	var errs []error
 	for _, profile := range profiles {
-		errs = append(errs, deleteProfileTimeout(profile)...)
+		errs = append(errs, deleteProfileTimeout(profile, options)...)
 	}
 	return errs
 }
 
-func deleteProfileTimeout(profile *config.Profile) []error {
+func deleteProfileTimeout(profile *config.Profile, options *run.CommandOptions) []error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	if err := deleteProfile(ctx, profile); err != nil {
+	if err := deleteProfile(ctx, profile, options); err != nil {
 
-		mm, loadErr := machine.LoadMachine(profile.Name)
+		mm, loadErr := machine.LoadMachine(profile.Name, options)
 		if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
 			invalidProfileDeletionErrs := deleteInvalidProfile(profile)
 			if len(invalidProfileDeletionErrs) > 0 {
@@ -325,7 +329,7 @@ func deleteProfileTimeout(profile *config.Profile) []error {
 	return nil
 }
 
-func deleteProfile(ctx context.Context, profile *config.Profile) error {
+func deleteProfile(ctx context.Context, profile *config.Profile, options *run.CommandOptions) error {
 	klog.Infof("Deleting %s", profile.Name)
 	register.Reg.SetStep(register.Deleting)
 
@@ -335,7 +339,7 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 
 		// if driver is oci driver, delete containers and volumes
 		if driver.IsKIC(profile.Config.Driver) {
-			if err := unpauseIfNeeded(profile); err != nil {
+			if err := unpauseIfNeeded(profile, options); err != nil {
 				klog.Warningf("failed to unpause %s : %v", profile.Name, err)
 			}
 			out.Styled(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
@@ -348,7 +352,7 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 		klog.Infof("%s has no configuration, will try to make it work anyways", profile.Name)
 	}
 
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
 		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error getting client %v", err))
 		return DeletionError{Err: delErr, Errtype: Fatal}
@@ -381,7 +385,7 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 	return nil
 }
 
-func unpauseIfNeeded(profile *config.Profile) error {
+func unpauseIfNeeded(profile *config.Profile, options *run.CommandOptions) error {
 	// there is a known issue with removing kicbase container with paused containerd/crio containers inside
 	// unpause it before we delete it
 	crName := profile.Config.KubernetesConfig.ContainerRuntime
@@ -389,7 +393,7 @@ func unpauseIfNeeded(profile *config.Profile) error {
 		return nil
 	}
 
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
 		return err
 	}

@@ -31,25 +31,25 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/version"
 )
 
 func TestShouldCheckURLVersion(t *testing.T) {
-	viper.Set("interactive", true)
 	tempDir := tests.MakeTempDir(t)
 
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 
 	// test that if users disable update notification in config, the URL version does not get checked
 	viper.Set(config.WantUpdateNotification, false)
-	if shouldCheckURLVersion(lastUpdateCheckFilePath) {
+	if shouldCheckURLVersion(lastUpdateCheckFilePath, &run.CommandOptions{}) {
 		t.Fatalf("shouldCheckURLVersion returned true even though config had WantUpdateNotification: false")
 	}
 
 	// test that if users want update notification, the URL version does get checked
 	viper.Set(config.WantUpdateNotification, true)
-	if !shouldCheckURLVersion(lastUpdateCheckFilePath) {
+	if !shouldCheckURLVersion(lastUpdateCheckFilePath, &run.CommandOptions{}) {
 		t.Fatalf("shouldCheckURLVersion returned false even though there was no last_update_check file")
 	}
 
@@ -60,7 +60,7 @@ func TestShouldCheckURLVersion(t *testing.T) {
 	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Time{}); err != nil {
 		t.Errorf("write failed: %v", err)
 	}
-	if !shouldCheckURLVersion(lastUpdateCheckFilePath) {
+	if !shouldCheckURLVersion(lastUpdateCheckFilePath, &run.CommandOptions{}) {
 		t.Fatalf("shouldCheckURLVersion returned false even though longer than 24 hours since last update")
 	}
 
@@ -68,7 +68,7 @@ func TestShouldCheckURLVersion(t *testing.T) {
 	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
 		t.Errorf("write failed: %v", err)
 	}
-	if shouldCheckURLVersion(lastUpdateCheckFilePath) {
+	if shouldCheckURLVersion(lastUpdateCheckFilePath, &run.CommandOptions{}) {
 		t.Fatalf("shouldCheckURLVersion returned true even though less than 24 hours since last update")
 	}
 
@@ -83,13 +83,13 @@ func TestShouldCheckURLBetaVersion(t *testing.T) {
 
 	// test if the user disables beta update notification in config, the URL version does not get checked
 	viper.Set(config.WantBetaUpdateNotification, false)
-	if shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
+	if shouldCheckURLBetaVersion(lastUpdateCheckFilePath, &run.CommandOptions{}) {
 		t.Fatalf("shouldCheckURLBetaVersion returned true even though config had WantBetaUpdateNotification: false")
 	}
 
 	// test if the user enables beta update notification in config, the URL version does get checked
 	viper.Set(config.WantBetaUpdateNotification, true)
-	if !shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
+	if !shouldCheckURLBetaVersion(lastUpdateCheckFilePath, &run.CommandOptions{}) {
 		t.Fatalf("shouldCheckURLBetaVersion returned false even though config had WantBetaUpdateNotification: true")
 	}
 }
@@ -227,7 +227,7 @@ func TestMaybePrintUpdateText(t *testing.T) {
 			}
 			defer os.Remove(tmpfile.Name())
 
-			maybePrintUpdateText(tt.latestFullVersionFromURL, tt.latestBetaVersionFromURL, tmpfile.Name())
+			maybePrintUpdateText(tt.latestFullVersionFromURL, tt.latestBetaVersionFromURL, tmpfile.Name(), &run.CommandOptions{})
 			got := outputBuffer.String()
 			if (tt.want == "" && len(got) != 0) || (tt.want != "" && !strings.Contains(got, tt.want)) {
 				t.Fatalf("Expected MaybePrintUpdateText to contain the text %q as the current version is %s and full version %s and beta version %s, but output was [%s]",

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Kubernetes Authors All rights reserved.
+Copyright 2025 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,24 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mustload
+package flags
 
 import (
-	"path/filepath"
-	"testing"
-
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/run"
 )
 
-func TestPartial(t *testing.T) {
-	path := filepath.Join("..", "config", "testdata", "profile", ".minikube")
-	name := "p1"
-	api, cc := Partial(name, &run.CommandOptions{}, path)
+// Flag names passed to minikube via run.CommandOptions.
+const (
+	Interactive  = "interactive"
+	DownloadOnly = "download-only"
+)
 
-	if cc.Name != name {
-		t.Fatalf("cc.Name expected to be same as name(%s), but got %s", name, cc.Name)
-	}
-	if api == nil {
-		t.Fatalf("expected to get not empty api struct")
+// CommandOptions returns minikube runtime options from command line flags.
+// Flags that must be handled outside of the cmd package must be added to
+// run.CommandOptions.
+func CommandOptions() *run.CommandOptions {
+	return &run.CommandOptions{
+		NonInteractive: !viper.GetBool(Interactive),
+		DownloadOnly:   viper.GetBool(DownloadOnly),
 	}
 }

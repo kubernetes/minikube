@@ -52,6 +52,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -79,14 +80,16 @@ type Driver struct {
 	VmnetHelper    *vmnet.Helper // For network=vmnet-shared
 }
 
-func NewDriver(hostName, storePath string) drivers.Driver {
+func NewDriver(hostName, storePath string, options *run.CommandOptions) drivers.Driver {
 	return &Driver{
 		BaseDriver: &drivers.BaseDriver{
 			SSHUser:     defaultSSHUser,
 			MachineName: hostName,
 			StorePath:   storePath,
 		},
-		CommonDriver: &common.CommonDriver{},
+		CommonDriver: &common.CommonDriver{
+			CommandOptions: *options,
+		},
 	}
 }
 
@@ -377,7 +380,7 @@ func (d *Driver) setupIP(mac string) error {
 	if !isBootpdError(err) {
 		return errors.Wrap(err, "IP address never found in dhcp leases file")
 	}
-	if unblockErr := firewall.UnblockBootpd(); unblockErr != nil {
+	if unblockErr := firewall.UnblockBootpd(&d.CommandOptions); unblockErr != nil {
 		klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
 		exit.Error(reason.IfBootpdFirewall, "ip not found", err)
 	}

@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -48,8 +49,10 @@ func init() {
 		priority = registry.Preferred
 	}
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.VFKit,
-		Init:     func() drivers.Driver { return vfkit.NewDriver("", "") },
+		Name: driver.VFKit,
+		Init: func(options *run.CommandOptions) drivers.Driver {
+			return vfkit.NewDriver("", "", options)
+		},
 		Config:   configure,
 		Status:   status,
 		Default:  true,
@@ -112,7 +115,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func status() registry.State {
+func status(_ *run.CommandOptions) registry.State {
 	_, err := exec.LookPath("vfkit")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Run 'brew install vfkit'", Doc: docURL}

@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -107,7 +108,7 @@ func Driver(name string) DriverDef {
 }
 
 // Available returns a list of available drivers in the global registry
-func Available(vm bool) []DriverState {
+func Available(vm bool, options *run.CommandOptions) []DriverState {
 	sts := []DriverState{}
 	klog.Infof("Querying for installed drivers using PATH=%s", os.Getenv("PATH"))
 
@@ -122,7 +123,7 @@ func Available(vm bool) []DriverState {
 		stateChannel := make(chan State)
 		timeoutChannel := time.After(20 * time.Second)
 		go func() {
-			stateChannel <- d.Status()
+			stateChannel <- d.Status(options)
 		}()
 		s := State{}
 		select {
@@ -148,10 +149,10 @@ func Available(vm bool) []DriverState {
 }
 
 // Status returns the state of a driver within the global registry
-func Status(name string) State {
+func Status(name string, options *run.CommandOptions) State {
 	d := globalRegistry.Driver(name)
 	if d.Empty() {
 		return State{}
 	}
-	return d.Status()
+	return d.Status(options)
 }
