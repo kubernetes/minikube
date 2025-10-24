@@ -35,7 +35,6 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/juju/mutex/v2"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -150,7 +149,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node, o
 	if err != nil {
 		return nil, errors.Wrap(err, "new host")
 	}
-	defer postStartValidations(h, cfg.Driver)
+	defer postStartValidations(h, cfg.Driver, options)
 
 	h.HostOptions.AuthOptions.CertDir = localpath.MiniPath()
 	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
@@ -202,7 +201,7 @@ func timedCreateHost(h *host.Host, api libmachine.API, t time.Duration) error {
 
 // postStartValidations are validations against the host after it is created
 // TODO: Add validations for VM drivers as well, see issue #9035
-func postStartValidations(h *host.Host, drvName string) {
+func postStartValidations(h *host.Host, drvName string, options *run.CommandOptions) {
 	if !driver.IsKIC(drvName) {
 		return
 	}
@@ -226,7 +225,7 @@ func postStartValidations(h *host.Host, drvName string) {
 		return
 	}
 
-	if viper.GetBool("force") {
+	if options.Force {
 		return
 	}
 

@@ -28,7 +28,6 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -96,7 +95,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}), nil
 }
 
-func status(_ *run.CommandOptions) (retState registry.State) {
+func status(options *run.CommandOptions) (retState registry.State) {
 	version, state := dockerVersionOrState()
 	if state.Error != nil {
 		return state
@@ -122,7 +121,7 @@ func status(_ *run.CommandOptions) (retState registry.State) {
 	dockerEngineVersion := versions[0]
 	dockerPlatformVersion := versions[1]
 	klog.Infof("docker version: %s", version)
-	if !viper.GetBool("force") {
+	if !options.Force {
 		if s := checkDockerDesktopVersion(dockerPlatformVersion); s.Error != nil {
 			return s
 		}

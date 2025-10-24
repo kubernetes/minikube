@@ -211,7 +211,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 	addonList := viper.GetStringSlice(config.AddonListFlag)
 	enabledAddons := make(chan []string, 1)
 	if starter.ExistingAddons != nil {
-		if viper.GetBool("force") {
+		if options.Force {
 			addons.Force = true
 		}
 		list := addons.ToEnable(starter.Cfg, starter.ExistingAddons, addonList)
@@ -669,7 +669,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to get command runner")
 	}
 
-	ip, err := validateNetwork(hostInfo, runner, cfg.KubernetesConfig.ImageRepository)
+	ip, err := validateNetwork(hostInfo, runner, cfg.KubernetesConfig.ImageRepository, options)
 	if err != nil {
 		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to validate network")
 	}
@@ -752,7 +752,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (string, error) {
+func validateNetwork(h *host.Host, r command.Runner, imageRepository string, options *run.CommandOptions) (string, error) {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		return ip, err
@@ -783,7 +783,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 	}
 
 	if shouldTrySSH(h.Driver.DriverName(), ip) {
-		if err := trySSH(h, ip); err != nil {
+		if err := trySSH(h, ip, options); err != nil {
 			return ip, err
 		}
 	}
@@ -804,8 +804,8 @@ func shouldTrySSH(driverName, ip string) bool {
 	return true
 }
 
-func trySSH(h *host.Host, ip string) error {
-	if viper.GetBool("force") {
+func trySSH(h *host.Host, ip string, options *run.CommandOptions) error {
+	if options.Force {
 		return nil
 	}
 
