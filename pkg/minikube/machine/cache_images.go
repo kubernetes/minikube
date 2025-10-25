@@ -47,6 +47,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -187,7 +188,7 @@ func LoadLocalImages(cc *config.ClusterConfig, runner command.Runner, images []s
 }
 
 // CacheAndLoadImages caches and loads images to all profiles
-func CacheAndLoadImages(images []string, profiles []*config.Profile, overwrite bool) error {
+func CacheAndLoadImages(images []string, profiles []*config.Profile, overwrite bool, options *run.CommandOptions) error {
 	if len(images) == 0 {
 		return nil
 	}
@@ -197,12 +198,12 @@ func CacheAndLoadImages(images []string, profiles []*config.Profile, overwrite b
 		return errors.Wrap(err, "save to dir")
 	}
 
-	return DoLoadImages(images, profiles, detect.ImageCacheDir(), overwrite)
+	return DoLoadImages(images, profiles, detect.ImageCacheDir(), overwrite, options)
 }
 
 // DoLoadImages loads images to all profiles
-func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, overwrite bool) error {
-	api, err := NewAPIClient()
+func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, overwrite bool, options *run.CommandOptions) error {
+	api, err := NewAPIClient(options)
 	if err != nil {
 		return errors.Wrap(err, "api")
 	}
@@ -384,17 +385,17 @@ func SaveLocalImages(cc *config.ClusterConfig, runner command.Runner, images []s
 }
 
 // SaveAndCacheImages saves images from all profiles into the cache
-func SaveAndCacheImages(images []string, profiles []*config.Profile) error {
+func SaveAndCacheImages(images []string, profiles []*config.Profile, options *run.CommandOptions) error {
 	if len(images) == 0 {
 		return nil
 	}
 
-	return DoSaveImages(images, "", profiles, detect.ImageCacheDir())
+	return DoSaveImages(images, "", profiles, detect.ImageCacheDir(), options)
 }
 
 // DoSaveImages saves images from all profiles
-func DoSaveImages(images []string, output string, profiles []*config.Profile, cacheDir string) error {
-	api, err := NewAPIClient()
+func DoSaveImages(images []string, output string, profiles []*config.Profile, cacheDir string, options *run.CommandOptions) error {
+	api, err := NewAPIClient(options)
 	if err != nil {
 		return errors.Wrap(err, "api")
 	}
@@ -552,8 +553,8 @@ func pullImages(crMgr cruntime.Manager, imgs []string) error {
 }
 
 // PullImages pulls images to all nodes in profile
-func PullImages(images []string, profile *config.Profile) error {
-	api, err := NewAPIClient()
+func PullImages(images []string, profile *config.Profile, options *run.CommandOptions) error {
+	api, err := NewAPIClient(options)
 	if err != nil {
 		return errors.Wrap(err, "error creating api client")
 	}
@@ -633,8 +634,8 @@ func removeImages(crMgr cruntime.Manager, imgs []string) error {
 }
 
 // RemoveImages removes images from all nodes in profile
-func RemoveImages(images []string, profile *config.Profile) error {
-	api, err := NewAPIClient()
+func RemoveImages(images []string, profile *config.Profile, options *run.CommandOptions) error {
+	api, err := NewAPIClient(options)
 	if err != nil {
 		return errors.Wrap(err, "error creating api client")
 	}
@@ -691,8 +692,8 @@ func RemoveImages(images []string, profile *config.Profile) error {
 }
 
 // ListImages lists images on all nodes in profile
-func ListImages(profile *config.Profile, format string) error {
-	api, err := NewAPIClient()
+func ListImages(profile *config.Profile, format string, options *run.CommandOptions) error {
+	api, err := NewAPIClient(options)
 	if err != nil {
 		return errors.Wrap(err, "error creating api client")
 	}
@@ -860,8 +861,8 @@ func renderImagesTable(images [][]string) {
 }
 
 // TagImage tags image in all nodes in profile
-func TagImage(profile *config.Profile, source string, target string) error {
-	api, err := NewAPIClient()
+func TagImage(profile *config.Profile, source string, target string, options *run.CommandOptions) error {
+	api, err := NewAPIClient(options)
 	if err != nil {
 		return errors.Wrap(err, "error creating api client")
 	}
@@ -941,8 +942,8 @@ func pushImages(crMgr cruntime.Manager, imgs []string) error {
 }
 
 // PushImages push images on all nodes in profile
-func PushImages(images []string, profile *config.Profile) error {
-	api, err := NewAPIClient()
+func PushImages(images []string, profile *config.Profile, options *run.CommandOptions) error {
+	api, err := NewAPIClient(options)
 	if err != nil {
 		return errors.Wrap(err, "error creating api client")
 	}

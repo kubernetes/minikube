@@ -28,7 +28,6 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -37,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -49,7 +49,7 @@ func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Docker,
 		Config:   configure,
-		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
+		Init:     func(_ *run.CommandOptions) drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
 		Status:   status,
 		Default:  true,
 		Priority: registry.HighlyPreferred,
@@ -95,7 +95,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}), nil
 }
 
-func status() (retState registry.State) {
+func status(options *run.CommandOptions) (retState registry.State) {
 	version, state := dockerVersionOrState()
 	if state.Error != nil {
 		return state
@@ -121,7 +121,7 @@ func status() (retState registry.State) {
 	dockerEngineVersion := versions[0]
 	dockerPlatformVersion := versions[1]
 	klog.Infof("docker version: %s", version)
-	if !viper.GetBool("force") {
+	if !options.Force {
 		if s := checkDockerDesktopVersion(dockerPlatformVersion); s.Error != nil {
 			return s
 		}

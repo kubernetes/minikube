@@ -29,6 +29,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/provision"
 	"k8s.io/minikube/pkg/util/retry"
@@ -68,8 +69,8 @@ func (h *Machine) IsValid() bool {
 }
 
 // LoadMachine returns a Machine abstracting a libmachine.Host
-func LoadMachine(name string) (*Machine, error) {
-	api, err := NewAPIClient()
+func LoadMachine(name string, options *run.CommandOptions) (*Machine, error) {
+	api, err := NewAPIClient(options)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +133,7 @@ func fastDetectProvisioner(h *host.Host) (libprovision.Provisioner, error) {
 }
 
 // saveHost is a wrapper around libmachine's Save function to proactively update the node's IP whenever a host is saved
-func saveHost(api libmachine.API, h *host.Host, cfg *config.ClusterConfig, n *config.Node) error {
+func saveHost(api libmachine.API, h *host.Host, cfg *config.ClusterConfig, n *config.Node, options *run.CommandOptions) error {
 	if err := api.Save(h); err != nil {
 		return errors.Wrap(err, "save")
 	}
@@ -146,7 +147,7 @@ func saveHost(api libmachine.API, h *host.Host, cfg *config.ClusterConfig, n *co
 		ip = "10.0.2.15"
 	}
 	n.IP = ip
-	return config.SaveNode(cfg, n)
+	return config.SaveNode(cfg, n, options)
 }
 
 // backup copies critical ephemeral vm config files from tmpfs to persistent storage under /var/lib/minikube/backup,

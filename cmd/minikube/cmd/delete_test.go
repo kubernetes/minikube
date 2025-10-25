@@ -27,11 +27,12 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/google/go-cmp/cmp"
 	"github.com/otiai10/copy"
-	"github.com/spf13/viper"
 
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // exclude returns a list of strings, minus the excluded ones
@@ -105,7 +106,11 @@ func TestDeleteProfile(t *testing.T) {
 			}
 
 			hostAndDirsDeleter = hostAndDirsDeleterMock
-			errs := DeleteProfiles([]*config.Profile{profile})
+
+			// Simulate minikube delete --profile PROFILE_NAME
+			options := &run.CommandOptions{ProfileName: profile.Name}
+
+			errs := DeleteProfiles([]*config.Profile{profile}, options)
 			if len(errs) > 0 {
 				HandleDeletionErrors(errs)
 				t.Errorf("Errors while deleting profiles: %v", errs)
@@ -139,8 +144,6 @@ func TestDeleteProfile(t *testing.T) {
 			if diff := cmp.Diff(expectedMachines, afterMachines); diff != "" {
 				t.Errorf("machines mismatch (-want +got):\n%s", diff)
 			}
-
-			viper.Set(config.ProfileName, "")
 		})
 	}
 }
@@ -155,6 +158,8 @@ func deleteContextTest() error {
 }
 
 func TestDeleteAllProfiles(t *testing.T) {
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
+
 	td := t.TempDir()
 
 	if err := copy.Copy("../../../pkg/minikube/config/testdata/delete-all", td); err != nil {
@@ -184,7 +189,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 	config.DockerContainers = func() ([]string, error) {
 		return []string{}, nil
 	}
-	validProfiles, inValidProfiles, err := config.ListProfiles()
+	validProfiles, inValidProfiles, err := config.ListProfiles(options)
 	if err != nil {
 		t.Error(err)
 	}
@@ -196,7 +201,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 	profiles := validProfiles
 	profiles = append(profiles, inValidProfiles...)
 	hostAndDirsDeleter = hostAndDirsDeleterMock
-	errs := DeleteProfiles(profiles)
+	errs := DeleteProfiles(profiles, options)
 
 	if errs != nil {
 		t.Errorf("errors while deleting all profiles: %v", errs)
@@ -217,8 +222,6 @@ func TestDeleteAllProfiles(t *testing.T) {
 	if len(afterMachines) != 0 {
 		t.Errorf("Did not delete all machines, remaining: %v", afterMachines)
 	}
-
-	viper.Set(config.ProfileName, "")
 }
 
 // TestTryKillOne spawns a go child process that waits to be SIGKILLed,

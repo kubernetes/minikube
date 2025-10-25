@@ -25,12 +25,14 @@ import (
 
 	"github.com/google/uuid"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func TestRow(t *testing.T) {
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
+
 	c := "start"
 	a := "--alsologtostderr"
-	p := "profile1"
 	u := "user1"
 	v := "v0.17.1"
 	st := time.Now()
@@ -39,7 +41,7 @@ func TestRow(t *testing.T) {
 	etFormatted := et.Format(constants.TimeFormat)
 	id := uuid.New().String()
 
-	r := newRow(c, a, u, v, st, id, p)
+	r := newRow(c, a, u, v, st, id, options)
 	r.endTime = etFormatted
 
 	t.Run("NewRow", func(t *testing.T) {
@@ -50,7 +52,7 @@ func TestRow(t *testing.T) {
 		}{
 			{"command", r.command, c},
 			{"args", r.args, a},
-			{"profile", r.profile, p},
+			{"profile", r.profile, options.ProfileName},
 			{"user", r.user, u},
 			{"version", r.version, v},
 			{"startTime", r.startTime, stFormatted},
@@ -82,7 +84,7 @@ func TestRow(t *testing.T) {
 		}{
 			{"command", c},
 			{"args", a},
-			{"profile", p},
+			{"profile", options.ProfileName},
 			{"user", u},
 			{"version", v},
 			{"startTime", stFormatted},
@@ -100,7 +102,7 @@ func TestRow(t *testing.T) {
 	t.Run("toFields", func(t *testing.T) {
 		got := r.toFields()
 		gotString := strings.Join(got, ",")
-		want := []string{c, a, p, u, v, stFormatted, etFormatted}
+		want := []string{c, a, options.ProfileName, u, v, stFormatted, etFormatted}
 		wantString := strings.Join(want, ",")
 
 		if gotString != wantString {
@@ -109,7 +111,9 @@ func TestRow(t *testing.T) {
 	})
 
 	t.Run("assignFields", func(t *testing.T) {
-		l := fmt.Sprintf(`{"data":{"args":"%s","command":"%s","id":"%s","profile":"%s","startTime":"%s","user":"%s","version":"v0.17.1"},"datacontenttype":"application/json","id":"bc6ec9d4-0d08-4b57-ac3b-db8d67774768","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}`, a, c, id, p, stFormatted, u)
+		l := fmt.Sprintf(
+			`{"data":{"args":"%s","command":"%s","id":"%s","profile":"%s","startTime":"%s","user":"%s","version":"v0.17.1"},"datacontenttype":"application/json","id":"bc6ec9d4-0d08-4b57-ac3b-db8d67774768","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}`,
+			a, c, id, options.ProfileName, stFormatted, u)
 
 		r := &row{}
 		if err := json.Unmarshal([]byte(l), r); err != nil {
@@ -125,7 +129,7 @@ func TestRow(t *testing.T) {
 		}{
 			{"command", r.command, c},
 			{"args", r.args, a},
-			{"profile", r.profile, p},
+			{"profile", r.profile, options.ProfileName},
 			{"user", r.user, u},
 			{"version", r.version, v},
 			{"startTime", r.startTime, stFormatted},

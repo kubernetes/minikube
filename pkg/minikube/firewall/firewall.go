@@ -24,11 +24,11 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -63,7 +63,7 @@ func IsBootpdBlocked(cc config.ClusterConfig) bool {
 }
 
 // UnblockBootpd adds bootpd to the built-in macOS firewall and then unblocks it
-func UnblockBootpd() error {
+func UnblockBootpd(options *run.CommandOptions) error {
 	cmds := []*exec.Cmd{
 		exec.Command("sudo", "/usr/libexec/ApplicationFirewall/socketfilterfw", "--add", "/usr/libexec/bootpd"),
 		exec.Command("sudo", "/usr/libexec/ApplicationFirewall/socketfilterfw", "--unblock", "/usr/libexec/bootpd"),
@@ -82,7 +82,7 @@ func UnblockBootpd() error {
 		klog.Infof("testing: %s", test.Args)
 		if err := test.Run(); err != nil {
 			klog.Infof("%v may require a password: %v", c.Args, err)
-			if !viper.GetBool("interactive") {
+			if !options.NonInteractive {
 				klog.Warningf("%s requires a password, and --interactive=false", c.Args)
 				c.Args = slices.Insert(c.Args, 1, "-n")
 			}

@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -41,12 +42,14 @@ var addonsEnableCmd = &cobra.Command{
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube addons enable ADDON_NAME")
 		}
-		_, cc := mustload.Partial(ClusterFlagValue())
+
+		options := flags.CommandOptions()
+		_, cc := mustload.Partial(ClusterFlagValue(), options)
 		if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
 			exit.Message(reason.Usage, "You cannot enable addons on a cluster without Kubernetes, to enable Kubernetes on your cluster, run: minikube start --kubernetes-version=stable")
 		}
 
-		err := addons.VerifyNotPaused(ClusterFlagValue(), true)
+		err := addons.VerifyNotPaused(ClusterFlagValue(), true, options)
 		if err != nil {
 			exit.Error(reason.InternalAddonEnablePaused, "enabled failed", err)
 		}
@@ -83,7 +86,7 @@ You can view the list of minikube maintainers at: https://github.com/kubernetes/
 		if registries != "" {
 			viper.Set(config.AddonRegistries, registries)
 		}
-		err = addons.SetAndSave(ClusterFlagValue(), addon, "true")
+		err = addons.SetAndSave(ClusterFlagValue(), addon, "true", options)
 		if err != nil && !errors.Is(err, addons.ErrSkipThisAddon) {
 			exit.Error(reason.InternalAddonEnable, "enable failed", err)
 		}

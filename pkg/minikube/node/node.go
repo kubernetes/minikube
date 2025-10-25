@@ -26,7 +26,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -36,14 +35,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 // Add adds a new node config to an existing cluster.
-func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
-	profiles, err := config.ListValidProfiles()
+func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool, options *run.CommandOptions) error {
+	profiles, err := config.ListValidProfiles(options)
 	if err != nil {
 		return err
 	}
@@ -65,11 +65,11 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 		n.Port = cc.APIServerPort
 	}
 
-	if err := config.SaveNode(cc, &n); err != nil {
+	if err := config.SaveNode(cc, &n, options); err != nil {
 		return errors.Wrap(err, "save node")
 	}
 
-	r, p, m, h, err := Provision(cc, &n, delOnFail)
+	r, p, m, h, err := Provision(cc, &n, delOnFail, options)
 	if err != nil {
 		return err
 	}
@@ -83,13 +83,13 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 		ExistingAddons: nil,
 	}
 
-	_, err = Start(s)
+	_, err = Start(s, options)
 	return err
 }
 
 // teardown drains, then resets and finally deletes node from cluster.
 // ref: https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#tear-down
-func teardown(cc config.ClusterConfig, name string) (*config.Node, error) {
+func teardown(cc config.ClusterConfig, name string, options *run.CommandOptions) (*config.Node, error) {
 	// get runner for named node - has to be done before node is drained
 	n, _, err := Retrieve(cc, name)
 	if err != nil {
@@ -97,7 +97,7 @@ func teardown(cc config.ClusterConfig, name string) (*config.Node, error) {
 	}
 	m := config.MachineName(cc, *n)
 
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
 		return n, errors.Wrap(err, "get api client")
 	}
@@ -113,7 +113,7 @@ func teardown(cc config.ClusterConfig, name string) (*config.Node, error) {
 	}
 
 	// get runner for healthy control-plane node
-	cpr := mustload.Healthy(cc.Name).CP.Runner
+	cpr := mustload.Healthy(cc.Name, options).CP.Runner
 
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 
@@ -183,14 +183,14 @@ func teardown(cc config.ClusterConfig, name string) (*config.Node, error) {
 }
 
 // Delete calls teardownNode to remove node from cluster and deletes the host.
-func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
-	n, err := teardown(cc, name)
+func Delete(cc config.ClusterConfig, name string, options *run.CommandOptions) (*config.Node, error) {
+	n, err := teardown(cc, name, options)
 	if err != nil {
 		return n, err
 	}
 
 	m := config.MachineName(cc, *n)
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
 		return n, err
 	}
@@ -206,7 +206,7 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 	}
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
+	return n, config.SaveProfile(options.ProfileName, &cc)
 }
 
 // Retrieve finds the node by name in the given cluster
@@ -227,7 +227,7 @@ func Retrieve(cc config.ClusterConfig, name string) (*config.Node, int, error) {
 }
 
 // Save saves a node to a cluster
-func Save(cfg *config.ClusterConfig, node *config.Node) error {
+func Save(cfg *config.ClusterConfig, node *config.Node, options *run.CommandOptions) error {
 	update := false
 	for i, n := range cfg.Nodes {
 		if n.Name == node.Name {
@@ -240,7 +240,7 @@ func Save(cfg *config.ClusterConfig, node *config.Node) error {
 	if !update {
 		cfg.Nodes = append(cfg.Nodes, *node)
 	}
-	return config.SaveProfile(viper.GetString(config.ProfileName), cfg)
+	return config.SaveProfile(options.ProfileName, cfg)
 }
 
 // Name returns the appropriate name for the node given the node index.

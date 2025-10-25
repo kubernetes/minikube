@@ -26,6 +26,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -139,6 +140,7 @@ var podmanEnvCmd = &cobra.Command{
 	Short: "Configure environment to use minikube's Podman service",
 	Long:  `Sets up podman env variables; similar to '$(podman-machine env)'.`,
 	Run: func(_ *cobra.Command, _ []string) {
+		options := flags.CommandOptions()
 		sh := shell.EnvConfig{
 			Shell: shell.ForceShell,
 		}
@@ -156,7 +158,7 @@ var podmanEnvCmd = &cobra.Command{
 		}
 
 		cname := ClusterFlagValue()
-		co := mustload.Running(cname)
+		co := mustload.Running(cname, options)
 		driverName := co.CP.Host.DriverName
 
 		if driverName == driver.None {

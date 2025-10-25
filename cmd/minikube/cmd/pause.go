@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/viper"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -50,8 +51,9 @@ var pauseCmd = &cobra.Command{
 }
 
 func runPause(_ *cobra.Command, _ []string) {
+	options := flags.CommandOptions()
 	out.SetJSON(outputFormat == "json")
-	co := mustload.Running(ClusterFlagValue())
+	co := mustload.Running(ClusterFlagValue(), options)
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	register.Reg.SetStep(register.Pausing)
 

@@ -19,12 +19,14 @@ package mustload
 import (
 	"path/filepath"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func TestPartial(t *testing.T) {
 	path := filepath.Join("..", "config", "testdata", "profile", ".minikube")
 	name := "p1"
-	api, cc := Partial(name, path)
+	api, cc := Partial(name, &run.CommandOptions{}, path)
 
 	if cc.Name != name {
 		t.Fatalf("cc.Name expected to be same as name(%s), but got %s", name, cc.Name)

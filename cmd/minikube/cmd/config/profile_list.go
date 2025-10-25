@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 
 	"github.com/docker/machine/libmachine"
@@ -52,33 +54,34 @@ var profileListCmd = &cobra.Command{
 	Short: "Lists all minikube profiles.",
 	Long:  "Lists all valid minikube profiles and detects all possible invalid profiles.",
 	Run: func(_ *cobra.Command, _ []string) {
+		options := flags.CommandOptions()
 		output := strings.ToLower(profileOutput)
 		out.SetJSON(output == "json")
-		go notify.MaybePrintUpdateTextFromGithub()
+		go notify.MaybePrintUpdateTextFromGithub(options)
 
 		switch output {
 		case "json":
-			printProfilesJSON()
+			printProfilesJSON(options)
 		case "table":
-			printProfilesTable()
+			printProfilesTable(options)
 		default:
 			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", profileOutput))
 		}
 	},
 }
 
-func listProfiles() (validProfiles, invalidProfiles []*config.Profile, err error) {
+func listProfiles(options *run.CommandOptions) (validProfiles, invalidProfiles []*config.Profile, err error) {
 	if isLight {
-		validProfiles, err = config.ListValidProfiles()
+		validProfiles, err = config.ListValidProfiles(options)
 	} else {
-		validProfiles, invalidProfiles, err = config.ListProfiles()
+		validProfiles, invalidProfiles, err = config.ListProfiles(options)
 	}
 
 	return validProfiles, invalidProfiles, err
 }
 
-func printProfilesTable() {
-	validProfiles, invalidProfiles, err := listProfiles()
+func printProfilesTable(options *run.CommandOptions) {
+	validProfiles, invalidProfiles, err := listProfiles(options)
 
 	if err != nil {
 		klog.Warningf("error loading profiles: %v", err)
@@ -88,12 +91,12 @@ func printProfilesTable() {
 		exit.Message(reason.UsageNoProfileRunning, "No minikube profile was found.")
 	}
 
-	updateProfilesStatus(validProfiles)
+	updateProfilesStatus(validProfiles, options)
 	renderProfilesTable(profilesToTableData(validProfiles))
 	warnInvalidProfiles(invalidProfiles)
 }
 
-func updateProfilesStatus(profiles []*config.Profile) {
+func updateProfilesStatus(profiles []*config.Profile, options *run.CommandOptions) {
 	if isLight {
 		for _, p := range profiles {
 			p.Status = "Skipped"
@@ -101,7 +104,7 @@ func updateProfilesStatus(profiles []*config.Profile) {
 		return
 	}
 
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
 		klog.Errorf("failed to get machine api client %v", err)
 	}
@@ -205,9 +208,9 @@ func warnInvalidProfiles(invalidProfiles []*config.Profile) {
 	}
 }
 
-func printProfilesJSON() {
-	validProfiles, invalidProfiles, err := listProfiles()
-	updateProfilesStatus(validProfiles)
+func printProfilesJSON(options *run.CommandOptions) {
+	validProfiles, invalidProfiles, err := listProfiles(options)
+	updateProfilesStatus(validProfiles, options)
 
 	var body = map[string]interface{}{}
 	if err == nil || config.IsNotExist(err) {

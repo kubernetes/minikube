@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -85,7 +86,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func status() registry.State {
+func status(_ *run.CommandOptions) registry.State {
 	path, err := exec.LookPath("hyperkit")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Run 'brew install hyperkit'", Doc: docURL}

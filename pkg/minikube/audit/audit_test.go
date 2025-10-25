@@ -26,6 +26,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func TestAudit(t *testing.T) {
@@ -202,6 +204,7 @@ func TestAudit(t *testing.T) {
 
 	// Check if logging with limited args causes a panic
 	t.Run("LogCommandStart", func(t *testing.T) {
+		options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
 		os.Args = []string{"minikube", "start"}
@@ -212,7 +215,7 @@ func TestAudit(t *testing.T) {
 			pflag.Parse()
 		}()
 		mockArgs(t, os.Args)
-		auditID, err := LogCommandStart()
+		auditID, err := LogCommandStart(options)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -222,6 +225,7 @@ func TestAudit(t *testing.T) {
 	})
 
 	t.Run("LogCommandEnd", func(t *testing.T) {
+		options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
 		os.Args = []string{"minikube", "start"}
@@ -233,7 +237,7 @@ func TestAudit(t *testing.T) {
 			pflag.Parse()
 		}()
 		mockArgs(t, os.Args)
-		auditID, err := LogCommandStart()
+		auditID, err := LogCommandStart(options)
 		if err != nil {
 			t.Fatalf("start failed: %v", err)
 		}
