@@ -20,7 +20,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v76/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/minikube/pkg/minikube/constants"
 )

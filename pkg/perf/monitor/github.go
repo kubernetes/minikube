@@ -22,7 +22,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v76/github"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
