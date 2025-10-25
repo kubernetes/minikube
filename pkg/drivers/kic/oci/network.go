@@ -88,13 +88,39 @@ func RoutableHostIPFromInside(ociBin string, clusterName string, containerName s
 // digDNS will get the IP record for a dns
 func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 	rr, err := runCmd(exec.Command(ociBin, "exec", "-t", containerName, "dig", "+short", dns))
-	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
-	if err != nil {
-		return ip, errors.Wrapf(err, "resolve dns to ip")
-	}
-
-	klog.Infof("got host ip for mount in container by digging dns: %s", ip.String())
-	return ip, nil
+        if err != nil {
+                // still try to parse whatever output we got
+                klog.Infof("dig returned error, attempting to parse output anyway: %v", err)
+        }
+        out := strings.TrimSpace(rr.Stdout.String())
+        if out == "" {
+                return nil, errors.Wrapf(err, "resolve dns to ip")
+        }
+        // Parse line-by-line. On non-Linux (Docker Desktop), prefer IPv4 for better routability.
+        var firstIP net.IP
+        for _, line := range strings.Split(out, "\n") {
+                s := strings.TrimSpace(line)
+                if s == "" {
+                        continue
+                }
+                ip := net.ParseIP(s)
+                if ip == nil {
+                        continue
+                }
+                if runtime.GOOS != "linux" && ip.To4() == nil {
+                        // Prefer IPv4 on Desktop; keep looking for an A record
+                        if firstIP == nil { firstIP = ip }
+                        continue
+                }
+                klog.Infof("got host ip for mount in container by digging dns: %s", ip.String())
+                return ip, nil
+        }
+        // Fallback: return first valid IP if only AAAA answers were present
+        if firstIP != nil {
+                klog.Infof("got host ip for mount in container by digging dns (first match): %s", firstIP.String())
+                return firstIP, nil
+        }
+        return nil, errors.New("no A/AAAA answers returned by dig")
 }
 
 // gatewayIP inspects oci container to find a gateway IP string
@@ -104,8 +130,16 @@ func gatewayIP(ociBin, containerName string) (string, error) {
 		return "", errors.Wrapf(err, "inspect gateway")
 	}
 	if gatewayIP := strings.TrimSpace(rr.Stdout.String()); gatewayIP != "" {
-		return gatewayIP, nil
-	}
+                return gatewayIP, nil
+        }
+
+	// Fallback to IPv6 gateway (needed for IPv6-only / dual-stack)
+        rr6, err6 := runCmd(exec.Command(ociBin, "container", "inspect", "--format", "{{.NetworkSettings.IPv6Gateway}}", containerName))
+        if err6 == nil {
+                if gatewayIP6 := strings.TrimSpace(rr6.Stdout.String()); gatewayIP6 != "" {
+                        return gatewayIP6, nil
+                }
+        }
 
 	// https://github.com/kubernetes/minikube/issues/11293
 	// need to check nested network
@@ -126,16 +160,24 @@ func gatewayIP(ociBin, containerName string) (string, error) {
 }
 
 func networkGateway(ociBin, container, network string) (string, error) {
-	format := fmt.Sprintf(`
-{{ if index .NetworkSettings.Networks %q}} 
-	{{(index .NetworkSettings.Networks %q).Gateway}}
-{{ end }}
-`, network, network)
-	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, container))
+	// First try IPv4 gateway on the specific network
+        format4 := fmt.Sprintf(`{{ if index .NetworkSettings.Networks %q}}{{(index .NetworkSettings.Networks %q).Gateway}}{{ end }}`, network, network)
+        rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", format4, container))
 	if err != nil {
 		return "", errors.Wrapf(err, "inspect gateway")
 	}
-	return strings.TrimSpace(rr.Stdout.String()), nil
+
+	gw := strings.TrimSpace(rr.Stdout.String())
+        if gw != "" {
+                return gw, nil
+        }
+        // Fallback to IPv6 gateway
+        format6 := fmt.Sprintf(`{{ if index .NetworkSettings.Networks %q}}{{(index .NetworkSettings.Networks %q).IPv6Gateway}}{{ end }}`, network, network)
+        rr6, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", format6, container))
+        if err != nil {
+                return "", errors.Wrapf(err, "inspect ipv6 gateway")
+        }
+        return strings.TrimSpace(rr6.Stdout.String()), nil
 }
 
 // containerGatewayIP gets the default gateway ip for the container
@@ -188,10 +230,9 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	o := strings.TrimSpace(rr.Stdout.String())
 	o = strings.Trim(o, "'")
 	p, err := strconv.Atoi(o)
-
-	if err != nil {
-		return p, errors.Wrapf(err, "convert host-port %q to number", p)
-	}
+        if err != nil {
+                return 0, errors.Wrapf(err, "convert host-port %q to number", o)
+        }
 
 	return p, nil
 }

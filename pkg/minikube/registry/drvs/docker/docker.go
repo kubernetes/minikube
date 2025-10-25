@@ -89,7 +89,10 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		ExtraArgs:         extraArgs,
 		Network:           cc.Network,
 		Subnet:            cc.Subnet,
+		Subnetv6:    	   cc.Subnetv6,
 		StaticIP:          cc.StaticIP,
+		StaticIPv6:        cc.StaticIPv6,
+		IPFamily:          cc.KubernetesConfig.IPFamily,
 		ListenAddress:     cc.ListenAddress,
 		GPUs:              cc.GPUs,
 	}), nil

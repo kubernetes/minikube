@@ -24,7 +24,7 @@ var V1Beta2 = template.Must(template.New("configTmpl-v1beta2").Funcs(template.Fu
 }).Parse(`apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
 localAPIEndpoint:
-  advertiseAddress: {{.AdvertiseAddress}}
+  advertiseAddress: "{{.AdvertiseAddress}}"
   bindPort: {{.APIServerPort}}
 bootstrapTokens:
   - groups:
@@ -36,16 +36,28 @@ bootstrapTokens:
 nodeRegistration:
   criSocket: {{if .CRISocket}}{{.CRISocket}}{{else}}/var/run/dockershim.sock{{end}}
   name: "{{.NodeName}}"
+{{- if .NodeIP }}
   kubeletExtraArgs:
-    node-ip: {{.NodeIP}}
+    node-ip: "{{.NodeIP}}"
+{{- end }}
   taints: []
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
 {{ if .ImageRepository}}imageRepository: {{.ImageRepository}}
 {{end}}{{range .ComponentOptions}}{{.Component}}:
+{{- if eq .Component "apiServer" }}
+  {{- if $.APIServerCertSANs }}
+  certSANs:
+  {{- range $.APIServerCertSANs }}
+    - "{{ . }}"
+  {{- end }}
+  {{- end }}
+{{- end }}
 {{- range $k, $v := .Pairs }}
+  {{- if not (and (eq .Component "apiServer") (eq $k "certSANs")) }}
   {{$k}}: {{$v}}
+  {{- end }}
 {{- end}}
   extraArgs:
 {{- range $i, $val := printMapInOrder .ExtraArgs ": " }}
@@ -72,7 +84,7 @@ kubernetesVersion: {{.KubernetesVersion}}
 networking:
   dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
   podSubnet: "{{.PodSubnet }}"
-  serviceSubnet: {{.ServiceCIDR}}
+  serviceSubnet: "{{.ServiceCIDR}}"
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
@@ -96,7 +108,7 @@ staticPodPath: {{.StaticPodPath}}
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 clusterCIDR: "{{.PodSubnet }}"
-metricsBindAddress: 0.0.0.0:10249
+metricsBindAddress: "{{.KubeProxyMetricsBindAddress}}"
 conntrack:
   maxPerCore: 0
 # Skip setting "net.netfilter.nf_conntrack_tcp_timeout_established"
