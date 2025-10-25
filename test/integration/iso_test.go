@@ -1,4 +1,4 @@
-//go:build iso
+//go:build integration
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -28,8 +28,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
-// TestGuestEnvironment verifies files and packages installed inside minikube ISO/Base image
-func TestGuestEnvironment(t *testing.T) {
+// TestISOImage verifies files and packages installed inside minikube ISO/Base image
+func TestISOImage(t *testing.T) {
+	if !VMDriver() {
+		t.Skip("This test requires a VM driver")
+	}
+
 	MaybeParallel(t)
 
 	profile := UniqueProfileName("guest")
