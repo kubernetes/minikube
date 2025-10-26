@@ -133,8 +133,6 @@ export MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE=true
 readonly TIMEOUT=120m
 
 cp -r test/integration/testdata .
-cp out/gvisor-addon testdata/
-ls testdata
 
 # Add the out/ directory to the PATH, for using new drivers.
 export PATH="$(pwd)/out/":$PATH
@@ -146,8 +144,14 @@ export E2E_BIN="out/e2e-${OS_ARCH}"
 
 install_dependencies
 docker_setup
+
+
+if [ "$CONTAINER_RUNTIME" == "containerd" ]; then
+	cp out/gvisor-addon testdata/
+	gvisor_image_build
+fi
+
 print_test_info
-gvisor_image_build
 
 readonly TEST_OUT="${TEST_HOME}/testout.txt"
 readonly JSON_OUT="${TEST_HOME}/test.json"

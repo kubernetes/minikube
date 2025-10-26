@@ -38,11 +38,11 @@ func (k *KVMDockerLinuxAmd64IntegrationTester) Run(runner MiniTestRunner) error 
 
 	var testErr error
 	// install docker and libvirtd first then run the test in a new shell
-	if err := runner.Execute("cd minikube && ./hack/prow/linux_integration_kvm_pre.sh"); err != nil {
+	if err := runner.Execute("cd minikube && ./hack/prow/integration_kvm_docker_linux_x86-64_pre.sh"); err != nil {
 		klog.Errorf("failed to install docker in env: %v", err)
 		return err
 	}
-	if testErr = runner.Execute("cd minikube && ./hack/prow/linux_integration_kvm.sh"); testErr != nil {
+	if testErr = runner.Execute("cd minikube && ./hack/prow/integration_kvm_docker_linux_x86-64.sh"); testErr != nil {
 		klog.Errorf("failed to execute command in env: %v", testErr)
 		// don't return here, we still want to collect the test reports
 	}

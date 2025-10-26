@@ -28,6 +28,7 @@ JOB_NAME="KVM_Linux"
 
 COMMIT=$(git rev-parse HEAD)
 MINIKUBE_LOCATION=$COMMIT
+echo "running test in $(pwd)"
 
 set +e
 sleep 5  # wait for libvirtd to be running

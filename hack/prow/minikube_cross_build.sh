@@ -24,6 +24,7 @@ OS=$2
 ARCH=$3
 readonly OS_ARCH="${OS}-${ARCH}"
 
+echo "running build in $(pwd)"
 
 # hack/prow/installer/check_install_golang.sh /usr/local $GO_VERSION
 # declare -rx GOPATH="$HOME/go"
@@ -32,13 +33,12 @@ declare -rx BUILD_IN_DOCKER=y
 make -j 16 \
   out/minikube-${OS_ARCH} \
   out/e2e-${OS_ARCH} \
-  drivers \
   out/gvisor-addon \
 && failed=$? || failed=$?
 
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
-chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
+chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}"
 
 BUILT_VERSION=$("out/minikube-$(go env GOOS)-$(go env GOARCH)" version)
 echo ${BUILT_VERSION}
