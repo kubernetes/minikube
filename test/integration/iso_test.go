@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -54,7 +55,24 @@ func TestISOImage(t *testing.T) {
 
 	// Run as a group so that our defer doesn't happen as tests are runnings
 	t.Run("Binaries", func(t *testing.T) {
-		for _, pkg := range []string{"git", "rsync", "curl", "wget", "socat", "iptables", "VBoxControl", "VBoxService", "crictl", "podman", "docker"} {
+		binaries := []string{
+			"crictl",
+			"curl",
+			"docker",
+			"git",
+			"iptables",
+			"podman",
+			"rsync",
+			"socat",
+			"wget",
+		}
+
+		// virtualbox is not available in the arm64 iso.
+		if runtime.GOARCH == "amd64" {
+			binaries = append(binaries, "VBoxControl", "VBoxService")
+		}
+
+		for _, pkg := range binaries {
 			pkg := pkg
 			t.Run(pkg, func(t *testing.T) {
 				t.Parallel()
