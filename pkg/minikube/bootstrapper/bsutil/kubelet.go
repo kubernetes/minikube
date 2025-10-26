@@ -83,24 +83,24 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 		}
 	}
 
-        // Pick node-ip based on requested IP family
-        if _, ok := extraOpts["node-ip"]; !ok {
-                family := strings.ToLower(k8s.IPFamily)
-                switch family {
-                case "ipv6":
-                        if nc.IPv6 != "" {
-                                extraOpts["node-ip"] = nc.IPv6
-                        } else {
-                                // fallback if IPv6 wasn’t wired yet
-                                extraOpts["node-ip"] = nc.IP
-                        }
-                case "dual":
-                        // Don’t set node-ip at all; kubelet will advertise both families.
-                        // (If a user explicitly set node-ip, we honor it above.)
-                default: // "ipv4" or empty
-                        extraOpts["node-ip"] = nc.IP
-                }
-        }
+	// Pick node-ip based on requested IP family
+	if _, ok := extraOpts["node-ip"]; !ok {
+		family := strings.ToLower(k8s.IPFamily)
+		switch family {
+		case "ipv6":
+			if nc.IPv6 != "" {
+				extraOpts["node-ip"] = nc.IPv6
+			} else {
+				// fallback if IPv6 wasn’t wired yet
+				extraOpts["node-ip"] = nc.IP
+			}
+		case "dual":
+			// Don’t set node-ip at all; kubelet will advertise both families.
+			// (If a user explicitly set node-ip, we honor it above.)
+		default: // "ipv4" or empty
+			extraOpts["node-ip"] = nc.IP
+		}
+	}
 
 	if _, ok := extraOpts["hostname-override"]; !ok {
 		nodeName := KubeNodeName(mc, nc)

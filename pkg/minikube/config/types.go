@@ -131,8 +131,8 @@ type KubernetesConfig struct {
 	ServiceCIDR         string // the subnet which Kubernetes services will be deployed to
 	ServiceCIDRv6       string // the IPv6 subnet which Kubernetes services will be deployed to
 	PodCIDR             string // the IPv4 subnet which Kubernetes pods will be deployed to
-        PodCIDRv6           string // the IPv6 subnet which Kubernetes pods will be deployed to
-        IPFamily            string // IP family mode: ipv4, ipv6, or dual
+	PodCIDRv6           string // the IPv6 subnet which Kubernetes pods will be deployed to
+	IPFamily            string // IP family mode: ipv4, ipv6, or dual
 	ImageRepository     string
 	LoadBalancerStartIP string // currently only used by MetalLB addon
 	LoadBalancerEndIP   string // currently only used by MetalLB addon

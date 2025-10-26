@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-	"text/template"
 	"strings"
+	"text/template"
 
 	"github.com/blang/semver/v4"
 	"github.com/icza/dyno"
@@ -33,6 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/util"
 )
+
 // Default IPv6 pod CIDR when running Cilium with IPv6 enabled
 // (Each node will get a /64 slice from this /48 by default.)
 const DefaultPodCIDRv6 = "fd01::/48"
@@ -69,27 +70,31 @@ func (c Cilium) GenerateCiliumYAML() ([]byte, error) {
 	}
 
 	// Decide IPv4/IPv6 family. Prefer explicit v6 fields if provided, otherwise
-        // fall back to parsing a comma-separated ServiceCIDR string.
-        svcCIDR := c.cc.KubernetesConfig.ServiceCIDR
-        svcCIDRv6 := c.cc.KubernetesConfig.ServiceCIDRv6
-        partHasV6 := func(s string) bool { return strings.Contains(s, ":") }
-        partHasV4 := func(s string) bool { return strings.Contains(s, ".") }
-        enableV6 := false
-        enableV4 := true
-        if svcCIDR != "" {
-                if strings.Contains(svcCIDR, ",") {
-                        for _, p := range strings.Split(svcCIDR, ",") {
-                                p = strings.TrimSpace(p)
-                                if partHasV6(p) { enableV6 = true }
-                                if partHasV4(p) { enableV4 = true }
-                        }
-                } else {
-                        enableV6 = partHasV6(svcCIDR)
-                        if enableV6 && !partHasV4(svcCIDR) {
-                                enableV4 = false
-                        }
-                }
-        }
+	// fall back to parsing a comma-separated ServiceCIDR string.
+	svcCIDR := c.cc.KubernetesConfig.ServiceCIDR
+	svcCIDRv6 := c.cc.KubernetesConfig.ServiceCIDRv6
+	partHasV6 := func(s string) bool { return strings.Contains(s, ":") }
+	partHasV4 := func(s string) bool { return strings.Contains(s, ".") }
+	enableV6 := false
+	enableV4 := true
+	if svcCIDR != "" {
+		if strings.Contains(svcCIDR, ",") {
+			for _, p := range strings.Split(svcCIDR, ",") {
+				p = strings.TrimSpace(p)
+				if partHasV6(p) {
+					enableV6 = true
+				}
+				if partHasV4(p) {
+					enableV4 = true
+				}
+			}
+		} else {
+			enableV6 = partHasV6(svcCIDR)
+			if enableV6 && !partHasV4(svcCIDR) {
+				enableV4 = false
+			}
+		}
+	}
 
 	// If the cluster was configured with a dedicated IPv6 service range, honor it.
 	if svcCIDRv6 != "" && partHasV6(svcCIDRv6) {
@@ -100,35 +105,35 @@ func (c Cilium) GenerateCiliumYAML() ([]byte, error) {
 		}
 	}
 
-        podCIDRv4 := DefaultPodCIDR
-        podCIDRv6 := DefaultPodCIDRv6
+	podCIDRv4 := DefaultPodCIDR
+	podCIDRv6 := DefaultPodCIDRv6
 	// If a specific v6 pod subnet was provided (e.g. via --subnet-v6), prefer it.
 	if v := c.cc.Subnetv6; v != "" {
 		podCIDRv6 = v
 	}
-    // Valid values in Cilium v1.18: disabled | partial | strict
-    // Safe default (kube-proxy addon is typically enabled in minikube): partial
-    kprMode := "partial"
-    // If you later decide to disable the kube-proxy addon, flip this to "strict".
-    // if enableV6 { kprMode = "strict" }
+	// Valid values in Cilium v1.18: disabled | partial | strict
+	// Safe default (kube-proxy addon is typically enabled in minikube): partial
+	kprMode := "partial"
+	// If you later decide to disable the kube-proxy addon, flip this to "strict".
+	// if enableV6 { kprMode = "strict" }
 
-        klog.Infof("Cilium IP family: enableIPv4=%t enableIPv6=%t", enableV4, enableV6)
-        klog.Infof("Using pod CIDRs: v4=%s v6=%s", podCIDRv4, podCIDRv6)
-        klog.Infof("Cilium kube-proxy-replacement: %s", kprMode)
+	klog.Infof("Cilium IP family: enableIPv4=%t enableIPv6=%t", enableV4, enableV6)
+	klog.Infof("Using pod CIDRs: v4=%s v6=%s", podCIDRv4, podCIDRv6)
+	klog.Infof("Cilium kube-proxy-replacement: %s", kprMode)
 
 	opts := struct {
-                PodSubnet            string
-                PodSubnetV6          string
-                EnableIPv4           string
-                EnableIPv6           string
-                KubeProxyReplacement string
-        }{
-                PodSubnet:            podCIDRv4,
-                PodSubnetV6:          podCIDRv6,
-                EnableIPv4:           fmt.Sprintf("%t", enableV4),
-                EnableIPv6:           fmt.Sprintf("%t", enableV6),
-                KubeProxyReplacement: kprMode,
-        }
+		PodSubnet            string
+		PodSubnetV6          string
+		EnableIPv4           string
+		EnableIPv6           string
+		KubeProxyReplacement string
+	}{
+		PodSubnet:            podCIDRv4,
+		PodSubnetV6:          podCIDRv6,
+		EnableIPv4:           fmt.Sprintf("%t", enableV4),
+		EnableIPv6:           fmt.Sprintf("%t", enableV6),
+		KubeProxyReplacement: kprMode,
+	}
 
 	ciliumTmpl := template.Must(template.New("name").Parse(ciliumYaml))
 	b := bytes.Buffer{}

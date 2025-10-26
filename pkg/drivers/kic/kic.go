@@ -90,7 +90,7 @@ func (d *Driver) Create() error {
 		APIServerPort: d.NodeConfig.APIServerPort,
 		GPUs:          d.NodeConfig.GPUs,
 		IPFamily:      strings.ToLower(d.NodeConfig.IPFamily),
-                IPv6:          d.NodeConfig.StaticIPv6,
+		IPv6:          d.NodeConfig.StaticIPv6,
 	}
 	if params.Memory != "0" {
 		params.Memory += "mb"
@@ -101,17 +101,17 @@ func (d *Driver) Create() error {
 		networkName = d.NodeConfig.ClusterName
 	}
 	staticIP := d.NodeConfig.StaticIP
-        // NEW: create network with IPv6/dual awareness
+	// NEW: create network with IPv6/dual awareness
 	gateway, err := oci.CreateNetworkWithIPFamily(
-                d.OCIBinary,
-                networkName,
-                d.NodeConfig.Subnet,
-                d.NodeConfig.Subnetv6,          // NEW
-                staticIP,
-                d.NodeConfig.StaticIPv6,        // NEW
-                params.IPFamily,                // NEW
+		d.OCIBinary,
+		networkName,
+		d.NodeConfig.Subnet,
+		d.NodeConfig.Subnetv6, // NEW
+		staticIP,
+		d.NodeConfig.StaticIPv6, // NEW
+		params.IPFamily,         // NEW
 	)
-        if err != nil {
+	if err != nil {
 		msg := "Unable to create dedicated network, this might result in cluster IP change after restart: {{.error}}"
 		args := out.V{"error": err}
 		if staticIP != "" {
@@ -119,59 +119,59 @@ func (d *Driver) Create() error {
 		}
 		out.WarningT(msg, args)
 	}
-        // Always attach to the created user network (even if gateway is nil in IPv6-only)
-        params.Network = networkName
+	// Always attach to the created user network (even if gateway is nil in IPv6-only)
+	params.Network = networkName
 
-        // Now decide static IPs per family
-        switch params.IPFamily {
-        case "ipv6":
-                if d.NodeConfig.StaticIPv6 != "" {
-                        params.IPv6 = d.NodeConfig.StaticIPv6
-                }
-        case "dual":
-                // IPv4 part (only if Docker reported a v4 gateway)
-                if g4 := gateway.To4(); g4 != nil {
-                        if staticIP != "" {
-                                params.IP = staticIP
-                        } else {
-                                ip := make(net.IP, len(g4))
-                                copy(ip, g4)
-                                index := driver.IndexFromMachineName(d.NodeConfig.MachineName)
-                                if int(ip[3])+index > 253 {
-                                        return fmt.Errorf("too many machines to calculate an IPv4")
-                                }
-                                ip[3] += byte(index)
-                                klog.Infof("calculated static IPv4 %q for the %q container", ip.String(), d.NodeConfig.MachineName)
-                                params.IP = ip.String()
-                        }
-                }
-                if d.NodeConfig.StaticIPv6 != "" {
-                        params.IPv6 = d.NodeConfig.StaticIPv6
-               }
-        default: // ipv4
-                if staticIP != "" {
-                        params.IP = staticIP
-                } else if gateway != nil {
-                        if g4 := gateway.To4(); g4 != nil {
-                                ip := make(net.IP, len(g4))
-                                copy(ip, g4)
-                                index := driver.IndexFromMachineName(d.NodeConfig.MachineName)
-                                if int(ip[3])+index > 253 {
-                                        return fmt.Errorf("too many machines to calculate an IP")
-                                }
-                                ip[3] += byte(index)
-                                klog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
-                                params.IP = ip.String()
-                        }
-                }
-        }
+	// Now decide static IPs per family
+	switch params.IPFamily {
+	case "ipv6":
+		if d.NodeConfig.StaticIPv6 != "" {
+			params.IPv6 = d.NodeConfig.StaticIPv6
+		}
+	case "dual":
+		// IPv4 part (only if Docker reported a v4 gateway)
+		if g4 := gateway.To4(); g4 != nil {
+			if staticIP != "" {
+				params.IP = staticIP
+			} else {
+				ip := make(net.IP, len(g4))
+				copy(ip, g4)
+				index := driver.IndexFromMachineName(d.NodeConfig.MachineName)
+				if int(ip[3])+index > 253 {
+					return fmt.Errorf("too many machines to calculate an IPv4")
+				}
+				ip[3] += byte(index)
+				klog.Infof("calculated static IPv4 %q for the %q container", ip.String(), d.NodeConfig.MachineName)
+				params.IP = ip.String()
+			}
+		}
+		if d.NodeConfig.StaticIPv6 != "" {
+			params.IPv6 = d.NodeConfig.StaticIPv6
+		}
+	default: // ipv4
+		if staticIP != "" {
+			params.IP = staticIP
+		} else if gateway != nil {
+			if g4 := gateway.To4(); g4 != nil {
+				ip := make(net.IP, len(g4))
+				copy(ip, g4)
+				index := driver.IndexFromMachineName(d.NodeConfig.MachineName)
+				if int(ip[3])+index > 253 {
+					return fmt.Errorf("too many machines to calculate an IP")
+				}
+				ip[3] += byte(index)
+				klog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
+				params.IP = ip.String()
+			}
+		}
+	}
 	drv := d.DriverName()
 	// Default listen address: v4 localhost for ipv4, v6 localhost for ipv6-only
 	listAddr := oci.DefaultBindIPV4
-        // IPv6-only clusters must publish on IPv6 loopback so the host can reach them
-        if params.IPFamily == "ipv6" {
-                listAddr = "::1"
-        }
+	// IPv6-only clusters must publish on IPv6 loopback so the host can reach them
+	if params.IPFamily == "ipv6" {
+		listAddr = "::1"
+	}
 
 	if d.NodeConfig.ListenAddress != "" && d.NodeConfig.ListenAddress != listAddr {
 		out.Step(style.Tip, "minikube is not meant for production use. You are opening non-local traffic")
@@ -179,15 +179,15 @@ func (d *Driver) Create() error {
 			out.V{"listenAddr": d.NodeConfig.ListenAddress})
 		listAddr = d.NodeConfig.ListenAddress
 	} else if oci.IsExternalDaemonHost(drv) {
-                if params.IPFamily == "ipv6" {
-                        out.WarningT("Listening to :: on external docker host {{.host}}. Please be advised",
-                                out.V{"host": oci.DaemonHost(drv)})
-                        listAddr = "::"
-                } else {
-                        out.WarningT("Listening to 0.0.0.0 on external docker host {{.host}}. Please be advised",
-                                out.V{"host": oci.DaemonHost(drv)})
-                        listAddr = "0.0.0.0"
-                }
+		if params.IPFamily == "ipv6" {
+			out.WarningT("Listening to :: on external docker host {{.host}}. Please be advised",
+				out.V{"host": oci.DaemonHost(drv)})
+			listAddr = "::"
+		} else {
+			out.WarningT("Listening to 0.0.0.0 on external docker host {{.host}}. Please be advised",
+				out.V{"host": oci.DaemonHost(drv)})
+			listAddr = "0.0.0.0"
+		}
 	}
 
 	// control plane specific options
@@ -349,37 +349,37 @@ func (d *Driver) DriverName() string {
 // GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
 	ip4, ip6, err := oci.ContainerIPs(d.OCIBinary, d.MachineName)
-    if err != nil {
-        return "", err
-    }
-    switch strings.ToLower(d.NodeConfig.IPFamily) {
-    case "ipv6":
-        if ip6 != "" {
-            return ip6, nil
-        }
-    }
-    // default / dual prefers IPv4 for backward compat
-    return ip4, nil
+	if err != nil {
+		return "", err
+	}
+	switch strings.ToLower(d.NodeConfig.IPFamily) {
+	case "ipv6":
+		if ip6 != "" {
+			return ip6, nil
+		}
+	}
+	// default / dual prefers IPv4 for backward compat
+	return ip4, nil
 }
 
 // GetExternalIP returns an IP which is accessible from outside
 func (d *Driver) GetExternalIP() (string, error) {
 	host := oci.DaemonHost(d.DriverName())
-       // For local daemons and IPv6-only clusters, ports are published on ::1
-       if strings.ToLower(d.NodeConfig.IPFamily) == "ipv6" && !oci.IsExternalDaemonHost(d.DriverName()) {
-               return "::1", nil
-       }
-       return host, nil
+	// For local daemons and IPv6-only clusters, ports are published on ::1
+	if strings.ToLower(d.NodeConfig.IPFamily) == "ipv6" && !oci.IsExternalDaemonHost(d.DriverName()) {
+		return "::1", nil
+	}
+	return host, nil
 }
 
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
 	host := oci.DaemonHost(d.DriverName())
-       // For local daemons and IPv6-only clusters, ports are published on ::1
-       if strings.ToLower(d.NodeConfig.IPFamily) == "ipv6" && !oci.IsExternalDaemonHost(d.DriverName()) {
-               return "::1", nil
-       }
-       return host, nil
+	// For local daemons and IPv6-only clusters, ports are published on ::1
+	if strings.ToLower(d.NodeConfig.IPFamily) == "ipv6" && !oci.IsExternalDaemonHost(d.DriverName()) {
+		return "::1", nil
+	}
+	return host, nil
 }
 
 // GetSSHPort returns port for use with ssh

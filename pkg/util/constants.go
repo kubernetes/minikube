@@ -37,21 +37,21 @@ var DefaultAdmissionControllers = []string{
 
 // ServiceClusterIP returns the first usable IP of the Service CIDR (network + 1) for either IPv4 or IPv6.
 func ServiceClusterIP(serviceCIDR string) (net.IP, error) {
-       base, _, err := net.ParseCIDR(serviceCIDR)
-       if err != nil {
-               return nil, errors.Wrap(err, "parsing default service cidr")
-       }
-       ip := normalizeIP(base)
-       return addToIP(ip, 1), nil
+	base, _, err := net.ParseCIDR(serviceCIDR)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing default service cidr")
+	}
+	ip := normalizeIP(base)
+	return addToIP(ip, 1), nil
 }
 
 func DNSIP(serviceCIDR string) (net.IP, error) {
-       base, _, err := net.ParseCIDR(serviceCIDR)
-       if err != nil {
-               return nil, errors.Wrap(err, "parsing default service cidr")
-       }
-       ip := normalizeIP(base)
-       return addToIP(ip, 10), nil
+	base, _, err := net.ParseCIDR(serviceCIDR)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing default service cidr")
+	}
+	ip := normalizeIP(base)
+	return addToIP(ip, 10), nil
 }
 
 // AlternateDNS returns a list of alternate names for a domain
@@ -59,25 +59,24 @@ func AlternateDNS(domain string) []string {
 	return []string{"kubernetes.default.svc." + domain, "kubernetes.default.svc", "kubernetes.default", "kubernetes", "localhost"}
 }
 
-
 // normalizeIP returns a 4-byte slice for v4 or 16-byte slice for v6.
 func normalizeIP(ip net.IP) net.IP {
-       if v4 := ip.To4(); v4 != nil {
-               return v4
-       }
-       return ip.To16()
+	if v4 := ip.To4(); v4 != nil {
+		return v4
+	}
+	return ip.To16()
 }
 
 // addToIP returns ip + n, preserving length (v4/v6) with carry.
 func addToIP(ip net.IP, n uint64) net.IP {
-       out := make(net.IP, len(ip))
-       copy(out, ip)
-       i := len(out) - 1
-       for n > 0 && i >= 0 {
-               sum := uint64(out[i]) + (n & 0xff)
-               out[i] = byte(sum & 0xff)
-               n = (n >> 8) + (sum >> 8)
-               i--
-       }
-       return out
+	out := make(net.IP, len(ip))
+	copy(out, ip)
+	i := len(out) - 1
+	for n > 0 && i >= 0 {
+		sum := uint64(out[i]) + (n & 0xff)
+		out[i] = byte(sum & 0xff)
+		n = (n >> 8) + (sum >> 8)
+		i--
+	}
+	return out
 }

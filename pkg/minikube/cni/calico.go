@@ -19,9 +19,9 @@ package cni
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
 	"strings"
 	"time"
-	"os/exec"
 
 	// goembed needs this
 	_ "embed"
@@ -62,8 +62,8 @@ type calicoTmplStruct struct {
 	DaemonSetImageName        string
 	BinaryImageName           string
 	LegacyPodDisruptionBudget bool
-	EnableIPv4     bool
-    	EnableIPv6     bool
+	EnableIPv4                bool
+	EnableIPv6                bool
 }
 
 // String returns a string representation of this CNI
@@ -77,7 +77,7 @@ func (c Calico) manifest() (assets.CopyableFile, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Kubernetes version: %v", err)
 	}
-	
+
 	k := c.cc.KubernetesConfig
 	ipFamily := strings.ToLower(k.IPFamily)
 	// Defaults/fallbacks to stay safe if flags weren’t provided
@@ -86,10 +86,10 @@ func (c Calico) manifest() (assets.CopyableFile, error) {
 		v4Pod = DefaultPodCIDR
 	}
 	v6Pod := k.PodCIDRv6
-       // Ensure an IPv6 pod CIDR exists when the ily is v6 or dual
-       if v6Pod == "" && (ipFamily == "ipv6" || ipFamily == "dual") {
-               v6Pod = constants.DefaultPodCIDRv6
-       }
+	// Ensure an IPv6 pod CIDR exists when the ily is v6 or dual
+	if v6Pod == "" && (ipFamily == "ipv6" || ipFamily == "dual") {
+		v6Pod = constants.DefaultPodCIDRv6
+	}
 	svcV4 := k.ServiceCIDR
 	if svcV4 == "" {
 		svcV4 = constants.DefaultServiceCIDR
@@ -99,9 +99,9 @@ func (c Calico) manifest() (assets.CopyableFile, error) {
 		svcV6 = constants.DefaultServiceCIDRv6
 	}
 	apiPort := c.cc.APIServerPort
-        if apiPort == 0 {
-                apiPort = 8443
-        }
+	if apiPort == 0 {
+		apiPort = 8443
+	}
 
 	enablev4 := (ipFamily == "ipv4" || ipFamily == "dual")
 	enablev6 := (ipFamily == "ipv6" || ipFamily == "dual")
@@ -118,9 +118,8 @@ func (c Calico) manifest() (assets.CopyableFile, error) {
 		DaemonSetImageName:        images.CalicoDaemonSet(k.ImageRepository),
 		BinaryImageName:           images.CalicoBin(k.ImageRepository),
 		LegacyPodDisruptionBudget: k8sVersion.LT(semver.Version{Major: 1, Minor: 25}),
-		EnableIPv4: 			enablev4,
-		EnableIPv6: 			enablev6,
-
+		EnableIPv4:                enablev4,
+		EnableIPv6:                enablev6,
 	}
 
 	b := bytes.Buffer{}
@@ -170,31 +169,31 @@ func waitForCRDEstablished(r Runner, k8sVersion string, crd string, to time.Dura
 
 // renderCalicoIPPools returns a small manifest for IPv4/IPv6 IPPools based on IPFamily and PodCIDRs.
 func renderCalicoIPPools(k config.KubernetesConfig) string {
-    fam := strings.ToLower(k.IPFamily)
-    var b strings.Builder
-    emit := func(name, cidr string, nat bool, isV6 bool) {
-    if cidr == "" {
-        return
-    }
-    if b.Len() > 0 {
-        b.WriteString("\n---\n")
-    }
+	fam := strings.ToLower(k.IPFamily)
+	var b strings.Builder
+	emit := func(name, cidr string, nat bool, isV6 bool) {
+		if cidr == "" {
+			return
+		}
+		if b.Len() > 0 {
+			b.WriteString("\n---\n")
+		}
 
-        // IPPool instances are served under projectcalico.org/v3.
-        fmt.Fprintf(&b,
-            "apiVersion: projectcalico.org/v3\nkind: IPPool\nmetadata:\n  name: %s\nspec:\n  cidr: %q\n  disabled: false\n  natOutgoing: %t\n  nodeSelector: \"all()\"\n",
-            name, cidr, nat)
-        if !isV6 {
-            // Match calico-node env (IPIP Always, VXLAN Never) for IPv4.
-            b.WriteString("  ipipMode: Always\n  vxlanMode: Never\n")
-        } else {
-            // For IPv6, IPIP is IPv4-only; keep VXLAN off to match DS env.
-            b.WriteString("  vxlanMode: Never\n")
-        }
-     }
+		// IPPool instances are served under projectcalico.org/v3.
+		fmt.Fprintf(&b,
+			"apiVersion: projectcalico.org/v3\nkind: IPPool\nmetadata:\n  name: %s\nspec:\n  cidr: %q\n  disabled: false\n  natOutgoing: %t\n  nodeSelector: \"all()\"\n",
+			name, cidr, nat)
+		if !isV6 {
+			// Match calico-node env (IPIP Always, VXLAN Never) for IPv4.
+			b.WriteString("  ipipMode: Always\n  vxlanMode: Never\n")
+		} else {
+			// For IPv6, IPIP is IPv4-only; keep VXLAN off to match DS env.
+			b.WriteString("  vxlanMode: Never\n")
+		}
+	}
 
-// IPv4 pool unless explicitly ipv6-only
-	if  fam != "ipv6" {
+	// IPv4 pool unless explicitly ipv6-only
+	if fam != "ipv6" {
 		cidr := k.PodCIDR
 		if cidr == "" {
 			cidr = DefaultPodCIDR
@@ -202,7 +201,7 @@ func renderCalicoIPPools(k config.KubernetesConfig) string {
 		emit("default-ipv4-ippool", cidr, true, false)
 	}
 	// IPv6 pool for ipv6 or dual
-	if  fam == "ipv6" || fam == "dual" {
+	if fam == "ipv6" || fam == "dual" {
 		cidr := k.PodCIDRv6
 		if cidr == "" {
 			// default provided by your constants if you prefer:
@@ -219,9 +218,9 @@ func renderCalicoIPPools(k config.KubernetesConfig) string {
 func (c Calico) CIDR() string {
 	// Calico docs specify 192.168.0.0/16 - but we do this for compatibility with other CNI's.
 	k := c.cc.KubernetesConfig
-	 fam := strings.ToLower(k.IPFamily)
+	fam := strings.ToLower(k.IPFamily)
 	// Prefer explicitly-set CIDRs; for ipv6-only prefer v6
-	if k.PodCIDRv6 != "" && ( fam == "ipv6" || k.PodCIDR == "") {
+	if k.PodCIDRv6 != "" && (fam == "ipv6" || k.PodCIDR == "") {
 		return k.PodCIDRv6
 	}
 	if k.PodCIDR != "" {

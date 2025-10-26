@@ -634,19 +634,17 @@ func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, cluste
 		}
 
 		if hostIP == "" {
-                       hostIP = "localhost"
-               }
+			hostIP = "localhost"
+		}
 
 	}
 
-
-
 	// Build address *after* picking the final host (don’t string-replace inside a bracketed IPv6 literal).
-        hostForAddr := hostIP
+	hostForAddr := hostIP
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-               hostForAddr = cc.KubernetesConfig.APIServerName
-       }
-       addr := "https://" + net.JoinHostPort(hostForAddr, strconv.Itoa(port))
+		hostForAddr = cc.KubernetesConfig.APIServerName
+	}
+	addr := "https://" + net.JoinHostPort(hostForAddr, strconv.Itoa(port))
 
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,

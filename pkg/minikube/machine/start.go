@@ -403,51 +403,51 @@ func showHostInfo(h *host.Host, cfg config.ClusterConfig) {
 // AddHostAlias ensures /etc/hosts contains an entry for name -> ip.
 // It preserves an existing record of the other IP family (so dual-stack can have both A and AAAA).
 func AddHostAlias(c command.Runner, name string, ip net.IP) error {
-    if ip == nil || ip.IsUnspecified() || ip.String() == "" {
-        klog.Warningf("skipping AddHostAlias for %q: empty/unspecified IP", name)
-        return nil
-    }
+	if ip == nil || ip.IsUnspecified() || ip.String() == "" {
+		klog.Warningf("skipping AddHostAlias for %q: empty/unspecified IP", name)
+		return nil
+	}
 
-    // Exact line we want to ensure exists.
-    record := fmt.Sprintf("%s\t%s", ip.String(), name)
+	// Exact line we want to ensure exists.
+	record := fmt.Sprintf("%s\t%s", ip.String(), name)
 
-    // Fast path: if the exact line already exists, do nothing.
-    if _, err := c.RunCmd(exec.Command("grep", "-Fxq", record, "/etc/hosts")); err == nil {
-        return nil
-    }
+	// Fast path: if the exact line already exists, do nothing.
+	if _, err := c.RunCmd(exec.Command("grep", "-Fxq", record, "/etc/hosts")); err == nil {
+		return nil
+	}
 
-    // Remove only existing lines for *this* name and *this* IP family, keep the other family.
-    dropRegex := hostAliasDropRegex(name, ip)
+	// Remove only existing lines for *this* name and *this* IP family, keep the other family.
+	dropRegex := hostAliasDropRegex(name, ip)
 
-    if _, err := c.RunCmd(addHostAliasCommand(dropRegex, record, true, "/etc/hosts")); err != nil {
-        return errors.Wrap(err, "hosts update")
-    }
-    return nil
+	if _, err := c.RunCmd(addHostAliasCommand(dropRegex, record, true, "/etc/hosts")); err != nil {
+		return errors.Wrap(err, "hosts update")
+	}
+	return nil
 }
 
 // hostAliasDropRegex builds a regex that matches lines mapping the given name with the same IP family.
 func hostAliasDropRegex(name string, ip net.IP) string {
-    qName := regexp.QuoteMeta(name)
-    if ip.To4() != nil {
-        // IPv4 lines like: 1.2.3.4 <name>
-        return fmt.Sprintf(`^[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[[:space:]]+%s$`, qName)
-    }
-    // IPv6 lines like: 2001:db8::1 <name>   (very permissive IPv6 matcher)
-    return fmt.Sprintf(`^[[:space:]]*[:0-9A-Fa-f]+[[:space:]]+%s$`, qName)
+	qName := regexp.QuoteMeta(name)
+	if ip.To4() != nil {
+		// IPv4 lines like: 1.2.3.4 <name>
+		return fmt.Sprintf(`^[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[[:space:]]+%s$`, qName)
+	}
+	// IPv6 lines like: 2001:db8::1 <name>   (very permissive IPv6 matcher)
+	return fmt.Sprintf(`^[[:space:]]*[:0-9A-Fa-f]+[[:space:]]+%s$`, qName)
 }
 
 func addHostAliasCommand(dropRegex, record string, sudo bool, destPath string) *exec.Cmd {
-    sudoCmd := "sudo"
-    if !sudo { // for testing
-        sudoCmd = ""
-    }
+	sudoCmd := "sudo"
+	if !sudo { // for testing
+		sudoCmd = ""
+	}
 
-   script := fmt.Sprintf(
-      `{ grep -v -F "%s" "%s"; echo "%s"; } > /tmp/h.$$; %s cp /tmp/h.$$ "%s"`,
-      record,
-      destPath,
-      record,
-      sudoCmd,
-      destPath)
-    return exec.Command("/bin/bash", "-c", script)
+	script := fmt.Sprintf(
+		`{ grep -v -F "%s" "%s"; echo "%s"; } > /tmp/h.$$; %s cp /tmp/h.$$ "%s"`,
+		record,
+		destPath,
+		record,
+		sudoCmd,
+		destPath)
+	return exec.Command("/bin/bash", "-c", script)
 }

@@ -35,17 +35,16 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 			klog.Warningf("failed to get forwarded control plane port %v", err)
 		}
 
-
 		// Start with daemon host (docker/podman), tweak for IPv6, then honor APIServerName override.
-                host := oci.DaemonHost(driverName)
-                // If the cluster/node IP is IPv6 and daemon host is localhost on IPv4,
-                // force IPv6 loopback so we hit the port that’s actually listening.
-                if strings.Contains(cp.IP, ":") && (host == "127.0.0.1" || host == "localhost") {
-                        host = "::1"
-                }
-                if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-                        host = cc.KubernetesConfig.APIServerName
-                }
+		host := oci.DaemonHost(driverName)
+		// If the cluster/node IP is IPv6 and daemon host is localhost on IPv4,
+		// force IPv6 loopback so we hit the port that’s actually listening.
+		if strings.Contains(cp.IP, ":") && (host == "127.0.0.1" || host == "localhost") {
+			host = "::1"
+		}
+		if cc.KubernetesConfig.APIServerName != constants.APIServerName {
+			host = cc.KubernetesConfig.APIServerName
+		}
 
 		// Resolve final host -> IPs. Allow literal IPv4/IPv6 without DNS.
 		var ips []net.IP
@@ -58,15 +57,14 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 			}
 		}
 
-
 		return host, ips[0], port, nil
 	}
 
 	if IsQEMU(driverName) && network.IsBuiltinQEMU(cc.Network) {
-                if strings.Contains(cp.IP, ":") {
-                        return "::1", net.IPv6loopback, cc.APIServerPort, nil
-                }
-                return "127.0.0.1", net.IPv4(127, 0, 0, 1), cc.APIServerPort, nil
+		if strings.Contains(cp.IP, ":") {
+			return "::1", net.IPv6loopback, cc.APIServerPort, nil
+		}
+		return "127.0.0.1", net.IPv4(127, 0, 0, 1), cc.APIServerPort, nil
 	}
 
 	// Default: use the node IP (literal or resolvable name)

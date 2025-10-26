@@ -187,38 +187,38 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 	}
 
 	// attach to the user-defined bridge network (once), and set static IPs if provided
-        if p.Network != "" {
-                runArgs = append(runArgs, "--network", p.Network)
-               if p.IP != "" {
-                        runArgs = append(runArgs, "--ip", p.IP)   // IPv4
-                }
-                if p.IPv6 != "" {
-                        runArgs = append(runArgs, "--ip6", p.IPv6) // IPv6
-                }
-        }
+	if p.Network != "" {
+		runArgs = append(runArgs, "--network", p.Network)
+		if p.IP != "" {
+			runArgs = append(runArgs, "--ip", p.IP) // IPv4
+		}
+		if p.IPv6 != "" {
+			runArgs = append(runArgs, "--ip6", p.IPv6) // IPv6
+		}
+	}
 
- 	// For IPv6/dual clusters, enable forwarding inside the node container
-        // (safe sysctl; avoid disable_ipv6 which may be blocked by Docker's safe list)
+	// For IPv6/dual clusters, enable forwarding inside the node container
+	// (safe sysctl; avoid disable_ipv6 which may be blocked by Docker's safe list)
 
 	// Ensure service rules apply to bridged traffic inside the node container.
-       // Do both families; harmless if already set.
-       runArgs = append(runArgs,
-               "--sysctl", "net.ipv4.ip_forward=1",
-               "--sysctl", "net.bridge.bridge-nf-call-iptables=1",
-               // Allow kube-proxy/IPVS or iptables to program and accept IPv4 Service VIPs.
-               "--sysctl", "net.ipv4.ip_nonlocal_bind=1",
-       )
-       // IPv6/dual clusters need IPv6 forwarding and IPv6 bridge netfilter, too.
-       if p.IPFamily == "ipv6" || p.IPFamily == "dual" {
-               runArgs = append(runArgs,
-                       "--sysctl", "net.ipv6.conf.all.forwarding=1",
-                       "--sysctl", "net.bridge.bridge-nf-call-ip6tables=1",
-		       // Allow kube-proxy/IPVS or iptables to program and accept Service VIPs.
-	               "--sysctl", "net.ipv4.ip_nonlocal_bind=1",
-        	       // Same for IPv6 VIPs.
-               	       "--sysctl", "net.ipv6.ip_nonlocal_bind=1",
-               )
-       }
+	// Do both families; harmless if already set.
+	runArgs = append(runArgs,
+		"--sysctl", "net.ipv4.ip_forward=1",
+		"--sysctl", "net.bridge.bridge-nf-call-iptables=1",
+		// Allow kube-proxy/IPVS or iptables to program and accept IPv4 Service VIPs.
+		"--sysctl", "net.ipv4.ip_nonlocal_bind=1",
+	)
+	// IPv6/dual clusters need IPv6 forwarding and IPv6 bridge netfilter, too.
+	if p.IPFamily == "ipv6" || p.IPFamily == "dual" {
+		runArgs = append(runArgs,
+			"--sysctl", "net.ipv6.conf.all.forwarding=1",
+			"--sysctl", "net.bridge.bridge-nf-call-ip6tables=1",
+			// Allow kube-proxy/IPVS or iptables to program and accept Service VIPs.
+			"--sysctl", "net.ipv4.ip_nonlocal_bind=1",
+			// Same for IPv6 VIPs.
+			"--sysctl", "net.ipv6.ip_nonlocal_bind=1",
+		)
+	}
 	switch p.GPUs {
 	case "all", "nvidia":
 		runArgs = append(runArgs, "--gpus", "all", "--env", "NVIDIA_DRIVER_CAPABILITIES=all")
@@ -538,11 +538,11 @@ func generatePortMappings(portMappings ...PortMapping) []string {
 		// let docker pick a host port by leaving it as ::
 		// example --publish=127.0.0.17::8443 will get a random host port for 8443
 		host := pm.ListenAddress
-                // If the listen address is an IPv6 literal, bracket it for Docker syntax.
-                if strings.Contains(host, ":") && !strings.HasPrefix(host, "[") {
-                        host = "[" + host + "]"
-                }
-                publish := fmt.Sprintf("--publish=%s::%d", host, pm.ContainerPort)
+		// If the listen address is an IPv6 literal, bracket it for Docker syntax.
+		if strings.Contains(host, ":") && !strings.HasPrefix(host, "[") {
+			host = "[" + host + "]"
+		}
+		publish := fmt.Sprintf("--publish=%s::%d", host, pm.ContainerPort)
 		result = append(result, publish)
 	}
 	return result

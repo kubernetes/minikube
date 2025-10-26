@@ -160,25 +160,25 @@ func (r *CRIO) Active() bool {
 // Context: https://github.com/kubernetes/kubeadm/issues/1062
 func enableIPForwarding(cr CommandRunner) error {
 	// The bridge-netfilter module enables (ip|ip6)tables rules to apply on Linux bridges.
-        // NOTE: br_netfilter isn't available everywhere (e.g., some WSL2 kernels) – treat as best-effort.
-        if _, err := cr.RunCmd(exec.Command("sudo", "modprobe", "br_netfilter")); err != nil {
-                klog.Warningf("modprobe br_netfilter failed (may be OK on this kernel): %v", err)
-        }
+	// NOTE: br_netfilter isn't available everywhere (e.g., some WSL2 kernels) – treat as best-effort.
+	if _, err := cr.RunCmd(exec.Command("sudo", "modprobe", "br_netfilter")); err != nil {
+		klog.Warningf("modprobe br_netfilter failed (may be OK on this kernel): %v", err)
+	}
 
-        // Enable bridge netfilter hooks for both IPv4 and IPv6, and enable forwarding.
-        // Best-effort: warn but don't fail hard if a sysctl isn't present.
-        sysctls := []string{
-                "sysctl -w net.bridge.bridge-nf-call-iptables=1",
-                "sysctl -w net.bridge.bridge-nf-call-ip6tables=1",
-                "sysctl -w net.ipv4.ip_forward=1",
-                "sysctl -w net.ipv6.conf.all.forwarding=1",
-        }
-        for _, s := range sysctls {
-                if _, err := cr.RunCmd(exec.Command("sudo", "sh", "-c", s)); err != nil {
-                        klog.Warningf("failed to run %q (continuing): %v", s, err)
-                }
-        }
-        return nil
+	// Enable bridge netfilter hooks for both IPv4 and IPv6, and enable forwarding.
+	// Best-effort: warn but don't fail hard if a sysctl isn't present.
+	sysctls := []string{
+		"sysctl -w net.bridge.bridge-nf-call-iptables=1",
+		"sysctl -w net.bridge.bridge-nf-call-ip6tables=1",
+		"sysctl -w net.ipv4.ip_forward=1",
+		"sysctl -w net.ipv6.conf.all.forwarding=1",
+	}
+	for _, s := range sysctls {
+		if _, err := cr.RunCmd(exec.Command("sudo", "sh", "-c", s)); err != nil {
+			klog.Warningf("failed to run %q (continuing): %v", s, err)
+		}
+	}
+	return nil
 }
 
 // enableRootless enables configurations for running CRI-O in Rootless Docker.

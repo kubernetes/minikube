@@ -87,7 +87,7 @@ const (
 	dnsDomain               = "dns-domain"
 	serviceCIDR             = "service-cluster-ip-range"
 	serviceCIDRv6           = "service-cluster-ip-range-v6"
-       	ipFamily                = "ip-family"
+	ipFamily                = "ip-family"
 	imageRepository         = "image-repository"
 	imageMirrorCountry      = "image-mirror-country"
 	mountString             = "mount-string"
@@ -152,8 +152,8 @@ const (
 	gpus                    = "gpus"
 	autoPauseInterval       = "auto-pause-interval"
 	subnetv6                = "subnet-v6"
-	podCIDR   		= "pod-cidr"
-  	podCIDRv6 		= "pod-cidr-v6"
+	podCIDR                 = "pod-cidr"
+	podCIDRv6               = "pod-cidr-v6"
 )
 
 var (
@@ -296,7 +296,6 @@ func initDriverFlags() {
 	startCmd.Flags().String(podCIDR, "", "IPv4 CIDR to use for pod IPs (bridge CNI).")
 	startCmd.Flags().String(podCIDRv6, "", "IPv6 CIDR to use for pod IPs (bridge CNI).")
 
-
 	// qemu
 	startCmd.Flags().String(qemuFirmwarePath, "", "Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\\Program Files\\qemu\\share")
 }
@@ -307,7 +306,7 @@ func initNetworkingFlags() {
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \"auto\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
 	startCmd.Flags().String(imageMirrorCountry, "", "Country code of the image mirror to be used. Leave empty to use the global one. For Chinese mainland users, set it to cn.")
-	startCmd.Flags().String(serviceCIDR,  constants.DefaultServiceCIDR,  "The IPv4 CIDR to be used for service cluster IPs.")
+	startCmd.Flags().String(serviceCIDR, constants.DefaultServiceCIDR, "The IPv4 CIDR to be used for service cluster IPs.")
 	startCmd.Flags().String(serviceCIDRv6, constants.DefaultServiceCIDRv6, "The IPv6 CIDR to be used for service cluster IPs.")
 	startCmd.Flags().String(ipFamily, "ipv4", "Cluster IP family mode: one of 'ipv4' (default), 'ipv6', or 'dual'.")
 	startCmd.Flags().StringArrayVar(&config.DockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
@@ -512,99 +511,98 @@ func getNetwork(driverName string, options *run.CommandOptions) string {
 
 // normalizeAndValidateIPFamily sets defaults, validates CIDRs, and guards Desktop vs Linux daemon for v6.
 func normalizeAndValidateIPFamily(cc *config.ClusterConfig) {
-    fam := strings.ToLower(strings.TrimSpace(cc.KubernetesConfig.IPFamily))
-    switch fam {
-    case "", "ipv4", "ipv6", "dual":
-        // ok
-    default:
-        exit.Message(reason.Usage, "Invalid --ip-family {{.fam}}. Must be one of: ipv4, ipv6, dual.", out.V{"fam": cc.KubernetesConfig.IPFamily})
-    }
-    if fam == "" {
-        fam = "ipv4"
-        cc.KubernetesConfig.IPFamily = fam
-    }
-    // default v6 CIDRs if needed
-    if fam != "ipv4" {
-        if cc.KubernetesConfig.ServiceCIDRv6 == "" {
-            cc.KubernetesConfig.ServiceCIDRv6 = constants.DefaultServiceCIDRv6
-        }
-        if cc.KubernetesConfig.PodCIDRv6 == "" {
-            cc.KubernetesConfig.PodCIDRv6 = constants.DefaultPodCIDRv6
-        }
-    }
-    // defaults so dual has both sides unless the user overrides
-    if fam != "ipv6" && cc.KubernetesConfig.PodCIDR == "" {
-    	cc.KubernetesConfig.PodCIDR = cni.DefaultPodCIDR
-    }
+	fam := strings.ToLower(strings.TrimSpace(cc.KubernetesConfig.IPFamily))
+	switch fam {
+	case "", "ipv4", "ipv6", "dual":
+		// ok
+	default:
+		exit.Message(reason.Usage, "Invalid --ip-family {{.fam}}. Must be one of: ipv4, ipv6, dual.", out.V{"fam": cc.KubernetesConfig.IPFamily})
+	}
+	if fam == "" {
+		fam = "ipv4"
+		cc.KubernetesConfig.IPFamily = fam
+	}
+	// default v6 CIDRs if needed
+	if fam != "ipv4" {
+		if cc.KubernetesConfig.ServiceCIDRv6 == "" {
+			cc.KubernetesConfig.ServiceCIDRv6 = constants.DefaultServiceCIDRv6
+		}
+		if cc.KubernetesConfig.PodCIDRv6 == "" {
+			cc.KubernetesConfig.PodCIDRv6 = constants.DefaultPodCIDRv6
+		}
+	}
+	// defaults so dual has both sides unless the user overrides
+	if fam != "ipv6" && cc.KubernetesConfig.PodCIDR == "" {
+		cc.KubernetesConfig.PodCIDR = cni.DefaultPodCIDR
+	}
 
-    if fam != "ipv4" && cc.KubernetesConfig.PodCIDRv6 == "" {
-        cc.KubernetesConfig.PodCIDRv6 = constants.DefaultPodCIDRv6
-    }
+	if fam != "ipv4" && cc.KubernetesConfig.PodCIDRv6 == "" {
+		cc.KubernetesConfig.PodCIDRv6 = constants.DefaultPodCIDRv6
+	}
 
-    // basic CIDR sanity
-    if cidr := cc.Subnetv6; cidr != "" {
-        if _, _, err := net.ParseCIDR(cidr); err != nil {
-            exit.Message(reason.Usage, "--subnet-v6 must be a valid IPv6 CIDR: {{.e}}", out.V{"e": err})
-        }
-    }
-    if cidr := cc.KubernetesConfig.ServiceCIDRv6; cidr != "" {
-        if _, _, err := net.ParseCIDR(cidr); err != nil {
-            exit.Message(reason.Usage, "--service-cluster-ip-range-v6 must be a valid IPv6 CIDR: {{.e}}", out.V{"e": err})
-        }
-    }
-    if cidr := cc.KubernetesConfig.PodCIDRv6; cidr != "" {
-        if _, _, err := net.ParseCIDR(cidr); err != nil {
-            exit.Message(reason.Usage, "PodCIDRv6 must be a valid IPv6 CIDR: {{.e}}", out.V{"e": err})
-        }
-    }
+	// basic CIDR sanity
+	if cidr := cc.Subnetv6; cidr != "" {
+		if _, _, err := net.ParseCIDR(cidr); err != nil {
+			exit.Message(reason.Usage, "--subnet-v6 must be a valid IPv6 CIDR: {{.e}}", out.V{"e": err})
+		}
+	}
+	if cidr := cc.KubernetesConfig.ServiceCIDRv6; cidr != "" {
+		if _, _, err := net.ParseCIDR(cidr); err != nil {
+			exit.Message(reason.Usage, "--service-cluster-ip-range-v6 must be a valid IPv6 CIDR: {{.e}}", out.V{"e": err})
+		}
+	}
+	if cidr := cc.KubernetesConfig.PodCIDRv6; cidr != "" {
+		if _, _, err := net.ParseCIDR(cidr); err != nil {
+			exit.Message(reason.Usage, "PodCIDRv6 must be a valid IPv6 CIDR: {{.e}}", out.V{"e": err})
+		}
+	}
 
-    if s := cc.KubernetesConfig.PodCIDR; s != "" {
-    	if _, _, err := net.ParseCIDR(s); err != nil {
-        	exit.Message(reason.Usage, "--pod-cidr must be a valid IPv4 CIDR: {{.e}}", out.V{"e": err})
-    	}
-    }
+	if s := cc.KubernetesConfig.PodCIDR; s != "" {
+		if _, _, err := net.ParseCIDR(s); err != nil {
+			exit.Message(reason.Usage, "--pod-cidr must be a valid IPv4 CIDR: {{.e}}", out.V{"e": err})
+		}
+	}
 
-    if s := cc.KubernetesConfig.PodCIDRv6; s != "" {
-        if _, _, err := net.ParseCIDR(s); err != nil {
-                exit.Message(reason.Usage, "--pod-cidr-v6 must be a valid IPv6 CIDR: {{.e}}", out.V{"e": err})
-        }
-    }
+	if s := cc.KubernetesConfig.PodCIDRv6; s != "" {
+		if _, _, err := net.ParseCIDR(s); err != nil {
+			exit.Message(reason.Usage, "--pod-cidr-v6 must be a valid IPv6 CIDR: {{.e}}", out.V{"e": err})
+		}
+	}
 
-    // validate static IPv6 if provided
-    if s := cc.StaticIPv6; s != "" {
-        ip := net.ParseIP(s)
-        if ip == nil || ip.To4() != nil {
-            exit.Message(reason.Usage, "--static-ipv6 must be a valid IPv6 address")
-        }
-    }
+	// validate static IPv6 if provided
+	if s := cc.StaticIPv6; s != "" {
+		ip := net.ParseIP(s)
+		if ip == nil || ip.To4() != nil {
+			exit.Message(reason.Usage, "--static-ipv6 must be a valid IPv6 address")
+		}
+	}
 
+	// Docker driver guardrails: Linux daemon + IPv6 must be enabled
+	if driver.IsDocker(cc.Driver) && fam != "ipv4" {
+		// Desktop vs Linux daemon hint (we can't reliably detect IPv6 enabled here)
+		si, err := oci.CachedDaemonInfo(cc.Driver)
+		if err != nil {
+			si, err = oci.DaemonInfo(cc.Driver)
+			if err != nil {
+				exit.Message(reason.Usage, "Failed to query Docker daemon info: {{.e}}", out.V{"e": err})
+			}
+		}
+		// On non-Linux hosts we assume Docker Desktop; on Linux it's a native Engine
+		// unless DockerOS explicitly says "Docker Desktop".
+		isLinuxDaemon := runtime.GOOS == "linux" && si.DockerOS != "Docker Desktop"
+		if !isLinuxDaemon {
+			if fam == "ipv6" {
+				exit.Message(reason.Usage,
+					"IPv6 clusters require a Linux Docker daemon (Desktop is not supported). "+
+						"Use a Linux/WSL2 daemon or set --ip-family=ipv4.")
+			}
+			out.WarningT("Dual-stack on Docker Desktop may be limited. For full IPv6 support, use a Linux Docker daemon.")
+		}
 
-    // Docker driver guardrails: Linux daemon + IPv6 must be enabled
-    if driver.IsDocker(cc.Driver) && fam != "ipv4" {
-	// Desktop vs Linux daemon hint (we can't reliably detect IPv6 enabled here)
-        si, err := oci.CachedDaemonInfo(cc.Driver)
-        if err != nil {
-            si, err = oci.DaemonInfo(cc.Driver)
-            if err != nil {
-                exit.Message(reason.Usage, "Failed to query Docker daemon info: {{.e}}", out.V{"e": err})
-            }
-        }
-        // On non-Linux hosts we assume Docker Desktop; on Linux it's a native Engine
-        // unless DockerOS explicitly says "Docker Desktop".
-        isLinuxDaemon := runtime.GOOS == "linux" && si.DockerOS != "Docker Desktop"
-        if !isLinuxDaemon {
-            if fam == "ipv6" {
-                exit.Message(reason.Usage,
-                    "IPv6 clusters require a Linux Docker daemon (Desktop is not supported). "+
-                    "Use a Linux/WSL2 daemon or set --ip-family=ipv4.")
-            }
-            out.WarningT("Dual-stack on Docker Desktop may be limited. For full IPv6 support, use a Linux Docker daemon.")
-        }
-
-        // Friendly reminder about enabling daemon IPv6 (actual failure will occur during network create otherwise)
-        out.Styled(style.Tip,
-            "If Docker daemon IPv6 is disabled, enable it in /etc/docker/daemon.json and restart:\n  {\"ipv6\": true, \"fixed-cidr-v6\": \"fd00:55:66::/64\"}")
-    }
+		// Friendly reminder about enabling daemon IPv6 (actual failure will occur during network create otherwise)
+		out.Styled(style.Tip,
+			"If Docker daemon IPv6 is disabled, enable it in /etc/docker/daemon.json and restart:\n  {\"ipv6\": true, \"fixed-cidr-v6\": \"fd00:55:66::/64\"}")
+	}
 }
 
 func validateQemuNetwork(n string) string {
@@ -761,8 +759,8 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 			NetworkPlugin:          chosenNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
 			ServiceCIDRv6:          viper.GetString(serviceCIDRv6),
-			PodCIDR:   		viper.GetString(podCIDR),
-			PodCIDRv6: 		viper.GetString(podCIDRv6),
+			PodCIDR:                viper.GetString(podCIDR),
+			PodCIDRv6:              viper.GetString(podCIDRv6),
 			IPFamily:               viper.GetString(ipFamily),
 			ImageRepository:        getRepository(cmd, k8sVersion),
 			ExtraOptions:           getExtraOptions(),
@@ -960,7 +958,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringSliceFromFlag(cmd, &cc.HyperkitVSockPorts, vsockPorts)
 	updateStringSliceFromFlag(cmd, &cc.NFSShare, nfsShare)
 	updateStringFromFlag(cmd, &cc.NFSSharesRoot, nfsSharesRoot)
-	updateStringFromFlag(cmd, &cc.HostOnlyCIDR,  hostOnlyCIDR)
+	updateStringFromFlag(cmd, &cc.HostOnlyCIDR, hostOnlyCIDR)
 	updateStringFromFlag(cmd, &cc.HostOnlyCIDRv6, hostOnlyCIDRv6)
 	updateStringFromFlag(cmd, &cc.HypervVirtualSwitch, hypervVirtualSwitch)
 	updateBoolFromFlag(cmd, &cc.HypervUseExternalSwitch, hypervUseExternalSwitch)
@@ -979,7 +977,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateDurationFromFlag(cmd, &cc.StartHostTimeout, waitTimeout)
 	updateStringSliceFromFlag(cmd, &cc.ExposedPorts, ports)
 	updateStringFromFlag(cmd, &cc.SSHIPAddress, sshIPAddress)
-	updateStringFromFlag(cmd, &cc.StaticIPv6,   staticIPv6)
+	updateStringFromFlag(cmd, &cc.StaticIPv6, staticIPv6)
 	updateStringFromFlag(cmd, &cc.SSHUser, sshSSHUser)
 	updateStringFromFlag(cmd, &cc.SSHKey, sshSSHKey)
 	updateIntFromFlag(cmd, &cc.SSHPort, sshSSHPort)
@@ -991,9 +989,9 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.ContainerRuntime, containerRuntime)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.CRISocket, criSocket)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.NetworkPlugin, networkPlugin)
-	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDR,  serviceCIDR)
-        updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDRv6, serviceCIDRv6)
-        updateStringFromFlag(cmd, &cc.KubernetesConfig.IPFamily,     ipFamily)
+	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDR, serviceCIDR)
+	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDRv6, serviceCIDRv6)
+	updateStringFromFlag(cmd, &cc.KubernetesConfig.IPFamily, ipFamily)
 	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
 	updateDurationFromFlag(cmd, &cc.CertExpiration, certExpiration)
 	updateStringFromFlag(cmd, &cc.MountString, mountString)
