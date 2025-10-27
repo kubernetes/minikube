@@ -61,6 +61,8 @@ func init() {
 		Status:   status,
 		Default:  true,
 		Priority: priority,
+		// Podman driver may require sudo (on linux)
+		NeedsSudo: true,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}

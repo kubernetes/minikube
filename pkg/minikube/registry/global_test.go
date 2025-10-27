@@ -72,20 +72,22 @@ func TestGlobalAvailable(t *testing.T) {
 	}
 
 	bar := DriverDef{
-		Name:     "healthy-bar",
-		Default:  true,
-		Priority: Default,
-		Status:   func() State { return State{Healthy: true} },
+		Name:      "healthy-bar",
+		Default:   true,
+		Priority:  Default,
+		NeedsSudo: false,
+		Status:    func() State { return State{Healthy: true} },
 	}
 	if err := Register(bar); err != nil {
 		t.Errorf("register returned error: %v", err)
 	}
 
 	foo := DriverDef{
-		Name:     "unhealthy-foo",
-		Default:  true,
-		Priority: Default,
-		Status:   func() State { return State{Healthy: false} },
+		Name:      "unhealthy-foo",
+		Default:   true,
+		Priority:  Default,
+		NeedsSudo: false,
+		Status:    func() State { return State{Healthy: false} },
 	}
 	if err := Register(foo); err != nil {
 		t.Errorf("register returned error: %v", err)
@@ -97,6 +99,7 @@ func TestGlobalAvailable(t *testing.T) {
 			Default:    true,
 			Preference: Default,
 			Priority:   Default,
+			NeedsSudo:  false,
 			State:      State{Healthy: true},
 		},
 		{
@@ -104,6 +107,7 @@ func TestGlobalAvailable(t *testing.T) {
 			Default:    true,
 			Preference: Default,
 			Priority:   Unhealthy,
+			NeedsSudo:  false,
 			State:      State{Healthy: false},
 		},
 	}

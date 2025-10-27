@@ -41,6 +41,8 @@ func init() {
 		Default:  false, // requires external VM
 		Priority: registry.Discouraged,
 		Init:     func() drivers.Driver { return ssh.NewDriver(ssh.Config{}) },
+		// SSH driver does not require sudo
+		NeedsSudo: false,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))

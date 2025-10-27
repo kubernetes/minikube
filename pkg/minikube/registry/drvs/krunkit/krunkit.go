@@ -50,6 +50,8 @@ func init() {
 		Status:   status,
 		Default:  true,
 		Priority: registry.Experimental,
+		// Krunkit driver requires sudo
+		NeedsSudo: true,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}

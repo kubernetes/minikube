@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	"os/exec"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -89,5 +90,55 @@ func TestDriverAlias(t *testing.T) {
 	d = r.Driver("bar")
 	if !d.Empty() {
 		t.Errorf("driver.Empty = false, expected true")
+	}
+}
+
+// NeedsSudo try to execute driver related commands to determine if sudo is required
+func NeedsSudo(driverName string) bool {
+	var cmd *exec.Cmd
+
+	switch driverName {
+	case "docker":
+		cmd = exec.Command("docker", "info")
+	case "podman":
+		cmd = exec.Command("podman", "info")
+	case "kvm2":
+		cmd = exec.Command("virsh", "list", "--all")
+	case "qemu2":
+		cmd = exec.Command("qemu-system-x86_64", "--version")
+	case "virtualbox":
+		cmd = exec.Command("VBoxManage", "list", "vms")
+	case "hyperkit":
+		cmd = exec.Command("hyperkit", "-v")
+	case "hyperv":
+		cmd = exec.Command("powershell", "-Command", "Get-VM") // Windows Hyper-V
+	case "vmware":
+		cmd = exec.Command("vmrun", "list")
+	case "parallels":
+		cmd = exec.Command("prlctl", "list")
+	case "vfkit":
+		cmd = exec.Command("vfctl", "list") // macOS vfkit CLI
+	case "ssh":
+		cmd = exec.Command("ssh", "-V")
+	case "krunkit":
+		cmd = exec.Command("krun", "--version") // krunkit CLI
+	case "none":
+		return true // none driver almost always requires root
+	default:
+		return false // By default, no sudo is required
+	}
+
+	// Execute the command and check if it succeeds
+	if err := cmd.Run(); err != nil {
+		// If it fails, it may require sudo
+		return true
+	}
+	return false
+}
+
+func TestNeedsSudo(t *testing.T) {
+	drivers := []string{"docker", "podman", "kvm2", "none", "qemu2", "virtualbox", "hyperkit", "vmware", "parallels", "ssh", "krunkit", "hyperv", "vfkit"}
+	for _, d := range drivers {
+		t.Logf("%s NeedsSudo = %v", d, NeedsSudo(d))
 	}
 }
