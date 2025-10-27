@@ -48,6 +48,7 @@ import (
 	"github.com/pkg/profile"
 
 	"k8s.io/minikube/cmd/minikube/cmd"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -70,6 +71,7 @@ var (
 )
 
 func main() {
+	options := flags.CommandOptions()
 	bridgeLogMessages()
 	defer klog.Flush()
 
@@ -88,7 +90,7 @@ func main() {
 		defer profile.Start(profile.TraceProfile).Stop()
 	}
 	if os.Getenv(constants.IsMinikubeChildProcess) == "" {
-		machine.StartDriver()
+		machine.StartDriver(options)
 	}
 	out.SetOutFile(os.Stdout)
 	out.SetErrFile(os.Stderr)
