@@ -46,7 +46,7 @@ jobs:
           make e2e-linux-amd64 e2e-darwin-amd64
           cp -r test/integration/testdata ./out
       - name: Upload Test Binaries
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: binaries
           path: out
@@ -455,7 +455,7 @@ jobs:
             echo "RUN_ID_SHORT=${RUN_ID_SHORT}" >> $GITHUB_OUTPUT
       - name: Upload Gopogh report
         id: upload_gopogh
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
             name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}-run-${{ steps.vars.outputs.RUN_ID_SHORT}}
             path: ./report
