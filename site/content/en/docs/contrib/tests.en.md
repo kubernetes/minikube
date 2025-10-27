@@ -476,9 +476,6 @@ NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook
 #### validateTunnelDelete
 stops `minikube tunnel`
 
-## TestGuestEnvironment
-verifies files and packages installed inside minikube ISO/Base image
-
 ## TestGvisorAddon
 tests the functionality of the gVisor addon
 
@@ -555,6 +552,9 @@ is a test case building with --build-env
 
 #### validateImageBuildWithDockerIgnore
 is a test case building with .dockerignore
+
+## TestISOImage
+verifies files and packages installed inside minikube ISO/Base image
 
 ## TestJSONOutput
 makes sure json output works properly for the start, pause, unpause, and stop commands
