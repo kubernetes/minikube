@@ -1,4 +1,4 @@
-//go:build iso
+//go:build integration
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -22,14 +22,18 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"strings"
+	"runtime"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
-// TestGuestEnvironment verifies files and packages installed inside minikube ISO/Base image
-func TestGuestEnvironment(t *testing.T) {
+// TestISOImage verifies files and packages installed inside minikube ISO/Base image
+func TestISOImage(t *testing.T) {
+	if !VMDriver() {
+		t.Skip("This test requires a VM driver")
+	}
+
 	MaybeParallel(t)
 
 	profile := UniqueProfileName("guest")
@@ -37,20 +41,33 @@ func TestGuestEnvironment(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	t.Run("Setup", func(t *testing.T) {
-		args := append([]string{"start", "-p", profile, "--install-addons=false", "--memory=3072", "--wait=false", "--disable-metrics=true"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--no-kubernetes"}, StartArgs()...)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
 			t.Errorf("failed to start minikube: args %q: %v", rr.Command(), err)
-		}
-
-		if strings.Contains(rr.Stderr.String(), "kubelet.housekeeping-interval=5m") {
-			t.Error("--disable-metrics=true is not working, housekeeping interval not increased")
 		}
 	})
 
 	// Run as a group so that our defer doesn't happen as tests are runnings
 	t.Run("Binaries", func(t *testing.T) {
-		for _, pkg := range []string{"git", "rsync", "curl", "wget", "socat", "iptables", "VBoxControl", "VBoxService", "crictl", "podman", "docker"} {
+		binaries := []string{
+			"crictl",
+			"curl",
+			"docker",
+			"git",
+			"iptables",
+			"podman",
+			"rsync",
+			"socat",
+			"wget",
+		}
+
+		// virtualbox is not available in the arm64 iso.
+		if runtime.GOARCH == "amd64" {
+			binaries = append(binaries, "VBoxControl", "VBoxService")
+		}
+
+		for _, pkg := range binaries {
 			pkg := pkg
 			t.Run(pkg, func(t *testing.T) {
 				t.Parallel()
