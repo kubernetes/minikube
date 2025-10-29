@@ -20,6 +20,7 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"runtime"
@@ -70,47 +71,62 @@ func TestISOImage(t *testing.T) {
 
 		for _, pkg := range binaries {
 			pkg := pkg
-			t.Run(pkg, func(t *testing.T) {
-				t.Parallel()
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("which %s", pkg)))
-				if err != nil {
-					t.Errorf("failed to verify existence of %q binary : args %q: %v", pkg, rr.Command(), err)
+			t.Run("PersistentMounts", func(t *testing.T) {
+				for _, mount := range []string{
+					"/data",
+					"/var/lib/docker",
+					"/var/lib/cni",
+					"/var/lib/kubelet",
+					vmpath.GuestPersistentDir,
+					"/var/lib/toolbox",
+					"/var/lib/boot2docker",
+				} {
+					mount := mount
+					t.Run(mount, func(t *testing.T) {
+						t.Parallel()
+						rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("df -t ext4 %s | grep %s", mount, mount)))
+						if err != nil {
+							t.Errorf("failed to verify existence of %q mount. args %q: %v", mount, rr.Command(), err)
+						}
+					})
 				}
 			})
-		}
-	})
 
-	t.Run("PersistentMounts", func(t *testing.T) {
-		for _, mount := range []string{
-			"/data",
-			"/var/lib/docker",
-			"/var/lib/cni",
-			"/var/lib/kubelet",
-			vmpath.GuestPersistentDir,
-			"/var/lib/toolbox",
-			"/var/lib/boot2docker",
-		} {
-			mount := mount
-			t.Run(mount, func(t *testing.T) {
-				t.Parallel()
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("df -t ext4 %s | grep %s", mount, mount)))
+			// Ensure that BTF type information is available (https://github.com/kubernetes/minikube/issues/21788)
+			t.Run("eBPFSupport", func(t *testing.T) {
+				btfFile := "/sys/kernel/btf/vmlinux"
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("test -f %s && echo 'OK' || echo 'NOT FOUND'", btfFile)))
 				if err != nil {
-					t.Errorf("failed to verify existence of %q mount. args %q: %v", mount, rr.Command(), err)
+					t.Errorf("failed to verify existence of %q file: args %q: %v", btfFile, rr.Command(), err)
+				}
+
+				if !strings.Contains(rr.Stdout.String(), "OK") {
+					t.Errorf("expected file %q to exist, but it does not. BTF types are required for CO-RE eBPF programs; set CONFIG_DEBUG_INFO_BTF in kernel configuration.", btfFile)
 				}
 			})
-		}
-	})
 
-	t.Run("eBPFSupport", func(t *testing.T) {
-		// Ensure that BTF type information is available (https://github.com/kubernetes/minikube/issues/21788)
-		btfFile := "/sys/kernel/btf/vmlinux"
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("test -f %s && echo 'OK' || echo 'NOT FOUND'", btfFile)))
-		if err != nil {
-			t.Errorf("failed to verify existence of %q file: args %q: %v", btfFile, rr.Command(), err)
-		}
+			// Verify and log iso version present in /version.json
+			t.Run("VersionJSON", func(t *testing.T) {
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /version.json"))
+				if err != nil {
+					t.Fatalf("failed to read /version.json. args %q: %v", rr.Command(), err)
+				}
 
-		if !strings.Contains(rr.Stdout.String(), "OK") {
-			t.Errorf("expected file %q to exist, but it does not. BTF types are required for CO-RE eBPF programs; set CONFIG_DEBUG_INFO_BTF in kernel configuration.", btfFile)
+				var data map[string]string
+				if err := json.Unmarshal(rr.Stdout.Bytes(), &data); err != nil {
+					t.Fatalf("failed to parse /version.json as JSON: %v. \nContent: %s", err, rr.Stdout)
+				}
+
+				t.Logf("Successfully parsed /version.json:")
+				for k, v := range data {
+					t.Logf("  %s: %s", k, v)
+				}
+			})
+
+		t.Logf("Successfully parsed /version.json:")
+		for k, v := range data {
+			t.Logf("  %s: %s", k, v)
+>>>>>>> 2f420fc02 (test: Verify and log iso version in iso_test.go)
 		}
 	})
 }
