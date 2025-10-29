@@ -22,10 +22,29 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	testutil "k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
+
+func collectAssets(t *testing.T, root, dest string, flatten bool) []assets.CopyableFile {
+	t.Helper()
+	files, err := assetsFromDir(root, dest, flatten)
+
+	t.Cleanup(func() {
+		for _, f := range files {
+			if cerr := f.Close(); cerr != nil {
+				t.Logf("warning: closing asset %s failed: %v", f.GetSourcePath(), cerr)
+			}
+		}
+	})
+
+	if err != nil {
+		t.Fatalf("assetsFromDir(%q, %q, flatten=%v) unexpected error: %v", root, dest, flatten, err)
+	}
+	return files
+}
 
 func TestAssetsFromDir(t *testing.T) {
 	tests := []struct {
@@ -126,19 +145,7 @@ func TestAssetsFromDir(t *testing.T) {
 				}
 			}
 
-			actualFiles, err := assetsFromDir(testFileBaseDir, test.vmPath, test.flatten)
-
-			t.Cleanup(func() {
-				for _, f := range actualFiles {
-					if cerr := f.Close(); cerr != nil {
-						t.Logf("warning: closing asset %s failed: %v", f.GetSourcePath(), cerr)
-					}
-				}
-			})
-
-			if err != nil {
-				t.Fatalf("got unexpected error adding minikube dir assets: %v", err)
-			}
+			actualFiles := collectAssets(t, testFileBaseDir, test.vmPath, test.flatten)
 
 			got := make(map[string]string)
 			for _, actualFile := range actualFiles {
