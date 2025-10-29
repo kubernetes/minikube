@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -712,45 +713,41 @@ preferences: {}
 users:
 - name: minikube
 `
-	var tests = []struct {
-		description    string
-		kubeconfigPath string
-		config         string
-		err            bool
+	tests := []struct {
+		description string
+		config      string
+		err         bool
 	}{
 		{
-			description:    "ok",
-			kubeconfigPath: "/tmp/kube_config",
-			config:         mockK8sConfig,
-			err:            false,
+			description: "ok",
+			config:      mockK8sConfig,
+			err:         false,
 		},
 		{
-			description:    "empty config",
-			kubeconfigPath: "/tmp/kube_config",
-			config:         "",
-			err:            true,
+			description: "empty config",
+			config:      "",
+			err:         true,
 		},
 		{
-			description:    "broken config",
-			kubeconfigPath: "/tmp/kube_config",
-			config:         "this**is&&not: yaml::valid: file",
-			err:            true,
+			description: "broken config",
+			config:      "this**is&&not: yaml::valid: file",
+			err:         true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			mockK8sConfigByte := []byte(test.config)
-			mockK8sConfigPath := test.kubeconfigPath
-			err := os.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
-			defer os.Remove(mockK8sConfigPath)
-			if err != nil {
-				t.Fatalf("Unexpected error when writing to file %v. Error: %v", test.kubeconfigPath, err)
+			tmpDir := t.TempDir()
+			mockK8sConfigPath := filepath.Join(tmpDir, "kube_config")
+
+			if err := os.WriteFile(mockK8sConfigPath, []byte(test.config), 0600); err != nil {
+				t.Fatalf("failed to write kubeconfig: %v", err)
 			}
 			t.Setenv("KUBECONFIG", mockK8sConfigPath)
 
 			k8s := K8sClientGetter{}
-			_, err = k8s.GetCoreClient("minikube")
+			_, err := k8s.GetCoreClient("minikube")
+
 			if err != nil && !test.err {
 				t.Fatalf("GetCoreClient returned unexpected error: %v", err)
 			}
