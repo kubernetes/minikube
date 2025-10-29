@@ -127,9 +127,6 @@ func TestAssetsFromDir(t *testing.T) {
 			}
 
 			actualFiles, err := assetsFromDir(testFileBaseDir, test.vmPath, test.flatten)
-			if err != nil {
-				t.Fatalf("got unexpected error adding minikube dir assets: %v", err)
-			}
 
 			t.Cleanup(func() {
 				for _, f := range actualFiles {
@@ -138,6 +135,10 @@ func TestAssetsFromDir(t *testing.T) {
 					}
 				}
 			})
+
+			if err != nil {
+				t.Fatalf("got unexpected error adding minikube dir assets: %v", err)
+			}
 
 			got := make(map[string]string)
 			for _, actualFile := range actualFiles {
