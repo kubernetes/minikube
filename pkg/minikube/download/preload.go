@@ -104,6 +104,11 @@ func remoteTarballURLGitHub(k8sVersion, containerRuntime string) string {
 }
 
 func remoteTarballURL(k8sVersion, containerRuntime string, source preloadSource) string {
+	overrideURL := viper.GetString("preload-url")
+	if overrideURL != "" {
+		klog.V(2).Infof("Using override preload URL: %s", overrideURL)
+		return overrideURL
+	}
 	switch source {
 	case preloadSourceGitHub:
 		return remoteTarballURLGitHub(k8sVersion, containerRuntime)
@@ -246,7 +251,15 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	if ok && state.source != preloadSourceNone {
 		source = state.source
 	}
+
 	url := remoteTarballURL(k8sVersion, containerRuntime, source)
+	// override URL if flag is set
+	customURL := viper.GetString("preload-url")
+	if customURL != "" {
+		klog.Infof("Using custom preload tarball URL: %s", customURL)
+		url = customURL
+	}
+
 	var checksum []byte
 	var chksErr error
 	checksum, chksErr = getChecksum(source, k8sVersion, containerRuntime)
