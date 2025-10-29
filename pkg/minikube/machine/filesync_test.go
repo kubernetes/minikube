@@ -46,9 +46,18 @@ func TestAssetsFromDir(t *testing.T) {
 				relativePath string
 				expectedPath string
 			}{
-				{relativePath: "/dir1/file1.txt", expectedPath: vmpath.GuestAddonsDir},
-				{relativePath: "/dir1/file2.txt", expectedPath: vmpath.GuestAddonsDir},
-				{relativePath: "/dir2/file1.txt", expectedPath: vmpath.GuestAddonsDir},
+				{
+					relativePath: "/dir1/file1.txt",
+					expectedPath: vmpath.GuestAddonsDir,
+				},
+				{
+					relativePath: "/dir1/file2.txt",
+					expectedPath: vmpath.GuestAddonsDir,
+				},
+				{
+					relativePath: "/dir2/file1.txt",
+					expectedPath: vmpath.GuestAddonsDir,
+				},
 			},
 			vmPath: vmpath.GuestAddonsDir,
 		},
@@ -60,9 +69,18 @@ func TestAssetsFromDir(t *testing.T) {
 				relativePath string
 				expectedPath string
 			}{
-				{relativePath: "/dir1/file1.txt", expectedPath: "/dir1"},
-				{relativePath: "/dir1/file2.txt", expectedPath: "/dir1"},
-				{relativePath: "/dir2/file1.txt", expectedPath: "/dir2"},
+				{
+					relativePath: "/dir1/file1.txt",
+					expectedPath: "/dir1",
+				},
+				{
+					relativePath: "/dir1/file2.txt",
+					expectedPath: "/dir1",
+				},
+				{
+					relativePath: "/dir2/file1.txt",
+					expectedPath: "/dir2",
+				},
 			},
 			vmPath: "/",
 		},
@@ -86,10 +104,11 @@ func TestAssetsFromDir(t *testing.T) {
 			for _, fileDef := range test.files {
 				err := func() error {
 					path := filepath.Join(testFileBaseDir, fileDef.relativePath)
-					if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+					err := os.MkdirAll(filepath.Dir(path), 0755)
+					want[path] = fileDef.expectedPath
+					if err != nil {
 						return err
 					}
-					want[path] = fileDef.expectedPath
 
 					file, err := os.Create(path)
 					if err != nil {
@@ -102,7 +121,8 @@ func TestAssetsFromDir(t *testing.T) {
 					return err
 				}()
 				if err != nil {
-					t.Fatalf("unable to create file on fs: %v", err)
+					t.Errorf("unable to create file on fs: %v", err)
+					return
 				}
 			}
 
@@ -111,7 +131,6 @@ func TestAssetsFromDir(t *testing.T) {
 				t.Fatalf("got unexpected error adding minikube dir assets: %v", err)
 			}
 
-			// Ensure file descriptors opened by assets.NewFileAsset are released (critical on Windows).
 			t.Cleanup(func() {
 				for _, f := range actualFiles {
 					if cerr := f.Close(); cerr != nil {
