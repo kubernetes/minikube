@@ -22,13 +22,14 @@
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_TEST_ARGS: additional flags to pass into go test
 # JOB_NAME: the name of the logfile and check name to update on github
+# PULL_NUMBER: the PR number, if applicable
 
 function print_test_info() {
 	echo ">> Starting at $(date)"
 	echo ""
 	echo "user:      $(whoami)"
 	echo "arch:      ${OS_ARCH}"
-	echo "build:     ${MINIKUBE_LOCATION}"
+	echo "pr:        ${PULL_NUMBER}"
 	echo "driver:    ${DRIVER}"
 	echo "runtime:   ${CONTAINER_RUNTIME}"
 	echo "job:       ${JOB_NAME}"
@@ -116,7 +117,7 @@ function gvisor_image_build() {
 function run_gopogh() {
     # todo: currently we do not save to gopogh db
     echo "Not saving to DB"
-    gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/ -details "${COMMIT}:$(date +%Y-%m-%d)"
+    gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${PULL_NUMBER}" -repo github.com/kubernetes/minikube/ -details "${COMMIT}:$(date +%Y-%m-%d)"
 
 }
 

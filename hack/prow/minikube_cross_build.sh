@@ -24,7 +24,7 @@ OS=$2
 ARCH=$3
 readonly OS_ARCH="${OS}-${ARCH}"
 
-echo "running build in $(pwd)"
+echo "running build in $(pwd), current pr number: ${PULL_NUMBER:-none}"
 
 # hack/prow/installer/check_install_golang.sh /usr/local $GO_VERSION
 # declare -rx GOPATH="$HOME/go"
