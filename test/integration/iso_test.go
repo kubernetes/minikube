@@ -20,6 +20,7 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"runtime"
@@ -101,6 +102,23 @@ func TestISOImage(t *testing.T) {
 		}
 	})
 
+	t.Run("VersionJSON", func(t *testing.T) {
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /version.json"))
+		if err != nil {
+			t.Fatalf("failed to read /version.json. args %q: %v", rr.Command(), err)
+		}
+
+		var data map[string]string
+		if err := json.Unmarshal(rr.Stdout.Bytes(), &data); err != nil {
+			t.Fatalf("failed to parse /version.json as JSON: %v. \nContent: %s", err, rr.Stdout)
+		}
+
+		t.Logf("Successfully parsed /version.json:")
+		for k, v := range data {
+			t.Logf("  %s: %s", k, v)
+		}
+	})
+  
 	t.Run("eBPFSupport", func(t *testing.T) {
 		// Ensure that BTF type information is available (https://github.com/kubernetes/minikube/issues/21788)
 		btfFile := "/sys/kernel/btf/vmlinux"
