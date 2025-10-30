@@ -19,7 +19,7 @@ package download
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"runtime"
 
 	"github.com/blang/semver/v4"
@@ -53,8 +53,12 @@ func binaryWithChecksumURL(binaryName, version, osName, archName, binaryURL stri
 
 // Binary will download a binary onto the host
 func Binary(binary, version, osName, archName, binaryURL string) (string, error) {
-	targetDir := localpath.MakeMiniPath("cache", osName, archName, version)
-	targetFilepath := path.Join(targetDir, binary)
+	targetFilepath := localpath.CachedBinaryPath(binary, version, osName, archName)
+	targetDir := filepath.Dir(targetFilepath)
+
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		return "", errors.Wrapf(err, "failed to create target dir %s", targetDir)
+	}
 	targetLock := targetFilepath + ".lock"
 
 	url, err := binaryWithChecksumURL(binary, version, osName, archName, binaryURL)

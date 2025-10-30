@@ -247,3 +247,7 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 }
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
+
+func CachedBinaryPath(binary, version, goos, goarch string) string {
+	return filepath.Join(MiniPath(), "cache", "bin", goos, goarch, version, binary)
+}
