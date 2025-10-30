@@ -79,11 +79,11 @@ data:
 
   # Enable IPv4 addressing. If enabled, all endpoints are allocated an IPv4
   # address.
-  enable-ipv4: "true"
+  enable-ipv4: "{{ .EnableIPv4 }}"
 
   # Enable IPv6 addressing. If enabled, all endpoints are allocated an IPv6
   # address.
-  enable-ipv6: "false"
+  enable-ipv6: "{{ .EnableIPv6 }}"
   # Users who wish to specify their own custom CNI configuration file must set
   # custom-cni-conf to "true", otherwise Cilium may overwrite the configuration.
   custom-cni-conf: "false"
@@ -163,10 +163,10 @@ data:
 
   # Enables L7 proxy for L7 policy enforcement and visibility
   enable-l7-proxy: "true"
-  enable-ipv4-masquerade: "true"
+  enable-ipv4-masquerade: "{{ if eq .EnableIPv4 "true" }}true{{ else }}false{{ end }}"
   enable-ipv4-big-tcp: "false"
   enable-ipv6-big-tcp: "false"
-  enable-ipv6-masquerade: "true"
+  enable-ipv6-masquerade: "{{ if eq .EnableIPv6 "true" }}true{{ else }}false{{ end }}"
   enable-tcx: "true"
   datapath-mode: "veth"
   enable-masquerade-to-route-source: "false"
@@ -219,8 +219,14 @@ data:
   hubble-tls-client-ca-files: /var/lib/cilium/tls/hubble/client-ca.crt
   ipam: "cluster-pool"
   ipam-cilium-node-update-rate: "15s"
+  {{- if eq .EnableIPv4 "true" }}
   cluster-pool-ipv4-cidr: "{{ .PodSubnet }}"
   cluster-pool-ipv4-mask-size: "24"
+  {{- end }}
+  {{- if eq .EnableIPv6 "true" }}
+  cluster-pool-ipv6-cidr: "{{ .PodSubnetV6 }}"
+  cluster-pool-ipv6-mask-size: "64"
+  {{- end }}
 
   default-lb-service-ipam: "lbipam"
   egress-gateway-reconciliation-trigger-interval: "1s"
