@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -56,12 +57,12 @@ func args() string {
 }
 
 // Log details about the executed command.
-func LogCommandStart() (string, error) {
+func LogCommandStart(options *run.CommandOptions) (string, error) {
 	if !shouldLog() {
 		return "", nil
 	}
 	id := uuid.New().String()
-	r := newRow(pflag.Arg(0), args(), userName(), version.GetVersion(), time.Now(), id)
+	r := newRow(pflag.Arg(0), args(), userName(), version.GetVersion(), time.Now(), id, options)
 	if err := appendToLog(r); err != nil {
 		return "", err
 	}

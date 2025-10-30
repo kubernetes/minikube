@@ -24,9 +24,8 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // row is the log of a single command.
@@ -81,15 +80,11 @@ func (e *row) toMap() map[string]string {
 }
 
 // newRow creates a new audit row.
-func newRow(command string, args string, user string, version string, startTime time.Time, id string, profile ...string) *row {
-	p := viper.GetString(config.ProfileName)
-	if len(profile) > 0 {
-		p = profile[0]
-	}
+func newRow(command string, args string, user string, version string, startTime time.Time, id string, options *run.CommandOptions) *row {
 	return &row{
 		args:      args,
 		command:   command,
-		profile:   p,
+		profile:   options.ProfileName,
 		startTime: startTime.Format(constants.TimeFormat),
 		user:      user,
 		version:   version,

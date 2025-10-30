@@ -24,7 +24,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func TestLogFile(t *testing.T) {
@@ -40,6 +42,7 @@ func TestLogFile(t *testing.T) {
 	})
 
 	t.Run("AppendToLog", func(t *testing.T) {
+		options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 		f, err := os.CreateTemp("", "audit.json")
 		if err != nil {
 			t.Fatalf("Error creating temporary file: %v", err)
@@ -49,7 +52,7 @@ func TestLogFile(t *testing.T) {
 		currentLogFile = f
 		defer closeAuditLog()
 
-		r := newRow("start", "-v", "user1", "v0.17.1", time.Now(), uuid.New().String())
+		r := newRow("start", "-v", "user1", "v0.17.1", time.Now(), uuid.New().String(), options)
 		if err := appendToLog(r); err != nil {
 			t.Fatalf("Error appendingToLog: %v", err)
 		}

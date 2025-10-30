@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/deploy/addons"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
@@ -831,7 +832,7 @@ func overrideDefaults(def, override map[string]string) map[string]string {
 }
 
 // SelectAndPersistImages selects which images to use based on addon default images, previously persisted images, and newly requested images - which are then persisted for future enables.
-func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, customRegistries map[string]string, _ error) {
+func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig, options *run.CommandOptions) (images, customRegistries map[string]string, _ error) {
 	addonDefaultImages := addon.Images
 	if addonDefaultImages == nil {
 		addonDefaultImages = make(map[string]string)
@@ -880,7 +881,7 @@ func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, cus
 	if viper.IsSet(config.AddonImages) || viper.IsSet(config.AddonRegistries) {
 		// Since these values are only set when a user enables an addon, it is safe to refer to the profile name.
 		// Whether err is nil or not we still return here.
-		return images, customRegistries, config.Write(viper.GetString(config.ProfileName), cc)
+		return images, customRegistries, config.Write(options.ProfileName, cc)
 	}
 	return images, customRegistries, nil
 }
