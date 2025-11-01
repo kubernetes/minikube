@@ -19,7 +19,7 @@
 
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
-ARG KICBASE_IMAGE="debian:bookworm-20250908-slim"
+ARG KICBASE_IMAGE="debian:bookworm-20251020-slim"
 # multi-stage docker build so we can build auto-pause for arm64
 FROM golang:1.24.6 AS auto-pause
 WORKDIR /src
