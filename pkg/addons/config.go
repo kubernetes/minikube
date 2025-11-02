@@ -18,14 +18,15 @@ package addons
 
 import (
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
-type setFn func(*config.ClusterConfig, string, string) error
+type setFn func(*config.ClusterConfig, string, string, *run.CommandOptions) error
 
 // Addon represents an addon
 type Addon struct {
 	name        string
-	set         func(*config.ClusterConfig, string, string) error
+	set         func(*config.ClusterConfig, string, string, *run.CommandOptions) error
 	validations []setFn
 	callbacks   []setFn
 }

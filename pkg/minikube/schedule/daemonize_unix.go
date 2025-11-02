@@ -30,16 +30,17 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // KillExisting kills existing scheduled stops by looking up the PID
 // of the scheduled stop from the PID file saved for the profile and killing the process
-func KillExisting(profiles []string) {
+func KillExisting(profiles []string, options *run.CommandOptions) {
 	for _, profile := range profiles {
 		if err := killPIDForProfile(profile); err != nil {
 			klog.Warningf("error killng PID for profile %s: %v", profile, err)
 		}
-		_, cc := mustload.Partial(profile)
+		_, cc := mustload.Partial(profile, options)
 		cc.ScheduledStop = nil
 		if err := config.SaveProfile(profile, cc); err != nil {
 			klog.Errorf("error saving profile for profile %s: %v", profile, err)
@@ -76,7 +77,7 @@ func killPIDForProfile(profile string) error {
 	return nil
 }
 
-func daemonize(profiles []string, _ time.Duration) error {
+func daemonize(profiles []string, _ time.Duration, _ *run.CommandOptions) error {
 	_, _, err := godaemon.MakeDaemon(&godaemon.DaemonAttr{})
 	if err != nil {
 		return err

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Kubernetes Authors All rights reserved.
+Copyright 2025 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,24 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mustload
+package run
 
-import (
-	"path/filepath"
-	"testing"
+// CommandOptions are minikube command line options.
+type CommandOptions struct {
+	// NonInteractive is true if the minikube command run with the
+	// --interactive=false flag and we can not interact with the user.
+	NonInteractive bool
 
-	"k8s.io/minikube/pkg/minikube/run"
-)
-
-func TestPartial(t *testing.T) {
-	path := filepath.Join("..", "config", "testdata", "profile", ".minikube")
-	name := "p1"
-	api, cc := Partial(name, &run.CommandOptions{}, path)
-
-	if cc.Name != name {
-		t.Fatalf("cc.Name expected to be same as name(%s), but got %s", name, cc.Name)
-	}
-	if api == nil {
-		t.Fatalf("expected to get not empty api struct")
-	}
+	// DownloadOnly is true if the minikube command run with the --download-only
+	// flag and we should If only download and cache files for later use and
+	// don't install or start anything.
+	DownloadOnly bool
 }
