@@ -70,9 +70,9 @@ func updateYAML(version string) {
 	}
 	replacements := map[string]string{
 		`policy\/v1`:                              "policy/v1{{if .LegacyPodDisruptionBudget}}beta1{{end}}",
-		`docker\.io\/calico\/cni:.*`:              "{{ .BinaryImageName }}",
-		`docker\.io\/calico\/node:.*`:             "{{ .DaemonSetImageName }}",
-		`docker\.io\/calico\/kube-controllers:.*`: "{{ .DeploymentImageName }}",
+		`(?:docker\.io|quay\.io)\/calico\/cni:.*`:              "{{ .BinaryImageName }}",
+		`(?:docker\.io|quay\.io)\/calico\/node:.*`:             "{{ .DaemonSetImageName }}",
+		`(?:docker\.io|quay\.io)\/calico\/kube-controllers:.*`: "{{ .DeploymentImageName }}",
 	}
 	for re, repl := range replacements {
 		yaml = regexp.MustCompile(re).ReplaceAll(yaml, []byte(repl))
