@@ -32,6 +32,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/browser"
@@ -79,13 +80,14 @@ var serviceCmd = &cobra.Command{
 			exit.Message(reason.Usage, "You must specify service name(s) or --all")
 		}
 
+		options := flags.CommandOptions()
 		svcArgs := make(map[string]bool)
 		for _, v := range args {
 			svcArgs[v] = true
 		}
 
 		cname := ClusterFlagValue()
-		co := mustload.Healthy(cname)
+		co := mustload.Healthy(cname, options)
 
 		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsBuiltinQEMU(co.Config.Network) {
 			msg := "minikube service is not currently implemented with the builtin network on QEMU"

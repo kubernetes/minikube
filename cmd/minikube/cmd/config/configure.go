@@ -27,6 +27,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -37,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
@@ -59,6 +61,7 @@ var addonsConfigureCmd = &cobra.Command{
 			exit.Message(reason.Usage, "usage: minikube addons configure ADDON_NAME")
 		}
 
+		options := flags.CommandOptions()
 		profile := ClusterFlagValue()
 		addon := args[0]
 		addonConfig := loadAddonConfigFile(addon, addonConfigFile)
@@ -69,16 +72,16 @@ var addonsConfigureCmd = &cobra.Command{
 			processRegistryCredsConfig(profile, addonConfig)
 
 		case "metallb":
-			processMetalLBConfig(profile, addonConfig)
+			processMetalLBConfig(profile, addonConfig, options)
 
 		case "ingress":
-			processIngressConfig(profile, addonConfig)
+			processIngressConfig(profile, addonConfig, options)
 
 		case "registry-aliases":
-			processRegistryAliasesConfig(profile, addonConfig)
+			processRegistryAliasesConfig(profile, addonConfig, options)
 
 		case "auto-pause":
-			processAutoPauseConfig(profile, addonConfig)
+			processAutoPauseConfig(profile, addonConfig, options)
 
 		default:
 			out.FailureT("{{.name}} has no available configuration options", out.V{"name": addon})
@@ -156,15 +159,14 @@ func loadAddonConfigFile(addon, configFilePath string) (ac *addonConfig) {
 			exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
 				fmt.Sprintf("error reading config file: %v", err))
 		}
-
-		return &cf.Addons
 	}
-	return nil
+
+	return &cf.Addons
 }
 
 // Processes metallb addon config from configFile if it exists otherwise resorts to default behavior
-func processMetalLBConfig(profile string, _ *addonConfig) {
-	_, cfg := mustload.Partial(profile)
+func processMetalLBConfig(profile string, _ *addonConfig, options *run.CommandOptions) {
+	_, cfg := mustload.Partial(profile, options)
 
 	validator := func(s string) bool {
 		return net.ParseIP(s) != nil
@@ -179,14 +181,14 @@ func processMetalLBConfig(profile string, _ *addonConfig) {
 	}
 
 	// Re-enable metallb addon in order to generate template manifest files with Load Balancer Start/End IP
-	if err := addons.EnableOrDisableAddon(cfg, "metallb", "true"); err != nil {
+	if err := addons.EnableOrDisableAddon(cfg, "metallb", "true", options); err != nil {
 		out.ErrT(style.Fatal, "Failed to configure metallb IP {{.profile}}", out.V{"profile": profile})
 	}
 }
 
 // Processes ingress addon config from configFile if it exists otherwise resorts to default behavior
-func processIngressConfig(profile string, _ *addonConfig) {
-	_, cfg := mustload.Partial(profile)
+func processIngressConfig(profile string, _ *addonConfig, options *run.CommandOptions) {
+	_, cfg := mustload.Partial(profile, options)
 
 	validator := func(s string) bool {
 		format := regexp.MustCompile("^.+/.+$")
@@ -209,8 +211,8 @@ func processIngressConfig(profile string, _ *addonConfig) {
 }
 
 // Processes auto-pause addon config from configFile if it exists otherwise resorts to default behavior
-func processAutoPauseConfig(profile string, _ *addonConfig) {
-	lapi, cfg := mustload.Partial(profile)
+func processAutoPauseConfig(profile string, _ *addonConfig, options *run.CommandOptions) {
+	lapi, cfg := mustload.Partial(profile, options)
 	intervalInput := AskForStaticValue("-- Enter interval time of auto-pause-interval (ex. 1m0s): ")
 	intervalTime, err := time.ParseDuration(intervalInput)
 	if err != nil {
@@ -235,11 +237,11 @@ func processAutoPauseConfig(profile string, _ *addonConfig) {
 			out.ErrT(style.Fatal, "failed to load profile: {{.error}}", out.V{"error": err})
 		}
 		if profileStatus(p, lapi).StatusCode/100 == 2 { // 2xx code
-			co := mustload.Running(profile)
+			co := mustload.Running(profile, options)
 			// first unpause all nodes cluster immediately
 			unpauseWholeCluster(co)
 			// Re-enable auto-pause addon in order to update interval time
-			if err := addons.EnableOrDisableAddon(cfg, "auto-pause", "true"); err != nil {
+			if err := addons.EnableOrDisableAddon(cfg, "auto-pause", "true", options); err != nil {
 				out.ErrT(style.Fatal, "Failed to configure auto-pause {{.profile}}", out.V{"profile": profile})
 			}
 			// restart auto-pause service
@@ -251,8 +253,8 @@ func processAutoPauseConfig(profile string, _ *addonConfig) {
 }
 
 // Processes registry-aliases addon config from configFile if it exists otherwise resorts to default behavior
-func processRegistryAliasesConfig(profile string, _ *addonConfig) {
-	_, cfg := mustload.Partial(profile)
+func processRegistryAliasesConfig(profile string, _ *addonConfig, options *run.CommandOptions) {
+	_, cfg := mustload.Partial(profile, options)
 	validator := func(s string) bool {
 		format := regexp.MustCompile(`^([a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+)+(\ [a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+)*$`)
 		return format.MatchString(s)
@@ -267,7 +269,7 @@ func processRegistryAliasesConfig(profile string, _ *addonConfig) {
 	addon := assets.Addons["registry-aliases"]
 	if addon.IsEnabled(cfg) {
 		// Re-enable registry-aliases addon in order to generate template manifest files with custom hosts
-		if err := addons.EnableOrDisableAddon(cfg, "registry-aliases", "true"); err != nil {
+		if err := addons.EnableOrDisableAddon(cfg, "registry-aliases", "true", options); err != nil {
 			out.ErrT(style.Fatal, "Failed to configure registry-aliases {{.profile}}", out.V{"profile": profile})
 		}
 	}

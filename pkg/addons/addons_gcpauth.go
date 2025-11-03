@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -54,20 +55,20 @@ const (
 )
 
 // enableOrDisableGCPAuth enables or disables the gcp-auth addon depending on the val parameter
-func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name, val string) error {
+func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name, val string, options *run.CommandOptions) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
 	if enable {
-		return enableAddonGCPAuth(cfg)
+		return enableAddonGCPAuth(cfg, options)
 	}
-	return disableAddonGCPAuth(cfg)
+	return disableAddonGCPAuth(cfg, options)
 }
 
-func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
+func enableAddonGCPAuth(cfg *config.ClusterConfig, options *run.CommandOptions) error {
 	// Grab command runner from running cluster
-	cc := mustload.Running(cfg.Name)
+	cc := mustload.Running(cfg.Name, options)
 	r := cc.CP.Runner
 
 	// Grab credentials from where GCP would normally look
@@ -244,9 +245,9 @@ func refreshExistingPods(cc *config.ClusterConfig) error {
 	return nil
 }
 
-func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
+func disableAddonGCPAuth(cfg *config.ClusterConfig, options *run.CommandOptions) error {
 	// Grab command runner from running cluster
-	cc := mustload.Running(cfg.Name)
+	cc := mustload.Running(cfg.Name, options)
 	r := cc.CP.Runner
 
 	// Clean up the files generated when enabling the addon
@@ -303,7 +304,7 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	return nil
 }
 
-func verifyGCPAuthAddon(cc *config.ClusterConfig, name, val string) error {
+func verifyGCPAuthAddon(cc *config.ClusterConfig, name, val string, options *run.CommandOptions) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
@@ -321,7 +322,7 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name, val string) error {
 		}
 	}
 
-	if err := verifyAddonStatusInternal(cc, name, val, "gcp-auth"); err != nil {
+	if err := verifyAddonStatusInternal(cc, name, val, "gcp-auth", options); err != nil {
 		return err
 	}
 

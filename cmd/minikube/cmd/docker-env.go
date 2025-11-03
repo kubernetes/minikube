@@ -35,6 +35,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
 
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/drivers/qemu"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
@@ -271,6 +272,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 	Run: func(_ *cobra.Command, _ []string) {
 		var err error
 
+		options := flags.CommandOptions()
 		shl := shell.ForceShell
 		if shl == "" {
 			shl, err = shell.Detect()
@@ -296,7 +298,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 
 		cname := ClusterFlagValue()
 
-		co := mustload.Running(cname)
+		co := mustload.Running(cname, options)
 
 		driverName := co.CP.Host.DriverName
 
@@ -316,7 +318,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 		if cr == constants.Containerd {
 			out.WarningT("Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better")
 
-			startNerdctld()
+			startNerdctld(options)
 
 			// docker-env on containerd depends on nerdctld (https://github.com/afbjorklund/nerdctld) as "docker" daeomn
 			// and nerdctld daemon must be used with ssh connection (it is set in kicbase image's Dockerfile)
@@ -330,7 +332,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			}
 			// cluster config must be reloaded
 			// otherwise we won't be able to get SSH_AUTH_SOCK and SSH_AGENT_PID from cluster config.
-			co = mustload.Running(cname)
+			co = mustload.Running(cname, options)
 
 			// set the ssh-agent envs for current process
 			os.Setenv("SSH_AUTH_SOCK", co.Config.SSHAuthSock)

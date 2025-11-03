@@ -30,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func init() {
@@ -40,7 +41,7 @@ func init() {
 		Status:   status,
 		Default:  false, // requires external VM
 		Priority: registry.Discouraged,
-		Init:     func() drivers.Driver { return ssh.NewDriver(ssh.Config{}) },
+		Init:     func(_ *run.CommandOptions) drivers.Driver { return ssh.NewDriver(ssh.Config{}) },
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
@@ -82,6 +83,6 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return d, nil
 }
 
-func status() registry.State {
+func status(_ *run.CommandOptions) registry.State {
 	return registry.State{Installed: true, Healthy: true}
 }

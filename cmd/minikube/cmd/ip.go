@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
@@ -31,7 +32,8 @@ var ipCmd = &cobra.Command{
 	Short: "Retrieves the IP address of the specified node",
 	Long:  `Retrieves the IP address of the specified node, and writes it to STDOUT.`,
 	Run: func(_ *cobra.Command, _ []string) {
-		co := mustload.Running(ClusterFlagValue())
+		options := flags.CommandOptions()
+		co := mustload.Running(ClusterFlagValue(), options)
 		n, _, err := node.Retrieve(*co.Config, nodeName)
 		if err != nil {
 			exit.Error(reason.GuestNodeRetrieve, "retrieving node", err)
