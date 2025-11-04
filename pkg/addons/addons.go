@@ -457,7 +457,39 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 	apply := func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
-		_, err := runner.RunCmd(kubectlCommand(ctx, cc, deployFiles, enable, force))
+				if addon.HelmChart != nil {
+			// Check if helm binary exists in the guest OS
+			if _, err := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm")); err != nil {
+				// If not, install it
+				rr, err := runner.RunCmd(exec.Command("uname", "-m"))
+				if err != nil {
+					return errors.Wrap(err, "getting architecture")
+				}
+				arch := strings.TrimSpace(rr.Stdout.String())
+				var helmArch string
+				switch arch {
+				case "x86_64":
+					helmArch = "amd64"
+				case "aarch64", "arm64":
+					helmArch = "arm64"
+				default:
+					return fmt.Errorf("failure to detect architecture or unsupported architecture: %s", arch)
+				}
+				helmURL := fmt.Sprintf("https://get.helm.sh/helm-v3.19.0-linux-%s.tar.gz", helmArch)
+				installCmd := fmt.Sprintf("curl -sSL %s | tar -xzf - -C /usr/bin --strip-components=1 linux-%s/helm", helmURL, helmArch)
+				_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd))
+				if err != nil {
+					return errors.Wrap(err, "installing helm")
+				}
+
+			}
+			cmd := helmCommand(ctx, addon.HelmChart, enable)
+			_, err := runner.RunCmd(cmd)
+			return err
+		}
+
+		cmd := kubectlCommand(ctx, cc, deployFiles, enable, force)
+		_, err := runner.RunCmd(cmd)
 		if err != nil {
 			klog.Warningf("apply failed, will retry: %v", err)
 			force = true
