@@ -417,7 +417,6 @@ func supportLegacyIngress(addon *assets.Addon, cc config.ClusterConfig) error {
 
 func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon, runner command.Runner, data interface{}, enable bool) error {
 	deployFiles := []string{}
-
 	for _, addon := range addon.Assets {
 		var f assets.CopyableFile
 		var err error

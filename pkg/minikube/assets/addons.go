@@ -796,6 +796,17 @@ var Addons = map[string]*Addon{
 		map[string]string{
 			"Kubetail": "docker.io",
 		}, nil),
+		"testaddon": NewAddon([]*BinAsset{
+		MustBinAsset(addons.TestAddonAssets, "test-addon/test-addon.yaml", vmpath.GuestAddonsDir, "test-addon-values.yaml", "0640"),
+		}, false, "testaddon", "3rd party (akvelon.com)", "volatilemolotov", "", nil, nil,
+		&HelmChart{
+			Name:      "testkit",
+			Repo:      "oci://us-central1-docker.pkg.dev/akvelon-gke-aieco/helm-oci/ai-starter-kit",
+			Namespace: "testaddon",
+			Values:    []string{"service.type=NodePort"},
+			ValueFiles: []string{"/etc/kubernetes/addons/test-addon-values.yaml",},
+		},
+	),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...

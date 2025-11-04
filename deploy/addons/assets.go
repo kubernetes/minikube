@@ -178,4 +178,8 @@ var (
 	// Kubetail assets for kubetail addon
 	//go:embed kubetail/*.yaml kubetail/*.tmpl
 	KubetailAssets embed.FS
+	
+	// testaddon assets for testaddon addon
+	//go:embed test-addon/*.yaml
+	TestAddonAssets embed.FS
 )
