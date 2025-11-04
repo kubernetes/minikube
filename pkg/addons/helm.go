@@ -18,8 +18,11 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
+	"strings"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -55,4 +58,33 @@ func helmCommand(ctx context.Context, chart *assets.HelmChart, enable bool) *exe
 		}
 	}
 	return exec.CommandContext(ctx, "sudo", args...)
+}
+
+func helmInstall(addon *assets.Addon, runner command.Runner) error {
+	_, err := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
+	if err != nil {
+		// If not, install it
+		rr, err := runner.RunCmd(exec.Command("uname", "-m"))
+		if err != nil {
+			return errors.Wrap(err, "getting architecture")
+		}
+	arch := strings.TrimSpace(rr.Stdout.String())
+	var helmArch string
+	switch arch {
+		case "x86_64":
+			helmArch = "amd64"
+		case "aarch64", "arm64":
+			helmArch = "arm64"
+		default:
+			return fmt.Errorf("failure to detect architecture or unsupported architecture: %s", arch)
+	}
+	helmURL := fmt.Sprintf("https://get.helm.sh/helm-v3.19.0-linux-%s.tar.gz", helmArch)
+	installCmd := fmt.Sprintf("curl -sSL %s | tar -xzf - -C /usr/bin --strip-components=1 linux-%s/helm", helmURL, helmArch)
+	_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd))
+	if err != nil {
+		return errors.Wrap(err, "installing helm")
+	}
+	return err
+	}
+return err
 }
