@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
+// runs a helm install/uninstall based on the contents of chart *assets.HelmChart and enable
 func helmCommand(ctx context.Context, chart *assets.HelmChart, enable bool) *exec.Cmd {
 	var args []string
 
@@ -60,7 +61,7 @@ func helmCommand(ctx context.Context, chart *assets.HelmChart, enable bool) *exe
 	return exec.CommandContext(ctx, "sudo", args...)
 }
 
-func helmInstall(addon *assets.Addon, runner command.Runner) error {
+func helmInstallBinary(addon *assets.Addon, runner command.Runner) error {
 	_, err := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
 	if err != nil {
 		// If not, install it
