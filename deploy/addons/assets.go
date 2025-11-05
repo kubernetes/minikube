@@ -60,7 +60,7 @@ var (
 	IstioAssets embed.FS
 
 	// InspektorGadgetAssets assets for inspektor-gadget addon
-	//go:embed inspektor-gadget/*.tmpl inspektor-gadget/*.yaml
+	//go:embed inspektor-gadget/*.tmpl
 	InspektorGadgetAssets embed.FS
 
 	// KongAssets assets for kong addon
