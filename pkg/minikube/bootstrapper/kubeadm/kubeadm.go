@@ -61,6 +61,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -171,7 +172,7 @@ func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) {
 }
 
 // init initialises primary control-plane using kubeadm.
-func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) init(cfg config.ClusterConfig, options *run.CommandOptions) error {
 	ver, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
@@ -228,8 +229,16 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
 	defer cancel()
 	kr, kw := io.Pipe()
-	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
-		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
+
+	cmd := fmt.Sprintf(
+		"%s init --config %s %s --ignore-preflight-errors=%s",
+		bsutil.KubeadmCmdWithPath(cfg.KubernetesConfig.KubernetesVersion),
+		conf,
+		extraFlags,
+		strings.Join(ignore, ","),
+	)
+	c := exec.CommandContext(ctx, "sudo", "/bin/bash", "-c", cmd)
+
 	c.Stdout = kw
 	c.Stderr = kw
 	var wg sync.WaitGroup
@@ -283,7 +292,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	wg.Wait()
 
 	// tunnel apiserver to guest
-	if err := k.tunnelToAPIServer(cfg); err != nil {
+	if err := k.tunnelToAPIServer(cfg, options); err != nil {
 		klog.Warningf("apiserver tunnel failed: %v", err)
 	}
 
@@ -387,7 +396,7 @@ func (k *Bootstrapper) unpause(cfg config.ClusterConfig) error {
 }
 
 // StartCluster starts the cluster
-func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig, options *run.CommandOptions) error {
 	start := time.Now()
 	klog.Infof("StartCluster: %+v", cfg)
 	defer func() {
@@ -401,7 +410,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	if err := bsutil.ExistingConfig(k.c); err == nil {
 		// if the guest already exists and was stopped, re-establish the apiserver tunnel so checks pass
-		if err := k.tunnelToAPIServer(cfg); err != nil {
+		if err := k.tunnelToAPIServer(cfg, options); err != nil {
 			klog.Warningf("apiserver tunnel failed: %v", err)
 		}
 
@@ -423,7 +432,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "cp")
 	}
 
-	err := k.init(cfg)
+	err := k.init(cfg, options)
 	if err == nil {
 		return nil
 	}
@@ -434,13 +443,13 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 			klog.Warningf("delete failed: %v", err)
 		}
-		return k.init(cfg)
+		return k.init(cfg, options)
 	}
 	return err
 }
 
 // tunnelToAPIServer creates ssh tunnel between apiserver:port inside control-plane node and host on port 8443.
-func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig, options *run.CommandOptions) error {
 	if cfg.APIServerPort == 0 {
 		return fmt.Errorf("apiserver port not set")
 	}
@@ -450,7 +459,7 @@ func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	m, err := machine.NewAPIClient()
+	m, err := machine.NewAPIClient(options)
 	if err != nil {
 		return errors.Wrapf(err, "create libmachine api client")
 	}
@@ -650,7 +659,7 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		return errors.Wrap(err, "cp")
 	}
 
-	baseCmd := fmt.Sprintf("%s init", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion))
+	baseCmd := fmt.Sprintf("%s init", bsutil.KubeadmCmdWithPath(cfg.KubernetesConfig.KubernetesVersion))
 	cmds := []string{
 		fmt.Sprintf("%s phase certs all --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, conf),
@@ -661,10 +670,10 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 
 	// Run commands one at a time so that it is easier to root cause failures.
 	for _, c := range cmds {
-		if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", c)); err != nil {
+		if _, err := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", c)); err != nil {
 			klog.Errorf("%s failed - will try once more: %v", c, err)
 
-			if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", c)); err != nil {
+			if _, err := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", c)); err != nil {
 				return errors.Wrap(err, "run")
 			}
 		}
@@ -703,7 +712,7 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		if cfg.KubernetesConfig.ExtraOptions.Exists("kubeadm.skip-phases=addon/kube-proxy") {
 			addons = "coredns"
 		}
-		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon %s --config %s", baseCmd, addons, conf)))
+		_, err := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("%s phase addon %s --config %s", baseCmd, addons, conf)))
 		return err
 	}
 	if err = retry.Expo(addonPhase, 100*time.Microsecond, 30*time.Second); err != nil {
@@ -759,11 +768,11 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 			" --apiserver-bind-port=" + strconv.Itoa(n.Port)
 	}
 
-	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd)); err != nil {
+	if _, err := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", joinCmd)); err != nil {
 		return errors.Wrapf(err, "kubeadm join")
 	}
 
-	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl start kubelet")); err != nil {
+	if _, err := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", "systemctl daemon-reload && systemctl enable kubelet && systemctl start kubelet")); err != nil {
 		return errors.Wrap(err, "starting kubelet")
 	}
 
@@ -773,14 +782,14 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 // GenerateToken creates a token and returns the appropriate kubeadm join command to run, or the already existing token
 func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 	// Take that generated token and use it to get a kubeadm join command
-	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion)))
+	tokenCmd := exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion)))
 	r, err := k.c.RunCmd(tokenCmd)
 	if err != nil {
 		return "", errors.Wrap(err, "generating join command")
 	}
 
 	joinCmd := r.Stdout.String()
-	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), 1)
+	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion), 1)
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
 
 	// avoid "Found multiple CRI endpoints on the host. Please define which one do you wish to use by setting the 'criSocket' field in the kubeadm configuration file: unix:///var/run/containerd/containerd.sock, unix:///var/run/cri-dockerd.sock" error
@@ -849,14 +858,14 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "runtime")
 	}
 
-	ka := bsutil.InvokeKubeadm(k8s.KubernetesVersion)
+	ka := bsutil.KubeadmCmdWithPath(k8s.KubernetesVersion)
 	sp := cr.SocketPath()
 	cmd := fmt.Sprintf("%s reset --cri-socket %s --force", ka, sp)
 	if ver.LT(semver.MustParse("1.11.0")) {
 		cmd = fmt.Sprintf("%s reset --cri-socket %s", ka, sp)
 	}
 
-	rr, derr := k.c.RunCmd(exec.Command("/bin/bash", "-c", cmd))
+	rr, derr := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd))
 	if derr != nil {
 		klog.Warningf("%s: %v", rr.Command(), err)
 	}

@@ -43,6 +43,7 @@ import (
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -418,9 +419,8 @@ func renewExpiredKubeadmCerts(cmd command.Runner, cc config.ClusterConfig) error
 		return nil
 	}
 	out.WarningT("kubeadm certificates have expired. Generating new ones...")
-	kubeadmPath := path.Join(vmpath.GuestPersistentDir, "binaries", cc.KubernetesConfig.KubernetesVersion)
-	bashCmd := fmt.Sprintf("sudo env PATH=\"%s:$PATH\" kubeadm certs renew all --config %s", kubeadmPath, constants.KubeadmYamlPath)
-	if _, err := cmd.RunCmd(exec.Command("/bin/bash", "-c", bashCmd)); err != nil {
+	bashCmd := fmt.Sprintf("%s certs renew all --config %s", bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion), constants.KubeadmYamlPath)
+	if _, err := cmd.RunCmd(exec.Command("sudo", "/bin/bash", "-c", bashCmd)); err != nil {
 		return errors.Wrap(err, "kubeadm certs renew")
 	}
 	return nil

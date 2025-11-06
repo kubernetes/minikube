@@ -63,7 +63,6 @@ func main() {
 
 	update.Apply(schema, data)
 	updateDeploymentYAML(stable)
-	updateCRDYAML(stable)
 }
 
 func updateDeploymentYAML(version string) {
@@ -83,21 +82,6 @@ func updateDeploymentYAML(version string) {
 		yaml = regexp.MustCompile(re).ReplaceAll(yaml, []byte(repl))
 	}
 	if err := os.WriteFile("../deploy/addons/inspektor-gadget/ig-deployment.yaml.tmpl", yaml, 0644); err != nil {
-		klog.Fatalf("failed to write to YAML file: %v", err)
-	}
-}
-
-func updateCRDYAML(version string) {
-	res, err := http.Get(fmt.Sprintf("https://raw.githubusercontent.com/inspektor-gadget/inspektor-gadget/refs/tags/%s/pkg/resources/crd/bases/gadget.kinvolk.io_traces.yaml", version))
-	if err != nil {
-		klog.Fatalf("failed to get yaml file: %v", err)
-	}
-	defer res.Body.Close()
-	yaml, err := io.ReadAll(res.Body)
-	if err != nil {
-		klog.Fatalf("failed to read body: %v", err)
-	}
-	if err := os.WriteFile("../deploy/addons/inspektor-gadget/ig-crd.yaml", yaml, 0644); err != nil {
 		klog.Fatalf("failed to write to YAML file: %v", err)
 	}
 }

@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"k8s.io/minikube/pkg/minikube/detect"
+	"k8s.io/minikube/pkg/minikube/run"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -80,9 +81,9 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 }
 
 // handleDownloadOnly caches appropariate binaries and images
-func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, containerRuntime, driverName string) {
+func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, containerRuntime, driverName string, options *run.CommandOptions) {
 	// If --download-only, complete the remaining downloads and exit.
-	if !viper.GetBool("download-only") {
+	if !options.DownloadOnly {
 		return
 	}
 
@@ -227,7 +228,7 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 				klog.Warningf("Error downloading kic artifacts: %v", err)
 				out.ErrT(style.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": image.Tag(kic.BaseImage)})
 				out.WarningT("In order to use the fall back image, you need to log in to the github packages registry")
-				out.Styled(style.Documentation, `Please visit the following link for documentation around this: 
+				out.Styled(style.Documentation, `Please visit the following link for documentation around this:
 	https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages
 `)
 			}
@@ -267,7 +268,7 @@ func saveImagesToTarFromConfig() error {
 
 // CacheAndLoadImagesInConfig loads the images currently in the config file
 // called by 'start' and 'cache reload' commands.
-func CacheAndLoadImagesInConfig(profiles []*config.Profile) error {
+func CacheAndLoadImagesInConfig(profiles []*config.Profile, options *run.CommandOptions) error {
 	images, err := imagesInConfigFile()
 	if err != nil {
 		return errors.Wrap(err, "images")
@@ -275,7 +276,7 @@ func CacheAndLoadImagesInConfig(profiles []*config.Profile) error {
 	if len(images) == 0 {
 		return nil
 	}
-	return machine.CacheAndLoadImages(images, profiles, false)
+	return machine.CacheAndLoadImages(images, profiles, false, options)
 }
 
 func imagesInConfigFile() ([]string, error) {

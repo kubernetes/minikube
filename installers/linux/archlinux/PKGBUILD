@@ -15,7 +15,6 @@ depends=(
 optdepends=(
   'kubectl-bin: to manage the cluster'
   'virtualbox'
-  'docker-machine-driver-kvm2'
 )
 makedepends=()
 

@@ -39,10 +39,6 @@ var (
 	//go:embed storage-provisioner/storage-provisioner.yaml.tmpl
 	StorageProvisionerAssets embed.FS
 
-	// StorageProvisionerGlusterAssets assets for storage-provisioner-gluster addon
-	//go:embed storage-provisioner-gluster/*.tmpl storage-provisioner-gluster/*.yaml
-	StorageProvisionerGlusterAssets embed.FS
-
 	// StorageProvisionerRancherAssets assets for storage-provisioner-rancher addon
 	//go:embed storage-provisioner-rancher/*.tmpl
 	StorageProvisionerRancherAssets embed.FS
@@ -64,7 +60,7 @@ var (
 	IstioAssets embed.FS
 
 	// InspektorGadgetAssets assets for inspektor-gadget addon
-	//go:embed inspektor-gadget/*.tmpl inspektor-gadget/*.yaml
+	//go:embed inspektor-gadget/*.tmpl
 	InspektorGadgetAssets embed.FS
 
 	// KongAssets assets for kong addon

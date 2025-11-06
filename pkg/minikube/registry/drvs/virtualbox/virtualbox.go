@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -48,7 +49,7 @@ func init() {
 		Status:   status,
 		Default:  true,
 		Priority: registry.Fallback,
-		Init:     func() drivers.Driver { return virtualbox.NewDriver("", "") },
+		Init:     func(_ *run.CommandOptions) drivers.Driver { return virtualbox.NewDriver("", "") },
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
@@ -71,7 +72,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return d, nil
 }
 
-func status() registry.State {
+func status(_ *run.CommandOptions) registry.State {
 	// Reuse this function as it's particularly helpful for Windows
 	tryPath := driver.VBoxManagePath()
 	path, err := exec.LookPath(tryPath)

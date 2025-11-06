@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"path"
+	"slices"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -220,9 +221,12 @@ var KubeadmExtraConfigOpts = []string{
 	Kubeproxy,
 }
 
-// InvokeKubeadm returns the invocation command for Kubeadm
-func InvokeKubeadm(version string) string {
-	return fmt.Sprintf("sudo env PATH=\"%s:$PATH\" kubeadm", binRoot(version))
+// KubeadmCmdWithPath returns the invocation command for Kubeadm
+// NOTE: The command must run with the a root shell to expand PATH to the
+// root PATH. On Debian 12 user PATH does not contain /usr/sbin which breaks
+// kubeadm since https://github.com/kubernetes/kubernetes/pull/129450.
+func KubeadmCmdWithPath(version string) string {
+	return fmt.Sprintf("env PATH=\"%s:$PATH\" kubeadm", binRoot(version))
 }
 
 // EtcdDataDir is where etcd data is stored.
@@ -258,7 +262,7 @@ func kubeletConfigOpts(extraOpts config.ExtraOptionSlice) map[string]string {
 		if eo.Component != Kubelet {
 			continue
 		}
-		if config.ContainsParam(kubeletConfigParams, eo.Key) {
+		if slices.Contains(kubeletConfigParams, eo.Key) {
 			args[eo.Key] = eo.Value
 		}
 	}

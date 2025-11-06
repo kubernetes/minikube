@@ -70,8 +70,8 @@ require (
 	golang.org/x/mod v0.27.0
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.16.0
-	golang.org/x/sys v0.35.0
-	golang.org/x/term v0.34.0
+	golang.org/x/sys v0.37.0
+	golang.org/x/term v0.36.0
 	golang.org/x/text v0.28.0
 	google.golang.org/api v0.248.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -257,6 +257,6 @@ require (
 
 replace (
 	github.com/Parallels/docker-machine-parallels/v2 => github.com/minikube-machine/machine-driver-parallels/v2 v2.0.2-0.20240730142131-ada9375ea417
-	github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20240815173309-ffb6b643c381
+	github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20251025184326-b9b8849ff4b9
 	github.com/machine-drivers/docker-machine-driver-vmware => github.com/minikube-machine/machine-driver-vmware v0.1.6-0.20230701123042-a391c48b14d5
 )

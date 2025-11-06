@@ -1,7 +1,5 @@
-//go:build linux
-
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2025 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,22 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package run
 
-import (
-	"fmt"
-	"os"
+// CommandOptions are minikube command line options.
+type CommandOptions struct {
+	// NonInteractive is true if the minikube command run with the
+	// --interactive=false flag and we can not interact with the user.
+	NonInteractive bool
 
-	"github.com/docker/machine/libmachine/drivers/plugin"
-	"k8s.io/minikube/pkg/drivers/kvm"
-)
-
-func main() {
-	if len(os.Args) > 1 && os.Args[1] == "version" {
-		fmt.Println("version:", kvm.GetVersion())
-		fmt.Println("commit:", kvm.GetGitCommitID())
-		return
-	}
-
-	plugin.RegisterDriver(kvm.NewDriver("", ""))
+	// DownloadOnly is true if the minikube command run with the --download-only
+	// flag and we should If only download and cache files for later use and
+	// don't install or start anything.
+	DownloadOnly bool
 }
