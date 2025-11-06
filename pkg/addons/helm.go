@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
-	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -26,66 +25,52 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
-// runs a helm install/uninstall based on the contents of chart *assets.HelmChart and enable
-func helmCommand(ctx context.Context, chart *assets.HelmChart, enable bool) *exec.Cmd {
-	var args []string
-
-	if !enable {
-		args = []string{
-			fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
-			"helm", "uninstall", chart.Name,
-		}
-		if chart.Namespace != "" {
+// runs a helm install based on the contents of chart *assets.HelmChart
+func installHelmChart (ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
+	args := []string{
+		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
+		"helm", "uninstall", chart.Name,
+			}
+			if chart.Namespace != "" {
 			args = append(args, "--namespace", chart.Namespace)
 		}
 		return exec.CommandContext(ctx, "sudo", args...)
 	}
 
-	args = []string{
+// runs a helm uninstall based on the contents of chart *assets.HelmChart
+func uninstalllHelmChart (ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
+	args := []string{
 		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
-		"helm", "upgrade", "--install", chart.Name, chart.Repo, "--create-namespace",
-	}
-	if chart.Namespace != "" {
-		args = append(args, "--namespace", chart.Namespace)
-	}
-	if chart.Values != nil {
-		for _, value := range chart.Values {
-			args = append(args, "--set", value)
+		"helm", "uninstall", chart.Name,
 		}
-	}
-	if chart.ValueFiles != nil {
-		for _, value := range chart.ValueFiles {
-			args = append(args, "--values", value)
+			if chart.Namespace != "" {
+			args = append(args, "--namespace", chart.Namespace)
 		}
+		return exec.CommandContext(ctx, "sudo", args...)
 	}
-	return exec.CommandContext(ctx, "sudo", args...)
+
+// based on enable will execute installHelmChart or uninstallHelmChart
+func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable bool) *exec.Cmd {
+	if enable {
+		return installHelmChart(ctx, chart)
+	}
+	return uninstalllHelmChart(ctx, chart)
 }
 
 func helmInstallBinary(addon *assets.Addon, runner command.Runner) error {
 	_, err := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
 	if err != nil {
-		// If not, install it
-		rr, err := runner.RunCmd(exec.Command("uname", "-m"))
+		_, err = runner.RunCmd(exec.Command("test", "-d", "/usr/local/bin"))
 		if err != nil {
-			return errors.Wrap(err, "getting architecture")
+			_, err = runner.RunCmd(exec.Command("sudo", "mkdir", "-p", "/usr/local/bin"))
 		}
-	arch := strings.TrimSpace(rr.Stdout.String())
-	var helmArch string
-	switch arch {
-		case "x86_64":
-			helmArch = "amd64"
-		case "aarch64", "arm64":
-			helmArch = "arm64"
-		default:
-			return fmt.Errorf("failure to detect architecture or unsupported architecture: %s", arch)
-	}
-	helmURL := fmt.Sprintf("https://get.helm.sh/helm-v3.19.0-linux-%s.tar.gz", helmArch)
-	installCmd := fmt.Sprintf("curl -sSL %s | tar -xzf - -C /usr/bin --strip-components=1 linux-%s/helm", helmURL, helmArch)
-	_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd))
-	if err != nil {
+
+		installCmd := fmt.Sprint("curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh")
+		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd))
+		_, err = runner.RunCmd(exec.Command("sudo", "mv", "/usr/local/bin/helm", "/usr/bin/helm"))
+		if err != nil {
 		return errors.Wrap(err, "installing helm")
+		}
 	}
 	return err
 	}
-return err
-}
