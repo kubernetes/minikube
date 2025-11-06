@@ -66,7 +66,7 @@ func TestHelmCommand(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			command := helmCommand(context.Background(), test.chart, test.enable )
+			command := helmUninstallOrInstall(context.Background(), test.chart, test.enable )
 			actual := strings.Join(command.Args, " ")
 			if actual != test.expected {
 				t.Errorf("helm command mismatch:\nexpected: %s\nactual:   %s", test.expected, actual)

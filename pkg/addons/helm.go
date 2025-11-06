@@ -29,11 +29,24 @@ import (
 func installHelmChart (ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 	args := []string{
 		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
-		"helm", "uninstall", chart.Name,
-			}
+		"helm", "upgrade", "--install", chart.Name, chart.Repo, "--create-namespace",
+	}
 			if chart.Namespace != "" {
 			args = append(args, "--namespace", chart.Namespace)
 		}
+
+			if chart.Values != nil {
+				for _, value := range chart.Values {
+					args = append(args, "--set", value)
+					}
+				}
+
+			if chart.ValueFiles != nil {
+				for _, value := range chart.ValueFiles {
+					args = append(args, "--values", value)
+					}
+				}
+				
 		return exec.CommandContext(ctx, "sudo", args...)
 	}
 
