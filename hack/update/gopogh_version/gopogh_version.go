@@ -57,6 +57,11 @@ var (
 				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
 			},
 		},
+		"hack/prow/installer/check_install_gopogh.sh": {
+			Replace: map[string]string{
+				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
+			},
+		},
 	}
 )
 
