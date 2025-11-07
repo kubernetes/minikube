@@ -902,6 +902,7 @@ generate-licenses:
 gomodtidy: ## run go mod tidy everywhere needed
 	go mod tidy
 	cd hack && go mod tidy
+	cd hack/prow/minitest  && env -u GOTOOLCHAIN go mod tidy
 
 
 .PHONY: help
