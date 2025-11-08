@@ -902,6 +902,7 @@ generate-licenses:
 gomodtidy: ## run go mod tidy everywhere needed
 	go mod tidy
 	cd hack && go mod tidy
+	cd hack/prow/minitest  && env -u GOTOOLCHAIN go mod tidy
 
 
 .PHONY: help
@@ -1126,3 +1127,9 @@ get-dependency-version:
 .PHONY: _update-all
 _update-all:
 	@(cd hack && go run update/update_all/update_all.go)
+
+
+
+# targets for tests on prow
+include ./hack/prow/prow.mk
+
