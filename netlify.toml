@@ -5,7 +5,7 @@ command = "pwd && cd themes/docsy && npm install && git submodule update -f --in
 
 [build.environment]
 # node Active LTS
-NODE_VERSION = "24.11.0"
+NODE_VERSION = "20.19.5"
 # https://github.com/gohugoio/hugo/releases
 HUGO_VERSION = "0.152.2"
 
