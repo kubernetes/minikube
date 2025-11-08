@@ -81,6 +81,7 @@ GOLINT_JOBS ?= 4
 GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
 GOLINT_OPTIONS = \
+	  --max-issues-per-linter 0 --max-same-issues 0 \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
 	  --config .golangci.yaml
 
