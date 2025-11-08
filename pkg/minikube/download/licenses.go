@@ -67,15 +67,15 @@ func Licenses(dir string) error {
 		return fmt.Errorf("failed to create temporary file: %v", err)
 	}
 	defer func() {
-                if err := os.Remove(tempFile.Name()); err != nil {
-                        klog.Warningf("Failed to remove temp file %s: %v", tempFile.Name(), err)
-                }
-        }()
+		if err := os.Remove(tempFile.Name()); err != nil {
+			klog.Warningf("Failed to remove temp file %s: %v", tempFile.Name(), err)
+		}
+	}()
 	defer func() {
-                if err := tempFile.Close(); err != nil {
-                        klog.Warningf("Failed to close temp file %s: %v", tempFile.Name(), err)
-                }
-        }()
+		if err := tempFile.Close(); err != nil {
+			klog.Warningf("Failed to close temp file %s: %v", tempFile.Name(), err)
+		}
+	}()
 
 	if _, err := io.Copy(tempFile, resp.Body); err != nil {
 		return fmt.Errorf("failed to copy downloaded content from %s: %v", url, err)

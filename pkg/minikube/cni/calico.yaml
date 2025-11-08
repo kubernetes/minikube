@@ -69,7 +69,11 @@ data:
           "nodename": "__KUBERNETES_NODE_NAME__",
           "mtu": __CNI_MTU__,
           "ipam": {
-              "type": "calico-ipam"
+            "type": "calico-ipam",
+            "assign_ipv4": {{ if .EnableIPv4 }}"true"{{ else }}"false"{{ end }},
+            "assign_ipv6": {{ if .EnableIPv6 }}"true"{{ else }}"false"{{ end }}{{ if .EnableIPv4 }},
+            "ipv4_pools": ["default-ipv4-ippool"]{{ end }}{{ if .EnableIPv6 }},
+            "ipv6_pools": ["default-ipv6-ippool"]{{ end }}
           },
           "policy": {
               "type": "k8s"
@@ -77,6 +81,10 @@ data:
           "kubernetes": {
               "kubeconfig": "__KUBECONFIG_FILEPATH__"
           }
+        },
+        {
+          "type": "bandwidth",
+          "capabilities": { "bandwidth": true }
         },
         {
           "type": "portmap",
@@ -7050,6 +7058,24 @@ spec:
       terminationGracePeriodSeconds: 0
       priorityClassName: system-node-critical
       initContainers:
+
+        # Ensure the CNI can read the node name immediately.
+        # The Calico CNI looks for /var/lib/calico/nodename when adding a pod;
+        # this seeds it before any workload is scheduled.
+        - name: seed-nodename
+          image: {{ .DaemonSetImageName }}
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "echo -n ${KUBERNETES_NODE_NAME} > /var/lib/calico/nodename || true"]
+          env:
+            - name: KUBERNETES_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - mountPath: /var/lib/calico
+              name: var-lib-calico
+          securityContext:
+            privileged: true
         # This container performs upgrade from host-local IPAM to calico-ipam.
         # It can be deleted if this is a fresh installation, or if you have already
         # upgraded to use calico-ipam.
@@ -7063,6 +7089,12 @@ spec:
                 name: kubernetes-services-endpoint
                 optional: true
           env:
+            # No pool creation here; calico-node handles pools, and we apply CRDs explicitly.
+            # (Keep this init strictly for host-local -> calico-ipam upgrade.)
+            - name: IP
+              value: {{ if .EnableIPv4 }}"autodetect"{{ else }}"none"{{ end }}
+            - name: IP6
+              value: {{ if .EnableIPv6 }}"autodetect"{{ else }}"none"{{ end }}
             - name: KUBERNETES_NODE_NAME
               valueFrom:
                 fieldRef:
@@ -7183,15 +7215,32 @@ spec:
             # Auto-detect the BGP IP address.
             - name: IP
               value: "autodetect"
+            - name: IP6
+              value: '{{ if or (eq .IPFamily "ipv6") (eq .IPFamily "dual") }}autodetect{{ else }}none{{ end }}'
             # Enable IPIP
             - name: CALICO_IPV4POOL_IPIP
-              value: "Always"
+              value: "Never"
             # Enable or Disable VXLAN on the default IP pool.
             - name: CALICO_IPV4POOL_VXLAN
               value: "Never"
             # Enable or Disable VXLAN on the default IPv6 IP pool.
             - name: CALICO_IPV6POOL_VXLAN
               value: "Never"
+            # Don’t let calico-node create default pools; we apply IPPool CRDs explicitly.
+            - name: NO_DEFAULT_POOLS
+              value: "false"
+            # Let Calico know desired v6 capability for Felix.
+            - name: FELIX_IPV6SUPPORT
+              value: {{ if .EnableIPv6 }}"true"{{ else }}"false"{{ end }}
+            # Optional: if you want calico-node to still seed pools when CRDs don’t exist yet:
+            {{- if ne .IPFamily "ipv6" }}
+            - name: CALICO_IPV4POOL_CIDR
+              value: "{{ .PodCIDR }}"
+            {{- end }}
+            {{- if ne .IPFamily "ipv4" }}
+            - name: CALICO_IPV6POOL_CIDR
+              value: "{{ .PodCIDRv6 }}"
+            {{- end }}
             # Set MTU for tunnel device used if ipip is enabled
             - name: FELIX_IPINIPMTU
               valueFrom:
@@ -7221,9 +7270,6 @@ spec:
             # Set Felix endpoint to host default action to ACCEPT.
             - name: FELIX_DEFAULTENDPOINTTOHOSTACTION
               value: "ACCEPT"
-            # Disable IPv6 on Kubernetes.
-            - name: FELIX_IPV6SUPPORT
-              value: "false"
             - name: FELIX_HEALTHENABLED
               value: "true"
           securityContext:
@@ -7358,6 +7404,10 @@ spec:
       labels:
         k8s-app: calico-kube-controllers
     spec:
+      {{- if eq .IPFamily "ipv6" }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
       nodeSelector:
         kubernetes.io/os: linux
       tolerations:
@@ -7380,9 +7430,17 @@ spec:
           env:
             # Choose which controllers to run.
             - name: ENABLED_CONTROLLERS
-              value: node,loadbalancer
+              value: "node"
             - name: DATASTORE_TYPE
               value: kubernetes
+            {{- if eq .IPFamily "ipv6" }}
+            # Avoid DNS and Service VIPs during IPv6 bootstrap:
+            # kube-controllers runs with hostNetwork, so loopback reaches the local apiserver.
+            - name: KUBERNETES_SERVICE_HOST
+              value: "::1"
+            - name: KUBERNETES_SERVICE_PORT
+              value: "{{ .APIServerPort }}"
+            {{- end }}
           livenessProbe:
             exec:
               command:
