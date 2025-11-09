@@ -19,25 +19,19 @@ set -x
 
 OS="linux"
 ARCH="amd64"
-DRIVER="kvm2"
+DRIVER="docker"
 CONTAINER_RUNTIME="docker"
-# in prow, if you want libvirtd to be run, you have to start a privileged container as root
 EXTRA_START_ARGS="" 
 EXTRA_TEST_ARGS=""
-JOB_NAME="KVM_Linux"
+JOB_NAME="Docker_Linux"
+
 git config --global --add safe.directory '*'
 COMMIT=$(git rev-parse HEAD)
 MINIKUBE_LOCATION=$COMMIT
-echo "running test in $(pwd)"
 
-set +e
-sleep 5  # wait for libvirtd to be running
-echo "=========libvirtd status=========="
-sudo systemctl status libvirtd
-echo "=========Check virtualization support=========="
-grep -E -q 'vmx|svm' /proc/cpuinfo && echo yes || echo no 
-echo "=========virt-host-validate=========="
-virt-host-validate
 
-set -e
+# when docker is the driver, we run integration tests directly in prow cluster
+# by default, prow jobs run in root, so we must switch to a non-root user to run docker driver
+
+
 source ./hack/prow/common.sh 
