@@ -210,7 +210,7 @@
 	"Display the kubernetes service URL in the CLI instead of opening it in the default browser": "在终端中显示 kubernetes 服务 URL，而不是在默认浏览器中打开它",
 	"Display values currently set in the minikube config file": "显示当前在 minikube 配置文件中设置的值",
 	"Display values currently set in the minikube config file.": "显示当前在 minikube 配置文件中设置的值。",
-	"Display values currently set in the minikube config file. \n\tThe output format can be customized using the --format flag, which accepts a Go template. \n\tThe config file is typically located at \"~/.minikube/config/config.json\".": "",
+	"Display values currently set in the minikube config file.\n\tThe output format can be customized using the --format flag, which accepts a Go template. \n\tThe config file is typically located at \"~/.minikube/config/config.json\".": "",
 	"Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available": "Docker Desktop 少于 2 个 CPUs 可用, 但是 Kubernetes 需要至少 2 个 CPUs 可用",
 	"Docker Desktop is configured for Windows containers, but Linux containers are required for minikube": "Docker Desktop 配置为 Windows 容器，但 minikube 需要 Linux 容器",
 	"Docker Desktop only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes": "Docker Desktop 仅有 {{.size}}MiB 存储可用, 少于 Kubernetes 要求的 {{.req}}MiB",
