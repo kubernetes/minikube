@@ -175,7 +175,7 @@
 	"Display the Kubernetes service URL in the CLI instead of opening it in the default browser": "Muestra la URL de los servicios de Kubernetes en la CLI en lugar de abrirlas en el navegador por defecto",
 	"Display values currently set in the minikube config file": "Muestra los valores actuales establecidos en el archivo de configuración de minikube",
 	"Display values currently set in the minikube config file.": "Muestra los valores actuales establecidos en el archivo de configuración de minikube.",
-	"Display values currently set in the minikube config file. \n\tThe output format can be customized using the --format flag, which accepts a Go template. \n\tThe config file is typically located at \"~/.minikube/config/config.json\".": "",
+	"Display values currently set in the minikube config file.\n\tThe output format can be customized using the --format flag, which accepts a Go template. \n\tThe config file is typically located at \"~/.minikube/config/config.json\".": "",
 	"Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available": "Docker Desktop tiene menos de 2 CPUs configurados, pero Kubernetes requiere al menos 2 para estar disponible",
 	"Docker Desktop is configured for Windows containers, but Linux containers are required for minikube": "Docker Desktop necesita estar configurado para contenedores Linux para poder usar minikube",
 	"Docker Desktop only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes": "Docker Desktop tiene solo {{.size}}MiB disponibles, menos que los {{.req}}MiB requeridos por Kubernetes",
