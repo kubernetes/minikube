@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -273,5 +274,26 @@ func testPreloadWithCachedSizeZero(t *testing.T) {
 
 	if downloadNum != 1 {
 		t.Errorf("Expected only 1 download attempt but got %v!", downloadNum)
+	}
+}
+
+func TestBinaryCreatesBinariesDir(t *testing.T) {
+	// mock download function that creates a fake binary file
+	DownloadMock = func(src, dst string) error {
+		// create a fake binary file at dst
+		return os.WriteFile(dst, []byte("fake-binary"), 0755)
+	}
+
+	_, err := Binary("kubectl", "v1.31.0", "linux", "amd64", "")
+	if err != nil {
+		t.Fatalf("Binary() failed: %v", err)
+	}
+
+	// check that the bin directory was created
+	targetDir := filepath.Join(
+		localpath.MiniPath(), "cache", "bin", "linux", "amd64", "v1.31.0",
+	)
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("Expected bin dir %s to exist, but it does not", targetDir)
 	}
 }
