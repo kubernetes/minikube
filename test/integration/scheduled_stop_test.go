@@ -84,7 +84,7 @@ func TestScheduledStopUnix(t *testing.T) {
 	startMinikube(ctx, t, profile)
 
 	// schedule a stop for 5 min from now and make sure PID is created
-	stopMinikube(ctx, t, profile, []string{"--schedule", "5m"})
+	stopMinikube(ctx, t, profile, []string{"--schedule", "5m", "-v=5", "--alsologtostderr"})
 	// make sure timeToStop is present in status
 	ensureMinikubeScheduledTime(ctx, t, profile, 5*time.Minute)
 	pid := checkPID(t, profile)
@@ -93,7 +93,7 @@ func TestScheduledStopUnix(t *testing.T) {
 	}
 
 	// schedule a second stop which should cancel the first scheduled stop
-	stopMinikube(ctx, t, profile, []string{"--schedule", "15s"})
+	stopMinikube(ctx, t, profile, []string{"--schedule", "15s", "-v=5", "--alsologtostderr"})
 	if processRunning(t, pid) {
 		t.Fatalf("process %v running but should have been killed on reschedule of stop", pid)
 	}
@@ -109,7 +109,7 @@ func TestScheduledStopUnix(t *testing.T) {
 	ensureTimeToStopNotPresent(ctx, t, profile)
 
 	// schedule another stop, make sure minikube status is "Stopped"
-	stopMinikube(ctx, t, profile, []string{"--schedule", "15s"})
+	stopMinikube(ctx, t, profile, []string{"--schedule", "15s", "-v=5", "--alsologtostderr"})
 	time.Sleep(15 * time.Second)
 	if processRunning(t, pid) {
 		t.Fatalf("process %v running but should have been killed on reschedule of stop", pid)
@@ -138,6 +138,9 @@ func stopMinikube(ctx context.Context, t *testing.T, profile string, additionalA
 	if err != nil {
 		t.Fatalf("stopping minikube: %v\n%s", err, rr.Output())
 	}
+	fmt.Println("minikube stop output:")
+	fmt.Println(rr.Output())
+
 }
 
 func checkPID(t *testing.T, profile string) string {
@@ -167,7 +170,17 @@ func processRunning(t *testing.T, pid string) bool {
 	}
 	err = process.Signal(syscall.Signal(0))
 	t.Log("signal error was: ", err)
-	return err == nil
+	if err != nil {
+		return false
+	}
+	// then check if this process has become a zombie process
+	// which is also not running
+	data, _ := os.ReadFile(fmt.Sprintf("/proc/%s/status", pid))
+	if strings.Contains(string(data), "State:\tZ") {
+		t.Logf("process %s is a zombie", pid)
+		return false
+	}
+	return true
 }
 func ensureMinikubeStatus(ctx context.Context, t *testing.T, profile, key string, wantStatus string) {
 	checkStatus := func() error {
