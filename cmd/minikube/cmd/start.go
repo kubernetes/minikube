@@ -544,7 +544,7 @@ func updateDriver(driverName string) {
 		}
 		if errors.Is(err, auxdriver.ErrAuxDriverVersionNotinPath) {
 			exit.Error(reason.DrvAuxNotHealthy, "Aux driver"+driverName, err)
-		} //if failed to update but not a fatal error, log it and continue (old version might still work)
+		} // if failed to update but not a fatal error, log it and continue (old version might still work)
 		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
 	}
 }

@@ -74,15 +74,20 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v2.1.5
+GOLINT_VERSION ?= v2.1.6
+# see https://golangci-lint.run/docs/configuration/file/ for config details
+GOLINT_CONFIG ?= .golangci.yaml
+# Set this to --verbose to see details about the linters and formatters used
+GOLINT_VERBOSE ?=
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
 GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
 GOLINT_OPTIONS = \
+	  --max-issues-per-linter 0 --max-same-issues 0 \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --config .golangci.yaml
+	  --config $(GOLINT_CONFIG) $(GOLINT_VERBOSE)
 
 export GO111MODULE := on
 
