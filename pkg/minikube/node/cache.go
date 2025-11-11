@@ -54,6 +54,12 @@ const (
 
 // BeginCacheKubernetesImages caches images required for Kubernetes version in the background
 func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string, driverName string) {
+	// Skip all caching operations in --no-kubernetes mode
+	if viper.GetBool("no-kubernetes") {
+		klog.Infof("Skipping Kubernetes image caching due to --no-kubernetes flag")
+		return
+	}
+
 	// TODO: remove imageRepository check once #7695 is fixed
 	if imageRepository == "" && download.PreloadExists(k8sVersion, cRuntime, driverName) {
 		klog.Info("Caching tarball of preloaded images")
@@ -82,11 +88,15 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, contai
 	}
 
 	binariesURL := viper.GetString("binary-mirror")
-	if err := doCacheBinaries(k8sVersion, containerRuntime, driverName, binariesURL); err != nil {
-		exit.Error(reason.InetCacheBinaries, "Failed to cache binaries", err)
-	}
-	if _, err := CacheKubectlBinary(k8sVersion, binariesURL); err != nil {
-		exit.Error(reason.InetCacheKubectl, "Failed to cache kubectl", err)
+
+	// Skip binary downloads in --no-kubernetes mode
+	if !viper.GetBool("no-kubernetes") {
+		if err := doCacheBinaries(k8sVersion, containerRuntime, driverName, binariesURL); err != nil {
+			exit.Error(reason.InetCacheBinaries, "Failed to cache binaries", err)
+		}
+		if _, err := CacheKubectlBinary(k8sVersion, binariesURL); err != nil {
+			exit.Error(reason.InetCacheKubectl, "Failed to cache kubectl", err)
+		}
 	}
 	waitCacheRequiredImages(cacheGroup)
 	if driver.IsKIC(driverName) {
