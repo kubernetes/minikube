@@ -170,6 +170,10 @@ linters:
       - path: '(.+)\.go$'
         text: "Error return value of `.*` is not checked"
         linter: errcheck
+        ## ref: https://golangci-lint.run/docs/linters/false-positives/#exclude-issue-by-text
+      - linters:
+          - revive
+        text: "^(unsecure-url-scheme|enforce-switch-style|identical-switch-branches|unnecessary-format|use-waitgroup-go|var-naming)"
 formatters:
   enable:
     - gofmt
