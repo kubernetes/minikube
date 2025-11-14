@@ -23,6 +23,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // Invoke all the validation or callback functions and collects errors
@@ -105,9 +106,9 @@ func (e ErrValidateProfile) Error() string {
 }
 
 // ValidateProfile checks if the profile user is trying to switch exists, else throws error
-func ValidateProfile(profile string) (*ErrValidateProfile, bool) {
+func ValidateProfile(profile string, options *run.CommandOptions) (*ErrValidateProfile, bool) {
 
-	validProfiles, invalidProfiles, err := config.ListProfiles()
+	validProfiles, invalidProfiles, err := config.ListProfiles(options)
 	if err != nil {
 		out.FailureT(err.Error())
 	}
