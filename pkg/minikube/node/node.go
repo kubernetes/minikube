@@ -139,7 +139,14 @@ func teardown(cc config.ClusterConfig, name string, options *run.CommandOptions)
 	kv, kerr = util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
 	if kerr == nil {
 		var crt cruntime.Manager
-		crt, kerr = cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: r, Socket: cc.KubernetesConfig.CRISocket, KubernetesVersion: kv})
+		crt, kerr = cruntime.New(cruntime.Config{
+			Type:              cc.KubernetesConfig.ContainerRuntime,
+			Runner:            r,
+			Socket:            cc.KubernetesConfig.CRISocket,
+			KubernetesVersion: kv,
+			StorageRoot:       cc.ContainerStorageRoot,
+			StorageRunRoot:    cc.ContainerStorageRunRoot,
+		})
 		if kerr == nil {
 			sp := crt.SocketPath()
 			// avoid warning/error:

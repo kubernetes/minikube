@@ -51,15 +51,59 @@ type CRIO struct {
 	ImageRepository   string
 	KubernetesVersion semver.Version
 	Init              sysinit.Manager
+	StorageRoot       string // Custom storage root directory path
+	StorageRunRoot    string // Custom storage state directory path
 }
 
 // generateCRIOConfig sets up pause image and cgroup manager for cri-o in crioConfigFile
-func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Version, cgroupDriver string) error {
+func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Version, cgroupDriver string, storageRoot string, storageRunRoot string) error {
 	pauseImage := images.Pause(kv, imageRepository)
 	klog.Infof("configure cri-o to use %q pause image...", pauseImage)
 	c := exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i 's|^.*pause_image = .*$|pause_image = %q|' %s`, pauseImage, crioConfigFile))
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "update pause_image")
+	}
+
+	// configure custom storage paths if provided
+	if storageRoot != "" || storageRunRoot != "" {
+		// Check if [crio] section exists, if not add it at the beginning
+		checkCrioSection := exec.Command("sh", "-c", fmt.Sprintf(`sudo grep -q "^\[crio\]$" %s`, crioConfigFile))
+		if _, err := cr.RunCmd(checkCrioSection); err != nil {
+			// [crio] section doesn't exist, add it at the beginning
+			if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '1i[crio]' %s`, crioConfigFile))); err != nil {
+				return errors.Wrap(err, "adding [crio] section")
+			}
+		}
+	}
+
+	if storageRoot != "" {
+		// Remove any existing root configuration
+		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/^root = /d' %s`, crioConfigFile))); err != nil {
+			return errors.Wrap(err, "removing existing root configuration")
+		}
+		// Add new root configuration after [crio] section
+		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/^\[crio\]$/a root = %q' %s`, storageRoot, crioConfigFile))); err != nil {
+			return errors.Wrap(err, "configuring storage root")
+		}
+	}
+
+	if storageRunRoot != "" {
+		// Remove any existing runroot configuration
+		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/^runroot = /d' %s`, crioConfigFile))); err != nil {
+			return errors.Wrap(err, "removing existing runroot configuration")
+		}
+		// Add new runroot configuration after [crio] section (or after root if it exists)
+		if storageRoot != "" {
+			// Add after root line
+			if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/^root = /a runroot = %q' %s`, storageRunRoot, crioConfigFile))); err != nil {
+				return errors.Wrap(err, "configuring storage runroot")
+			}
+		} else {
+			// Add after [crio] section
+			if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/^\[crio\]$/a runroot = %q' %s`, storageRunRoot, crioConfigFile))); err != nil {
+				return errors.Wrap(err, "configuring storage runroot")
+			}
+		}
 	}
 
 	// configure cgroup driver
@@ -223,7 +267,7 @@ func (r *CRIO) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool)
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateCRIOConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, cgroupDriver); err != nil {
+	if err := generateCRIOConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, cgroupDriver, r.StorageRoot, r.StorageRunRoot); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
