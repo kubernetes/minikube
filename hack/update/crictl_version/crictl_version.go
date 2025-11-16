@@ -33,6 +33,11 @@ import (
 
 var (
 	schema = map[string]update.Item{
+		".github/workflows/functional_test.yml": {
+			Replace: map[string]string{
+				`CRICTL_VERSION=.*`: `CRICTL_VERSION="{{.Version}}"`,
+			},
+		},
 		"deploy/iso/minikube-iso/arch/aarch64/package/crictl-bin-aarch64/crictl-bin.mk": {
 			Replace: map[string]string{
 				`CRICTL_BIN_AARCH64_VERSION = .*`: `CRICTL_BIN_AARCH64_VERSION = {{.Version}}`,
@@ -43,12 +48,7 @@ var (
 				`CRICTL_BIN_VERSION = .*`: `CRICTL_BIN_VERSION = {{.Version}}`,
 			},
 		},
-		".github/workflows/master.yml": {
-			Replace: map[string]string{
-				`CRICTL_VERSION=.*`: `CRICTL_VERSION="{{.Version}}"`,
-			},
-		},
-		".github/workflows/pr.yml": {
+		"deploy/kicbase/Dockerfile": {
 			Replace: map[string]string{
 				`CRICTL_VERSION=.*`: `CRICTL_VERSION="{{.Version}}"`,
 			},
