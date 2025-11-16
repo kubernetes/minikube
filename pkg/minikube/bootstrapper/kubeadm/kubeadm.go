@@ -897,6 +897,8 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		Runner:            k.c,
 		Socket:            cfg.KubernetesConfig.CRISocket,
 		KubernetesVersion: ver,
+		StorageRoot:       cfg.ContainerStorageRoot,
+		StorageRunRoot:    cfg.ContainerStorageRunRoot,
 	})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
