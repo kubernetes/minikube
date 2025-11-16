@@ -61,7 +61,9 @@ func main() {
 
 	data := Data{Version: strings.TrimPrefix(stable.Tag, "v")}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 
 	if err := updateHashFile(data.Version, "aarch64", "-aarch64"); err != nil {
 		klog.Fatalf("failed to update hash file: %v", err)
