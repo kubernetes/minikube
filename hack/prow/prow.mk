@@ -22,3 +22,11 @@ setup-prow-gcp-ssh-keys: # set up ssh keys for gcloud cli. These env vars are se
 	mkdir -p -m 0700 ~/.ssh
 	cp -f "${GCE_SSH_PRIVATE_KEY_FILE}" ~/.ssh/google_compute_engine
 	cp -f "${GCE_SSH_PUBLIC_KEY_FILE}" ~/.ssh/google_compute_engine.pub
+	
+.PHONY: push-kubernetes-bootcamp
+push-kubernetes-bootcamp:
+	docker run --rm --privileged tonistiigi/binfmt:latest --install all
+	docker buildx create --name multiarch --bootstrap
+	docker buildx build --builder multiarch --push --platform  linux/amd64,linux/arm64 \
+		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kubernetes-bootcamp:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kubernetes-bootcamp:latest deploy/image/kubernetes-bootcamp
+	docker buildx rm multiarch
