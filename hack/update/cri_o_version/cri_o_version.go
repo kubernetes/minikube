@@ -68,7 +68,9 @@ func main() {
 
 	data := Data{Version: stable.Tag, MMVersion: mmVersion, Commit: stable.Commit}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 
 	if err := updateHashFile(data.Version); err != nil {
 		klog.Fatalf("failed to update hash file: %v", err)

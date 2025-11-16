@@ -54,7 +54,9 @@ func main() {
 
 	data := Data{Version: tag, SHA: sha}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }
 
 func latestStableSemverTag(tags []string) (string, error) {

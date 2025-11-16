@@ -77,7 +77,9 @@ func main() {
 
 	data := Data{Version: stable.Tag}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 
 	if err := updateHashFile(data.Version, "arm64", "aarch64/package/crictl-bin-aarch64"); err != nil {
 		klog.Fatalf("failed to update hash files: %v", err)

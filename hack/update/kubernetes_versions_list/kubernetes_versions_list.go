@@ -80,7 +80,9 @@ func main() {
 		klog.Fatal(err)
 	}
 
-	update.Apply(schema, Data{formatted})
+	if err := update.Apply(schema, Data{formatted}); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }
 
 func formatKubernetesVersionsList(versions []string) (string, error) {

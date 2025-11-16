@@ -71,7 +71,9 @@ func main() {
 
 	data := Data{Version: stable.Tag, Commit: stable.Commit}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 
 	if err := updateHashFile(data.Version, "amd64", "x86_64/package/buildkit-bin/buildkit-bin.hash"); err != nil {
 		klog.Fatalf("failed to update amd64 hash file: %v", err)
