@@ -133,7 +133,9 @@ func main() {
 	// Print PR title for GitHub action.
 	fmt.Printf("Bump Kubernetes version default: %s and latest: %s\n", data.StableVersion, data.LatestVersion)
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }
 
 // k8sVersions returns Kubernetes versions.

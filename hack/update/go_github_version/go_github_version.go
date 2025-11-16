@@ -52,7 +52,9 @@ func main() {
 
 	data := Data{Version: major}
 
-	update.Apply(generateSchema(), data)
+	if err := update.Apply(generateSchema(), data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 
 	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
 		klog.Fatalf("failed to run go mod tidy: %v", err)

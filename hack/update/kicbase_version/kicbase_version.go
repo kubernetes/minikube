@@ -105,7 +105,9 @@ func main() {
 		klog.Fatalf("Unable to update any registry")
 	}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }
 
 // KICVersions returns current and stable KIC base image versions and any error occurred.

@@ -71,7 +71,9 @@ func main() {
 
 	data := Data{Version: version, Commit: stable.Commit}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 
 	if err := updateHashFile(version, "arm64", "aarch64/package/nerdctl-bin-aarch64"); err != nil {
 		klog.Fatalf("failed updating arm64 hash file: %v", err)

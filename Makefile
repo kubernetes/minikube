@@ -1094,9 +1094,10 @@ update-amd-device-plugin-version:
 update-nerdctld-version:
 	cd hack && go run update/nerdctld_version/nerdctld_version.go
 
-.PHONY: update-kubectl-version
-update-kubectl-version:
-	cd hack && go run update/kubectl_version/kubectl_version.go
+## used by kubevirt addon, disabled until we find a replacement for bitnami/kubectl image
+# .PHONY: update-kubectl-version
+# update-kubectl-version:
+# 	cd hack && go run update/kubectl_version/kubectl_version.go
 
 .PHONY: update-site-node-version
 update-site-node-version:

@@ -43,5 +43,7 @@ func main() {
 	}
 	data := Data{LatestVersion: tags[0]}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }

@@ -32,14 +32,9 @@ const (
 
 var (
 	schema = map[string]update.Item{
-		".github/workflows/master.yml": {
+		"Makefile": {
 			Replace: map[string]string{
-				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
-			},
-		},
-		".github/workflows/pr.yml": {
-			Replace: map[string]string{
-				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
+				`github.com/medyagh/gopogh/cmd/gopogh@.*;`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}};`,
 			},
 		},
 		".github/workflows/functional_verified.yml": {
@@ -50,6 +45,11 @@ var (
 		"hack/jenkins/common.ps1": {
 			Replace: map[string]string{
 				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
+			},
+		},
+		"hack/legacy_fill_db/filldb.go": {
+			Replace: map[string]string{
+				`'go install github.com/medyagh/gopogh/cmd/gopogh@.*'`: `'go install github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}'`,
 			},
 		},
 		"hack/jenkins/installers/check_install_gopogh.sh": {
@@ -83,5 +83,7 @@ func main() {
 	data := Data{StableVersion: stable}
 	klog.Infof("gopogh stable version: %s", data.StableVersion)
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }

@@ -106,7 +106,10 @@ func main() {
 		data = Data{ImageMap: imageMapString}
 		schema[minikubeConstantsFilePath].Replace[`KubeadmImages = .*`] =
 			`KubeadmImages = map[string]map[string]string{ {{.ImageMap}}`
-		update.Apply(schema, data)
+
+		if err := update.Apply(schema, data); err != nil {
+			klog.Fatalf("unable to apply update: %v", err)
+		}
 	}
 }
 

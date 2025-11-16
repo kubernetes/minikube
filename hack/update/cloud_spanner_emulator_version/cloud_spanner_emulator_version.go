@@ -65,5 +65,7 @@ func main() {
 	data := Data{Version: stable, SHA: sha}
 	klog.Infof("cloud-spanner-emulator stable version: %s", data.Version)
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }

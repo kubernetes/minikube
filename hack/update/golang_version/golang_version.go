@@ -104,7 +104,9 @@ func main() {
 	data := Data{StableVersion: stable, MajorMinor: majorMinor, K8SVersion: k8sVersion}
 	klog.Infof("Golang stable version: %s, MajorMinor: %s", data.StableVersion, data.MajorMinor)
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 
 	if err := updateGoHashFile(stable); err != nil {
 		klog.Fatalf("failed to update go hash file: %v", err)

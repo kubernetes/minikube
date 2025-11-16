@@ -81,7 +81,9 @@ func main() {
 
 	data := Data{Controller: string(controllerImage), Webhook: string(webhookImage)}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }
 
 func LatestControllerTag(ctx context.Context) (string, error) {
