@@ -33,21 +33,9 @@ import (
 
 var (
 	schema = map[string]update.Item{
-		".github/workflows/master.yml": {
+		".github/workflows/functional_test.yml": {
 			Replace: map[string]string{
 				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
-				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
-			},
-		},
-		".github/workflows/pr.yml": {
-			Replace: map[string]string{
-				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
-				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
-			},
-		},
-		"hack/jenkins/linux_integration_tests_none.sh": {
-			Replace: map[string]string{
-				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.Version}}"`,
 				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
 			},
 		},
@@ -69,6 +57,12 @@ var (
 			Replace: map[string]string{
 				`CRI_DOCKERD_VERSION=.*`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
 				`CRI_DOCKERD_COMMIT=.*`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
+			},
+		},
+		"hack/jenkins/linux_integration_tests_none.sh": {
+			Replace: map[string]string{
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.Version}}"`,
+				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
 			},
 		},
 	}
