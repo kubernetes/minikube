@@ -35,6 +35,11 @@ const cxTimeout = 5 * time.Minute
 
 var (
 	schema = map[string]update.Item{
+		".github/workflows/functional_test.yml": {
+			Replace: map[string]string{
+				`CNI_PLUGIN_VERSION=.*`: `CNI_PLUGIN_VERSION="{{.Version}}"`,
+			},
+		},
 		"deploy/iso/minikube-iso/arch/aarch64/package/cni-plugins-latest-aarch64/cni-plugins-latest.mk": {
 			Replace: map[string]string{
 				`CNI_PLUGINS_LATEST_AARCH64_VERSION = .*`: `CNI_PLUGINS_LATEST_AARCH64_VERSION = {{.Version}}`,
@@ -47,22 +52,12 @@ var (
 		},
 		"deploy/kicbase/Dockerfile": {
 			Replace: map[string]string{
-				`CNI_PLUGINS_LATEST_VERSION=.*`: `CNI_PLUGINS_LATEST_VERSION="{{.Version}}"`,
-			},
-		},
-		".github/workflows/pr.yml": {
-			Replace: map[string]string{
-				`CNI_PLUGIN_VERSION\s*=\s*["\\]*v[0-9.]+["\\]*`: `CNI_PLUGIN_VERSION="{{.Version}}"`,
-			},
-		},
-		".github/workflows/master.yml": {
-			Replace: map[string]string{
-				`CNI_PLUGIN_VERSION\s*=\s*["\\]*v[0-9.]+["\\]*`: `CNI_PLUGIN_VERSION="{{.Version}}"`,
+				`CNI_PLUGINS_VERSION=.*`: `CNI_PLUGINS_VERSION="{{.Version}}"`,
 			},
 		},
 		"hack/jenkins/installers/check_install_cni_plugins.sh": {
 			Replace: map[string]string{
-				`CNI_PLUGIN_VERSION="v[0-9.]+"`: `CNI_PLUGIN_VERSION="{{.Version}}"`,
+				`CNI_PLUGIN_VERSION=.*`: `CNI_PLUGIN_VERSION="{{.Version}}"`,
 			},
 		},
 	}
@@ -83,7 +78,9 @@ func main() {
 
 	data := Data{Version: stable.Tag}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 
 	if err := updateHashFile(data.Version, "arm64", "aarch64/package/cni-plugins-latest-aarch64"); err != nil {
 		klog.Fatalf("failed to update hash files: %v", err)

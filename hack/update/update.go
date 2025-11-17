@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-
 	"k8s.io/klog/v2"
 )
 
@@ -70,7 +69,7 @@ func (i *Item) apply(data interface{}) error {
 	}
 	str := string(i.Content)
 	for src, dst := range i.Replace {
-		out, err := ParseTmpl(dst, data, "")
+		out, err := parseTmpl(dst, data, "")
 		if err != nil {
 			return err
 		}
@@ -84,7 +83,7 @@ func (i *Item) apply(data interface{}) error {
 
 // Apply applies concrete update plan (schema + data) to local filesystem repo
 func Apply(schema map[string]Item, data interface{}) error {
-	schema, pretty, err := GetPlan(schema, data)
+	schema, pretty, err := getPlan(schema, data)
 	if err != nil {
 		klog.Fatalf("Unable to parse schema: %v\n%s", err, pretty)
 	}
@@ -102,11 +101,11 @@ func Apply(schema map[string]Item, data interface{}) error {
 	return nil
 }
 
-// GetPlan returns concrete plan replacing placeholders in schema with actual data values, returns JSON-formatted representation of the plan and any error occurred.
-func GetPlan(schema map[string]Item, data interface{}) (plan map[string]Item, prettyprint string, err error) {
+// getPlan returns concrete plan replacing placeholders in schema with actual data values, returns JSON-formatted representation of the plan and any error occurred.
+func getPlan(schema map[string]Item, data interface{}) (plan map[string]Item, prettyprint string, err error) {
 	plan = make(map[string]Item)
 	for p, item := range schema {
-		path, err := ParseTmpl(p, data, "")
+		path, err := parseTmpl(p, data, "")
 		if err != nil {
 			return plan, fmt.Sprintf("%+v", schema), err
 		}
@@ -115,7 +114,7 @@ func GetPlan(schema map[string]Item, data interface{}) (plan map[string]Item, pr
 
 	for _, item := range plan {
 		for src, dst := range item.Replace {
-			out, err := ParseTmpl(dst, data, "")
+			out, err := parseTmpl(dst, data, "")
 			if err != nil {
 				return plan, fmt.Sprintf("%+v", schema), err
 			}
@@ -130,11 +129,11 @@ func GetPlan(schema map[string]Item, data interface{}) (plan map[string]Item, pr
 	return plan, string(str), nil
 }
 
-// RunWithRetryNotify runs command cmd with stdin using exponential backoff for maxTime duration
+// runWithRetryNotify runs command cmd with stdin using exponential backoff for maxTime duration
 // up to maxRetries (negative values will make it ignored),
 // notifies about any intermediary errors and return any final error.
 // similar to pkg/util/retry/retry.go:Expo(), just for commands with params and also with context
-func RunWithRetryNotify(ctx context.Context, cmd *exec.Cmd, stdin io.Reader, maxTime time.Duration, maxRetries uint64) error {
+func runWithRetryNotify(ctx context.Context, cmd *exec.Cmd, stdin io.Reader, maxTime time.Duration, maxRetries uint64) error {
 	be := backoff.NewExponentialBackOff()
 	be.Multiplier = 2
 	be.MaxElapsedTime = maxTime
@@ -156,19 +155,8 @@ func RunWithRetryNotify(ctx context.Context, cmd *exec.Cmd, stdin io.Reader, max
 	}, bc, notify)
 }
 
-// Run runs command cmd with stdin
-func Run(cmd *exec.Cmd, stdin io.Reader) error {
-	cmd.Stdin = stdin
-	var out bytes.Buffer
-	cmd.Stderr = &out
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%w: %s", err, out.String())
-	}
-	return nil
-}
-
-// ParseTmpl replaces placeholders in text with actual data values
-func ParseTmpl(text string, data interface{}, name string) (string, error) {
+// parseTmpl replaces placeholders in text with actual data values
+func parseTmpl(text string, data interface{}, name string) (string, error) {
 	tmpl := template.Must(template.New(name).Parse(text))
 	buf := new(bytes.Buffer)
 	if err := tmpl.Execute(buf, data); err != nil {
