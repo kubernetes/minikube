@@ -25,7 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
-// runs a helm install based on the contents of chart *assets.HelmChart
+// runs a helm install within the minikube vm or container based on the contents of chart *assets.HelmChart
 func installHelmChart (ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 	args := []string{
 		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
@@ -80,6 +80,7 @@ func helmInstallBinary(addon *assets.Addon, runner command.Runner) error {
 
 		installCmd := fmt.Sprint("curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh")
 		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd))
+		// we copy the binary from /usr/local/bin to /usr/bin because /usr/local/bin is not in PATH in both iso and kicbase
 		_, err = runner.RunCmd(exec.Command("sudo", "mv", "/usr/local/bin/helm", "/usr/bin/helm"))
 		if err != nil {
 		return errors.Wrap(err, "installing helm")
