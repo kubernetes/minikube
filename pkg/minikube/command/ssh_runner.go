@@ -490,7 +490,7 @@ func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
 		return nil
 	})
 
-	scp := fmt.Sprintf("sudo scp -f %s", f.GetTargetPath())
+	scp := shellquote.Join("sudo", "scp", "-f", f.GetTargetPath())
 	err = sess.Start(scp)
 	if err != nil {
 		return fmt.Errorf("%s: %s", scp, err)
