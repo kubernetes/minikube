@@ -552,9 +552,11 @@ func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
 	for _, caCertFile := range caCerts {
 		dstFilename := path.Base(caCertFile)
 		certStorePath := path.Join(vmpath.GuestCertStoreDir, dstFilename)
-
-		cmd := fmt.Sprintf("test -s %s && ln -fs %s %s", caCertFile, caCertFile, certStorePath)
-		if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
+		// to avoid shell-based command exploitation will run these separately not in one command
+		if _, err := cr.RunCmd(exec.Command("sudo", "test", "-s", caCertFile)); err != nil {
+			return errors.Wrapf(err, "verify ca cert %s", caCertFile)
+		}
+		if _, err := cr.RunCmd(exec.Command("sudo", "ln", "-fs", caCertFile, certStorePath)); err != nil {
 			return errors.Wrapf(err, "create symlink for %s", caCertFile)
 		}
 
