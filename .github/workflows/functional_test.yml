@@ -288,7 +288,7 @@ jobs:
         shell: bash
         if: matrix.driver == 'none'
         run: |
-          CRICTL_VERSION="v1.28.0"
+          CRICTL_VERSION="v1.34.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
       # conntrack is required for kubernetes 1.18 and higher
