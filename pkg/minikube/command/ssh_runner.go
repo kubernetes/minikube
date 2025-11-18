@@ -404,16 +404,17 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		return nil
 	})
 
-	scp := fmt.Sprintf("sudo mkdir -p %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
+	dir := f.GetTargetDir()
+	scpCmd := fmt.Sprintf("%s && %s", shellquote.Join("sudo", "mkdir", "-p", dir), shellquote.Join("sudo", "scp", "-t", dir))
 	mtime, err := f.GetModTime()
 	if err != nil {
 		klog.Infof("error getting modtime for %s: %v", dst, err)
 	} else if mtime != (time.Time{}) {
-		scp += fmt.Sprintf(" && sudo touch -d \"%s\" %s", mtime.Format(layout), dst)
+		scpCmd = fmt.Sprintf("%s && %s", scpCmd, shellquote.Join("sudo", "touch", "-d", mtime.Format(layout), dst))
 	}
-	out, err := sess.CombinedOutput(scp)
+	out, err := sess.CombinedOutput(scpCmd)
 	if err != nil {
-		return fmt.Errorf("%s: %s\noutput: %s", scp, err, out)
+		return fmt.Errorf("%s: %s\noutput: %s", scpCmd, err, out)
 	}
 	return g.Wait()
 }
