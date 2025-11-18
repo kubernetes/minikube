@@ -13,7 +13,7 @@ container deployment.
 
 ## Requirements
 
-- Requires macOS 13 or later.
+- Requires macos 14 or later.
 - Requires minikube version 1.36.0 or later.
 
 ## Networking

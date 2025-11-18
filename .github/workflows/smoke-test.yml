@@ -40,10 +40,10 @@ jobs:
       matrix:
         include:
           - driver: qemu
-            os: macos-13
+            os: macos-15
             network_flag: --network socket_vmnet
           - driver: vfkit
-            os: macos-13
+            os: macos-15
             network_flag: --network vmnet-shared
           - driver: docker
             os: ubuntu-24.04
@@ -94,7 +94,7 @@ jobs:
       - name: Build Binaries
         run: make
       - name: Ensure bootpd is enabled (macos)
-        if: matrix.os == 'macos-13'
+        if: matrix.os == 'macos-15'
         shell: bash
         run: |
           set -x
@@ -103,10 +103,10 @@ jobs:
           sudo $fw --add /usr/libexec/bootpd
           sudo $fw --unblock /usr/libexec/bootpd
       - name: Update brew (macos)
-        if: matrix.os == 'macos-13'
+        if: matrix.os == 'macos-15'
         run: brew update
       - name: Install tools (macos)
-        if: matrix.os == 'macos-13'
+        if: matrix.os == 'macos-15'
         run: brew install tree
       - name: Install vfkit and vmnet-helper (macos)
         if: matrix.driver == 'vfkit'
@@ -114,7 +114,7 @@ jobs:
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
       - name: Install qemu and socket_vmnet (macos)
-        if: matrix.os == 'macos-13' && matrix.driver == 'qemu'
+        if: matrix.os == 'macos-15' && matrix.driver == 'qemu'
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet

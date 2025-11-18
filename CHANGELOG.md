@@ -1243,7 +1243,7 @@ Minor Improvements:
 * Add additional memory overhead for VirtualBox when `--memory=max` [#15317](https://github.com/kubernetes/minikube/pull/15317)
 * Update Windows installer to create system-wide shortcut [#15405](https://github.com/kubernetes/minikube/pull/15405)
 * Add `--subnet` validation [#15530](https://github.com/kubernetes/minikube/pull/15530)
-* Warn users if using VirtualBox on macOS 13+ [#15624](https://github.com/kubernetes/minikube/pull/15624)
+* Warn users if using VirtualBox on macos 14+ [#15624](https://github.com/kubernetes/minikube/pull/15624)
 * Add groups check to SSH driver [#15513](https://github.com/kubernetes/minikube/pull/15513)
 * Update references to deprecated beta.kubernetes.io [#15225](https://github.com/kubernetes/minikube/pull/15225)
 
