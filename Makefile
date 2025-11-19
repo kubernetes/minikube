@@ -523,20 +523,22 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 lint:
 	docker run --rm -v `pwd`:/app:Z -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
-	golangci-lint run ${GOLINT_OPTIONS} ./..."
-	# --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit"
-	# The "--skip-dirs" parameter is no longer supported in the V2 version. If you need to skip the directory,
-	# add it under "linters.settings.exclusions.paths" in the ".golangci.yaml" file.
+	./out/linters/golangci-lint-$(GOLINT_VERSION) run --config .golangci.min.yaml ./...
 else
 lint: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
-	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} ./...
+	./out/linters/golangci-lint-$(GOLINT_VERSION) run --config .golangci.min.yaml ./...
 endif
+
+.PHONY: lint-max
+lint-max: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
+	./out/linters/golangci-lint-$(GOLINT_VERSION) run --config .golangci.max.yaml ./...
+
 
 # lint-ci is slower version of lint and is meant to be used in ci (travis) to avoid out of memory leaks.
 .PHONY: lint-ci
 lint-ci: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint-ci
 	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint-$(GOLINT_VERSION) run \
-	--concurrency ${GOLINT_JOBS} ${GOLINT_OPTIONS} ./...
+	--concurrency ${GOLINT_JOBS} --config .golangci.min.yaml  ./...
 
 .PHONY: reportcard
 reportcard: ## Run goreportcard for minikube
