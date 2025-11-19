@@ -69,7 +69,8 @@ function install_dependencies() {
 		ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
 	fi
 	# install golang if not present
-	sudo hack/prow/installer/check_install_golang.sh /usr/local 1.24.5 || true
+	GOLANG_VERSION_TO_INSTALL="1.25.3"
+	sudo -E hack/prow/installer/check_install_golang.sh /usr/local $GOLANG_VERSION_TO_INSTALL || true
 	# install gotestsum if not present
 	GOROOT="/usr/local/go" hack/prow/installer/check_install_gotestsum.sh || true
 	# install gopogh

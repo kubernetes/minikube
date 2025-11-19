@@ -35,12 +35,12 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.24.6
+GO_VERSION ?= 1.25.3
 # set GOTOOLCHAIN to GO_VERSION to override any toolchain version specified in
 # go.mod (ref: https://go.dev/doc/toolchain#GOTOOLCHAIN)
 export GOTOOLCHAIN := go$(GO_VERSION)
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.34.0
+GO_K8S_VERSION_PREFIX ?= v1.35.0
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2025.02
@@ -907,7 +907,7 @@ generate-licenses:
 gomodtidy: ## run go mod tidy everywhere needed
 	go mod tidy
 	cd hack && go mod tidy
-	cd hack/prow/minitest  && env -u GOTOOLCHAIN go mod tidy
+	cd hack/prow/minitest  && go mod tidy
 
 
 .PHONY: help

@@ -53,6 +53,12 @@ var (
 				`VERSION_TO_INSTALL=.*`: `VERSION_TO_INSTALL={{.StableVersion}}`,
 			},
 		},
+		"hack/prow/common.sh": {
+			Replace: map[string]string{
+				`GOLANG_VERSION_TO_INSTALL=.*`: `GOLANG_VERSION_TO_INSTALL={{.StableVersion}}`,
+			},
+		},
+
 		"hack/jenkins/installers/check_install_golang.ps1": {
 			Replace: map[string]string{
 				`GoVersion = ".*"`: `GoVersion = "{{.StableVersion}}"`,
