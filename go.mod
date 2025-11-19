@@ -2,7 +2,6 @@ module k8s.io/minikube
 
 go 1.24.0
 
-
 require (
 	cloud.google.com/go/storage v1.56.1
 	github.com/Delta456/box-cli-maker/v2 v2.3.0
