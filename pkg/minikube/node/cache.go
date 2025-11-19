@@ -164,22 +164,19 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			err = download.ImageToCache(img)
 			if err == nil {
 				klog.Infof("successfully saved %s as a tarball", img)
-			}
-			if downloadOnly && err == nil {
-				return nil
-			}
-
-			if cc.Driver == driver.Podman {
-				return fmt.Errorf("not yet implemented, see issue #8426")
-			}
-			if driver.IsDocker(cc.Driver) && err == nil {
-				klog.Infof("Loading %s from local cache", img)
-				if finalImg, err = download.CacheToDaemon(img); err == nil {
-					klog.Infof("successfully loaded and using %s from cached tarball", img)
+				if downloadOnly {
 					return nil
 				}
+
+				if driver.IsKIC(cc.Driver) {
+					klog.Infof("Loading %s from local cache", img)
+					if finalImg, err = download.CacheToDaemon(img); err == nil {
+						klog.Infof("successfully loaded and using %s from cached tarball", img)
+						return nil
+					}
+				}
+				klog.Infof("failed to download %s, will try fallback image if available: %v", img, err)
 			}
-			klog.Infof("failed to download %s, will try fallback image if available: %v", img, err)
 		}
 		// second if we failed to download any fallback image
 		// that means probably all registries are blocked by network issues
