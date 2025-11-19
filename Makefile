@@ -936,7 +936,7 @@ time-to-k8s-benchmark:
 .PHONY: update-golang-version
 update-golang-version:
 	 cd hack && go run update/golang_version/golang_version.go
-
+	 make gomodtidy
 .PHONY: update-kubernetes-version
 update-kubernetes-version:
 	 @(cd hack && go run update/kubernetes_version/kubernetes_version.go)
