@@ -72,6 +72,8 @@ function install_dependencies() {
 	sudo hack/prow/installer/check_install_golang.sh /usr/local 1.24.5 || true
 	# install gotestsum if not present
 	GOROOT="/usr/local/go" hack/prow/installer/check_install_gotestsum.sh || true
+	# do NOT change manually - only using make update-golang-version
+	GOLANG_VERSION_TO_INSTALL="1.24.6"
 	# install gopogh
 	hack/prow/installer/check_install_gopogh.sh || true
 
