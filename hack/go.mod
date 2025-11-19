@@ -1,6 +1,6 @@
 module k8s.io/minikube/hack
 
-go 1.24.0
+go 1.25.0
 
 replace github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20240815173309-ffb6b643c381
 
