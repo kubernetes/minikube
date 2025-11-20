@@ -93,7 +93,7 @@ The boolean value on the last line is whether the addon should be enabled by def
 
 To see other examples, see the [addons commit history](https://github.com/kubernetes/minikube/commits/master/deploy/addons) for other recent examples.
 
-To add a helm based addon please check out [Helm Based Addons](/docs/contrib/addons)
+To add a helm based addon please check out [Helm Based Addons]({{% relref "/docs/contrib/helm-addons" %}})
 
 ## "addons open" support
 
