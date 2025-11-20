@@ -651,17 +651,19 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
 
 out/docker-machine-driver-hyperkit:
-ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 \
-		--user $(shell id -u):$(shell id -g) -w /app \
-		-v $(PWD):/app:Z -v $(GOPATH):/go:Z --init --entrypoint "" \
-		$(HYPERKIT_BUILD_IMAGE) /bin/bash -c 'CC=o64-clang CXX=o64-clang++ /usr/bin/make $@'
-else
-	$(if $(quiet),@echo "  GO       $@")
-	$(Q)GOOS=darwin CGO_ENABLED=1 go build \
-		-ldflags="$(HYPERKIT_LDFLAGS)"   \
-		-o $@ k8s.io/minikube/cmd/drivers/hyperkit
-endif
+	@echo "out/docker-machine-driver-hyperkit skipped";
+	@echo "hyperkit driver will not be built anymore, checkout this issue for more details https://github.com/kubernetes/minikube/issues/21940";
+# ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+# 	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 \
+# 		--user $(shell id -u):$(shell id -g) -w /app \
+# 		-v $(PWD):/app:Z -v $(GOPATH):/go:Z --init --entrypoint "" \
+# 		$(HYPERKIT_BUILD_IMAGE) /bin/bash -c 'CC=o64-clang CXX=o64-clang++ /usr/bin/make $@'
+# else
+# 	$(if $(quiet),@echo "  GO       $@")
+# 	$(Q)GOOS=darwin CGO_ENABLED=1 go build \
+# 		-ldflags="$(HYPERKIT_LDFLAGS)"   \
+# 		-o $@ k8s.io/minikube/cmd/drivers/hyperkit
+# endif
 
 hyperkit_in_docker:
 	rm -f out/docker-machine-driver-hyperkit
