@@ -5,6 +5,7 @@
 
 # Folders
 .cache
+.modcache
 _obj
 _test
 
