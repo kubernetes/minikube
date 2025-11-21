@@ -30,15 +30,15 @@ func TestHelmCommand(t *testing.T) {
 		chart       *assets.HelmChart
 		enable      bool
 		expected    string
-		mode 				string
+		mode        string
 	}{
 		{
 			description: "enable an addon",
 			chart: &assets.HelmChart{
-				Name:      "addon-name",
-				Repo:      "addon-repo/addon-chart",
-				Namespace: "addon-namespace",
-				Values:    []string{"key=value"},
+				Name:       "addon-name",
+				Repo:       "addon-repo/addon-chart",
+				Namespace:  "addon-namespace",
+				Values:     []string{"key=value"},
 				ValueFiles: []string{"/etc/kubernetes/addons/values.yaml"},
 			},
 			enable:   true,
@@ -47,13 +47,13 @@ func TestHelmCommand(t *testing.T) {
 		{
 			description: "enable an addon without namespace",
 			chart: &assets.HelmChart{
-				Name: "addon-name",
-				Repo: "addon-repo/addon-chart",
-				Values:    []string{"key=value"},
+				Name:       "addon-name",
+				Repo:       "addon-repo/addon-chart",
+				Values:     []string{"key=value"},
 				ValueFiles: []string{"/etc/kubernetes/addons/values.yaml"},
 			},
 			enable:   true,
-			expected: "sudo KUBECONFIG=/var/lib/minikube/kubeconfig helm upgrade --install addon-name addon-repo/addon-chart --create-namespace --set key=value --values /etc/kubernetes/addons/values.yaml" ,
+			expected: "sudo KUBECONFIG=/var/lib/minikube/kubeconfig helm upgrade --install addon-name addon-repo/addon-chart --create-namespace --set key=value --values /etc/kubernetes/addons/values.yaml",
 		},
 		{
 			description: "disable an addon",
@@ -63,13 +63,13 @@ func TestHelmCommand(t *testing.T) {
 			},
 			enable:   false,
 			expected: "sudo KUBECONFIG=/var/lib/minikube/kubeconfig helm uninstall addon-name --namespace addon-namespace",
-			mode: "cpu",
+			mode:     "cpu",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			command := helmUninstallOrInstall(context.Background(), test.chart, test.enable )
+			command := helmUninstallOrInstall(context.Background(), test.chart, test.enable)
 			actual := strings.Join(command.Args, " ")
 			if actual != test.expected {
 				t.Errorf("helm command mismatch:\nexpected: %s\nactual:   %s", test.expected, actual)

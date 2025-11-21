@@ -29,41 +29,41 @@ import (
 )
 
 // runs a helm install within the minikube vm or container based on the contents of chart *assets.HelmChart
-func installHelmChart (ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
+func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 	args := []string{
 		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"helm", "upgrade", "--install", chart.Name, chart.Repo, "--create-namespace",
 	}
-			if chart.Namespace != "" {
-			args = append(args, "--namespace", chart.Namespace)
-		}
-
-			if chart.Values != nil {
-				for _, value := range chart.Values {
-					args = append(args, "--set", value)
-					}
-				}
-
-			if chart.ValueFiles != nil {
-				for _, value := range chart.ValueFiles {
-					args = append(args, "--values", value)
-					}
-				}
-				
-		return exec.CommandContext(ctx, "sudo", args...)
+	if chart.Namespace != "" {
+		args = append(args, "--namespace", chart.Namespace)
 	}
 
+	if chart.Values != nil {
+		for _, value := range chart.Values {
+			args = append(args, "--set", value)
+		}
+	}
+
+	if chart.ValueFiles != nil {
+		for _, value := range chart.ValueFiles {
+			args = append(args, "--values", value)
+		}
+	}
+
+	return exec.CommandContext(ctx, "sudo", args...)
+}
+
 // runs a helm uninstall based on the contents of chart *assets.HelmChart
-func uninstalllHelmChart (ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
+func uninstalllHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 	args := []string{
 		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"helm", "uninstall", chart.Name,
-		}
-			if chart.Namespace != "" {
-			args = append(args, "--namespace", chart.Namespace)
-		}
-		return exec.CommandContext(ctx, "sudo", args...)
 	}
+	if chart.Namespace != "" {
+		args = append(args, "--namespace", chart.Namespace)
+	}
+	return exec.CommandContext(ctx, "sudo", args...)
+}
 
 // based on enable will execute installHelmChart or uninstallHelmChart
 func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable bool) *exec.Cmd {
@@ -86,8 +86,8 @@ func helmInstallBinary(addon *assets.Addon, runner command.Runner) error {
 		// we copy the binary from /usr/local/bin to /usr/bin because /usr/local/bin is not in PATH in both iso and kicbase
 		_, err = runner.RunCmd(exec.Command("sudo", "mv", "/usr/local/bin/helm", "/usr/bin/helm"))
 		if err != nil {
-		return errors.Wrap(err, "installing helm")
+			return errors.Wrap(err, "installing helm")
 		}
 	}
 	return err
-	}
+}
