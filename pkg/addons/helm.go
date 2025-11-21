@@ -79,10 +79,16 @@ func helmInstallBinary(addon *assets.Addon, runner command.Runner) error {
 		_, err = runner.RunCmd(exec.Command("test", "-d", "/usr/local/bin"))
 		if err != nil {
 			_, err = runner.RunCmd(exec.Command("sudo", "mkdir", "-p", "/usr/local/bin"))
+			if err != nil {
+				return errors.Wrap(err, "creating /usr/local/bin")
+			}
 		}
 
 		installCmd := fmt.Sprint("curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh")
 		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd))
+		if err != nil {
+			return errors.Wrap(err, "downloading helm")
+		}
 		// we copy the binary from /usr/local/bin to /usr/bin because /usr/local/bin is not in PATH in both iso and kicbase
 		_, err = runner.RunCmd(exec.Command("sudo", "mv", "/usr/local/bin/helm", "/usr/bin/helm"))
 		if err != nil {
