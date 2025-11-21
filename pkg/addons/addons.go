@@ -450,6 +450,19 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		}
 	}
 
+	if addon.HelmChart != nil {
+		err := helmInstallBinary(addon, runner)
+		if err != nil {
+			return err
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		cmd := helmUninstallOrInstall(ctx, addon.HelmChart, enable)
+		_, err = runner.RunCmd(cmd)
+		return err
+	}
+
 	// on the first attempt try without force, but on subsequent attempts use force
 	force := false
 
@@ -457,7 +470,9 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 	apply := func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
-		_, err := runner.RunCmd(kubectlCommand(ctx, cc, deployFiles, enable, force))
+		cmd := kubectlCommand(ctx, cc, deployFiles, enable, force)
+		_, err := runner.RunCmd(cmd)
+
 		if err != nil {
 			klog.Warningf("apply failed, will retry: %v", err)
 			force = true
