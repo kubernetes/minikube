@@ -666,28 +666,33 @@ out/docker-machine-driver-hyperkit:
 # endif
 
 hyperkit_in_docker:
-	rm -f out/docker-machine-driver-hyperkit
-	$(MAKE) MINIKUBE_BUILD_IN_DOCKER=y out/docker-machine-driver-hyperkit
+	@echo "hyperkit_in_docker skipped #21940";
+# 	rm -f out/docker-machine-driver-hyperkit
+# 	$(MAKE) MINIKUBE_BUILD_IN_DOCKER=y out/docker-machine-driver-hyperkit
 
 .PHONY: install-hyperkit-driver
 install-hyperkit-driver: out/docker-machine-driver-hyperkit ## Install hyperkit to local machine
-	mkdir -p $(HOME)/bin
-	sudo cp out/docker-machine-driver-hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
-	sudo chown root:wheel $(HOME)/bin/docker-machine-driver-hyperkit
-	sudo chmod u+s $(HOME)/bin/docker-machine-driver-hyperkit
+	@echo "install-hyperkit-driver skipped #21940";
+# 	mkdir -p $(HOME)/bin
+# 	sudo cp out/docker-machine-driver-hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
+# 	sudo chown root:wheel $(HOME)/bin/docker-machine-driver-hyperkit
+# 	sudo chmod u+s $(HOME)/bin/docker-machine-driver-hyperkit
 
 .PHONY: release-hyperkit-driver
-release-hyperkit-driver: install-hyperkit-driver checksum ## Copy hyperkit using gsutil
-	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit gs://minikube/drivers/hyperkit/$(VERSION)/
-	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit.sha256 gs://minikube/drivers/hyperkit/$(VERSION)/
+release-hyperkit-driver: 
+	@echo "release-hyperkit-driver skipped #21940";
+# 	install-hyperkit-driver checksum ## Copy hyperkit using gsutil
+# 	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit gs://minikube/drivers/hyperkit/$(VERSION)/
+# 	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit.sha256 gs://minikube/drivers/hyperkit/$(VERSION)/
 
 .PHONY: build-and-push-hyperkit-build-image
 build-and-push-hyperkit-build-image:
-	test -d out/xcgo || git clone https://github.com/neilotoole/xcgo.git out/xcgo
-	(cd out/xcgo && git restore . && git pull && \
-	 sed -i'.bak' -e 's/ARG GO_VERSION.*/ARG GO_VERSION="go$(GO_VERSION)"/' Dockerfile && \
-	 docker build -t gcr.io/k8s-minikube/xcgo:go$(GO_VERSION) .)
-	docker push gcr.io/k8s-minikube/xcgo:go$(GO_VERSION)
+	@echo "build-and-push-hyperkit-build-image skipped #21940";
+# 	test -d out/xcgo || git clone https://github.com/neilotoole/xcgo.git out/xcgo
+# 	(cd out/xcgo && git restore . && git pull && \
+# 	 sed -i'.bak' -e 's/ARG GO_VERSION.*/ARG GO_VERSION="go$(GO_VERSION)"/' Dockerfile && \
+# 	 docker build -t gcr.io/k8s-minikube/xcgo:go$(GO_VERSION) .)
+# 	docker push gcr.io/k8s-minikube/xcgo:go$(GO_VERSION)
 
 .PHONY: check-release
 check-release: ## Execute go test
