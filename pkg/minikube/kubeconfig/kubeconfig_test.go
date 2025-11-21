@@ -19,6 +19,7 @@ package kubeconfig
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"testing"
 
@@ -775,9 +776,9 @@ func TestGetKubeConfigPath(t *testing.T) {
 	sep := string(os.PathListSeparator)
 
 	// Ensure $HOME expands sensibly on Windows where HOME may be unset.
-	if os.Getenv("HOME") == "" {
-		if up := os.Getenv("USERPROFILE"); up != "" {
-			_ = os.Setenv("HOME", up)
+	if runtime.GOOS == "windows" && os.Getenv("HOME") == "" {
+		if h, err := os.UserHomeDir(); err == nil && h != "" {
+			_ = os.Setenv("HOME", h)
 		}
 	}
 
