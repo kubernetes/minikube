@@ -83,7 +83,6 @@ var (
 	reSharedAdapterIP  = regexp.MustCompile(`\s*IPv4 address:\s*(\d+\.\d+\.\d+\.\d+)`)
 	reSharedFolder     = regexp.MustCompile(`\s*(.+) \(\+\) path='(.+)' mode=.+`)
 
-	errMachineExist              = errors.New("machine already exists")
 	errMachineNotExist           = errors.New("machine does not exist")
 	errSharedNetworkNotConnected = errors.New("Your Mac host is not connected to Shared network. Please, ensure this option is set: 'Parallels Desktop' -> 'Preferences' -> 'Network' -> 'Shared' -> 'Connect Mac to this network'")
 
@@ -123,6 +122,8 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 }
 
 // Create a host using the driver's config
+//
+//nolint:gocyclo
 func (d *Driver) Create() error {
 	var (
 		err error
@@ -157,7 +158,7 @@ func (d *Driver) Create() error {
 
 	cpus := d.CPU
 	if cpus < 1 {
-		cpus = int(runtime.NumCPU())
+		cpus = runtime.NumCPU()
 	}
 	if cpus > 32 {
 		cpus = 32
@@ -301,7 +302,7 @@ func (d *Driver) Create() error {
 
 		if ip != "" {
 			log.Debugf("Got an ip: %s", ip)
-			conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", ip, d.SSHPort), time.Duration(2*time.Second))
+			conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", ip, d.SSHPort), 2*time.Second)
 			if err != nil {
 				log.Debugf("SSH Daemon not responding yet: %s", err)
 				time.Sleep(2 * time.Second)
@@ -614,6 +615,9 @@ func (d *Driver) getIPfromDHCPLease() (string, error) {
 	DHCPLeaseFile := "/Library/Preferences/Parallels/parallels_dhcp_leases"
 
 	stdout, _, err := prlctlOutErr("list", "-i", d.MachineName)
+	if err != nil {
+		return "", err
+	}
 	macRe := regexp.MustCompile("net0.* mac=([0-9A-F]{12}) card=.*")
 	macMatch := macRe.FindAllStringSubmatch(stdout, 1)
 
@@ -666,7 +670,7 @@ func (d *Driver) getShareFolders() (map[string]string, error) {
 
 	// Parse Shared Folder name (ID) and path
 	res := make(map[string]string)
-	for _, match := range reSharedFolder.FindAllStringSubmatch(string(stdout), -1) {
+	for _, match := range reSharedFolder.FindAllStringSubmatch(stdout, -1) {
 		sName := match[1]
 		sPath := match[2]
 		log.Debugf("Found the configured shared folder. Name: %q, Path: %q\n", sName, sPath)
@@ -773,7 +777,7 @@ func getParallelsVersion() (*version.Version, error) {
 	}
 
 	// Parse Parallels Desktop version
-	verRaw := reParallelsVersion.FindStringSubmatch(string(stdout))
+	verRaw := reParallelsVersion.FindStringSubmatch(stdout)
 	if verRaw == nil {
 		return nil, fmt.Errorf("Parallels Desktop version could not be fetched: %s", stdout)
 	}
@@ -794,7 +798,7 @@ func getParallelsEdition() (string, error) {
 	}
 
 	// Parse Parallels Desktop version
-	res := reParallelsEdition.FindStringSubmatch(string(stdout))
+	res := reParallelsEdition.FindStringSubmatch(stdout)
 	if res == nil {
 		return "", fmt.Errorf("Driver \"parallels\" requires Parallels Desktop license to be activated. More info: https://kb.parallels.com/en/124225")
 	}
@@ -810,7 +814,7 @@ func checkSharedNetworkConnected() error {
 	}
 
 	// Parse the IPv4 of Shared network adapter
-	res := reSharedAdapterIP.FindStringSubmatch(string(stdout))
+	res := reSharedAdapterIP.FindStringSubmatch(stdout)
 	if res == nil {
 		return errSharedNetworkNotConnected
 	}
@@ -822,7 +826,7 @@ func checkSharedNetworkConnected() error {
 	if err != nil {
 		return err
 	}
-	log.Debugf("All host interface addressess: %v", hostAddrs)
+	log.Debugf("All host interface addresses: %v", hostAddrs)
 
 	// Check if the there is an interface with the Shared network adapter's IP assigned
 	for _, netAddr := range hostAddrs {
