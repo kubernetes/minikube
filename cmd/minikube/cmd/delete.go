@@ -218,7 +218,7 @@ func runDelete(_ *cobra.Command, args []string) {
 	out.SetJSON(outputFormat == "json")
 	register.Reg.SetStep(register.Deleting)
 	download.CleanUpOlderPreloads()
-	validProfiles, invalidProfiles, err := config.ListProfiles()
+	validProfiles, invalidProfiles, err := config.ListProfiles(options)
 	if err != nil {
 		klog.Warningf("'error loading profiles in minikube home %q: %v", localpath.MiniPath(), err)
 	}
@@ -333,7 +333,6 @@ func deleteProfile(ctx context.Context, profile *config.Profile, options *run.Co
 	klog.Infof("Deleting %s", profile.Name)
 	register.Reg.SetStep(register.Deleting)
 
-	viper.Set(config.ProfileName, profile.Name)
 	if profile.Config != nil {
 		klog.Infof("%s configuration: %+v", profile.Name, profile.Config)
 

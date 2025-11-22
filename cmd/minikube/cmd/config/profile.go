@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -45,6 +46,7 @@ var ProfileCmd = &cobra.Command{
 			exit.Message(reason.Usage, "usage: minikube profile [MINIKUBE_PROFILE_NAME]")
 		}
 
+		options := flags.CommandOptions()
 		profile := args[0]
 		// Check whether the profile name is container friendly
 		if !config.ProfileNameValid(profile) {
@@ -63,7 +65,7 @@ var ProfileCmd = &cobra.Command{
 			profile = "minikube"
 		} else {
 			// not validating when it is default profile
-			errProfile, ok := ValidateProfile(profile)
+			errProfile, ok := ValidateProfile(profile, options)
 			if !ok && errProfile != nil {
 				out.FailureT(errProfile.Msg)
 			}
