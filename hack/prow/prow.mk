@@ -7,6 +7,10 @@ integration-prow-docker-docker-linux-x86-64:
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_docker_linux_x86-64.sh
 
+integration-prow-none-docker-linux-x86-64:
+	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
+	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_none_docker_linux_x86-64.sh
+
 integration-prow-kvm-docker-linux-x86-64:
 # 	build first
 #	container-runtime=docker driver=kvm on linux/amd64
