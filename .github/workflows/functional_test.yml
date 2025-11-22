@@ -43,7 +43,7 @@ jobs:
         run: go mod download
       - name: Build minikube and e2e test binaries
         run: |
-          make e2e-linux-amd64 e2e-darwin-amd64
+          make e2e-linux-amd64 e2e-darwin-amd64 e2e-linux-arm64
           cp -r test/integration/testdata ./out
       - name: Upload Test Binaries
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
@@ -53,7 +53,7 @@ jobs:
   functional-test:
     name: ${{ matrix.name }}
     needs: build-test-binaries
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: none
     strategy:
@@ -64,17 +64,20 @@ jobs:
             driver: docker
             cruntime: docker
             os: ubuntu-22.04
+            runner: ubuntu-22.04
             test-timeout: 15m 
           - name: docker-containerd-ubuntu-22.04-x86_64
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-22.04
+            runner: ubuntu-22.04
             test-timeout: 15m 
           - name: docker-containerd-rootless-ubuntu-22.04-x86_64
             driver: docker
             cruntime: containerd
             os: ubuntu-22.04            
+            runner: ubuntu-22.04
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
             test-timeout: 15m 
@@ -82,24 +85,34 @@ jobs:
             driver: podman
             cruntime: docker
             os: ubuntu-24.04
+            runner: ubuntu-24.04
             test-timeout: 15m
           - name: baremetal-docker-ubuntu-22.04-x86_64
             driver: none
             cruntime: docker
             os: ubuntu-22.04
+            runner: ubuntu-22.04
             test-timeout: 7m
           - name: qemu-docker-macos-13-x86_64
             driver: qemu
             cruntime: docker
             os: macos-13
+            runner: macos-13
             extra-start-args: --network socket_vmnet
             test-timeout: 50m
           - name: vfkit-docker-macos-13-x86_64
             driver: vfkit
             cruntime: docker
             os: macos-13
+            runner: macos-13
             extra-start-args: --network vmnet-shared
             test-timeout: 50m            
+          - name: docker-docker-ubuntu-arm64
+            driver: docker
+            cruntime: docker
+            os: ubuntu-22.04
+            runner: [self-hosted, arm64]
+            test-timeout: 25m
     steps:
       - name: Info Block (macOS)
         if: runner.os == 'macOS'
