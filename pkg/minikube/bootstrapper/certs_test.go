@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+// TestSetupCerts verifies that the certificate setup logic initializes the required files and directories without error.
 func TestSetupCerts(t *testing.T) {
 	tempDir := tests.MakeTempDir(t)
 
@@ -53,13 +54,15 @@ func TestSetupCerts(t *testing.T) {
 		t.Fatalf("error generating certificate: %v", err)
 	}
 
-	expected := map[string]string{
-		`sudo /bin/bash -c "test -s /usr/share/ca-certificates/mycert.pem && ln -fs /usr/share/ca-certificates/mycert.pem /etc/ssl/certs/mycert.pem"`:             "-",
-		`sudo /bin/bash -c "test -s /usr/share/ca-certificates/minikubeCA.pem && ln -fs /usr/share/ca-certificates/minikubeCA.pem /etc/ssl/certs/minikubeCA.pem"`: "-",
+	expectedToRun := map[string]string{
+		`sudo test -s /usr/share/ca-certificates/mycert.pem`:                                  "-",
+		`sudo ln -fs /usr/share/ca-certificates/mycert.pem /etc/ssl/certs/mycert.pem`:         "-",
+		`sudo test -s /usr/share/ca-certificates/minikubeCA.pem`:                              "-",
+		`sudo ln -fs /usr/share/ca-certificates/minikubeCA.pem /etc/ssl/certs/minikubeCA.pem`: "-",
 		`date -u +%d-%m-%y-%T`: time.Now().Format("02-01-06-15:04:05"),
 	}
 	f := command.NewFakeCommandRunner()
-	f.SetCommandToOutput(expected)
+	f.SetCommandToOutput(expectedToRun)
 
 	p := command.NewFakeCommandRunner()
 	p.SetCommandToOutput(map[string]string{})
