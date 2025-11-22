@@ -81,7 +81,7 @@ if [[ $(crictl --version) != *"$CRICTL_VERSION"* ]]; then
 fi
 
 # cni-plugins is required for Kubernetes v1.24+ with none driver
-ech $pwd
+echo $pwd
 ./hack/jenkins/installers/check_install_cni_plugins.sh
 
 
