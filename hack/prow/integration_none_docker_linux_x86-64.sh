@@ -43,18 +43,30 @@ if ! which socat &>/dev/null; then
   sudo apt-get -qq -y install socat
 fi
 
-# cri-dockerd is required for Kubernetes v1.24+ with none driver
 CRI_DOCKERD_VERSION="0.4.1"
-if [[ $(cri-dockerd --version 2>&1) != *"$CRI_DOCKERD_VERSION"* ]]; then
-  echo "WARNING: expected version of cri-dockerd is not installed. will try to install."
-  sudo systemctl stop cri-docker.socket || true
-  sudo systemctl stop cri-docker.service || true
+if [[ $(cri-dockerd --version 2>&1 || true) != *"$CRI_DOCKERD_VERSION"* ]]; then
+  echo "Installing cri-dockerd…"
   CRI_DOCKERD_COMMIT="55d6e1a1d6f2ee58949e13a0c66afe7d779ac942"
   CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
+
   sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
-  sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
-  sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
   sudo chmod +x /usr/bin/cri-dockerd
+fi
+
+# If PID 1 is not systemd, don't even try systemctl
+if [[ "$(ps -p 1 -o comm=)" != "systemd" ]]; then
+  echo "No systemd detected (PID 1 is $(ps -p 1 -o comm=)); starting cri-dockerd directly"
+
+  # Adjust flags to match your setup:
+  sudo /usr/bin/cri-dockerd \
+    --container-runtime-endpoint=unix:///var/run/docker.sock \
+    --cri-dockerd-root-dir=/var/lib/cri-dockerd \
+    --network-plugin=cni \
+    --socket-path=unix:///var/run/cri-dockerd.sock \
+    >/var/log/cri-dockerd.log 2>&1 &
+
+else
+  echo "systemd detected, using systemctl"
   sudo systemctl daemon-reload
   sudo systemctl enable cri-docker.service
   sudo systemctl enable --now cri-docker.socket
