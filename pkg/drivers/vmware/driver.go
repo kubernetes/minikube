@@ -34,6 +34,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/mcnutils"
@@ -125,7 +127,7 @@ func (d *Driver) GetIP() (ip string, err error) {
 
 	// attempt to find the address from vmrun
 	if ip, err := d.getIPfromVmrun(); err == nil {
-		return ip, err
+		return ip, nil
 	}
 
 	// determine MAC address for VM
@@ -136,7 +138,7 @@ func (d *Driver) GetIP() (ip string, err error) {
 
 	// attempt to find the address in the vmnet configuration
 	if ip, err = d.getIPfromVmnetConfiguration(macaddr); err == nil {
-		return ip, err
+		return ip, nil
 	}
 
 	// address not found in vmnet so look for a DHCP lease
@@ -350,7 +352,7 @@ func (d *Driver) Start() error {
 	}
 
 	if ip == "" {
-		return fmt.Errorf("machine didn't return an IP after 120 seconds, aborting")
+		return errors.New("machine didn't return an IP after 120 seconds, aborting")
 	}
 
 	// we got an IP
@@ -382,7 +384,7 @@ func (d *Driver) Remove() error {
 	s, _ := d.GetState()
 	if s == state.Running {
 		if err := d.Kill(); err != nil {
-			return fmt.Errorf("error stopping VM before deletion")
+			return errors.New("error stopping VM before deletion")
 		}
 	}
 	log.Infof("Deleting %s...", d.MachineName)
@@ -393,7 +395,7 @@ func (d *Driver) Remove() error {
 }
 
 func (d *Driver) Upgrade() error {
-	return fmt.Errorf("VMware does not currently support the upgrade operation")
+	return errors.New("VMware does not currently support the upgrade operation")
 }
 
 func (d *Driver) vmxPath() string {
@@ -447,7 +449,7 @@ func (d *Driver) getIPfromVmrun() (string, error) {
 		return match, nil
 	}
 
-	return "", fmt.Errorf("could not get IP from vmrun")
+	return "", errors.New("could not get IP from vmrun")
 }
 
 func (d *Driver) getIPfromVmnetConfiguration(macaddr string) (string, error) {
@@ -457,7 +459,7 @@ func (d *Driver) getIPfromVmnetConfiguration(macaddr string) (string, error) {
 	for _, conffile := range confFiles {
 		log.Debugf("Trying to find IP address in configuration file: %s", conffile)
 		if ipaddr, err := d.getIPfromVmnetConfigurationFile(conffile, macaddr); err == nil {
-			return ipaddr, err
+			return ipaddr, nil
 		}
 	}
 
@@ -563,7 +565,7 @@ func (d *Driver) getIPfromDHCPLease(macaddr string) (string, error) {
 	for _, dhcpfile := range leasesFiles {
 		log.Debugf("Trying to find IP address in leases file: %s", dhcpfile)
 		if ipaddr, err := d.getIPfromDHCPLeaseFile(dhcpfile, macaddr); err == nil {
-			return ipaddr, err
+			return ipaddr, nil
 		}
 	}
 
@@ -607,7 +609,7 @@ func (d *Driver) getIPfromDHCPLeaseFile(dhcpfile, macaddr string) (string, error
 			continue
 		}
 
-		if matches := leasemac.FindStringSubmatch(line); matches != nil && matches[1] == macaddr && currentleadeendtime.Before(lastleaseendtime) {
+		if matches := leasemac.FindStringSubmatch(line); len(matches) > 0 && matches[1] == macaddr && currentleadeendtime.Before(lastleaseendtime) {
 			currentip = lastipmatch
 			currentleadeendtime = lastleaseendtime
 		}
