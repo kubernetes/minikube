@@ -365,6 +365,7 @@
 	"Headlamp can display more detailed information when metrics-server is installed. To install it, run:\n\n\tminikube{{.profileArg}} addons enable metrics-server\n": "",
 	"Hide the hypervisor signature from the guest in minikube (kvm2 driver only)": "",
 	"Hyper-V requires that memory MB be an even number, {{.memory}}MB was specified, try passing `--memory {{.suggestMemory}}`": "",
+	"Hyperkit driver will be removed in the next minikube release, we have other drivers that work on macOS such as docker or qemu, vfkit. Please consider switching to one of them. For more information, please visit: https://minikube.sigs.k8s.io/docs/drivers/hyperkit/": "",
 	"Hyperkit is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver": "",
 	"Hyperkit networking is broken. Try disabling Internet Sharing: System Preference \u003e Sharing \u003e Internet Sharing. \nAlternatively, you can try upgrading to the latest hyperkit version, or using an alternate driver.": "",
 	"IP Address to use to expose ports (docker and podman driver only)": "",
