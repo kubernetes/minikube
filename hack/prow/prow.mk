@@ -1,5 +1,4 @@
-.PHONY: integration-prow-kvm-docker-linux-x86-64
-
+.PHONY: integration-prow-kvm-docker-linux-x86-64 integration-prow-docker-docker-linux-x86-64  push-kubernetes-bootcamp
 
 integration-prow-docker-docker-linux-x86-64:
 # 	build first
@@ -17,3 +16,10 @@ integration-prow-kvm-docker-linux-x86-64:
 	cp -f "${GCE_SSH_PUBLIC_KEY_FILE}" ~/.ssh/google_compute_engine.pub
 	GOTOOLCHAIN=auto go build -C ./hack/prow/minitest -o $(PWD)/out/minitest .
 	./out/minitest  --deployer boskos --tester kvm-docker-linux-amd64-integration --config hack/prow/kvm.json
+
+push-kubernetes-bootcamp:
+	docker run --rm --privileged tonistiigi/binfmt:latest --install all
+	docker buildx create --name multiarch --bootstrap
+	docker buildx build --builder multiarch --push --platform  linux/amd64,linux/arm64 \
+		-t gcr.io/minikube/kubernetes-bootcamp:$(_GIT_TAG) -t gcr.io/minikube/kubernetes-bootcamp:latest deploy/image/kubernetes-bootcamp
+	docker buildx rm multiarch
