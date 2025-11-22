@@ -34,9 +34,12 @@ const (
 	dhcpPrefix   = "HostInterfaceNetworking-"
 )
 
+//nolint:staticcheck // ST1005: error strings should not be capitalized
 var (
-	reHostOnlyAdapterCreated        = regexp.MustCompile(`Interface '(.+)' was successfully created`)
-	errNewHostOnlyAdapterNotVisible = errors.New("The host-only adapter we just created is not visible. This is a well known VirtualBox bug. You might want to uninstall it and reinstall at least version 5.0.12 that is is supposed to fix this issue")
+	reHostOnlyAdapterCreated         = regexp.MustCompile(`Interface '(.+)' was successfully created`)
+	errNewHostOnlyAdapterNotVisible  = errors.New("The host-only adapter we just created is not visible. This is a well known VirtualBox bug. You might want to uninstall it and reinstall at least version 5.0.12 that is is supposed to fix this issue")
+	errFailedToCreateHostOnlyAdapter = errors.New("Failed to create host-only adapter")
+	errFailedToFindHostOnlyAdapter   = errors.New("Failed to find a new host-only adapter")
 )
 
 // Host-only network.
@@ -113,7 +116,7 @@ func createHostonlyAdapter(vbox VBoxManager) (*hostOnlyNetwork, error) {
 
 	res := reHostOnlyAdapterCreated.FindStringSubmatch(out)
 	if res == nil {
-		return nil, errors.New("Failed to create host-only adapter")
+		return nil, errFailedToCreateHostOnlyAdapter
 	}
 
 	return &hostOnlyNetwork{Name: res[1]}, nil
@@ -168,6 +171,7 @@ func listHostOnlyAdapters(vbox VBoxManager) (map[string]*hostOnlyNetwork, error)
 			}
 
 			n = &hostOnlyNetwork{}
+		default:
 		}
 
 		return nil
@@ -245,7 +249,7 @@ func waitForNewHostOnlyNetwork(oldNets map[string]*hostOnlyNetwork, vbox VBoxMan
 		}
 	}
 
-	return nil, errors.New("Failed to find a new host-only adapter")
+	return nil, errFailedToFindHostOnlyAdapter
 }
 
 // DHCP server info.
@@ -354,6 +358,7 @@ func listDHCPServers(vbox VBoxManager) (map[string]*dhcpServer, error) {
 			dhcp.IPv4.Mask = parseIPv4Mask(val)
 		case "Enabled":
 			dhcp.Enabled = (val == "Yes")
+		default:
 		}
 
 		return nil

@@ -45,6 +45,7 @@ func getVMInfo(name string, vbox VBoxManager) (*VM, error) {
 				return err
 			}
 			vm.Memory = v
+		default:
 		}
 
 		return nil

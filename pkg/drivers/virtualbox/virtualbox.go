@@ -52,6 +52,7 @@ const (
 	defaultHostLoopbackReachable = true
 )
 
+//nolint:staticcheck // ST1005: error strings should not be capitalized
 var (
 	ErrUnableToGenerateRandomIP = errors.New("unable to generate random IP")
 	ErrMustEnableVTX            = errors.New("This computer doesn't have VT-X/AMD-v enabled. Enabling it in the BIOS is mandatory")
@@ -578,6 +579,7 @@ func (d *Driver) Start() error {
 		log.Infof("Check network to re-create if needed...")
 
 		if hostOnlyAdapter, err = d.setupHostOnlyNetwork(d.MachineName); err != nil {
+			//nolint:staticcheck // ST1005: error strings should not be capitalized
 			return fmt.Errorf("Error setting up host only network on machine start: %s", err)
 		}
 	}
@@ -591,8 +593,10 @@ func (d *Driver) Start() error {
 
 		if err := d.vbm("startvm", d.MachineName, "--type", d.UIType); err != nil {
 			if lines, readErr := d.readVBoxLog(); readErr == nil && len(lines) > 0 {
+				//nolint:staticcheck // ST1005: error strings should not be capitalized
 				return fmt.Errorf("Unable to start the VM: %s\nDetails: %s", err, lines[len(lines)-1])
 			}
+			//nolint:staticcheck // ST1005: error strings should not be capitalized
 			return fmt.Errorf("Unable to start the VM: %s", err)
 		}
 	case state.Paused:
@@ -608,6 +612,7 @@ func (d *Driver) Start() error {
 		// Verify that VT-X is not disabled in the started VM
 		vtxIsDisabled, err := d.IsVTXDisabledInTheVM()
 		if err != nil {
+			//nolint:staticcheck // ST1005: error strings should not be capitalized
 			return fmt.Errorf("Checking if hardware virtualization is enabled failed: %s", err)
 		}
 
@@ -666,6 +671,7 @@ func (d *Driver) Start() error {
 	d.sleeper.Sleep(5 * time.Second)
 
 	if err := d.vbm("startvm", d.MachineName, "--type", d.UIType); err != nil {
+		//nolint:staticcheck // ST1005: error strings should not be capitalized
 		return fmt.Errorf("Unable to start the VM: %s", err)
 	}
 
@@ -709,10 +715,12 @@ func (d *Driver) Stop() error {
 // Restart restarts a machine which is known to be running.
 func (d *Driver) Restart() error {
 	if err := d.Stop(); err != nil {
+		//nolint:staticcheck // ST1005: error strings should not be capitalized
 		return fmt.Errorf("Problem stopping the VM: %s", err)
 	}
 
 	if err := d.Start(); err != nil {
+		//nolint:staticcheck // ST1005: error strings should not be capitalized
 		return fmt.Errorf("Problem starting the VM: %s", err)
 	}
 
@@ -786,6 +794,7 @@ func (d *Driver) getHostOnlyMACAddress() (string, error) {
 	re := regexp.MustCompile(`(?m)^hostonlyadapter([\d]+)`)
 	groups := re.FindStringSubmatch(stdout)
 	if len(groups) < 2 {
+		//nolint:staticcheck // ST1005: error strings should not be capitalized
 		return "", errors.New("Machine does not have a host-only adapter")
 	}
 
@@ -794,6 +803,7 @@ func (d *Driver) getHostOnlyMACAddress() (string, error) {
 	re = regexp.MustCompile(fmt.Sprintf("(?m)^macaddress%s=\"(.*)\"", adapterNumber))
 	groups = re.FindStringSubmatch(stdout)
 	if len(groups) < 2 {
+		//nolint:staticcheck // ST1005: error strings should not be capitalized
 		return "", fmt.Errorf("Could not find MAC address for adapter %v", adapterNumber)
 	}
 
@@ -831,6 +841,7 @@ func (d *Driver) parseIPForMACFromIPAddr(ipAddrOutput string, macAddress string)
 		}
 	}
 
+	//nolint:staticcheck // ST1005: error strings should not be capitalized
 	return "", fmt.Errorf("Could not find matching IP for MAC address %v", macAddress)
 }
 
@@ -1023,7 +1034,7 @@ func getAvailableTCPPort(port int) (int, error) {
 		port = 0 // Throw away the port hint before trying again
 		time.Sleep(1 * time.Second)
 	}
-	return 0, fmt.Errorf("unable to allocate tcp port")
+	return 0, errors.New("unable to allocate tcp port")
 }
 
 // Setup a NAT port forwarding entry.

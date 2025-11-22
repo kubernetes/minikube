@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/mcnflag"
@@ -159,7 +161,7 @@ func (d *Driver) GetURL() (string, error) {
 func (d *Driver) GetState() (state.State, error) {
 	stdout, err := cmdOut("(", "Hyper-V\\Get-VM", d.MachineName, ").state")
 	if err != nil {
-		return state.None, fmt.Errorf("Failed to find the VM status")
+		return state.None, errors.New("Failed to find the VM status")
 	}
 
 	resp := parseLines(stdout)
@@ -320,11 +322,11 @@ func (d *Driver) chooseVirtualSwitch() (string, error) {
 		// prefer Default Switch over external switches
 		switches, err := getHyperVSwitches([]string{fmt.Sprintf("Where-Object {($_.SwitchType -eq 'External') -or ($_.Id -eq '%s')}", defaultSwitchID), "Sort-Object -Property SwitchType"})
 		if err != nil {
-			return "", fmt.Errorf("unable to get available hyperv switches")
+			return "", errors.New("unable to get available hyperv switches")
 		}
 
 		if len(switches) < 1 {
-			return "", fmt.Errorf("no External vswitch nor Default Switch found. A valid vswitch must be available for this command to run. Check https://docs.docker.com/machine/drivers/hyper-v/")
+			return "", errors.New("no External vswitch nor Default Switch found. A valid vswitch must be available for this command to run. Check https://docs.docker.com/machine/drivers/hyper-v/")
 		}
 
 		return switches[0].Name, nil
@@ -333,7 +335,7 @@ func (d *Driver) chooseVirtualSwitch() (string, error) {
 	// prefer external switches (using descending order)
 	switches, err := getHyperVSwitches([]string{fmt.Sprintf("Where-Object {$_.Name -eq '%s'}", d.VSwitch), "Sort-Object -Property SwitchType -Descending"})
 	if err != nil {
-		return "", fmt.Errorf("unable to get available hyperv switches")
+		return "", errors.New("unable to get available hyperv switches")
 	}
 
 	if len(switches) < 1 {
@@ -460,7 +462,7 @@ func (d *Driver) GetIP() (string, error) {
 
 	resp := parseLines(stdout)
 	if len(resp) < 1 {
-		return "", fmt.Errorf("IP not found")
+		return "", errors.New("IP not found")
 	}
 
 	return resp[0], nil
