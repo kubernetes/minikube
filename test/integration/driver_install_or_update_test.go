@@ -83,7 +83,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 			t.Skipf("password required to execute 'sudo', skipping remaining test")
 		}
 
-		err = auxdriver.InstallOrUpdate("hyperkit", dir, newerVersion, false, true)
+		err = auxdriver.InstallOrUpdate("hyperkit", dir, false, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}

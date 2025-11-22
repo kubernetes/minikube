@@ -535,10 +535,7 @@ func warnAboutMultiNodeCNI() {
 }
 
 func updateDriver(driverName string) {
-	v, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := auxdriver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(flags.Interactive), viper.GetBool(autoUpdate)); err != nil {
+	if err := auxdriver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), viper.GetBool(flags.Interactive), viper.GetBool(autoUpdate)); err != nil {
 		if errors.Is(err, auxdriver.ErrAuxDriverVersionCommandFailed) {
 			exit.Error(reason.DrvAuxNotHealthy, "Aux driver "+driverName, err)
 		}
