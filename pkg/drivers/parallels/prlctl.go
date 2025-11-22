@@ -1,3 +1,5 @@
+//go:build darwin
+
 /*
 Copyright 2022 The Kubernetes Authors All rights reserved.
 
@@ -95,6 +97,7 @@ func prlctlOutErr(args ...string) (string, string, error) {
 	return runCmd(prlctlCmd, args, errPrlctlNotFound)
 }
 
+//nolint:unused
 func prlsrvctl(args ...string) error {
 	_, _, err := runCmd(prlsrvctlCmd, args, errPrlsrvctlNotFound)
 	return err
