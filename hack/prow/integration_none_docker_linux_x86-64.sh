@@ -81,9 +81,9 @@ if [[ $(crictl --version) != *"$CRICTL_VERSION"* ]]; then
 fi
 
 # cni-plugins is required for Kubernetes v1.24+ with none driver
-pushd ../jenkins/installers >/dev/null
-./check_install_cni_plugins.sh
-popd >/dev/null
+ech $pwd
+./hack/jenkins/installers/check_install_cni_plugins.sh
+
 
 # by default, prow jobs run in root, so we must switch to a non-root user to run docker driver
 source ./hack/prow/common.sh 
