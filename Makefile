@@ -54,8 +54,6 @@ COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
 COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO}-dirty","${COMMIT_NO}")
 COMMIT_SHORT = $(shell git rev-parse --short HEAD 2> /dev/null || true)
 COMMIT_NOQUOTES := $(patsubst "%",%,$(COMMIT))
-# source code for image: https://github.com/neilotoole/xcgo
-HYPERKIT_BUILD_IMAGE ?= quay.io/nirsof/xcgo:jammy-v2
 
 # NOTE: "latest" as of 2021-02-06. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
@@ -133,7 +131,6 @@ MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/
 PROVISIONER_LDFLAGS := "-X k8s.io/minikube/pkg/storage.version=$(STORAGE_PROVISIONER_TAG) -s -w -extldflags '-static'"
 
 MINIKUBEFILES := ./cmd/minikube/
-HYPERKIT_FILES := ./cmd/drivers/hyperkit
 STORAGE_PROVISIONER_FILES := ./cmd/storage-provisioner
 KVM_DRIVER_FILES := ./cmd/drivers/kvm/
 
@@ -161,9 +158,6 @@ GOTEST_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep _test
 ADDON_FILES = $(shell find "deploy/addons" -type f | grep -v "\.go")
 TRANSLATION_FILES = $(shell find "translations" -type f | grep -v "\.go")
 ASSET_FILES = $(ADDON_FILES) $(TRANSLATION_FILES)
-
-# hyperkit ldflags
-HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/hyperkit.gitCommitID=$(COMMIT)
 
 # autopush artefacts
 AUTOPUSH ?=
@@ -357,14 +351,7 @@ test-pkg/%: ## Trigger packaging test
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross drivers e2e-cross cross-tars exotic retro out/gvisor-addon ## Build all different minikube components
-
-# After https://github.com/kubernetes/minikube/issues/19959 is fixed kvm2-arm64 can be added back
-.PHONY: drivers
-drivers: docker-machine-driver-hyperkit ## Build external drivers
-
-.PHONY: docker-machine-driver-hyperkit
-docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hyperkit driver
+all: cross e2e-cross cross-tars exotic retro out/gvisor-addon ## Build all different minikube components
 
 .PHONY: integration
 integration: out/minikube$(IS_EXE) ## Trigger minikube integration test, logs to ./out/testout_COMMIT.txt
