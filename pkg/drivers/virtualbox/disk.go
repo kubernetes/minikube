@@ -145,6 +145,7 @@ func getVMDiskInfo(name string, vbox VBoxManager) (*VirtualDisk, error) {
 			disk.Path = val
 		case "SATA-ImageUUID-1-0":
 			disk.UUID = val
+		default:
 		}
 
 		return nil

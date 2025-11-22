@@ -30,6 +30,7 @@ import (
 
 var powershell string
 
+//nolint:staticcheck // ST1005: error strings should not be capitalized
 var (
 	ErrPowerShellNotFound = errors.New("Powershell was not found in the path")
 	ErrNotAdministrator   = errors.New("Hyper-v commands have to be run as an Administrator")
