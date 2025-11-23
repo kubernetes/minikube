@@ -39,7 +39,6 @@ require (
 	github.com/juju/mutex/v2 v2.0.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/klauspost/cpuid v1.2.0
-	github.com/machine-drivers/docker-machine-driver-vmware v0.1.5
 	github.com/mattbaird/jsonpatch v0.0.0-20200820163806-098863c1fc24
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/go-ps v1.0.0
@@ -258,5 +257,4 @@ require (
 replace (
 	github.com/Parallels/docker-machine-parallels/v2 => github.com/minikube-machine/machine-driver-parallels/v2 v2.0.2-0.20240730142131-ada9375ea417
 	github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20251109100456-3b479dcea7a3
-	github.com/machine-drivers/docker-machine-driver-vmware => github.com/minikube-machine/machine-driver-vmware v0.1.6-0.20230701123042-a391c48b14d5
 )
