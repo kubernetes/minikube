@@ -35,7 +35,7 @@ var deployers = map[string]func(string) deployer.MiniTestDeployer{
 }
 var testers = map[string]tester.MiniTestTester{
 	"kvm-docker-linux-amd64-integration":  &tester.KVMDockerLinuxAmd64IntegrationTester{},
-	"none-docker-linux-amd64-integration": &tester.KVMDockerLinuxAmd64IntegrationTester{},
+	"none-docker-linux-amd64-integration": &tester.NoneDockerLinuxAmd64IntegrationTester{},
 }
 
 func main() {
