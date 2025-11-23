@@ -308,3 +308,5 @@ func propagateDockerContextToEnv() {
 		os.Setenv("DOCKER_HOST", dockerEPMeta.Host)
 	}
 }
+
+//added for testing purposes
