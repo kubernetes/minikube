@@ -68,7 +68,3 @@ func setVmwareCmd(cmd string) string {
 	windowsInstallDir := value
 	return filepath.Join(windowsInstallDir, cmd)
 }
-
-func getShareDriveAndName() (string, string, string) {
-	return "Users", os.Getenv("PUBLIC"), "/hosthome"
-}
