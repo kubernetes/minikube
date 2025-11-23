@@ -24,7 +24,7 @@ CONTAINER_RUNTIME="docker"
 # in prow, if you want libvirtd to be run, you have to start a privileged container as root
 EXTRA_START_ARGS="" 
 EXTRA_TEST_ARGS=""
-JOB_NAME="KVM_Docker_Linux_X86_64"
+JOB_NAME="KVM_Docker_Linux_X86-64"
 
 
 # install docker if not present

@@ -23,7 +23,7 @@ DRIVER="docker"
 CONTAINER_RUNTIME="docker"
 EXTRA_START_ARGS="" 
 EXTRA_TEST_ARGS=""
-JOB_NAME="Docker_docker_Linux_X86_64"
+JOB_NAME="Docker_docker_Linux_X86-64"
 
 #  marking all directories ('*') as trusted, since .git belongs to root, not minikube  user
 git config --global --add safe.directory '*'
