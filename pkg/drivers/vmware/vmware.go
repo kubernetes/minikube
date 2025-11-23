@@ -38,7 +38,3 @@ func SetUmask() {
 func setVmwareCmd(cmd string) string {
 	return ""
 }
-
-func getShareDriveAndName() (string, string, string) {
-	return "", "", ""
-}
