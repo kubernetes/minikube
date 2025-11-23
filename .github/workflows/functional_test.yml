@@ -305,7 +305,7 @@ jobs:
         shell: bash
         if: matrix.driver == 'none'
         run: |
-          CNI_PLUGIN_VERSION="v1.7.1"
+          CNI_PLUGIN_VERSION="v1.8.0"
           CNI_PLUGIN_TAR="cni-plugins-linux-amd64-$CNI_PLUGIN_VERSION.tgz"
           CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"
           curl -LO "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/$CNI_PLUGIN_TAR"
