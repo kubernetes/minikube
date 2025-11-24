@@ -66,7 +66,7 @@ func legacyVersion() string {
 	// Should be a version from the last 6 months
 	// note: Test*BinaryUpgrade require minikube v1.22+ to satisfy newer containerd config structure
 	// note: TestMissingContainerUpgrade requires minikube v1.26.0+ where we copy over initial containerd config in kicbase via deploy/kicbase/Dockerfile
-	version := "v1.32.0" // Dec 11, 2024
+	version := "v1.35.0" // Jan 15, 2025
 	return version
 }
 
