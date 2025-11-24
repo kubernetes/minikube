@@ -14,21 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -e
 set -x
-TARGET_SCRIPT=$1
-# run the target script with minikube user
-./hack/prow/util/run_with_minikube_user.sh "$TARGET_SCRIPT"
-result=$?
-# collect the logs as root user
-echo "test finished with exit code $result"
 
-items=("testout.txt" "test.json" "junit-unit.xml" "test.html" "test_summary.json")
-for item in "${items[@]}"; do
-  if [ -f "${item}" ]; then
-    echo "Collecting ${item} to ${ARTIFACTS}/${item}"
-    cp "${item}" "${ARTIFACTS}/${item}"
-  else
-    echo "Warning: ${item} not found, skipping"
-  fi
-done
-exit $result
+OS="linux"
+ARCH="amd64"
+DRIVER="docker"
+CONTAINER_RUNTIME="containerd"
+EXTRA_START_ARGS="" 
+EXTRA_TEST_ARGS=""
+JOB_NAME="Docker_Containerd_Linux_x86-64"
+
+git config --global --add safe.directory '*'
+COMMIT=$(git rev-parse HEAD)
+MINIKUBE_LOCATION=$COMMIT
+
+
+# when docker is the driver, we run integration tests directly in prow cluster
+# by default, prow jobs run in root, so we must switch to a non-root user to run docker driver
+
+
+source ./hack/prow/common.sh 
