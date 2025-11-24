@@ -425,7 +425,7 @@
 	"Istio needs {{.minCPUs}} CPUs -- your configuration only allocates {{.cpus}} CPUs": "Istio benötigt {{.minCPUs}} CPUs -- Ihre Konfiguration reserviert nur {{.cpus}} CPUs",
 	"Istio needs {{.minMem}}MB of memory -- your configuration only allocates {{.memory}}MB": "Istio benötigt {{.minMem}}MB Speicher -- Ihre Konfiguration reserviert nur {{.memory}}MB",
 	"It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.": "Es scheint, dass Sie GCE verwenden, was bedeutet, dass Authentifizierung auch ohne die GCP Auth Addons funktionieren sollte. Wenn Sie dennoch mittels Credential-Datei authentifizieren möchten, verwenden Sie --force.",
-	"It's very likely that you have an internet issue. Please ensure that you can access the internet at least via HTTP, directly or with proxy. Currently your proxy configure is:": "",
+	"It's very likely that you have an internet issue. Please ensure that you can access the internet at least via HTTP, directly or with proxy. Currently your proxy configuration is:": "",
 	"Kept for backward compatibility, value is ignored.": "",
 	"Kicbase images have not been deleted. To delete images run:": "Die Kicbase Images wurden nicht gelöscht. Um sie zu löschen, starten Sie:",
 	"Kill the mount process spawned by minikube start": "Töte den Mount-Prozess, der durch minikube start gestartet wurde",
