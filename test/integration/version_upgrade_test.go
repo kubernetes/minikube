@@ -62,7 +62,7 @@ func installRelease(version string) (f *os.File, err error) {
 	return tf, nil
 }
 
-func legacyVersion() string {
+func legacyMinikubeVersion() string {
 	// Should be a version from the last 6 months
 	// note: Test*BinaryUpgrade require minikube v1.22+ to satisfy newer containerd config structure
 	// note: TestMissingContainerUpgrade requires minikube v1.26.0+ where we copy over initial containerd config in kicbase via deploy/kicbase/Dockerfile
@@ -88,7 +88,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 
 	defer CleanupWithLogs(t, profile, cancel)
 
-	desiredLegacyVersion := legacyVersion()
+	desiredLegacyVersion := legacyMinikubeVersion()
 	tf, err := installRelease(desiredLegacyVersion)
 	if err != nil {
 		t.Fatalf("%s release installation failed: %v", desiredLegacyVersion, err)
@@ -146,7 +146,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 
 	defer CleanupWithLogs(t, profile, cancel)
 
-	desiredLegacyVersion := legacyVersion()
+	desiredLegacyVersion := legacyMinikubeVersion()
 	var tf *os.File
 	t.Run("Setup", func(t *testing.T) {
 		var err error
@@ -295,7 +295,7 @@ func TestMissingContainerUpgrade(t *testing.T) {
 
 	defer CleanupWithLogs(t, profile, cancel)
 
-	legacyVersion := legacyVersion()
+	legacyVersion := legacyMinikubeVersion()
 
 	tf, err := installRelease(legacyVersion)
 	if err != nil {
