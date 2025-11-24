@@ -13,7 +13,7 @@ jobs:
   benchmark:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
       - name: Checkout submodules
         run: git submodule update --init
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
