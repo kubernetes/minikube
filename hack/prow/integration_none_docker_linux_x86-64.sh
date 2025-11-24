@@ -29,8 +29,6 @@ git config --global --add safe.directory '*'
 COMMIT=$(git rev-parse HEAD)
 MINIKUBE_LOCATION=$COMMIT
 
-# install docker if not present
-ARCH="$ARCH" hack/prow/installer/check_install_docker.sh || true
 
 # conntrack is required for Kubernetes 1.18 and higher for none driver
 if ! conntrack --version &>/dev/null; then
