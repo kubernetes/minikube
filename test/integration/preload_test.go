@@ -57,8 +57,8 @@ func TestPreload(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
-	// re-start the cluster and check if image is preserved
-	startArgs = []string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "-v=1", "--wait=true"}
+	// re-start the cluster and check if image is preserved with enabled preload
+	startArgs = []string{"start", "-p", profile, "--preload=true", "--alsologtostderr", "-v=1", "--wait=true"}
 	startArgs = append(startArgs, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
