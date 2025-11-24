@@ -30,7 +30,7 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         if: ${{ steps.bumpInspektorGadget.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
+        uses: peter-evans/create-pull-request@84ae59a2cdc2258d6fa0732dd66352dddae2a412
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Addon inspektor-gadget: Update inspektor-gadget image from ${{ steps.bumpInspektorGadget.outputs.OLD_VERSION }} to ${{ steps.bumpInspektorGadget.outputs.NEW_VERSION }}'
