@@ -17,7 +17,7 @@ jobs:
       run:
         working-directory: ./image-syncer
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
         with:
           repository: denverdino/image-syncer
           path: ./image-syncer
