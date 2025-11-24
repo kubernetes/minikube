@@ -383,6 +383,7 @@
 	"Istio needs {{.minCPUs}} CPUs -- your configuration only allocates {{.cpus}} CPUs": "Istio memerlukan {{.minCPUs}} CPU -- konfigurasi anda hanya mengalokasikan {{.cpus}} CPU",
 	"Istio needs {{.minMem}}MB of memory -- your configuration only allocates {{.memory}}MB": "Istio membutuhkan {{.minMem}}MB memori -- konfigurasi anda hanya mengalokasikan {{.memory}}MB",
 	"It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.": "Sepertinya anda menjalankan di GCE, yang berarti autentikasi seharusnya berfungsi tanpa addon GCP Auth. Jika anda tetap ingin melakukan autentikasi menggunakan file kredensial, gunakan flag --force.",
+	"It's very likely that you have an internet issue. Please ensure that you can access the internet at least via HTTP, directly or with proxy. Currently your proxy configuration is:": "",
 	"It's very likely that you have an internet issue. Please ensure that you can access the internet at least via HTTP, directly or with proxy. Currently your proxy configure is:": "Kemungkinan besar anda mengalami masalah internet. Pastikan anda dapat mengakses internet setidaknya melalui HTTP, baik secara langsung maupun dengan proxy. Konfigurasi proxy anda saat ini adalah:",
 	"Kept for backward compatibility, value is ignored.": "",
 	"Kicbase images have not been deleted. To delete images run:": "Image Kicbase belum dihapus. Untuk menghapus image, jalankan:",
