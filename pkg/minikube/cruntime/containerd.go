@@ -224,6 +224,14 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	return nil
 }
 
+// setContainerdUlimit sets LimitNOFILE for containerd to match docker's default ulimit
+func setContainerdUlimit(cr CommandRunner) error {
+	// Create systemd drop-in override to set LimitNOFILE=1048576
+	cmd := exec.Command("sh", "-c", `sudo mkdir -p /etc/systemd/system/containerd.service.d && printf '[Service]\nLimitNOFILE=1048576\n' | sudo tee /etc/systemd/system/containerd.service.d/override.conf > /dev/null && sudo systemctl daemon-reload`)
+	_, err := cr.RunCmd(cmd)
+	return err
+}
+
 // Enable idempotently enables containerd on a host
 // It is also called by docker.Enable() - if bound to containerd, to enforce proper containerd configuration completed by service restart.
 func (r *Containerd) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
@@ -249,6 +257,13 @@ func (r *Containerd) Enable(disOthers bool, cgroupDriver string, inUserNamespace
 	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, cgroupDriver, r.InsecureRegistry, inUserNamespace); err != nil {
 		return err
 	}
+
+	// Set LimitNOFILE for containerd to match docker's default ulimit (1048576)
+	// This ensures consistent file descriptor limits across container runtimes
+	if err := setContainerdUlimit(r.Runner); err != nil {
+		klog.Warningf("failed to set containerd ulimit: %v", err)
+	}
+
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
 	}
