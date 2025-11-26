@@ -102,7 +102,6 @@ func (d *Driver) Create() error {
 	}
 
 	staticIP := d.NodeConfig.StaticIP
-
 	gateway, err := oci.CreateNetworkWithIPFamily(
 		d.OCIBinary,
 		networkName,

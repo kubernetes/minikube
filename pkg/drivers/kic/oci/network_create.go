@@ -221,7 +221,6 @@ func CreateNetworkWithIPFamily(ociBin, networkName, subnet, subnetv6, staticIP, 
 			klog.Infof("%s network %s %s created", ociBin, networkName, p.CIDR)
 			return gw, nil
 		}
-		// don't retry if error is not address is taken
 		if !errors.Is(err, ErrNetworkSubnetTaken) && !errors.Is(err, ErrNetworkGatewayTaken) {
 			klog.Errorf("error while trying to create %s network %s %s: %v", ociBin, networkName, p.CIDR, err)
 			return nil, fmt.Errorf("un-retryable: %w", err)
