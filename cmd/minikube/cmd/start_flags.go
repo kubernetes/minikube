@@ -597,7 +597,6 @@ func normalizeAndValidateIPFamily(cc *config.ClusterConfig) {
 				exit.Message(reason.Usage, "Failed to query Docker daemon info: {{.e}}", out.V{"e": err})
 			}
 		}
-
 		// On non-Linux hosts we assume Docker Desktop; on Linux it's a native Engine
 		// unless DockerOS explicitly says "Docker Desktop".
 		isLinuxDaemon := runtime.GOOS == "linux" && si.DockerOS != "Docker Desktop"
@@ -609,7 +608,6 @@ func normalizeAndValidateIPFamily(cc *config.ClusterConfig) {
 			}
 			out.WarningT("Dual-stack on Docker Desktop may be limited. For full IPv6 support, use a Linux Docker daemon.")
 		}
-
 		// Friendly reminder about enabling daemon IPv6 (actual failure will occur during
 		// network create if the daemon/network really blocks IPv6 bridge networks).
 		out.Styled(style.Tip,
