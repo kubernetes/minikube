@@ -632,12 +632,19 @@ func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, cluste
 		if hostIP, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, h.DriverName); err != nil {
 			exit.Message(reason.DrvCPEndpoint, fmt.Sprintf("failed to construct cluster server address: %v", err), out.V{"profileArg": fmt.Sprintf("--profile=%s", clusterName)})
 		}
-	}
-	addr := fmt.Sprintf("https://%s", net.JoinHostPort(hostIP, strconv.Itoa(port)))
 
-	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.ReplaceAll(addr, hostIP, cc.KubernetesConfig.APIServerName)
+		if hostIP == "" {
+			hostIP = "localhost"
+		}
+
 	}
+
+	// Build address *after* picking the final host (don’t string-replace inside a bracketed IPv6 literal).
+	hostForAddr := hostIP
+	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
+		hostForAddr = cc.KubernetesConfig.APIServerName
+	}
+	addr := "https://" + net.JoinHostPort(hostForAddr, strconv.Itoa(port))
 
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
@@ -677,27 +684,24 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	if driver.IsKIC(cfg.Driver) {
 		containerName := config.MachineName(*cfg, *node)
 
-		// Pick the right OCI binary for the KIC driver
-		ociBin := "docker"
-		if cfg.Driver == "podman" {
-			ociBin = "podman"
-		}
-
-		ipv4, ipv6, cipErr := oci.ContainerIPs(ociBin, containerName)
+		_, ipv6, cipErr := oci.ContainerIPs(oci.Docker, containerName)
 		if cipErr != nil {
-			klog.Warningf("failed to get container IPs for %q via %s, falling back to host IP %q: %v",
-				containerName, ociBin, ip, cipErr)
-		} else {
-			if ipv4 != "" {
-				// prefer the container IPv4 for node.IP
-				node.IP = ipv4
-			} else {
-				// keep whatever validateNetwork gave us as a fallback
-				node.IP = ip
-			}
+			// Not fatal – behaviour stays as today if we can't read the IPv6.
+			klog.Warningf("failed to get container IPv6 for %q: %v", containerName, cipErr)
+		} else if ipv6 != "" {
+			// Update the node pointer we were given …
 			node.IPv6 = ipv6
-			klog.Infof("updated node %q IPs from container: ipv4=%q ipv6=%q",
-				node.Name, node.IP, node.IPv6)
+
+			// …and also update the copy inside cfg.Nodes, in case 'node'
+			// is a separate copy taken by the caller.
+			for i := range cfg.Nodes {
+				if cfg.Nodes[i].Name == node.Name {
+					cfg.Nodes[i].IPv6 = ipv6
+					break
+				}
+			}
+
+			klog.Infof("updated node %q IPv6 from container: ipv6=%q", node.Name, ipv6)
 		}
 	}
 

@@ -17,9 +17,12 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"net"
+	"strings"
 
 	"github.com/pkg/errors"
+	mkconstants "k8s.io/minikube/pkg/minikube/constants"
 )
 
 // DefaultAdmissionControllers are admission controllers we default to
@@ -35,14 +38,76 @@ var DefaultAdmissionControllers = []string{
 	"ResourceQuota",
 }
 
-// ServiceClusterIP returns the first usable IP of the Service CIDR (network + 1) for either IPv4 or IPv6.
+// ServiceClusterIP returns a "well-known" Service IP from the Service CIDR.
+//
+//   - If serviceCIDR is empty, DefaultServiceCIDR is used.
+//   - If multiple CIDRs are provided (comma-separated), IPv4 is preferred for
+//     backward compatibility; otherwise the first non-empty CIDR is used.
+//   - For IPv4, we return the first usable IP after the network address.
+//   - For IPv6, we return the first IP in the subnet (or +1 on the last byte –
+//     the exact value is not important as long as it's inside the CIDR).
 func ServiceClusterIP(serviceCIDR string) (net.IP, error) {
-	base, _, err := net.ParseCIDR(serviceCIDR)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing default service cidr")
+	if serviceCIDR == "" {
+		serviceCIDR = mkconstants.DefaultServiceCIDR
 	}
-	ip := normalizeIP(base)
-	return addToIP(ip, 1), nil
+
+	cidr := pickPrimaryServiceCIDR(serviceCIDR)
+	cidr = strings.TrimSpace(cidr)
+	if cidr == "" {
+		return nil, fmt.Errorf("empty service CIDR")
+	}
+
+	_, ipNet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return nil, err
+	}
+
+	// Copy to avoid mutating ipNet.IP
+	ip := make(net.IP, len(ipNet.IP))
+	copy(ip, ipNet.IP)
+
+	// IPv4: bump last octet (avoid the network address itself).
+	if v4 := ip.To4(); v4 != nil {
+		v4[3]++
+		return v4, nil
+	}
+
+	// IPv6: just bump the last byte – stays within the subnet for normal masks.
+	if len(ip) == 0 {
+		return nil, fmt.Errorf("parsed service CIDR %q has empty IP", cidr)
+	}
+	ip[len(ip)-1]++
+	return ip, nil
+}
+
+// pickPrimaryServiceCIDR chooses which CIDR to use when a comma-separated list
+// is provided. It prefers IPv4 when present, otherwise the first non-empty part.
+func pickPrimaryServiceCIDR(serviceCIDR string) string {
+	parts := strings.Split(serviceCIDR, ",")
+	if len(parts) == 1 {
+		return strings.TrimSpace(parts[0])
+	}
+
+	var firstNonEmpty string
+	var firstV4 string
+
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if firstNonEmpty == "" {
+			firstNonEmpty = p
+		}
+		if strings.Contains(p, ".") && firstV4 == "" {
+			firstV4 = p
+		}
+	}
+
+	if firstV4 != "" {
+		return firstV4
+	}
+	return firstNonEmpty
 }
 
 func DNSIP(serviceCIDR string) (net.IP, error) {

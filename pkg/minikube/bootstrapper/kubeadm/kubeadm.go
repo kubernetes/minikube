@@ -39,6 +39,7 @@ import (
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -296,6 +297,28 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig, options *run.CommandOption
 		klog.Warningf("apiserver tunnel failed: %v", err)
 	}
 
+	// Ensure system Services (e.g., kube-dns) have correct IP families immediately after init.
+	cp, err := config.ControlPlane(cfg)
+	if err != nil {
+		klog.Warningf("get control-plane node failed: %v", err)
+	} else {
+		hostname, _, port, derr := driver.ControlPlaneEndpoint(&cfg, &cp, cfg.Driver)
+		if derr != nil {
+			klog.Warningf("resolve control-plane endpoint failed: %v", derr)
+		} else {
+			client, cerr := k.client(hostname, port)
+			if cerr != nil {
+				klog.Warningf("build k8s client failed: %v", cerr)
+			} else {
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+				defer cancel()
+				if err := k.ensureSystemServicesIPFamilies(ctx, client, desiredFamilyFromCfg(cfg)); err != nil {
+					klog.Warningf("ensureSystemServicesIPFamilies failed: %v", err)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -395,6 +418,43 @@ func (k *Bootstrapper) unpause(cfg config.ClusterConfig) error {
 	return nil
 }
 
+// ensureControlPlaneAlias adds control-plane.minikube.internal -> IP mapping in /etc/hosts
+func (k *Bootstrapper) ensureControlPlaneAlias(cfg config.ClusterConfig) error {
+	family := strings.ToLower(cfg.KubernetesConfig.IPFamily)
+
+	// HA: use the VIP that kube-vip sets
+	if config.IsHA(cfg) {
+		if ip := net.ParseIP(cfg.KubernetesConfig.APIServerHAVIP); ip != nil {
+			return machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip)
+		}
+		return nil
+	}
+
+	// Single-CP: pick the right address based on IP family
+	cp, err := config.ControlPlane(cfg)
+	if err != nil {
+		return errors.Wrap(err, "get control-plane node")
+	}
+
+	// For ipv6-only or dual, add AAAA
+	if family == "ipv6" || family == "dual" {
+		if ip6 := net.ParseIP(cp.IPv6); ip6 != nil {
+			if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip6); err != nil {
+				return errors.Wrap(err, "add control-plane alias (ipv6)")
+			}
+		}
+	}
+	// For ipv4-only or dual, add A
+	if family != "ipv6" {
+		if ip4 := net.ParseIP(cp.IP); ip4 != nil {
+			if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip4); err != nil {
+				return errors.Wrap(err, "add control-plane alias (ipv4)")
+			}
+		}
+	}
+	return nil
+}
+
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig, options *run.CommandOptions) error {
 	start := time.Now()
@@ -430,6 +490,10 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig, options *run.Comma
 	conf := constants.KubeadmYamlPath
 	if _, err := k.c.RunCmd(exec.Command("sudo", "cp", conf+".new", conf)); err != nil {
 		return errors.Wrap(err, "cp")
+	}
+
+	if err := k.ensureControlPlaneAlias(cfg); err != nil {
+		klog.Warningf("could not ensure control-plane alias: %v", err)
 	}
 
 	err := k.init(cfg, options)
@@ -590,6 +654,10 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		adviseNodePressure(err, cfg.Name, cfg.Driver)
 		return errors.Wrap(err, "node pressure")
 	}
+
+	ctx2, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	_ = k.ensureSystemServicesIPFamilies(ctx2, client, desiredFamilyFromCfg(cfg))
 	return nil
 }
 
@@ -702,6 +770,13 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		return errors.Wrap(err, "system pods")
 	}
 
+	// Re-ensure IP families after restart/reconfigure as well.
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	if err := k.ensureSystemServicesIPFamilies(ctx, client, desiredFamilyFromCfg(cfg)); err != nil {
+		klog.Warningf("ensureSystemServicesIPFamilies (restart) failed: %v", err)
+	}
+
 	if err := kverify.NodePressure(client); err != nil {
 		adviseNodePressure(err, cfg.Name, cfg.Driver)
 	}
@@ -752,6 +827,17 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 	return nil
 }
 
+func advertiseIP(cc config.ClusterConfig, n config.Node) string {
+	switch strings.ToLower(cc.KubernetesConfig.IPFamily) {
+	case "ipv6":
+		if n.IPv6 != "" {
+			return n.IPv6
+		}
+	}
+	// default / ipv4 / dual: keep IPv4
+	return n.IP
+}
+
 // JoinCluster adds new node to an existing cluster.
 func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinCmd string) error {
 	// Join the control plane by specifying its token
@@ -764,7 +850,9 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 		// ref: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-join/#options
 		// "If the node should host a new control plane instance, the IP address the API Server will advertise it's listening on. If not set the default network interface will be used."
 		// "If the node should host a new control plane instance, the port for the API Server to bind to."
-		joinCmd += " --apiserver-advertise-address=" + n.IP +
+		// pick IPv6 for ipv6 clusters, otherwise IPv4
+		addr := advertiseIP(cc, n)
+		joinCmd += " --apiserver-advertise-address=" + addr +
 			" --apiserver-bind-port=" + strconv.Itoa(n.Port)
 	}
 
@@ -1005,18 +1093,45 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 
 	// add "control-plane.minikube.internal" dns alias
 	// note: needs to be called after APIServerHAVIP is set (in startPrimaryControlPlane()) and before kubeadm kicks off
-	cpIP := cfg.KubernetesConfig.APIServerHAVIP
-	if !config.IsHA(cfg) {
+
+	family := strings.ToLower(cfg.KubernetesConfig.IPFamily)
+
+	if config.IsHA(cfg) {
+		// For HA we already have APIServerHAVIP set appropriately by kube-vip generation
+		if ip := net.ParseIP(cfg.KubernetesConfig.APIServerHAVIP); ip != nil {
+			if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip); err != nil {
+				return errors.Wrap(err, "add HA control-plane alias")
+			}
+		}
+	} else {
 		cp, err := config.ControlPlane(cfg)
 		if err != nil {
 			return errors.Wrap(err, "get control-plane node")
 		}
-		cpIP = cp.IP
-	}
-	if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, net.ParseIP(cpIP)); err != nil {
-		return errors.Wrap(err, "add control-plane alias")
-	}
 
+		// ipv6-only → write AAAA; ipv4/dual → write A; dual → write both
+		if family == "ipv6" {
+			if ip6 := net.ParseIP(cp.IPv6); ip6 != nil {
+				if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip6); err != nil {
+					return errors.Wrap(err, "add control-plane alias (ipv6)")
+				}
+			}
+		} else {
+			if ip4 := net.ParseIP(cp.IP); ip4 != nil {
+				if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip4); err != nil {
+					return errors.Wrap(err, "add control-plane alias (ipv4)")
+				}
+			}
+			if family == "dual" {
+				if ip6 := net.ParseIP(cp.IPv6); ip6 != nil {
+					// add AAAA alongside A
+					if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip6); err != nil {
+						return errors.Wrap(err, "add control-plane alias (dual, ipv6)")
+					}
+				}
+			}
+		}
+	}
 	// "ensure" kubelet is started, intentionally non-fatal in case of an error
 	if err := sysinit.New(k.c).Start("kubelet"); err != nil {
 		klog.Errorf("Couldn't ensure kubelet is started this might cause issues (will continue): %v", err)
@@ -1235,4 +1350,98 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.ErrLn("")
 		return
 	}
+}
+
+// detectClusterFamily returns "dual" | "ipv6" | "ipv4" based on Node.Spec.PodCIDRs.
+func (k *Bootstrapper) detectClusterFamily(ctx context.Context, cs kubernetes.Interface) (string, error) {
+	nodes, err := cs.CoreV1().Nodes().List(ctx, meta.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+	if len(nodes.Items) == 0 {
+		return "", fmt.Errorf("no nodes found")
+	}
+	podCIDRs := nodes.Items[0].Spec.PodCIDRs
+	switch {
+	case len(podCIDRs) >= 2:
+		return "dual", nil
+	case len(podCIDRs) == 1 && strings.Contains(podCIDRs[0], ":"):
+		return "ipv6", nil
+	default:
+		return "ipv4", nil
+	}
+}
+
+func (k *Bootstrapper) patchServiceForFamily(ctx context.Context, cs kubernetes.Interface, ns, name, family string) error {
+	var patch []byte
+	switch family {
+	case "dual":
+		patch = []byte(`{"spec":{"ipFamilyPolicy":"PreferDualStack","ipFamilies":["IPv4","IPv6"]}}`)
+	case "ipv6":
+		patch = []byte(`{"spec":{"ipFamilyPolicy":"SingleStack","ipFamilies":["IPv6"]}}`)
+	default:
+		patch = []byte(`{"spec":{"ipFamilyPolicy":"SingleStack","ipFamilies":["IPv4"]}}`)
+	}
+	_, err := cs.CoreV1().Services(ns).Patch(ctx, name, types.MergePatchType, patch, meta.PatchOptions{})
+	return err
+}
+
+// desiredFamilyFromCfg returns "dual"|"ipv6"|"ipv4" from cfg, or "" if unknown.
+func desiredFamilyFromCfg(cfg config.ClusterConfig) string {
+	f := strings.ToLower(cfg.KubernetesConfig.IPFamily)
+	switch f {
+	case "dual", "ipv6", "ipv4":
+		return f
+	default:
+		return ""
+	}
+}
+
+// ensureSystemServicesIPFamilies waits for kube-dns Service and patches it to the right families.
+// Add more Services here if you want them defaulted too.
+func (k *Bootstrapper) ensureSystemServicesIPFamilies(ctx context.Context, cs kubernetes.Interface, family string) error {
+	// wait until kube-dns Service exists (kubeadm creates it)
+	if err := wait.PollUntilContextTimeout(ctx, 2*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+		_, err := cs.CoreV1().Services("kube-system").Get(ctx, "kube-dns", meta.GetOptions{})
+		return err == nil, nil
+	}); err != nil {
+		return fmt.Errorf("waiting for kube-dns service: %w", err)
+	}
+
+	// Prefer the configured family; if empty, fall back to kube-proxy config, then node CIDRs.
+	if family == "" {
+		if cm, err := cs.CoreV1().ConfigMaps("kube-system").Get(ctx, "kube-proxy", meta.GetOptions{}); err == nil {
+			// config key is usually "config.conf"; older variants used "kubeproxy.config"
+			if cfgTxt, ok := cm.Data["config.conf"]; ok {
+				if strings.Contains(cfgTxt, ",") && strings.Contains(cfgTxt, ":") {
+					family = "dual"
+				} else if strings.Contains(cfgTxt, ":") {
+					family = "ipv6"
+				} else {
+					family = "ipv4"
+				}
+			} else if cfgTxt, ok := cm.Data["kubeproxy.config"]; ok {
+				if strings.Contains(cfgTxt, ",") && strings.Contains(cfgTxt, ":") {
+					family = "dual"
+				} else if strings.Contains(cfgTxt, ":") {
+					family = "ipv6"
+				} else {
+					family = "ipv4"
+				}
+			}
+		}
+	}
+	if family == "" {
+		if f, _ := k.detectClusterFamily(ctx, cs); f != "" {
+			family = f
+		} else {
+			family = "ipv4"
+		}
+	}
+
+	if err := k.patchServiceForFamily(ctx, cs, "kube-system", "kube-dns", family); err != nil {
+		klog.Warningf("failed to patch kube-dns for %s: %v", family, err)
+		return err
+	}
+	return nil
 }
