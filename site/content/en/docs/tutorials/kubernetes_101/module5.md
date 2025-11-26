@@ -62,7 +62,7 @@ The change was applied, and we have 4 instances of the application available. Ne
 kubectl get pods -o wide
 ```
 
-There are 4 Pods now, with different IP addresses. The change was registered in the Deployment events log. The check that, use the describe command:
+There are 4 Pods now, with different IP addresses. The change was registered in the Deployment events log. To verify it, use the describe command:
 
 ```shell
 kubectl describe deployments/kubernetes-bootcamp
