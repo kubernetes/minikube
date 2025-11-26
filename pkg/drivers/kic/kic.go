@@ -95,14 +95,13 @@ func (d *Driver) Create() error {
 	if params.Memory != "0" {
 		params.Memory += "mb"
 	}
-
 	networkName := d.NodeConfig.Network
 	if networkName == "" {
 		networkName = d.NodeConfig.ClusterName
 	}
 
 	staticIP := d.NodeConfig.StaticIP
-
+	// NEW: create network with IPv6/dual awareness
 	gateway, err := oci.CreateNetworkWithIPFamily(
 		d.OCIBinary,
 		networkName,
@@ -115,15 +114,18 @@ func (d *Driver) Create() error {
 	if err != nil {
 		msg := "Unable to create dedicated network, this might result in cluster IP change after restart: {{.error}}"
 		args := out.V{"error": err}
-		if staticIP != "" || d.NodeConfig.StaticIPv6 != "" {
-			// If the user requested a static IP on either family, failing
-			// to create the dedicated network should be fatal.
+		if staticIP != "" {
+			// With a user-requested static IP we can’t safely fall back
+			// to the default bridge network.
 			exit.Message(reason.IfDedicatedNetwork, msg, args)
 		}
 		out.WarningT(msg, args)
+		// NOTE: Do NOT set params.Network here – we’ll fall back to Docker’s
+		// default bridge network.
 	} else {
-		// Only attach to the user-defined network when creation/reuse
-		// succeeded. For IPv6-only networks, gateway may legitimately be nil.
+		// Only attach to the dedicated network when creation succeeded.
+		// For IPv6-only clusters the gateway may be nil, but the network
+		// still exists and can be used.
 		params.Network = networkName
 	}
 
@@ -469,7 +471,11 @@ func (d *Driver) Remove() error {
 		return fmt.Errorf("expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
 	}
 
-	if err := oci.RemoveNetwork(d.OCIBinary, d.NodeConfig.ClusterName); err != nil {
+	networkName := d.NodeConfig.ClusterName
+	if d.NodeConfig.Network != "" {
+		networkName = d.NodeConfig.Network
+	}
+	if err := oci.RemoveNetwork(d.OCIBinary, networkName); err != nil {
 		klog.Warningf("failed to remove network (which might be okay) %s: %v", d.NodeConfig.ClusterName, err)
 	}
 	return nil

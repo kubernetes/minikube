@@ -656,7 +656,6 @@ func normalizeAndValidateIPFamily(cc *config.ClusterConfig) {
 		if si.DockerOS == "Docker Desktop" {
 			out.WarningT("IPv6/dual-stack on Docker Desktop may be limited. If you hit network create failures, try a native Linux daemon.")
 		}
-
 		// Friendly reminder about enabling daemon IPv6 (actual failure will occur during
 		// network create if the daemon/network really blocks IPv6 bridge networks).
 		out.Styled(style.Tip,

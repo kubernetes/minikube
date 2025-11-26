@@ -36,7 +36,12 @@ import (
 // defaultFirstSubnetAddr is a first subnet to be used on first kic cluster
 // it is one octet more than the one used by KVM to avoid possible conflict
 const defaultFirstSubnetAddr = "192.168.49.0"
-const defaultFirstSubnetAddrv6 = "fd00::/64"
+
+// defaultFirstSubnetAddrv6 is the first IPv6 subnet used for kic networks.
+// Avoid fd00::/64 because Docker's IPv6 pools (e.g. fixed-cidr-v6) often sit
+// under fd00::/xx and will trigger "Pool overlaps with other one on this
+// address space". Use a different ULA /64 instead.
+const defaultFirstSubnetAddrv6 = "fd01::/64"
 
 // name of the default bridge network, used to lookup the MTU (see #9528)
 const dockerDefaultBridge = "bridge"
@@ -176,11 +181,14 @@ func CreateNetworkWithIPFamily(ociBin, networkName, subnet, subnetv6, staticIP, 
 			return nil, fmt.Errorf("failed to create %s network %s (dual): %w", ociBin, networkName, lastErr)
 		}
 
-		// ----- IPv6-only (no IPv4 subnet) -----
 		args := append([]string{}, baseArgs...)
 		if subnetv6 != "" {
 			args = append(args, "--subnet", subnetv6)
 		}
+		// ipv6-only / “IPv6 + auto IPv4” branch:
+		//  - ipFamily == "ipv6"
+		//  - OR ipFamily == "dual" && staticIP == "" (Docker picks IPv4 range)
+		args = append(args, "--subnet", subnetv6)
 		if ociBin == Docker && bridgeInfo.mtu > 0 {
 			args = append(args, "-o", fmt.Sprintf("com.docker.network.driver.mtu=%d", bridgeInfo.mtu))
 		}
@@ -191,7 +199,7 @@ func CreateNetworkWithIPFamily(ociBin, networkName, subnet, subnetv6, staticIP, 
 		)
 
 		if _, err := runCmd(exec.Command(ociBin, args...)); err != nil {
-			klog.Warningf("failed to create %s network %q (ipv6-only): %v", ociBin, networkName, err)
+			klog.Warningf("failed to create %s network %q (ipv6/dual): %v", ociBin, networkName, err)
 			return nil, fmt.Errorf("create %s network %q: %w", ociBin, networkName, err)
 		}
 
@@ -223,7 +231,6 @@ func CreateNetworkWithIPFamily(ociBin, networkName, subnet, subnetv6, staticIP, 
 			klog.Infof("%s network %s %s created", ociBin, networkName, p.CIDR)
 			return gw, nil
 		}
-		// don't retry if error is not address is taken
 		if !errors.Is(err, ErrNetworkSubnetTaken) && !errors.Is(err, ErrNetworkGatewayTaken) {
 			klog.Errorf("error while trying to create %s network %s %s: %v", ociBin, networkName, p.CIDR, err)
 			return nil, fmt.Errorf("un-retryable: %w", err)

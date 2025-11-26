@@ -18,8 +18,10 @@ package util
 
 import (
 	"net"
+	"strings"
 
 	"github.com/pkg/errors"
+	mkconstants "k8s.io/minikube/pkg/minikube/constants"
 )
 
 // DefaultAdmissionControllers are admission controllers we default to
@@ -35,35 +37,92 @@ var DefaultAdmissionControllers = []string{
 	"ResourceQuota",
 }
 
-// ServiceClusterIP returns the first usable IP of the Service CIDR (network + 1) for either IPv4 or IPv6.
+// ServiceClusterIP returns a "well-known" Service IP from the Service CIDR.
+//
+//   - If serviceCIDR is empty, DefaultServiceCIDR is used.
+//   - If multiple CIDRs are provided (comma-separated), IPv4 is preferred for
+//     backward compatibility; otherwise the first non-empty CIDR is used.
+//   - For both IPv4 and IPv6, we return the first usable IP after the network address.
 func ServiceClusterIP(serviceCIDR string) (net.IP, error) {
-	ip, _, err := net.ParseCIDR(serviceCIDR)
+	if serviceCIDR == "" {
+		serviceCIDR = mkconstants.DefaultServiceCIDR
+	}
+
+	cidr := strings.TrimSpace(pickPrimaryServiceCIDR(serviceCIDR))
+	if cidr == "" {
+		return nil, errors.Errorf("empty service CIDR")
+	}
+
+	_, ipNet, err := net.ParseCIDR(cidr)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing default service cidr")
+		return nil, errors.Wrap(err, "parsing service CIDR")
 	}
-	base := normalizeIP(ip)
+
+	base := normalizeIP(ipNet.IP)
 	if base == nil {
-		return nil, errors.Errorf("invalid serviceCIDR base IP: %q", serviceCIDR)
+		return nil, errors.Errorf("parsed service CIDR %q has invalid base IP", cidr)
 	}
+
 	out, ok := addToIP(base, 1)
 	if !ok {
-		return nil, errors.Errorf("serviceCIDR %q has no usable service IPs", serviceCIDR)
+		return nil, errors.Errorf("service CIDR %q has no usable service IPs", cidr)
 	}
 	return out, nil
 }
 
+// pickPrimaryServiceCIDR chooses which CIDR to use when a comma-separated list
+// is provided. It prefers IPv4 when present, otherwise the first non-empty part.
+func pickPrimaryServiceCIDR(serviceCIDR string) string {
+	parts := strings.Split(serviceCIDR, ",")
+	if len(parts) == 1 {
+		return strings.TrimSpace(parts[0])
+	}
+
+	var firstNonEmpty string
+	var firstV4 string
+
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if firstNonEmpty == "" {
+			firstNonEmpty = p
+		}
+		if strings.Contains(p, ".") && firstV4 == "" {
+			firstV4 = p
+		}
+	}
+
+	if firstV4 != "" {
+		return firstV4
+	}
+	return firstNonEmpty
+}
+
 func DNSIP(serviceCIDR string) (net.IP, error) {
-	ip, _, err := net.ParseCIDR(serviceCIDR)
+	if serviceCIDR == "" {
+		serviceCIDR = mkconstants.DefaultServiceCIDR
+	}
+
+	cidr := strings.TrimSpace(pickPrimaryServiceCIDR(serviceCIDR))
+	if cidr == "" {
+		return nil, errors.Errorf("empty service CIDR")
+	}
+
+	_, ipNet, err := net.ParseCIDR(cidr)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing default service cidr")
+		return nil, errors.Wrap(err, "parsing service CIDR")
 	}
-	base := normalizeIP(ip)
+
+	base := normalizeIP(ipNet.IP)
 	if base == nil {
-		return nil, errors.Errorf("invalid serviceCIDR base IP: %q", serviceCIDR)
+		return nil, errors.Errorf("parsed service CIDR %q has invalid base IP", cidr)
 	}
+
 	out, ok := addToIP(base, 10)
 	if !ok {
-		return nil, errors.Errorf("serviceCIDR %q too small for DNS IP allocation", serviceCIDR)
+		return nil, errors.Errorf("service CIDR %q too small for DNS IP allocation", cidr)
 	}
 	return out, nil
 }
