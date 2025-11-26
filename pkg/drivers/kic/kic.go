@@ -102,6 +102,7 @@ func (d *Driver) Create() error {
 	}
 
 	staticIP := d.NodeConfig.StaticIP
+	// NEW: create network with IPv6/dual awareness
 	gateway, err := oci.CreateNetworkWithIPFamily(
 		d.OCIBinary,
 		networkName,
