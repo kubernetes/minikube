@@ -194,3 +194,8 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 
 	return nil
 }
+
+func (p *BuildrootProvisioner) GenerateContainerdServiceFile() error {
+	// containerd service file is backed in the image. We don't need to generate it on the fly
+	return nil
+}
