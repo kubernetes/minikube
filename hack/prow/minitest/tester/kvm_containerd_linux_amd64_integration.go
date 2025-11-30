@@ -26,11 +26,11 @@ import (
 var _ MiniTestTester = &KVMDockerLinuxAmd64IntegrationTester{}
 
 // this runs the integration tests with kvm2 driver and a docker container runtime.
-type KVMDockerLinuxAmd64IntegrationTester struct {
+type KVMContainerdLinuxAmd64IntegrationTester struct {
 }
 
 // Run implements MiniTestTester.
-func (k *KVMDockerLinuxAmd64IntegrationTester) Run(runner MiniTestRunner) error {
+func (k *KVMContainerdLinuxAmd64IntegrationTester) Run(runner MiniTestRunner) error {
 
 	if up, err := runner.IsUp(); err != nil || !up {
 		klog.Errorf("tester: deployed environment is not up: %v", err)
@@ -46,7 +46,7 @@ func (k *KVMDockerLinuxAmd64IntegrationTester) Run(runner MiniTestRunner) error 
 		klog.Errorf("failed to install docker in env: %v", err)
 		return err
 	}
-	if testErr = runner.Execute(fmt.Sprintf("cd minikube && PULL_NUMBER=\"%s\" ./hack/prow/integration_kvm_docker_linux_x86-64.sh", pr)); testErr != nil {
+	if testErr = runner.Execute(fmt.Sprintf("cd minikube && PULL_NUMBER=\"%s\" ./hack/prow/integration_kvm_containerd_linux_x86-64.sh", pr)); testErr != nil {
 		klog.Errorf("failed to execute command in env: %v", testErr)
 		// don't return here, we still want to collect the test reports
 	}
