@@ -3,6 +3,12 @@ integration-prow-docker-docker-linux-x86-64:
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_docker_linux_x86-64.sh
 
+integration-prow-docker-containerd-linux-x86-64:
+# 	build first
+#	container-runtime=containerd driver=docker on linux/amd64
+	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
+	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_containerd_linux_x86-64.sh
+
 .PHONY: integration-prow-none-docker-linux-x86-64
 integration-prow-none-docker-linux-x86-64: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64

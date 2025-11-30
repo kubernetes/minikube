@@ -172,6 +172,10 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     tee /etc/apt/sources.list.d/docker.list > /dev/null \
     && clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 
+# Set ulimit for containerd to match docker's default-ulimit setting
+# This ensures consistent file descriptor limits (1048576) across container runtimes
+RUN sed -i '/^\[Service\]/a LimitNOFILE=1048576' /lib/systemd/system/containerd.service
+
 # install buildkit
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
  && echo "Installing buildkit ..." \
