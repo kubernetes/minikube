@@ -24,6 +24,11 @@ integration-prow-kvm-containerd-linux-x86-64: setup-prow-gcp-ssh-keys build-mini
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./out/minitest  --deployer boskos --tester kvm-containerd-linux-amd64-integration --config hack/prow/bosksos-nested.json
 
+.PHONY: integration-prow-kvm-crio-linux-x86-64
+integration-prow-kvm-crio-linux-x86-64: setup-prow-gcp-ssh-keys build-mini-test
+	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
+	./out/minitest  --deployer boskos --tester kvm-crio-linux-amd64-integration --config hack/prow/bosksos-nested.json
+
 .PHONY: build-mini-test
 build-mini-test: # build minitest binary
 	GOTOOLCHAIN=auto go build -C ./hack/prow/minitest -o $(PWD)/out/minitest .

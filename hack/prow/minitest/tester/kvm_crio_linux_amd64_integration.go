@@ -19,10 +19,10 @@ package tester
 var _ MiniTestTester = &KVMDockerLinuxAmd64IntegrationTester{}
 
 // this runs the integration tests with kvm2 driver and a docker container runtime.
-type KVMDockerLinuxAmd64IntegrationTester struct {
+type KVMCRIOLinuxAmd64IntegrationTester struct {
 }
 
 // Run implements MiniTestTester.
-func (k *KVMDockerLinuxAmd64IntegrationTester) Run(runner MiniTestRunner) error {
-	return kvmGeneralTester(runner, "./hack/prow/integration_kvm_docker_linux_x86-64.sh")
+func (k *KVMCRIOLinuxAmd64IntegrationTester) Run(runner MiniTestRunner) error {
+	return kvmGeneralTester(runner, "./hack/prow/integration_kvm_crio_linux_x86-64.sh")
 }
