@@ -21,7 +21,8 @@ import (
 	"os/exec"
 
 	"github.com/docker/machine/libmachine/drivers"
-	vmware "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware"
+
+	"k8s.io/minikube/pkg/drivers/vmware"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
