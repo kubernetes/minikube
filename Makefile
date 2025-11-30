@@ -378,7 +378,7 @@ html_report: ## Generate HTML  report out of the last ran integration test logs.
 	# install gopogh if not already installed
 	@if ! command -v gopogh >/dev/null 2>&1; then \
 		echo "gopogh not found, installing..."; \
-		GOBIN=$(shell go env GOPATH)/bin go install github.com/medyagh/gopogh/cmd/gopogh@latest; \
+		GOBIN=$(shell go env GOPATH)/bin go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0; \
 	fi
 	@gopogh -in "./out/testout_$(COMMIT_SHORT).json" -out ./out/testout_$(COMMIT_SHORT).html -name "$(shell git rev-parse --abbrev-ref HEAD)" -pr "" -repo github.com/kubernetes/minikube/  -details "${COMMIT_SHORT}"
 	@echo "-------------------------- Open HTML Report in Browser: ---------------------------"
