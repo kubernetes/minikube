@@ -22,10 +22,29 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	testutil "k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
+
+func collectAssets(t *testing.T, root, dest string, flatten bool) []assets.CopyableFile {
+	t.Helper()
+	files, err := assetsFromDir(root, dest, flatten)
+
+	t.Cleanup(func() {
+		for _, f := range files {
+			if cerr := f.Close(); cerr != nil {
+				t.Logf("warning: closing asset %s failed: %v", f.GetSourcePath(), cerr)
+			}
+		}
+	})
+
+	if err != nil {
+		t.Fatalf("assetsFromDir(%q, %q, flatten=%v) unexpected error: %v", root, dest, flatten, err)
+	}
+	return files
+}
 
 func TestAssetsFromDir(t *testing.T) {
 	tests := []struct {
@@ -85,11 +104,11 @@ func TestAssetsFromDir(t *testing.T) {
 			vmPath: "/",
 		},
 	}
-	var testDirs = make([]string, 0)
+
+	var testDirs []string
 	defer func() {
 		for _, testDir := range testDirs {
-			err := os.RemoveAll(testDir)
-			if err != nil {
+			if err := os.RemoveAll(testDir); err != nil {
 				t.Logf("got unexpected error removing test dir: %v", err)
 			}
 		}
@@ -98,7 +117,6 @@ func TestAssetsFromDir(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			testDir := testutil.MakeTempDir(t)
-
 			testDirs = append(testDirs, testDir)
 			testFileBaseDir := filepath.Join(testDir, test.baseDir)
 			want := make(map[string]string)
@@ -127,11 +145,7 @@ func TestAssetsFromDir(t *testing.T) {
 				}
 			}
 
-			actualFiles, err := assetsFromDir(testFileBaseDir, test.vmPath, test.flatten)
-			if err != nil {
-				t.Errorf("got unexpected error adding minikube dir assets: %v", err)
-				return
-			}
+			actualFiles := collectAssets(t, testFileBaseDir, test.vmPath, test.flatten)
 
 			got := make(map[string]string)
 			for _, actualFile := range actualFiles {
