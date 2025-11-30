@@ -24,11 +24,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
@@ -116,7 +116,7 @@ func CreateEmptyProfile(name string, miniHome ...string) error {
 }
 
 // SaveNode saves a node to a cluster
-func SaveNode(cfg *ClusterConfig, node *Node) error {
+func SaveNode(cfg *ClusterConfig, node *Node, options *run.CommandOptions) error {
 	update := false
 	for i, n := range cfg.Nodes {
 		if n.Name == node.Name {
@@ -130,7 +130,7 @@ func SaveNode(cfg *ClusterConfig, node *Node) error {
 		cfg.Nodes = append(cfg.Nodes, *node)
 	}
 
-	return SaveProfile(viper.GetString(ProfileName), cfg)
+	return SaveProfile(options.ProfileName, cfg)
 }
 
 // SaveProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
@@ -188,8 +188,8 @@ var DockerContainers = func() ([]string, error) {
 // ListProfiles returns all valid and invalid (if any) minikube profiles
 // invalidPs are the profiles that have a directory or config file but not usable
 // invalidPs would be suggested to be deleted
-func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
-	activeP := viper.GetString(ProfileName)
+func ListProfiles(options *run.CommandOptions, miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
+	activeP := options.ProfileName
 	// try to get profiles list based on left over evidences such as directory
 	pDirs, err := profileDirs(miniHome...)
 	if err != nil {
@@ -234,13 +234,13 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 
 // ListValidProfiles returns profiles in minikube home dir
 // Unlike `ListProfiles` this function doesn't try to get profile from container
-func ListValidProfiles(miniHome ...string) (ps []*Profile, err error) {
+func ListValidProfiles(options *run.CommandOptions, miniHome ...string) (ps []*Profile, err error) {
 	// try to get profiles list based on left over evidences such as directory
 	pDirs, err := profileDirs(miniHome...)
 	if err != nil {
 		return nil, err
 	}
-	activeP := viper.GetString(ProfileName)
+	activeP := options.ProfileName
 	for _, n := range pDirs {
 		p, err := LoadProfile(n, miniHome...)
 		if err == nil && p.IsValid() {

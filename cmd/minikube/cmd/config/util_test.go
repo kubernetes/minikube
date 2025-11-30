@@ -21,7 +21,9 @@ import (
 	"testing"
 
 	config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 var minikubeConfig = config.MinikubeConfig{
@@ -83,10 +85,11 @@ func TestSetBool(t *testing.T) {
 }
 
 func TestValidateProfile(t *testing.T) {
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
 	testCases := []string{"82374328742_2974224498", "validate_test"}
 	for _, name := range testCases {
 		expected := fmt.Sprintf("profile %q not found", name)
-		err, ok := ValidateProfile(name)
+		err, ok := ValidateProfile(name, options)
 		if !ok && err.Error() != expected {
 			t.Errorf("got error %q, expected %q", err, expected)
 		}
