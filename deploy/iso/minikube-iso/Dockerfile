@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# test for 22020
+# test for fork != minikube: we fixed the bug
+
 FROM ubuntu:20.04
 
 RUN apt-get update \
