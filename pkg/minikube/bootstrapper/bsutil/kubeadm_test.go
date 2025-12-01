@@ -122,6 +122,12 @@ func recentReleases(n int) ([]string, error) {
 	return versions, nil
 }
 
+// normalizeNewlines converts CRLF -> LF and enforces a single trailing newline.
+func normalizeNewlines(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	return strings.TrimRight(s, "\n") + "\n"
+}
+
 /*
 *
 This test case has only 1 thing to test and that is the
@@ -193,9 +199,11 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unable to read testdata: %v", err)
 				}
+				normalizedExpected := normalizeNewlines(string(expected))
+				normalizedGot := normalizeNewlines(string(got))
 				diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-					A:        difflib.SplitLines(string(expected)),
-					B:        difflib.SplitLines(string(got)),
+					A:        difflib.SplitLines(normalizedExpected),
+					B:        difflib.SplitLines(normalizedGot),
 					FromFile: "Expected",
 					ToFile:   "Got",
 					Context:  1,
@@ -297,9 +305,11 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unable to read testdata: %v", err)
 				}
+				normalizedExpected := normalizeNewlines(string(expected))
+				normalizedGot := normalizeNewlines(string(got))
 				diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-					A:        difflib.SplitLines(string(expected)),
-					B:        difflib.SplitLines(string(got)),
+					A:        difflib.SplitLines(normalizedExpected),
+					B:        difflib.SplitLines(normalizedGot),
 					FromFile: "Expected",
 					ToFile:   "Got",
 					Context:  1,
