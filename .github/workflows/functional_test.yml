@@ -26,7 +26,7 @@ concurrency:
   cancel-in-progress: true
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.24.6'
+  GO_VERSION: '1.25.3'
 permissions:
   contents: read
 jobs:
@@ -34,8 +34,8 @@ jobs:
   build-test-binaries:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
         with:
           go-version: ${{env.GO_VERSION}}
           cache: true      
@@ -225,7 +225,7 @@ jobs:
           top -b -n1 | head -n 10 || true
           cat /proc/loadavg || true
           awk '{printf "Uptime (seconds): %s\n", $1}' /proc/uptime 2>/dev/null || true
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
         with:
           go-version: ${{env.GO_VERSION}}
           cache: true      
@@ -277,8 +277,8 @@ jobs:
         shell: bash
         if: matrix.driver == 'none'
         run: |
-          CRI_DOCKERD_VERSION="v0.4.0"
-          CRI_DOCKERD_COMMIT="b9b889355f3002c01db294427964e454dfbc3feb"
+          CRI_DOCKERD_VERSION="v0.4.1"
+          CRI_DOCKERD_COMMIT="55d6e1a1d6f2ee58949e13a0c66afe7d779ac942"
           CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
@@ -288,7 +288,7 @@ jobs:
         shell: bash
         if: matrix.driver == 'none'
         run: |
-          CRICTL_VERSION="v1.28.0"
+          CRICTL_VERSION="v1.34.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
       # conntrack is required for kubernetes 1.18 and higher

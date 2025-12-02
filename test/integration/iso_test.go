@@ -118,7 +118,7 @@ func TestISOImage(t *testing.T) {
 			t.Logf("  %s: %s", k, v)
 		}
 	})
-  
+
 	t.Run("eBPFSupport", func(t *testing.T) {
 		// Ensure that BTF type information is available (https://github.com/kubernetes/minikube/issues/21788)
 		btfFile := "/sys/kernel/btf/vmlinux"

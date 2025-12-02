@@ -135,7 +135,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to read file: %v", err)
 	}
-	submatches := re.FindSubmatch(data)
+
+  // this handles cases where multiple versions exist (e.g., old and new versions in go.mod)
+	allMatches := re.FindAllSubmatch(data, -1)
+	if len(allMatches) == 0 {
+		log.Fatalf("no matches found")
+	}
+
+	// Take the last match (most recent version)
+	submatches := allMatches[len(allMatches)-1]
 	if len(submatches) < 2 {
 		log.Fatalf("less than 2 submatches found")
 	}

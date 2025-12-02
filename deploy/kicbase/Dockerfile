@@ -19,9 +19,9 @@
 
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
-ARG KICBASE_IMAGE="debian:bookworm-20251020-slim"
+ARG KICBASE_IMAGE="debian:bookworm-20251117-slim"
 # multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.24.6 AS auto-pause
+FROM golang:1.25.3 AS auto-pause
 WORKDIR /src
 # auto-pause depends on core minikube code so we need to pass the whole source code as the context
 # copy in the minimal amount of source code possible
@@ -171,6 +171,10 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
     tee /etc/apt/sources.list.d/docker.list > /dev/null \
     && clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
+
+# Set ulimit for containerd to match docker's default-ulimit setting
+# This ensures consistent file descriptor limits (1048576) across container runtimes
+RUN sed -i '/^\[Service\]/a LimitNOFILE=1048576' /lib/systemd/system/containerd.service
 
 # install buildkit
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \

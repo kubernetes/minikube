@@ -16,10 +16,10 @@ ii  ca-certificates                 20230311+deb12u1               all          
 ii  catatonit                       0.1.7-1+b2                     amd64        init process for containers
 ii  conmon                          2.1.6+ds1-1                    amd64        OCI container runtime monitor
 ii  conntrack                       1:1.4.7-1+b2                   amd64        Program to modify the conntrack tables
-ii  containerd.io                   1.7.28-1~debian.12~bookworm    amd64        An open and reliable container runtime
+ii  containerd.io                   2.2.0-2~debian.12~bookworm     amd64        An open and reliable container runtime
 ii  containernetworking-plugins     1.1.1+ds1-3+b5                 amd64        standard networking plugins - binaries
 ii  coreutils                       9.1-1                          amd64        GNU core utilities
-ii  cri-o                           1.34.1-1.2                     amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
+ii  cri-o                           1.34.2-1.1                     amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
 ii  crun                            1.8.1-1+deb12u1                amd64        lightweight OCI runtime for running containers
 ii  curl                            7.88.1-10+deb12u14             amd64        command line tool for transferring data with URL syntax
 ii  dash                            0.5.12-2                       amd64        POSIX-compliant shell
@@ -35,9 +35,9 @@ ii  diffutils                       1:3.8-4                        amd64        
 ii  dirmngr                         2.2.40-1.1+deb12u1             amd64        GNU privacy guard - network certificate management service
 ii  dmsetup                         2:1.02.185-2                   amd64        Linux Kernel Device Mapper userspace library
 ii  dnsutils                        1:9.18.41-1~deb12u1            all          Transitional package for bind9-dnsutils
-ii  docker-buildx-plugin            0.29.1-1~debian.12~bookworm    amd64        Docker Buildx plugin extends build capabilities with BuildKit.
-ii  docker-ce                       5:28.5.1-1~debian.12~bookworm  amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:28.5.1-1~debian.12~bookworm  amd64        Docker CLI: the open-source application container engine
+ii  docker-buildx-plugin            0.30.0-1~debian.12~bookworm    amd64        Docker Buildx plugin extends build capabilities with BuildKit.
+ii  docker-ce                       5:29.0.4-1~debian.12~bookworm  amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:29.0.4-1~debian.12~bookworm  amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.22                        amd64        Debian package management system
 ii  e2fsprogs                       1.47.0-2+b2                    amd64        ext2/ext3/ext4 file system utilities
 ii  ebtables                        2.0.11-5                       amd64        Ethernet bridge frame table administration
@@ -114,6 +114,7 @@ ii  libicu72:amd64                  72.1-3+deb12u1                 amd64        
 ii  libidn2-0:amd64                 2.3.3-1+b1                     amd64        Internationalized domain names (IDNA2008/TR46) library
 ii  libip4tc2:amd64                 1.8.9-2                        amd64        netfilter libip4tc library
 ii  libip6tc2:amd64                 1.8.9-2                        amd64        netfilter libip6tc library
+ii  libjansson4:amd64               2.14-2                         amd64        C library for encoding, decoding and manipulating JSON data
 ii  libjemalloc2:amd64              5.3.0-1                        amd64        general-purpose scalable concurrent malloc(3) implementation
 ii  libjson-c5:amd64                0.16-2                         amd64        JSON manipulation library - shared library
 ii  libk5crypto3:amd64              1.20.1-2+deb12u4               amd64        MIT Kerberos runtime libraries - Crypto Library
@@ -135,6 +136,7 @@ ii  libnetfilter-conntrack3:amd64   1.0.9-3                        amd64        
 ii  libnettle8:amd64                3.8.1-2                        amd64        low level cryptographic library (symmetric and one-way cryptos)
 ii  libnfnetlink0:amd64             1.0.2-2                        amd64        Netfilter netlink library
 ii  libnfsidmap1:amd64              1:2.6.2-4+deb12u1              amd64        NFS idmapping library
+ii  libnftables1:amd64              1.0.6-2+deb12u2                amd64        Netfilter nftables high level userspace API library
 ii  libnftnl11:amd64                1.2.4-2                        amd64        Netfilter nftables userspace API library
 ii  libnghttp2-14:amd64             1.52.0-1+deb12u2               amd64        library implementing HTTP/2 protocol (shared library)
 ii  libnpth0:amd64                  1.6-3                          amd64        replacement for GNU Pth using system threads
@@ -197,6 +199,7 @@ ii  ncurses-bin                     6.4-4                          amd64        
 ii  netbase                         6.4                            all          Basic TCP/IP networking system
 ii  netcat-openbsd                  1.219-1                        amd64        TCP/IP swiss army knife
 ii  nfs-common                      1:2.6.2-4+deb12u1              amd64        NFS support files common to client and server
+ii  nftables                        1.0.6-2+deb12u2                amd64        Program to control packet filtering rules by Netfilter project
 ii  nvidia-container-toolkit        1.18.0-1                       amd64        NVIDIA Container toolkit
 ii  nvidia-container-toolkit-base   1.18.0-1                       amd64        NVIDIA Container Toolkit Base
 ii  openssh-client                  1:9.2p1-2+deb12u7              amd64        secure shell (SSH) client, for secure access to remote machines

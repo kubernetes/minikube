@@ -1,8 +1,6 @@
 module k8s.io/minikube
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.25.0
 
 require (
 	cloud.google.com/go/storage v1.56.1
@@ -28,6 +26,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.20.6
 	github.com/google/go-github/v74 v74.0.0
+	github.com/google/go-github/v79 v79.0.0
 	github.com/google/slowjam v1.1.2
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-getter v1.8.0

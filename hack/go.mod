@@ -1,8 +1,6 @@
 module k8s.io/minikube/hack
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.25.0
 
 replace github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20240815173309-ffb6b643c381
 
@@ -12,6 +10,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.53.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-github/v74 v74.0.0
+	github.com/google/go-github/v79 v79.0.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/olekukonko/tablewriter v1.0.9
 	github.com/pkg/errors v0.9.1

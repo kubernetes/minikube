@@ -191,7 +191,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		// that he should at least get access to github
 		// print essential warnings
 		out.WarningT("minikube cannot pull kicbase image from any docker registry, and is trying to download kicbase tarball from github release page via HTTP.")
-		out.WarningT("It's very likely that you have an internet issue. Please ensure that you can access the internet at least via HTTP, directly or with proxy. Currently your proxy configure is:")
+		out.WarningT("It's very likely that you have an internet issue. Please ensure that you can access the internet at least via HTTP, directly or with proxy. Currently your proxy configuration is:")
 		envs := []string{"HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "NO_PROXY"}
 		for _, env := range envs {
 			if v := os.Getenv(env); v != "" {

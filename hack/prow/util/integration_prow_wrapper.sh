@@ -24,7 +24,11 @@ echo "test finished with exit code $result"
 
 items=("testout.txt" "test.json" "junit-unit.xml" "test.html" "test_summary.json")
 for item in "${items[@]}"; do
-  echo "Collecting ${item} to ${ARTIFACTS}/${item}"
-  cp "${item}" "${ARTIFACTS}/${item}"
+  if [ -f "${item}" ]; then
+    echo "Collecting ${item} to ${ARTIFACTS}/${item}"
+    cp "${item}" "${ARTIFACTS}/${item}"
+  else
+    echo "Warning: ${item} not found, skipping"
+  fi
 done
 exit $result

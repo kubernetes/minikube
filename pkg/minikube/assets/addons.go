@@ -34,6 +34,15 @@ import (
 	"k8s.io/minikube/pkg/version"
 )
 
+// HelmChart holds information about a helm chart.
+type HelmChart struct {
+	Name       string
+	Repo       string
+	Namespace  string
+	Values     []string
+	ValueFiles []string
+}
+
 // Addon is a named list of assets, that can be enabled
 type Addon struct {
 	Assets             []*BinAsset
@@ -46,6 +55,8 @@ type Addon struct {
 
 	// Registries currently only shows the default registry of images
 	Registries map[string]string
+
+	HelmChart *HelmChart
 }
 
 // NetworkInfo contains control plane node IP address used for add on template
@@ -55,7 +66,7 @@ type NetworkInfo struct {
 }
 
 // NewAddon creates a new Addon
-func NewAddon(assets []*BinAsset, enabled bool, addonName, maintainer, verifiedMaintainer, docs string, images, registries map[string]string) *Addon {
+func NewAddon(assets []*BinAsset, enabled bool, addonName, maintainer, verifiedMaintainer, docs string, images, registries map[string]string, helmChart *HelmChart) *Addon {
 	return &Addon{
 		Assets:             assets,
 		enabled:            enabled,
@@ -65,6 +76,7 @@ func NewAddon(assets []*BinAsset, enabled bool, addonName, maintainer, verifiedM
 		Docs:               docs,
 		Images:             images,
 		Registries:         registries,
+		HelmChart:          helmChart,
 	}
 }
 
@@ -139,7 +151,7 @@ var Addons = map[string]*Addon{
 		"AutoPauseHook": "k8s-minikube/auto-pause-hook:v0.0.5@sha256:d613ed2c891882b602b5aca668e92d4606a1b3832d96750ab25804de15929522",
 	}, map[string]string{
 		"AutoPauseHook": "gcr.io",
-	}),
+	}, nil),
 	"dashboard": NewAddon([]*BinAsset{
 		// We want to create the kubernetes-dashboard ns first so that every subsequent object can be created
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-ns.yaml", vmpath.GuestAddonsDir, "dashboard-ns.yaml", "0640"),
@@ -158,21 +170,21 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"Dashboard":      "docker.io",
 		"MetricsScraper": "docker.io",
-	}),
+	}, nil),
 	"default-storageclass": NewAddon([]*BinAsset{
 		MustBinAsset(addons.DefaultStorageClassAssets,
 			"storageclass/storageclass.yaml",
 			vmpath.GuestAddonsDir,
 			"storageclass.yaml",
 			"0640"),
-	}, true, "default-storageclass", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/", nil, nil),
+	}, true, "default-storageclass", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/", nil, nil, nil),
 	"pod-security-policy": NewAddon([]*BinAsset{
 		MustBinAsset(addons.PodSecurityPolicyAssets,
 			"pod-security-policy/pod-security-policy.yaml",
 			vmpath.GuestAddonsDir,
 			"pod-security-policy.yaml",
 			"0640"),
-	}, false, "pod-security-policy", "3rd party (unknown)", "", "", nil, nil),
+	}, false, "pod-security-policy", "3rd party (unknown)", "", "", nil, nil, nil),
 	"storage-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.StorageProvisionerAssets,
 			"storage-provisioner/storage-provisioner.yaml.tmpl",
@@ -183,7 +195,7 @@ var Addons = map[string]*Addon{
 		"StorageProvisioner": fmt.Sprintf("k8s-minikube/storage-provisioner:%s", version.GetStorageProvisionerVersion()),
 	}, map[string]string{
 		"StorageProvisioner": "gcr.io",
-	}),
+	}, nil),
 	"storage-provisioner-rancher": NewAddon([]*BinAsset{
 		MustBinAsset(addons.StorageProvisionerRancherAssets,
 			"storage-provisioner-rancher/storage-provisioner-rancher.yaml.tmpl",
@@ -196,7 +208,7 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"LocalPathProvisioner": "docker.io",
 		"Helper":               "docker.io",
-	}),
+	}, nil),
 	"efk": NewAddon([]*BinAsset{
 		MustBinAsset(addons.EfkAssets,
 			"efk/elasticsearch-rc.yaml.tmpl",
@@ -238,7 +250,7 @@ var Addons = map[string]*Addon{
 		"FluentdElasticsearch": "registry.k8s.io",
 		"Kibana":               "docker.elastic.co",
 		"Alpine":               "docker.io",
-	}),
+	}, nil),
 	"ingress": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IngressAssets,
 			"ingress/ingress-deploy.yaml.tmpl",
@@ -256,7 +268,7 @@ var Addons = map[string]*Addon{
 		"IngressController":        "registry.k8s.io",
 		"KubeWebhookCertgenCreate": "registry.k8s.io",
 		"KubeWebhookCertgenPatch":  "registry.k8s.io",
-	}),
+	}, nil),
 	"istio-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IstioProvisionerAssets,
 			"istio-provisioner/istio-operator.yaml.tmpl",
@@ -267,14 +279,14 @@ var Addons = map[string]*Addon{
 		"IstioOperator": "istio/operator:1.23.3@sha256:fcdc8f506f6b19b8265e6c8c28fa3d1c2f5b9069ad8ea6e1d8b353b233ec3079",
 	}, map[string]string{
 		"IstioOperator": "docker.io",
-	}),
+	}, nil),
 	"istio": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IstioAssets,
 			"istio/istio-default-profile.yaml",
 			vmpath.GuestAddonsDir,
 			"istio-default-profile.yaml",
 			"0640"),
-	}, false, "istio", "3rd party (Istio)", "", "https://istio.io/latest/docs/setup/platform-setup/minikube/", nil, nil),
+	}, false, "istio", "3rd party (Istio)", "", "https://istio.io/latest/docs/setup/platform-setup/minikube/", nil, nil, nil),
 	"inspektor-gadget": NewAddon([]*BinAsset{
 		MustBinAsset(addons.InspektorGadgetAssets, "inspektor-gadget/ig-deployment.yaml.tmpl", vmpath.GuestAddonsDir, "ig-deployment.yaml", "0640"),
 	}, false, "inspektor-gadget", "3rd party (inspektor-gadget.io)", "https://github.com/orgs/inspektor-gadget/people", "https://minikube.sigs.k8s.io/docs/handbook/addons/inspektor-gadget/",
@@ -282,7 +294,7 @@ var Addons = map[string]*Addon{
 			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.46.0@sha256:a4b4360159036e9d1eea4e03a935d3b621bcd6487a70e770dd4642e84af5a6d1",
 		}, map[string]string{
 			"InspektorGadget": "ghcr.io",
-		}),
+		}, nil),
 	"kong": NewAddon([]*BinAsset{
 		MustBinAsset(addons.KongAssets,
 			"kong/kong-ingress-controller.yaml.tmpl",
@@ -290,12 +302,12 @@ var Addons = map[string]*Addon{
 			"kong-ingress-controller.yaml",
 			"0640"),
 	}, false, "kong", "3rd party (Kong HQ)", "@gAmUssA", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
-		"Kong":        "kong:3.9.1@sha256:196c6f3e21eee65fe3da143b346500eb1b6907fefa0765436d648df938435574",
-		"KongIngress": "kong/kubernetes-ingress-controller:3.5.2@sha256:472012b0f7dca838f2b9cd8fcf6e6daeb2572631b37adb0dbb0770defeb89f04",
+		"Kong":        "kong:3.9.1@sha256:4379444ecfd82794b27de38a74ba540e8571683dfdfce74c8ecb4018f308fb29",
+		"KongIngress": "kong/kubernetes-ingress-controller:3.5.3@sha256:e5436a3ddc2896783b55a62c4e9214a851efd2d2d241e19a0f9bc229e4fed3fd",
 	}, map[string]string{
 		"Kong":        "docker.io",
 		"KongIngress": "docker.io",
-	}),
+	}, nil),
 	"kubevirt": NewAddon([]*BinAsset{
 		MustBinAsset(addons.KubevirtAssets,
 			"kubevirt/pod.yaml.tmpl",
@@ -306,7 +318,7 @@ var Addons = map[string]*Addon{
 		"Kubectl": "bitnami/kubectl:latest",
 	}, map[string]string{
 		"Kubectl": "docker.io",
-	}),
+	}, nil),
 	"metrics-server": NewAddon([]*BinAsset{
 		MustBinAsset(addons.MetricsServerAssets,
 			"metrics-server/metrics-apiservice.yaml",
@@ -332,7 +344,7 @@ var Addons = map[string]*Addon{
 		"MetricsServer": "metrics-server/metrics-server:v0.8.0@sha256:89258156d0e9af60403eafd44da9676fd66f600c7934d468ccc17e42b199aee2",
 	}, map[string]string{
 		"MetricsServer": "registry.k8s.io",
-	}),
+	}, nil),
 	"olm": NewAddon([]*BinAsset{
 		MustBinAsset(addons.OlmAssets,
 			"olm/crds.yaml",
@@ -351,7 +363,7 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"OLM":                        "quay.io",
 		"UpstreamCommunityOperators": "quay.io",
-	}),
+	}, nil),
 	"registry": NewAddon([]*BinAsset{
 		MustBinAsset(addons.RegistryAssets,
 			"registry/registry-rc.yaml.tmpl",
@@ -374,7 +386,7 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"KubeRegistryProxy": "gcr.io",
 		"Registry":          "docker.io",
-	}),
+	}, nil),
 	"registry-creds": NewAddon([]*BinAsset{
 		MustBinAsset(addons.RegistryCredsAssets,
 			"registry-creds/registry-creds-rc.yaml.tmpl",
@@ -385,7 +397,7 @@ var Addons = map[string]*Addon{
 		"RegistryCreds": "upmcenterprises/registry-creds:1.10@sha256:93a633d4f2b76a1c66bf19c664dbddc56093a543de6d54320f19f585ccd7d605",
 	}, map[string]string{
 		"RegistryCreds": "docker.io",
-	}),
+	}, nil),
 	"registry-aliases": NewAddon([]*BinAsset{
 		MustBinAsset(addons.RegistryAliasesAssets,
 			"registry-aliases/registry-aliases-sa.yaml",
@@ -420,7 +432,7 @@ var Addons = map[string]*Addon{
 		"CoreDNSPatcher": "quay.io",
 		"Pause":          "gcr.io",
 		"Alpine":         "docker.io",
-	}),
+	}, nil),
 	"freshpod": NewAddon([]*BinAsset{
 		MustBinAsset(addons.FreshpodAssets,
 			"freshpod/freshpod-rc.yaml.tmpl",
@@ -431,7 +443,7 @@ var Addons = map[string]*Addon{
 		"FreshPod": "google-samples/freshpod:v0.0.1@sha256:b9efde5b509da3fd2959519c4147b653d0c5cefe8a00314e2888e35ecbcb46f9",
 	}, map[string]string{
 		"FreshPod": "gcr.io",
-	}),
+	}, nil),
 	"nvidia-driver-installer": NewAddon([]*BinAsset{
 		MustBinAsset(addons.NvidiaDriverInstallerAssets,
 			"gpu/nvidia-driver-installer.yaml.tmpl",
@@ -444,7 +456,7 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"NvidiaDriverInstaller": "registry.k8s.io",
 		"Pause":                 "registry.k8s.io",
-	}),
+	}, nil),
 	"nvidia-gpu-device-plugin": NewAddon([]*BinAsset{
 		MustBinAsset(addons.NvidiaGpuDevicePluginAssets,
 			"gpu/nvidia-gpu-device-plugin.yaml.tmpl",
@@ -455,7 +467,7 @@ var Addons = map[string]*Addon{
 		"NvidiaDevicePlugin": "nvidia-gpu-device-plugin@sha256:4b036e8844920336fa48f36edeb7d4398f426d6a934ba022848deed2edbf09aa",
 	}, map[string]string{
 		"NvidiaDevicePlugin": "registry.k8s.io",
-	}),
+	}, nil),
 	"amd-gpu-device-plugin": NewAddon([]*BinAsset{
 		MustBinAsset(addons.AmdGpuDevicePluginAssets,
 			"gpu/amd-gpu-device-plugin.yaml.tmpl",
@@ -466,7 +478,7 @@ var Addons = map[string]*Addon{
 		"AmdDevicePlugin": "rocm/k8s-device-plugin:1.25.2.8@sha256:f3835498cf2274e0a07c32b38c166c05a876f8eb776d756cc06805e599a3ba5f",
 	}, map[string]string{
 		"AmdDevicePlugin": "docker.io",
-	}),
+	}, nil),
 	"logviewer": NewAddon([]*BinAsset{
 		MustBinAsset(addons.LogviewerAssets,
 			"logviewer/logviewer-dp-and-svc.yaml.tmpl",
@@ -482,7 +494,7 @@ var Addons = map[string]*Addon{
 		"LogViewer": "ivans3/minikube-log-viewer:latest@sha256:75854f45305cc47d17b04c6c588fa60777391761f951e3a34161ddf1f1b06405",
 	}, map[string]string{
 		"LogViewer": "docker.io",
-	}),
+	}, nil),
 	"gvisor": NewAddon([]*BinAsset{
 		MustBinAsset(addons.GvisorAssets,
 			"gvisor/gvisor-pod.yaml.tmpl",
@@ -498,7 +510,7 @@ var Addons = map[string]*Addon{
 		"GvisorAddon": "k8s-minikube/gvisor-addon:v0.0.2@sha256:511bf52bdec6be2b846f98e92addf70c544044f96e35085f85ae9bdcd4df2da2",
 	}, map[string]string{
 		"GvisorAddon": "gcr.io",
-	}),
+	}, nil),
 	"ingress-dns": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IngressDNSAssets,
 			"ingress-dns/ingress-dns-pod.yaml.tmpl",
@@ -509,7 +521,7 @@ var Addons = map[string]*Addon{
 		"IngressDNS": "kicbase/minikube-ingress-dns:0.0.4@sha256:d7c3fd25a0ea8fa62d4096eda202b3fc69d994b01ed6ab431def629f16ba1a89",
 	}, map[string]string{
 		"IngressDNS": "docker.io",
-	}),
+	}, nil),
 	"metallb": NewAddon([]*BinAsset{
 		MustBinAsset(addons.MetallbAssets,
 			"metallb/metallb.yaml.tmpl",
@@ -527,7 +539,7 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"Speaker":    "quay.io",
 		"Controller": "quay.io",
-	}),
+	}, nil),
 	"ambassador": NewAddon([]*BinAsset{
 		MustBinAsset(addons.AmbassadorAssets,
 			"ambassador/ambassador-operator-crds.yaml",
@@ -548,7 +560,7 @@ var Addons = map[string]*Addon{
 		"AmbassadorOperator": "datawire/ambassador-operator:v1.2.3@sha256:492f33e0828a371aa23331d75c11c251b21499e31287f026269e3f6ec6da34ed",
 	}, map[string]string{
 		"AmbassadorOperator": "quay.io",
-	}),
+	}, nil),
 	"gcp-auth": NewAddon([]*BinAsset{
 		MustBinAsset(addons.GcpAuthAssets,
 			"gcp-auth/gcp-auth-ns.yaml",
@@ -571,7 +583,7 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"GCPAuthWebhook":     "gcr.io",
 		"KubeWebhookCertgen": "registry.k8s.io",
-	}),
+	}, nil),
 	"volcano": NewAddon([]*BinAsset{
 		MustBinAsset(addons.VolcanoAssets,
 			"volcano/volcano-development.yaml.tmpl",
@@ -586,7 +598,7 @@ var Addons = map[string]*Addon{
 		"vc_webhook_manager":    "docker.io",
 		"vc_controller_manager": "docker.io",
 		"vc_scheduler":          "docker.io",
-	}),
+	}, nil),
 	"volumesnapshots": NewAddon([]*BinAsset{
 		// make sure the order of apply. `csi-hostpath-snapshotclass` must be the first position, because it depends on `snapshot.storage.k8s.io_volumesnapshotclasses`
 		// if user disable volumesnapshots addon and delete `csi-hostpath-snapshotclass` after `snapshot.storage.k8s.io_volumesnapshotclasses`, kubernetes will return the error
@@ -624,7 +636,7 @@ var Addons = map[string]*Addon{
 		"SnapshotController": "sig-storage/snapshot-controller:v6.1.0@sha256:823c75d0c45d1427f6d850070956d9ca657140a7bbf828381541d1d808475280",
 	}, map[string]string{
 		"SnapshotController": "registry.k8s.io",
-	}),
+	}, nil),
 	"csi-hostpath-driver": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CsiHostpathDriverAssets,
 			"csi-hostpath-driver/rbac/rbac-external-attacher.yaml",
@@ -699,7 +711,7 @@ var Addons = map[string]*Addon{
 		"Resizer":               "registry.k8s.io",
 		"Snapshotter":           "registry.k8s.io",
 		"Provisioner":           "registry.k8s.io",
-	}),
+	}, nil),
 	"portainer": NewAddon([]*BinAsset{
 		MustBinAsset(addons.PortainerAssets,
 			"portainer/portainer.yaml.tmpl",
@@ -710,7 +722,7 @@ var Addons = map[string]*Addon{
 		"Portainer": "portainer/portainer-ce:2.15.1@sha256:5466af30b8eaf3f75edd3c74703d1c9973f0963acd6ef164913ea6f195d640c2",
 	}, map[string]string{
 		"Portainer": "docker.io",
-	}),
+	}, nil),
 	"inaccel": NewAddon([]*BinAsset{
 		MustBinAsset(addons.InAccelAssets,
 			"inaccel/fpga-operator.yaml.tmpl",
@@ -721,7 +733,7 @@ var Addons = map[string]*Addon{
 		"Helm3": "alpine/helm:3.9.0@sha256:9f4bf4d24241f983910550b1fe8688571cd684046500abe58cef14308f9cb19e",
 	}, map[string]string{
 		"Helm3": "docker.io",
-	}),
+	}, nil),
 	"headlamp": NewAddon([]*BinAsset{
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-namespace.yaml", vmpath.GuestAddonsDir, "headlamp-namespace.yaml", "0640"),
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-service.yaml", vmpath.GuestAddonsDir, "headlamp-service.yaml", "0640"),
@@ -730,21 +742,21 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "headlamp-clusterrolebinding.yaml", "0640"),
 	}, false, "headlamp", "3rd party (kinvolk.io)", "yolossn", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
 		map[string]string{
-			"Headlamp": "headlamp-k8s/headlamp:v0.36.0@sha256:c56f63701f270921f5db163324e2bce03ea0b20234dc76787901a5d27ad7fa71",
+			"Headlamp": "headlamp-k8s/headlamp:v0.38.0@sha256:62df24952ed956ec36a2d5859a1dcede5fad00b8d0043b9ce19cda914706325a",
 		},
 		map[string]string{
 			"Headlamp": "ghcr.io",
-		}),
+		}, nil),
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml.tmpl", vmpath.GuestAddonsDir, "deployment.yaml", "0640"),
 	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
-		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.43@sha256:a0e788c709a2746cba1b8d27e913b952809b92b23a6325e940e07c038d2d07d3",
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.45@sha256:34bd3a614f89422bdade0c10e1f4a29832c02c13f48ea83abf578e302143bf6e",
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
-	}),
+	}, nil),
 	"kubeflow": NewAddon([]*BinAsset{
 		MustBinAsset(addons.Kubeflow, "kubeflow/kubeflow.yaml", vmpath.GuestAddonsDir, "kubeflow.yaml", "0640"),
-	}, false, "kubeflow", "3rd party", "", "", nil, nil,
+	}, false, "kubeflow", "3rd party", "", "", nil, nil, nil,
 	),
 	"nvidia-device-plugin": NewAddon([]*BinAsset{
 		MustBinAsset(addons.NvidiaDevicePlugin, "nvidia-device-plugin/nvidia-device-plugin.yaml.tmpl", vmpath.GuestAddonsDir, "nvidia-device-plugin.yaml", "0640"),
@@ -753,7 +765,7 @@ var Addons = map[string]*Addon{
 			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.18.0@sha256:2d16df5f3f12081b4bd6b317cf697e5c7a195c53cec7e0bab756db02a06b985c",
 		}, map[string]string{
 			"NvidiaDevicePlugin": "nvcr.io",
-		}),
+		}, nil),
 	"yakd": NewAddon([]*BinAsset{
 		MustBinAsset(addons.YakdAssets, "yakd/yakd-ns.yaml", vmpath.GuestAddonsDir, "yakd-ns.yaml", "0640"),
 		MustBinAsset(addons.YakdAssets, "yakd/yakd-sa.yaml", vmpath.GuestAddonsDir, "yakd-sa.yaml", "0640"),
@@ -766,7 +778,7 @@ var Addons = map[string]*Addon{
 		},
 		map[string]string{
 			"Yakd": "docker.io",
-		}),
+		}, nil),
 	"kubetail": NewAddon([]*BinAsset{
 		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-namespace.yaml", vmpath.GuestAddonsDir, "kubetail-namespace.yaml", "0640"),
 		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-dashboard.yaml.tmpl", vmpath.GuestAddonsDir, "kubetail-dashboard.yaml", "0640"),
@@ -781,7 +793,7 @@ var Addons = map[string]*Addon{
 		},
 		map[string]string{
 			"Kubetail": "docker.io",
-		}),
+		}, nil),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...

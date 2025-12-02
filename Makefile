@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.37.0-1762018871-21834
+ISO_VERSION ?= v1.37.0-1763503576-21924
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -35,12 +35,12 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.24.6
+GO_VERSION ?= 1.25.3
 # set GOTOOLCHAIN to GO_VERSION to override any toolchain version specified in
 # go.mod (ref: https://go.dev/doc/toolchain#GOTOOLCHAIN)
 export GOTOOLCHAIN := go$(GO_VERSION)
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.34.0
+GO_K8S_VERSION_PREFIX ?= v1.35.0
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2025.02
@@ -54,8 +54,6 @@ COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
 COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO}-dirty","${COMMIT_NO}")
 COMMIT_SHORT = $(shell git rev-parse --short HEAD 2> /dev/null || true)
 COMMIT_NOQUOTES := $(patsubst "%",%,$(COMMIT))
-# source code for image: https://github.com/neilotoole/xcgo
-HYPERKIT_BUILD_IMAGE ?= quay.io/nirsof/xcgo:jammy-v2
 
 # NOTE: "latest" as of 2021-02-06. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
@@ -74,9 +72,9 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v2.1.6
+GOLINT_VERSION ?= v2.6.2
 # see https://golangci-lint.run/docs/configuration/file/ for config details
-GOLINT_CONFIG ?= .golangci.yaml
+GOLINT_CONFIG ?= .golangci.min.yaml
 # Set this to --verbose to see details about the linters and formatters used
 GOLINT_VERBOSE ?=
 # Limit number of default jobs, to avoid the CI builds running out of memory
@@ -133,7 +131,6 @@ MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/
 PROVISIONER_LDFLAGS := "-X k8s.io/minikube/pkg/storage.version=$(STORAGE_PROVISIONER_TAG) -s -w -extldflags '-static'"
 
 MINIKUBEFILES := ./cmd/minikube/
-HYPERKIT_FILES := ./cmd/drivers/hyperkit
 STORAGE_PROVISIONER_FILES := ./cmd/storage-provisioner
 KVM_DRIVER_FILES := ./cmd/drivers/kvm/
 
@@ -162,9 +159,6 @@ ADDON_FILES = $(shell find "deploy/addons" -type f | grep -v "\.go")
 TRANSLATION_FILES = $(shell find "translations" -type f | grep -v "\.go")
 ASSET_FILES = $(ADDON_FILES) $(TRANSLATION_FILES)
 
-# hyperkit ldflags
-HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/hyperkit.gitCommitID=$(COMMIT)
-
 # autopush artefacts
 AUTOPUSH ?=
 
@@ -184,7 +178,7 @@ endef
 
 # $(call DOCKER, image, command)
 define DOCKER
-	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app:Z -v $(GOPATH):/go:Z --init $(1) /bin/bash -c '$(2)'
+	docker run --rm -e GOCACHE=/app/.cache -e GOPATH=/go -e GOMODCACHE=/app/.modcache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app:Z -v $(GOPATH):/go:Z --init $(1) /bin/bash -c '$(2)'
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -357,14 +351,7 @@ test-pkg/%: ## Trigger packaging test
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross drivers e2e-cross cross-tars exotic retro out/gvisor-addon ## Build all different minikube components
-
-# After https://github.com/kubernetes/minikube/issues/19959 is fixed kvm2-arm64 can be added back
-.PHONY: drivers
-drivers: docker-machine-driver-hyperkit ## Build external drivers
-
-.PHONY: docker-machine-driver-hyperkit
-docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hyperkit driver
+all: cross e2e-cross cross-tars exotic retro out/gvisor-addon ## Build all different minikube components
 
 .PHONY: integration
 integration: out/minikube$(IS_EXE) ## Trigger minikube integration test, logs to ./out/testout_COMMIT.txt
@@ -464,8 +451,7 @@ e2e-cross: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-darwin-arm64 e2e
 checksum: ## Generate checksums
 	for f in out/minikube-amd64.iso out/minikube-arm64.iso out/minikube-linux-amd64 out/minikube-linux-arm \
 		 out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x \
-		 out/minikube-darwin-amd64 out/minikube-darwin-arm64 out/minikube-windows-amd64.exe \
-		 out/docker-machine-driver-hyperkit; do \
+		 out/minikube-darwin-amd64 out/minikube-darwin-arm64 out/minikube-windows-amd64.exe; do \
 		if [ -f "$${f}" ]; then \
 			openssl sha256 "$${f}" | awk '{print $$2}' > "$${f}.sha256" ; \
 		fi ; \
@@ -523,14 +509,15 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 lint:
 	docker run --rm -v `pwd`:/app:Z -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
-	golangci-lint run ${GOLINT_OPTIONS} ./..."
-	# --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit"
-	# The "--skip-dirs" parameter is no longer supported in the V2 version. If you need to skip the directory,
-	# add it under "linters.settings.exclusions.paths" in the ".golangci.yaml" file.
+	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} ./...
 else
 lint: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
 	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} ./...
 endif
+
+.PHONY: lint-max
+lint-max: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
+	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} --config .golangci.max.yaml ./...
 
 # lint-ci is slower version of lint and is meant to be used in ci (travis) to avoid out of memory leaks.
 .PHONY: lint-ci
@@ -624,8 +611,8 @@ out/repodata/repomd.xml: out/minikube-$(RPM_VERSION).rpm
 .SECONDEXPANSION:
 TAR_TARGETS_linux-amd64   := out/minikube-linux-amd64
 TAR_TARGETS_linux-arm64   := out/minikube-linux-arm64
-TAR_TARGETS_darwin-amd64  := out/minikube-darwin-amd64 out/docker-machine-driver-hyperkit
-TAR_TARGETS_darwin-arm64  := out/minikube-darwin-arm64 #out/docker-machine-driver-hyperkit
+TAR_TARGETS_darwin-amd64  := out/minikube-darwin-amd64 
+TAR_TARGETS_darwin-arm64  := out/minikube-darwin-arm64
 TAR_TARGETS_windows-amd64 := out/minikube-windows-amd64.exe
 out/minikube-%.tar.gz: $$(TAR_TARGETS_$$*)
 	$(if $(quiet),@echo "  TAR      $@")
@@ -648,43 +635,6 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	makensis out/windows_tmp/minikube.nsi
 	mv out/windows_tmp/minikube-installer.exe out/minikube-installer.exe
 	rm -rf out/windows_tmp
-
-out/docker-machine-driver-hyperkit:
-ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 \
-		--user $(shell id -u):$(shell id -g) -w /app \
-		-v $(PWD):/app:Z -v $(GOPATH):/go:Z --init --entrypoint "" \
-		$(HYPERKIT_BUILD_IMAGE) /bin/bash -c 'CC=o64-clang CXX=o64-clang++ /usr/bin/make $@'
-else
-	$(if $(quiet),@echo "  GO       $@")
-	$(Q)GOOS=darwin CGO_ENABLED=1 go build \
-		-ldflags="$(HYPERKIT_LDFLAGS)"   \
-		-o $@ k8s.io/minikube/cmd/drivers/hyperkit
-endif
-
-hyperkit_in_docker:
-	rm -f out/docker-machine-driver-hyperkit
-	$(MAKE) MINIKUBE_BUILD_IN_DOCKER=y out/docker-machine-driver-hyperkit
-
-.PHONY: install-hyperkit-driver
-install-hyperkit-driver: out/docker-machine-driver-hyperkit ## Install hyperkit to local machine
-	mkdir -p $(HOME)/bin
-	sudo cp out/docker-machine-driver-hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
-	sudo chown root:wheel $(HOME)/bin/docker-machine-driver-hyperkit
-	sudo chmod u+s $(HOME)/bin/docker-machine-driver-hyperkit
-
-.PHONY: release-hyperkit-driver
-release-hyperkit-driver: install-hyperkit-driver checksum ## Copy hyperkit using gsutil
-	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit gs://minikube/drivers/hyperkit/$(VERSION)/
-	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit.sha256 gs://minikube/drivers/hyperkit/$(VERSION)/
-
-.PHONY: build-and-push-hyperkit-build-image
-build-and-push-hyperkit-build-image:
-	test -d out/xcgo || git clone https://github.com/neilotoole/xcgo.git out/xcgo
-	(cd out/xcgo && git restore . && git pull && \
-	 sed -i'.bak' -e 's/ARG GO_VERSION.*/ARG GO_VERSION="go$(GO_VERSION)"/' Dockerfile && \
-	 docker build -t gcr.io/k8s-minikube/xcgo:go$(GO_VERSION) .)
-	docker push gcr.io/k8s-minikube/xcgo:go$(GO_VERSION)
 
 .PHONY: check-release
 check-release: ## Execute go test
@@ -936,7 +886,7 @@ time-to-k8s-benchmark:
 .PHONY: update-golang-version
 update-golang-version:
 	 cd hack && go run update/golang_version/golang_version.go
-
+	 make gomodtidy
 .PHONY: update-kubernetes-version
 update-kubernetes-version:
 	 @(cd hack && go run update/kubernetes_version/kubernetes_version.go)
