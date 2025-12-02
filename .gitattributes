@@ -1,2 +1,3 @@
 # Prevent git from normalizing or converting any newline or encoding inside test data folders
+
 **/testdata/** text eol=lf
