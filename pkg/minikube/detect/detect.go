@@ -195,8 +195,8 @@ func CgroupDriver() string {
 	}
 }
 
-// MacOS13Plus returns if the current machine is running macOS 13+
-func MacOS13Plus() bool {
+// MacOS14Plus returns if the current machine is running macOS 14+
+func MacOS14Plus() bool {
 	if runtime.GOOS != "darwin" {
 		return false
 	}
@@ -210,7 +210,7 @@ func MacOS13Plus() bool {
 		klog.Warningf("failed to convert macOS version to int: %v", err)
 		return false
 	}
-	return major >= 13
+	return major >= 14
 }
 
 // NestedVM returns true if the current machine is running a nested VM (like in MacOs in Github Action)
