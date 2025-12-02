@@ -14,7 +14,7 @@ workloads.
 ## Requirements
 
 - Available only on Apple silicon.
-- Requires macOS 13 or later.
+- Requires macos 14 or later.
 - Requires minikube version 1.37.0 or later.
 - Requires krunkit version 1.0.0 or later.
 - Requires [vmnet-helper](https://github.com/nirs/vmnet-helper).
