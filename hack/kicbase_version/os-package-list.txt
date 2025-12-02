@@ -19,7 +19,7 @@ ii  conntrack                       1:1.4.7-1+b2                   amd64        
 ii  containerd.io                   2.2.0-2~debian.12~bookworm     amd64        An open and reliable container runtime
 ii  containernetworking-plugins     1.1.1+ds1-3+b5                 amd64        standard networking plugins - binaries
 ii  coreutils                       9.1-1                          amd64        GNU core utilities
-ii  cri-o                           1.34.2-1.1                     amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
+ii  cri-o                           1.34.3-1.1                     amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
 ii  crun                            1.8.1-1+deb12u1                amd64        lightweight OCI runtime for running containers
 ii  curl                            7.88.1-10+deb12u14             amd64        command line tool for transferring data with URL syntax
 ii  dash                            0.5.12-2                       amd64        POSIX-compliant shell
@@ -35,9 +35,9 @@ ii  diffutils                       1:3.8-4                        amd64        
 ii  dirmngr                         2.2.40-1.1+deb12u1             amd64        GNU privacy guard - network certificate management service
 ii  dmsetup                         2:1.02.185-2                   amd64        Linux Kernel Device Mapper userspace library
 ii  dnsutils                        1:9.18.41-1~deb12u1            all          Transitional package for bind9-dnsutils
-ii  docker-buildx-plugin            0.30.0-1~debian.12~bookworm    amd64        Docker Buildx plugin extends build capabilities with BuildKit.
-ii  docker-ce                       5:29.0.4-1~debian.12~bookworm  amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:29.0.4-1~debian.12~bookworm  amd64        Docker CLI: the open-source application container engine
+ii  docker-buildx-plugin            0.30.1-1~debian.12~bookworm    amd64        Docker Buildx plugin extends build capabilities with BuildKit.
+ii  docker-ce                       5:29.1.1-1~debian.12~bookworm  amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:29.1.1-1~debian.12~bookworm  amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.22                        amd64        Debian package management system
 ii  e2fsprogs                       1.47.0-2+b2                    amd64        ext2/ext3/ext4 file system utilities
 ii  ebtables                        2.0.11-5                       amd64        Ethernet bridge frame table administration
@@ -141,8 +141,8 @@ ii  libnftnl11:amd64                1.2.4-2                        amd64        
 ii  libnghttp2-14:amd64             1.52.0-1+deb12u2               amd64        library implementing HTTP/2 protocol (shared library)
 ii  libnpth0:amd64                  1.6-3                          amd64        replacement for GNU Pth using system threads
 ii  libnsl2:amd64                   1.3.0-2                        amd64        Public client interface for NIS(YP) and NIS+
-ii  libnvidia-container-tools       1.18.0-1                       amd64        NVIDIA container runtime library (command-line tools)
-ii  libnvidia-container1:amd64      1.18.0-1                       amd64        NVIDIA container runtime library
+ii  libnvidia-container-tools       1.18.1-1                       amd64        NVIDIA container runtime library (command-line tools)
+ii  libnvidia-container1:amd64      1.18.1-1                       amd64        NVIDIA container runtime library
 ii  libp11-kit0:amd64               0.24.1-2                       amd64        library for loading and coordinating access to PKCS#11 modules - runtime
 ii  libpam-modules:amd64            1.5.2-6+deb12u1                amd64        Pluggable Authentication Modules for PAM
 ii  libpam-modules-bin              1.5.2-6+deb12u1                amd64        Pluggable Authentication Modules for PAM - helper binaries
@@ -200,8 +200,8 @@ ii  netbase                         6.4                            all          
 ii  netcat-openbsd                  1.219-1                        amd64        TCP/IP swiss army knife
 ii  nfs-common                      1:2.6.2-4+deb12u1              amd64        NFS support files common to client and server
 ii  nftables                        1.0.6-2+deb12u2                amd64        Program to control packet filtering rules by Netfilter project
-ii  nvidia-container-toolkit        1.18.0-1                       amd64        NVIDIA Container toolkit
-ii  nvidia-container-toolkit-base   1.18.0-1                       amd64        NVIDIA Container Toolkit Base
+ii  nvidia-container-toolkit        1.18.1-1                       amd64        NVIDIA Container toolkit
+ii  nvidia-container-toolkit-base   1.18.1-1                       amd64        NVIDIA Container Toolkit Base
 ii  openssh-client                  1:9.2p1-2+deb12u7              amd64        secure shell (SSH) client, for secure access to remote machines
 ii  openssh-server                  1:9.2p1-2+deb12u7              amd64        secure shell (SSH) server, for secure access from remote machines
 ii  openssh-sftp-server             1:9.2p1-2+deb12u7              amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
