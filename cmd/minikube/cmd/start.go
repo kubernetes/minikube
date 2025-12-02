@@ -411,7 +411,7 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
 	if !driver.IsVirtualBox(driverName) || !detect.MacOS13Plus() {
 		return
 	}
-	out.WarningT(`Due to changes in macos 14+ minikube doesn't currently support VirtualBox. You can use alternative drivers such as 'vfkit', 'qemu', or 'docker'.
+	out.WarningT(`Due to changes in macos 13+ minikube doesn't currently support VirtualBox. You can use alternative drivers such as 'vfkit', 'qemu', or 'docker'.
     https://minikube.sigs.k8s.io/docs/drivers/vfkit/
     https://minikube.sigs.k8s.io/docs/drivers/qemu/
     https://minikube.sigs.k8s.io/docs/drivers/docker/

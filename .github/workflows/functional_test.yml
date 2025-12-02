@@ -91,7 +91,7 @@ jobs:
           - name: qemu-docker-macos-15-x86_64
             driver: qemu
             cruntime: docker
-            os: macos-15
+            os: macos-15-intel
             extra-start-args: --network socket_vmnet
             test-timeout: 50m
           - name: vfkit-docker-macos-15-x86_64
