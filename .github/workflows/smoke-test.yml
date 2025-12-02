@@ -40,10 +40,10 @@ jobs:
       matrix:
         include:
           - driver: qemu
-            os: macos-15
+            os: macos-15-intel
             network_flag: --network socket_vmnet
           - driver: vfkit
-            os: macos-15
+            os: macos-15-intel
             network_flag: --network vmnet-shared
           - driver: docker
             os: ubuntu-24.04
@@ -93,8 +93,6 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: make
-      - name: Ensure bootpd is enabled (macos)
-        if: matrix.os == 'macos-15'
         shell: bash
         run: |
           set -x

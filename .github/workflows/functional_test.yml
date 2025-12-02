@@ -97,7 +97,7 @@ jobs:
           - name: vfkit-docker-macos-15-x86_64
             driver: vfkit
             cruntime: docker
-            os: macos-15
+            os: macos-15-intel
             extra-start-args: --network vmnet-shared
             test-timeout: 50m            
     steps:
@@ -258,8 +258,6 @@ jobs:
           curl https://get.docker.com | sudo sh
           dockerd-rootless-setuptool.sh install -f
           docker context use rootless
-      - name: Ensure bootpd is enabled (macos-15)
-        if: matrix.os == 'macos-15'
         shell: bash
         run: |
           set -x

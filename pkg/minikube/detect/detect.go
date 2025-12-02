@@ -195,7 +195,7 @@ func CgroupDriver() string {
 	}
 }
 
-// MacOS14Plus returns if the current machine is running macos 14+
+// MacOS14Plus returns if the current machine is running macOS 14+
 func MacOS14Plus() bool {
 	if runtime.GOOS != "darwin" {
 		return false
