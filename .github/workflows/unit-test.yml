@@ -5,9 +5,13 @@ on:
     branches: [ master ]
     paths:
       - .github/workflows/unit-test.yml
+      - .gitattributes
       - go.mod
-      - '**/*.go'
       - Makefile
+      - '**/*.go'
+      - '**/testdata/**/*.yaml'
+      - '**/testdata/**/*.yml'
+      - '**/testdata/**/*.json'
       - '!hack/**'
       - '!site/**'
       - '!**/*.md'
@@ -15,9 +19,13 @@ on:
   pull_request:
     paths:
       - .github/workflows/unit-test.yml
+      - .gitattributes
       - go.mod
-      - '**/*.go'
       - Makefile
+      - '**/*.go'
+      - '**/testdata/**/*.yaml'
+      - '**/testdata/**/*.yml'
+      - '**/testdata/**/*.json'
       - '!hack/**'
       - '!site/**'
       - '!**/*.md'
