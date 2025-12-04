@@ -106,6 +106,7 @@ jobs:
         shell: bash
         run: |
           set -x
+          set +e
           echo "=== Kernel and OS ==="
           uname -a
           sw_vers
