@@ -17,8 +17,8 @@ integration-prow-docker-crio-linux-x86-64:
 # ----------------------------------------------------------------
 # Bellow Integration tests run in cloud VM using boskos
 # ----------------------------------------------------------------
-.PHONY: integration-docker-docker-linux-arm64
-integration-docker-docker-linux-arm64: setup-prow-gcp-ssh-keys build-mini-test
+.PHONY: integration-prow-docker-docker-linux-arm64
+integration-prow-docker-docker-linux-arm64: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./out/minitest  --deployer boskos --tester docker-linux-arm64-integration --config hack/prow/bosksos-cfg-arm64.json
 
