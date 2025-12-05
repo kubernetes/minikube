@@ -32,17 +32,26 @@ VERSION_TO_INSTALL=${2}
 INSTALL_PATH=${1}
 
 function current_arch() {
-  case $(arch) in
-  "x86_64" | "i386")
-     echo "amd64"
-  ;;
-  "aarch64" | "arm64")
-    echo "arm64"
-  ;;
-  *)
-    echo "unexpected arch: $(arch). use amd64" 1>&2
-    echo "amd64"
-  ;;
+  local arch
+  arch="$(uname -m)"
+
+  case "$arch" in
+    x86_64 | amd64)
+      echo "amd64"
+      ;;
+    aarch64 | arm64)
+      echo "arm64"
+      ;;
+    armv7l | armv6l | armv8l)
+      echo "armv6l"
+      ;;
+    ppc64le | s390x | riscv64)
+      echo "$arch"
+      ;;
+    *)
+      echo "unexpected arch: $arch. use amd64" 1>&2
+      echo "amd64"
+      ;;
   esac
 }
 
