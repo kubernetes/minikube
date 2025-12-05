@@ -14,6 +14,12 @@ integration-prow-docker-crio-linux-x86-64:
 
 
 # Integration tests using boskos to manage GCP projects
+.PHONY: integration-docker-docker-linux-arm64
+integration-docker-docker-linux-arm64: setup-prow-gcp-ssh-keys build-mini-test
+	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
+	./out/minitest  --deployer boskos --tester none-docker-linux-amd64-integration --config hack/prow/bosksos-cfg-arm64.json
+
+
 .PHONY: integration-prow-none-docker-linux-x86-64
 integration-prow-none-docker-linux-x86-64: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
