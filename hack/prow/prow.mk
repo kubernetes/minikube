@@ -1,4 +1,6 @@
-# Integration tests using local prow docker
+# ----------------------------------------------------------------
+# Bellow Integration tests run in a prow container (no external cloud vm)
+# ----------------------------------------------------------------
 .PHONY: integration-prow-kvm-docker-linux-x86-64
 integration-prow-docker-docker-linux-x86-64:
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
@@ -12,8 +14,9 @@ integration-prow-docker-crio-linux-x86-64:
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_crio_linux_x86-64.sh
 
-
-# Integration tests using boskos to manage GCP projects
+# ----------------------------------------------------------------
+# Bellow Integration tests run in cloud VM using boskos
+# ----------------------------------------------------------------
 .PHONY: integration-docker-docker-linux-arm64
 integration-docker-docker-linux-arm64: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
