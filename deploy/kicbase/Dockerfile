@@ -50,6 +50,7 @@ ARG CNI_PLUGINS_VERSION="v1.4.0"
 ARG TARGETARCH
 ARG NERDCTL_VERSION="1.7.7"
 ARG NERDCTLD_VERSION="0.7.0"
+ARG CONTAINERD_VERSION="2.1.4"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
@@ -170,7 +171,29 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
     $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
     tee /etc/apt/sources.list.d/docker.list > /dev/null \
-    && clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
+    && clean-install docker-ce docker-ce-cli docker-buildx-plugin
+
+ # install containerd
+ # See: https://github.com/containerd/containerd/blob/f37f951f5601b309e3b31fadf66991625370f7ba/docs/getting-started.md?plain=1#L1
+RUN export ARCH=$(dpkg --print-architecture) && \
+    case "$ARCH" in \
+      amd64) CONTAINERD_ARCH="amd64" ;; \
+      arm64) CONTAINERD_ARCH="arm64" ;; \
+      ppc64el) CONTAINERD_ARCH="ppc64le" ;; \
+      armhf) CONTAINERD_ARCH="armhf" ;; \
+      s390x) CONTAINERD_ARCH="s390x" ;; \
+      *) echo "Unsupported architecture for containerd: $ARCH" && exit 1 ;; \
+    esac && \
+    if [ "$CONTAINERD_ARCH" != "armhf" ]; then \
+        curl -fsSL --retry 5 --output /tmp/containerd.tgz "https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}-linux-${CONTAINERD_ARCH}.tar.gz" && \
+        tar -C /usr/local -xzvf /tmp/containerd.tgz && rm -f /tmp/containerd.tgz && \
+        chmod +x /usr/local/bin/containerd && \
+        curl -fsSL --retry 5 --output /lib/systemd/system/containerd.service "https://raw.githubusercontent.com/containerd/containerd/refs/tags/v${CONTAINERD_VERSION}/containerd.service"; \
+    else \
+      echo "Skipping containerd install for armhf: No asset available in v1.34.0"; \
+    fi   
+# disable non-docker runtimes by default (since cri-dockerd is default in minikube)
+RUN systemctl disable containerd
 
 # Set ulimit for containerd to match docker's default-ulimit setting
 # This ensures consistent file descriptor limits (1048576) across container runtimes
@@ -270,8 +293,7 @@ COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop /var/lib/minikube/sch
 COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
 RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
-# disable non-docker runtimes by default (since cri-dockerd is default in minikube)
-RUN systemctl disable containerd
+
 # disable crio for archs that support it
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
     if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then systemctl disable crio && rm -f /etc/crictl.yaml; fi

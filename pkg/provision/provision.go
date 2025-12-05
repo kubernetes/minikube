@@ -48,6 +48,7 @@ type miniProvisioner interface {
 	String() string
 	CompatibleWithHost() bool
 	GenerateDockerOptions(int) (*provision.DockerOptions, error)
+	GenerateContainerdServiceFile() error
 	Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error
 	GetDriver() drivers.Driver
 	GetAuthOptions() auth.Options
@@ -236,8 +237,12 @@ func setContainerRuntimeOptions(name string, p miniProvisioner) error {
 	case "crio", "cri-o":
 		return setCrioOptions(p)
 	case "containerd":
-		return nil
+
+		return p.GenerateContainerdServiceFile()
 	default:
+		if err := p.GenerateContainerdServiceFile(); err != nil {
+			return err
+		}
 		_, err := p.GenerateDockerOptions(engine.DefaultPort)
 		return err
 	}
