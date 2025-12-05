@@ -18,7 +18,7 @@ set -e
 set -x
 
 OS="linux"
-ARCH="amd64"
+ARCH="arm64"
 DRIVER="qemu"
 CONTAINER_RUNTIME="docker"
 # in prow, if you want libvirtd to be run, you have to start a privileged container as root
