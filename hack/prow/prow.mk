@@ -6,11 +6,15 @@ integration-prow-docker-docker-linux-x86-64:
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_docker_linux_x86-64.sh
 
-.PHONY: integration-prow-docker-docker-linux-arm64
-integration-prow-docker-docker-linux-arm64:
-	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux arm64
-	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_docker_linux_arm64.sh
+# .PHONY: integration-prow-docker-docker-linux-arm64
+# integration-prow-docker-docker-linux-arm64:
+# 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux arm64
+# 	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_docker_linux_arm64.sh
 
+.PHONY: integration-prow-docker-docker-linux-arm64
+integration-prow-docker-docker-linux-arm64: setup-prow-gcp-ssh-keys build-mini-test
+	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux arm64
+	./out/minitest --deployer boskos --tester qemu-linux-arm64-tester --config hack/prow/boskos-cfg-arm64.json
 
 integration-prow-docker-containerd-linux-x86-64:
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
@@ -29,16 +33,10 @@ integration-prow-none-docker-linux-x86-64: setup-prow-gcp-ssh-keys build-mini-te
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./out/minitest  --deployer boskos --tester none-docker-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
 
-# .PHONY: integration-prow-kvm-docker-linux-x86-64
-# integration-prow-kvm-docker-linux-x86-64: setup-prow-gcp-ssh-keys build-mini-test
-# 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
-# 	./out/minitest  --deployer boskos --tester kvm-docker-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
-
 .PHONY: integration-prow-kvm-docker-linux-x86-64
 integration-prow-kvm-docker-linux-x86-64: setup-prow-gcp-ssh-keys build-mini-test
-	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux arm64
-	./out/minitest  --deployer boskos --tester qemu-linux-arm64-tester --config hack/prow/boskos-cfg-arm64.json
-
+	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
+	./out/minitest  --deployer boskos --tester kvm-docker-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
 
 .PHONY: integration-prow-kvm-containerd-linux-x86-64
 integration-prow-kvm-containerd-linux-x86-64: setup-prow-gcp-ssh-keys build-mini-test
