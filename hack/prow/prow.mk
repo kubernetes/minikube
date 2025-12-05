@@ -19,29 +19,30 @@ integration-prow-docker-crio-linux-x86-64:
 # ----------------------------------------------------------------
 .PHONY: integration-prow-docker-docker-linux-arm64
 integration-prow-docker-docker-linux-arm64: setup-prow-gcp-ssh-keys build-mini-test
-	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
-	./out/minitest  --deployer boskos --tester docker-linux-arm64-integration --config hack/prow/bosksos-cfg-arm64.json
+	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux arm64
+	./out/minitest  --deployer boskos --tester docker-linux-arm64-integration --config hack/prow/boskos-cfg-arm64.json
+
 
 
 .PHONY: integration-prow-none-docker-linux-x86-64
 integration-prow-none-docker-linux-x86-64: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
-	./out/minitest  --deployer boskos --tester none-docker-linux-amd64-integration --config hack/prow/bosksos-nested.json
+	./out/minitest  --deployer boskos --tester none-docker-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
 
 .PHONY: integration-prow-kvm-docker-linux-x86-64
 integration-prow-kvm-docker-linux-x86-64: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
-	./out/minitest  --deployer boskos --tester kvm-docker-linux-amd64-integration --config hack/prow/bosksos-nested.json
+	./out/minitest  --deployer boskos --tester kvm-docker-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
 
 .PHONY: integration-prow-kvm-containerd-linux-x86-64
 integration-prow-kvm-containerd-linux-x86-64: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
-	./out/minitest  --deployer boskos --tester kvm-containerd-linux-amd64-integration --config hack/prow/bosksos-nested.json
+	./out/minitest  --deployer boskos --tester kvm-containerd-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
 
 .PHONY: integration-prow-kvm-crio-linux-x86-64
 integration-prow-kvm-crio-linux-x86-64: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
-	./out/minitest  --deployer boskos --tester kvm-crio-linux-amd64-integration --config hack/prow/bosksos-nested.json
+	./out/minitest  --deployer boskos --tester kvm-crio-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
 
 .PHONY: build-mini-test
 build-mini-test: # build minitest binary
