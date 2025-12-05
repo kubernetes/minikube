@@ -32,7 +32,10 @@ sudo adduser $(whoami) docker || true
 
 sudo apt-get update
 sudo apt-get -y install qemu-system qemu-kvm libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
+sudo apt-get -y install bridge-utils virt-manager
 sudo adduser $(whoami) libvirt || true
+sudo adduser $(whoami) kvm || true
 
 # start libvirtd 
 sudo systemctl start libvirtd
+sudo systemctl enable --now libvirtd
