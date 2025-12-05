@@ -40,7 +40,7 @@ export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}"
 
-BUILT_VERSION=$("out/minikube-${OS_ARCH}" version)
+BUILT_VERSION=$("out/minikube-$(go env GOOS)-$(go env GOARCH)" version)
 echo ${BUILT_VERSION}
 
 COMMIT=$(echo ${BUILT_VERSION} | grep 'commit:' | awk '{print $2}')
