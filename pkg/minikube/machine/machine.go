@@ -133,7 +133,7 @@ func fastDetectProvisioner(h *host.Host) (libprovision.Provisioner, error) {
 }
 
 // saveHost is a wrapper around libmachine's Save function to proactively update the node's IP whenever a host is saved
-func saveHost(api libmachine.API, h *host.Host, cfg *config.ClusterConfig, n *config.Node) error {
+func saveHost(api libmachine.API, h *host.Host, cfg *config.ClusterConfig, n *config.Node, options *run.CommandOptions) error {
 	if err := api.Save(h); err != nil {
 		return errors.Wrap(err, "save")
 	}
@@ -147,7 +147,7 @@ func saveHost(api libmachine.API, h *host.Host, cfg *config.ClusterConfig, n *co
 		ip = "10.0.2.15"
 	}
 	n.IP = ip
-	return config.SaveNode(cfg, n)
+	return config.SaveNode(cfg, n, options)
 }
 
 // backup copies critical ephemeral vm config files from tmpfs to persistent storage under /var/lib/minikube/backup,
