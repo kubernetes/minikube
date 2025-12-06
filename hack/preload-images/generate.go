@@ -62,10 +62,6 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		return errors.Wrap(err, "creating kic driver")
 	}
 
-	if err := verifyStorage(containerRuntime); err != nil {
-		return errors.Wrap(err, "verifying storage")
-	}
-
 	// Now, get images to pull
 	imgs, err := images.Kubeadm("", kubernetesVersion)
 	if err != nil {
@@ -97,6 +93,11 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 
 	if err := cr.Enable(true, detect.CgroupDriver(), false); err != nil {
 		return errors.Wrap(err, "enable container runtime")
+	}
+
+	// Verify storage driver/snapshotter after the runtime has been configured.
+	if err := verifyStorage(containerRuntime); err != nil {
+		return errors.Wrap(err, "verifying storage")
 	}
 
 	for _, img := range imgs {
