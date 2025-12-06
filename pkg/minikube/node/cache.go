@@ -154,70 +154,68 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		var err error
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 
-			if driver.IsDocker(cc.Driver) && download.ImageExistsInDaemon(img) && !downloadOnly {
-				klog.Infof("%s exists in daemon, skipping load", img)
-				finalImg = img
-				return nil
-			}
+			if driver.IsDocker(cc.Driver) {
+				if download.ImageExistsInDaemon(img) && !downloadOnly {
+					klog.Infof("%s exists in daemon, skipping load", img)
+					finalImg = img
+					return nil
+				}
 
-			klog.Infof("Downloading %s to local cache", img)
-			err = download.ImageToCache(img)
-			if err == nil {
-				klog.Infof("successfully saved %s as a tarball", img)
-			}
-			if downloadOnly && err == nil {
-				return nil
-			}
-
-			if cc.Driver == driver.Podman {
-				return fmt.Errorf("not yet implemented, see issue #8426")
-			}
-			if driver.IsDocker(cc.Driver) && err == nil {
+				klog.Infof("Downloading %s to local cache", img)
+				err = download.ImageToCache(img)
+				if err == nil {
+					klog.Infof("successfully saved %s as a tarball", img)
+					if downloadOnly {
+						return nil
+					}
+				}
 				klog.Infof("Loading %s from local cache", img)
 				if finalImg, err = download.CacheToDaemon(img); err == nil {
 					klog.Infof("successfully loaded and using %s from cached tarball", img)
 					return nil
 				}
+				klog.Infof("failed to download %s, will try fallback image if available: %v", img, err)
 			}
-			klog.Infof("failed to download %s, will try fallback image if available: %v", img, err)
-		}
-		// second if we failed to download any fallback image
-		// that means probably all registries are blocked by network issues
-		// we can try to download the image from minikube release page
+			// second if we failed to download any fallback image
+			// that means probably all registries are blocked by network issues
+			// we can try to download the image from minikube release page
 
-		// if we reach here, that means the user cannot have access to any docker registry
-		// this means the user is very likely to have a network issue
-		// downloading from github via http is the last resort, and we should remind the user
-		// that he should at least get access to github
-		// print essential warnings
-		out.WarningT("minikube cannot pull kicbase image from any docker registry, and is trying to download kicbase tarball from github release page via HTTP.")
-		out.WarningT("It's very likely that you have an internet issue. Please ensure that you can access the internet at least via HTTP, directly or with proxy. Currently your proxy configuration is:")
-		envs := []string{"HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "NO_PROXY"}
-		for _, env := range envs {
-			if v := os.Getenv(env); v != "" {
-				out.Infof("{{.env}}={{.value}}", out.V{"env": env, "value": v})
+			// if we reach here, that means the user cannot have access to any docker registry
+			// this means the user is very likely to have a network issue
+			// downloading from github via http is the last resort, and we should remind the user
+			// that he should at least get access to github
+			// print essential warnings
+			out.WarningT("minikube cannot pull kicbase image from any docker registry, and is trying to download kicbase tarball from github release page via HTTP.")
+			out.WarningT("It's very likely that you have an internet issue. Please ensure that you can access the internet at least via HTTP, directly or with proxy. Currently your proxy configuration is:")
+			envs := []string{"HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "NO_PROXY"}
+			for _, env := range envs {
+				if v := os.Getenv(env); v != "" {
+					out.Infof("{{.env}}={{.value}}", out.V{"env": env, "value": v})
+				}
 			}
-		}
-		out.Ln("")
-
-		kicbaseVersion := strings.Split(kic.Version, "-")[0]
-		_, err = download.GHKicbaseTarballToCache(kicbaseVersion)
-		if err != nil {
-			klog.Infof("failed to download kicbase from github")
-			return fmt.Errorf("failed to download kic base image or any fallback image")
-		}
-
-		klog.Infof("successfully downloaded kicbase as fall back image from github")
-		if !downloadOnly && driver.IsDocker(cc.Driver) {
-			if finalImg, err = download.CacheToDaemon(fmt.Sprintf("kicbase/stable:%s", kicbaseVersion)); err == nil {
-				klog.Infof("successfully loaded and using kicbase from tarball on github")
-			} else {
-				return fmt.Errorf("failed to load kic base image into docker: %v", err)
+			out.Ln("")
+			kicbaseVersion := strings.Split(kic.Version, "-")[0]
+			_, err = download.GHKicbaseTarballToCache(kicbaseVersion)
+			if err != nil {
+				klog.Infof("failed to download kicbase from github")
+				return fmt.Errorf("failed to download kic base image or any fallback image")
 			}
+
+			klog.Infof("successfully downloaded kicbase as fall back image from github")
+			if !downloadOnly && driver.IsDocker(cc.Driver) {
+				if finalImg, err = download.CacheToDaemon(fmt.Sprintf("kicbase/stable:%s", kicbaseVersion)); err == nil {
+					klog.Infof("successfully loaded and using kicbase from tarball on github")
+				} else {
+					return fmt.Errorf("failed to load kic base image into docker: %v", err)
+				}
+			}
+			return nil
+
 		}
 		return nil
-
 	})
+
+	return
 }
 
 // waitDownloadKicBaseImage blocks until the base image for KIC is downloaded.
