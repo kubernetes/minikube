@@ -212,11 +212,7 @@ func UploadCachedImage(imgName string) error {
 		return err
 	}
 	if err := uploadImage(tag, imagePathInCache(imgName)); err != nil {
-		// this time try determine image tags from tarball
-
-		manifest, err := tarball.LoadManifest(func() (io.ReadCloser, error) {
-			return os.Open(imagePathInCache(imgName))
-		})
+		manifest, err := loadManifestWithRetry(imagePathInCache(imgName))
 		if err != nil || len(manifest) == 0 || len(manifest[0].RepoTags) == 0 {
 			return fmt.Errorf("failed to determine the image tag from tarball, err: %v", err)
 		}
@@ -239,9 +235,9 @@ func uploadImage(tag name.Tag, p string) error {
 		return fmt.Errorf("neither daemon nor remote")
 	}
 
-	img, err = tarball.ImageFromPath(p, &tag)
+	img, err = imageFromPathWithRetry(p, tag)
 	if err != nil {
-		return errors.Wrap(err, "tarball")
+		return err
 	}
 	ref := name.Reference(tag)
 
@@ -269,6 +265,52 @@ func uploadRemote(ref name.Reference, img v1.Image, p v1.Platform) error {
 		klog.Warningf("remote push for %s: %v", ref, err)
 	}
 	return err
+}
+
+func imageFromPathWithRetry(path string, tag name.Tag) (v1.Image, error) {
+	var lastErr error
+	const maxAttempts = 3
+	for i := 0; i < maxAttempts; i++ {
+		if i > 0 {
+			time.Sleep(200 * time.Millisecond)
+		}
+		img, err := tarball.ImageFromPath(path, &tag)
+		if err == nil {
+			return img, nil
+		}
+		lastErr = errors.Wrap(err, "tarball")
+		if !isRetryableEOF(err) {
+			return nil, lastErr
+		}
+		klog.Infof("retrying tarball read for %s due to EOF (%d/%d)", path, i+1, maxAttempts)
+	}
+	return nil, lastErr
+}
+
+func loadManifestWithRetry(path string) (tarball.Manifest, error) {
+	var lastErr error
+	const maxAttempts = 3
+	for i := 0; i < maxAttempts; i++ {
+		if i > 0 {
+			time.Sleep(200 * time.Millisecond)
+		}
+		manifest, err := tarball.LoadManifest(func() (io.ReadCloser, error) {
+			return os.Open(path)
+		})
+		if err == nil {
+			return manifest, nil
+		}
+		lastErr = err
+		if !isRetryableEOF(err) {
+			return nil, lastErr
+		}
+		klog.Infof("retrying manifest read for %s due to EOF (%d/%d)", path, i+1, maxAttempts)
+	}
+	return nil, lastErr
+}
+
+func isRetryableEOF(err error) bool {
+	return errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) || strings.Contains(err.Error(), "unexpected EOF")
 }
 
 // See https://github.com/kubernetes/minikube/issues/10402
