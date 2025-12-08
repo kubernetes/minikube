@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	// WARNING: use path for kic/iso and path/filepath for user os
+	// WARNING: use path for kic/iso and path/filepath for user os paths
 	"path"
 	"path/filepath"
 
