@@ -712,11 +712,24 @@ endif
 	./deploy/kicbase/build_auto_pause.sh $(KICBASE_ARCH)
 	docker buildx build -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --build-arg PREBUILT_AUTO_PAUSE=true .
 
-PRELOAD_GENERATOR := github.com/kubernetes-sigs/minikube-preloads/cmd/preload-generator
 
-out/preload-tool:
-	GOBIN=$(BUILD_DIR) go install $(PRELOAD_GENERATOR)@latest
-	mv $(BUILD_DIR)/preload-generator $@
+# preload scripts been moved to https://github.com/kubernetes-sigs/minikube-preloads/tree/main/cmd/preload-generator 
+# in order to be able to publish them as github assets 
+PRELOAD_GENERATOR_REPO ?= https://github.com/kubernetes-sigs/minikube-preloads.git
+PRELOAD_GENERATOR_REF ?= main
+PRELOAD_GENERATOR_DIR := $(BUILD_DIR)/preload-generator-src
+PRELOAD_GENERATOR_BIN := $(BUILD_DIR)/preload-generator
+
+$(PRELOAD_GENERATOR_DIR):
+	rm -rf $(PRELOAD_GENERATOR_DIR)
+	git clone --depth=1 --branch $(PRELOAD_GENERATOR_REF) $(PRELOAD_GENERATOR_REPO) $(PRELOAD_GENERATOR_DIR)
+
+$(PRELOAD_GENERATOR_BIN): $(PRELOAD_GENERATOR_DIR)
+	cd $(PRELOAD_GENERATOR_DIR) && GOWORK=off GOBIN=$(BUILD_DIR) go install ./cmd/preload-generator
+
+# previous name for preload-generator was preload-tool (TODO: change to new name after migraiton)
+out/preload-tool: $(PRELOAD_GENERATOR_BIN)
+	cp $(PRELOAD_GENERATOR_BIN) $@
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube out/preload-tool ## Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
