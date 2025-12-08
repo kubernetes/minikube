@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -58,8 +59,9 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the Kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the Kubernetes dashboard running within the minikube cluster`,
 	Run: func(_ *cobra.Command, _ []string) {
+		options := flags.CommandOptions()
 		cname := ClusterFlagValue()
-		co := mustload.Healthy(cname)
+		co := mustload.Healthy(cname, options)
 
 		for _, n := range co.Config.Nodes {
 			if err := proxy.ExcludeIP(n.IP); err != nil {
@@ -82,7 +84,7 @@ var dashboardCmd = &cobra.Command{
 			// Send status messages to stderr for folks reusing this output.
 			out.ErrT(style.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
-			err = addons.SetAndSave(cname, "dashboard", "true")
+			err = addons.SetAndSave(cname, "dashboard", "true", options)
 			if err != nil {
 				exit.Error(reason.InternalAddonEnable, "Unable to enable dashboard", err)
 			}

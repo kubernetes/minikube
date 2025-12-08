@@ -1,8 +1,6 @@
 module k8s.io/minikube/hack
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.25.0
 
 replace github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20240815173309-ffb6b643c381
 
@@ -12,6 +10,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.53.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-github/v74 v74.0.0
+	github.com/google/go-github/v79 v79.0.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/olekukonko/tablewriter v1.0.9
 	github.com/pkg/errors v0.9.1
@@ -19,7 +18,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/metric v1.38.0
-	go.opentelemetry.io/otel/sdk/metric v1.36.0
+	go.opentelemetry.io/otel/sdk/metric v1.38.0
 	golang.org/x/mod v0.27.0
 	golang.org/x/oauth2 v0.30.0
 	gonum.org/v1/plot v0.16.0
@@ -208,7 +207,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/gcp v1.36.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.37.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
@@ -216,8 +215,8 @@ require (
 	golang.org/x/image v0.25.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
-	golang.org/x/term v0.34.0 // indirect
+	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/term v0.36.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	google.golang.org/api v0.248.0 // indirect

@@ -26,6 +26,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -54,6 +55,7 @@ This can be useful if you cannot run kubectl locally for some reason, like unsup
 host. Please be aware that when using --ssh all paths will apply to the remote machine.`,
 	Example: "minikube kubectl -- --help\nminikube kubectl -- get pods --namespace kube-system",
 	Run: func(_ *cobra.Command, args []string) {
+		options := flags.CommandOptions()
 		cc, err := config.Load(ClusterFlagValue())
 
 		version := constants.DefaultKubernetesVersion
@@ -66,7 +68,7 @@ host. Please be aware that when using --ssh all paths will apply to the remote m
 		cname := ClusterFlagValue()
 
 		if useSSH {
-			co := mustload.Running(cname)
+			co := mustload.Running(cname, options)
 			n := co.CP.Node
 
 			kc := []string{"sudo"}

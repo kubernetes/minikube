@@ -31,6 +31,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -72,15 +73,15 @@ func defaultMountOptions() []string {
 
 // placeholders for flag values
 var (
-	mountIP      string
-	mountPort    uint16
-	mountVersion string
-	mountType    string
-	isKill       bool
-	uid          string
-	gid          string
-	mSize        int
-	options      []string
+	mountIP           string
+	mountPort         uint16
+	mountVersion      string
+	mountType         string
+	isKill            bool
+	uid               string
+	gid               string
+	mSize             int
+	mountOptionsValue []string
 )
 
 // supportedFilesystems is a map of filesystem types to not warn against.
@@ -100,9 +101,11 @@ var mountCmd = &cobra.Command{
 		}
 
 		if len(args) != 1 {
-			exit.Message(reason.Usage, `Please specify the directory to be mounted: 
+			exit.Message(reason.Usage, `Please specify the directory to be mounted:
 	minikube mount <source directory>:<target directory>   (example: "/host-home:/vm-home")`)
 		}
+
+		options := flags.CommandOptions()
 		mountString := args[0]
 		idx := strings.LastIndex(mountString, ":")
 		if idx == -1 { // no ":" was present
@@ -125,7 +128,7 @@ var mountCmd = &cobra.Command{
 			debugVal = 1 // ufs.StartServer takes int debug param
 		}
 
-		co := mustload.Running(ClusterFlagValue())
+		co := mustload.Running(ClusterFlagValue(), options)
 		if co.CP.Host.Driver.DriverName() == driver.None {
 			exit.Message(reason.Usage, `'none' driver does not support 'minikube mount' command`)
 		}
@@ -177,7 +180,7 @@ var mountCmd = &cobra.Command{
 			Options: map[string]string{},
 		}
 
-		for _, o := range options {
+		for _, o := range mountOptionsValue {
 			if !strings.Contains(o, "=") {
 				cfg.Options[o] = ""
 				continue
@@ -265,7 +268,7 @@ func init() {
 	mountCmd.Flags().BoolVar(&isKill, "kill", false, "Kill the mount process spawned by minikube start")
 	mountCmd.Flags().StringVar(&uid, constants.MountUIDFlag, defaultMountUID, mountUIDDescription)
 	mountCmd.Flags().StringVar(&gid, constants.MountGIDFlag, defaultMountGID, mountGIDDescription)
-	mountCmd.Flags().StringSliceVar(&options, constants.MountOptionsFlag, defaultMountOptions(), mountOptionsDescription)
+	mountCmd.Flags().StringSliceVar(&mountOptionsValue, constants.MountOptionsFlag, defaultMountOptions(), mountOptionsDescription)
 	mountCmd.Flags().IntVar(&mSize, constants.MountMSizeFlag, defaultMountMSize, mountMSizeDescription)
 }
 

@@ -188,17 +188,33 @@ var verifyContainerdStorage = func() error {
 	if err != nil {
 		return fmt.Errorf("%v: %v:\n%s", cmd.Args, err, stderr.String())
 	}
-	var driver string
-	for _, line := range strings.Split(string(output), "\n") {
-		if strings.Contains(line, "snapshotter = ") {
-			driver = strings.Split(line, " = ")[1]
-			driver = strings.Trim(driver, "\"")
-		}
-	}
+	driver := parseContainerdSnapshotter(string(output))
 	if driver != containerdSnapshotter {
 		return fmt.Errorf("containerd snapshotter %s does not match requested %s", driver, containerdSnapshotter)
 	}
 	return nil
+}
+
+func parseContainerdSnapshotter(cfg string) string {
+	var driver string
+	for _, line := range strings.Split(cfg, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "snapshotter") { // e.g. snapshotter = "overlayfs" or snapshotter = 'overlayfs'
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		val := strings.Trim(strings.TrimSpace(parts[1]), "\"'")
+		if val == "" {
+			continue
+		}
+		if driver == "" {
+			driver = val
+		}
+	}
+	return driver
 }
 
 var verifyPodmanStorage = func() error {

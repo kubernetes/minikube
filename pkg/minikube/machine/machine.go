@@ -29,6 +29,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/provision"
 	"k8s.io/minikube/pkg/util/retry"
@@ -68,8 +69,8 @@ func (h *Machine) IsValid() bool {
 }
 
 // LoadMachine returns a Machine abstracting a libmachine.Host
-func LoadMachine(name string) (*Machine, error) {
-	api, err := NewAPIClient()
+func LoadMachine(name string, options *run.CommandOptions) (*Machine, error) {
+	api, err := NewAPIClient(options)
 	if err != nil {
 		return nil, err
 	}

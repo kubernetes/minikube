@@ -102,9 +102,6 @@ makes sure the MINIKUBE_FORCE_SYSTEMD environment variable works just as well as
 ## TestDockerEnvContainerd
 makes sure that minikube docker-env command works when the runtime is containerd
 
-## TestKVMDriverInstallOrUpdate
-makes sure our docker-machine-driver-kvm2 binary can be installed properly
-
 ## TestHyperKitDriverInstallOrUpdate
 makes sure our docker-machine-driver-hyperkit binary can be installed properly
 
@@ -479,9 +476,6 @@ NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook
 #### validateTunnelDelete
 stops `minikube tunnel`
 
-## TestGuestEnvironment
-verifies files and packages installed inside minikube ISO/Base image
-
 ## TestGvisorAddon
 tests the functionality of the gVisor addon
 
@@ -558,6 +552,9 @@ is a test case building with --build-env
 
 #### validateImageBuildWithDockerIgnore
 is a test case building with .dockerignore
+
+## TestISOImage
+verifies files and packages installed inside minikube ISO/Base image
 
 ## TestJSONOutput
 makes sure json output works properly for the start, pause, unpause, and stop commands
@@ -739,7 +736,7 @@ makes sure no left over left after deleting a profile such as containers or volu
 makes sure paused clusters show up in minikube status correctly
 
 ## TestPreload
-verifies the preload tarballs get pulled in properly by minikube
+verifies that disabling the initial preload, pulling a specific image, and restarting the cluster preserves the image across restarts.
 
 ## TestScheduledStopWindows
 tests the schedule stop functionality on Windows

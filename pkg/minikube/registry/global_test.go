@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func TestGlobalRegister(t *testing.T) {
@@ -75,7 +76,7 @@ func TestGlobalAvailable(t *testing.T) {
 		Name:     "healthy-bar",
 		Default:  true,
 		Priority: Default,
-		Status:   func() State { return State{Healthy: true} },
+		Status:   func(_ *run.CommandOptions) State { return State{Healthy: true} },
 	}
 	if err := Register(bar); err != nil {
 		t.Errorf("register returned error: %v", err)
@@ -85,7 +86,7 @@ func TestGlobalAvailable(t *testing.T) {
 		Name:     "unhealthy-foo",
 		Default:  true,
 		Priority: Default,
-		Status:   func() State { return State{Healthy: false} },
+		Status:   func(_ *run.CommandOptions) State { return State{Healthy: false} },
 	}
 	if err := Register(foo); err != nil {
 		t.Errorf("register returned error: %v", err)
@@ -108,7 +109,7 @@ func TestGlobalAvailable(t *testing.T) {
 		},
 	}
 
-	if diff := cmp.Diff(Available(false), expected); diff != "" {
+	if diff := cmp.Diff(Available(false, &run.CommandOptions{}), expected); diff != "" {
 		t.Errorf("available mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -125,13 +126,13 @@ func TestGlobalStatus(t *testing.T) {
 		Name:     "bar",
 		Default:  true,
 		Priority: Default,
-		Status:   func() State { return expected },
+		Status:   func(_ *run.CommandOptions) State { return expected },
 	}
 	if err := Register(bar); err != nil {
 		t.Errorf("register returned error: %v", err)
 	}
 
-	if diff := cmp.Diff(Status("bar"), expected); diff != "" {
+	if diff := cmp.Diff(Status("bar", &run.CommandOptions{}), expected); diff != "" {
 		t.Errorf("status mismatch (-want +got):\n%s", diff)
 	}
 }

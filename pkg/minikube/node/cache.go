@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"k8s.io/minikube/pkg/minikube/detect"
+	"k8s.io/minikube/pkg/minikube/run"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -53,6 +54,12 @@ const (
 
 // BeginCacheKubernetesImages caches images required for Kubernetes version in the background
 func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string, driverName string) {
+	// Skip all caching operations in --no-kubernetes mode
+	if viper.GetBool("no-kubernetes") {
+		klog.Infof("Skipping Kubernetes image caching due to --no-kubernetes flag")
+		return
+	}
+
 	// TODO: remove imageRepository check once #7695 is fixed
 	if imageRepository == "" && download.PreloadExists(k8sVersion, cRuntime, driverName) {
 		klog.Info("Caching tarball of preloaded images")
@@ -74,18 +81,22 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 }
 
 // handleDownloadOnly caches appropariate binaries and images
-func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, containerRuntime, driverName string) {
+func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, containerRuntime, driverName string, options *run.CommandOptions) {
 	// If --download-only, complete the remaining downloads and exit.
-	if !viper.GetBool("download-only") {
+	if !options.DownloadOnly {
 		return
 	}
 
 	binariesURL := viper.GetString("binary-mirror")
-	if err := doCacheBinaries(k8sVersion, containerRuntime, driverName, binariesURL); err != nil {
-		exit.Error(reason.InetCacheBinaries, "Failed to cache binaries", err)
-	}
-	if _, err := CacheKubectlBinary(k8sVersion, binariesURL); err != nil {
-		exit.Error(reason.InetCacheKubectl, "Failed to cache kubectl", err)
+
+	// Skip binary downloads in --no-kubernetes mode
+	if !viper.GetBool("no-kubernetes") {
+		if err := doCacheBinaries(k8sVersion, containerRuntime, driverName, binariesURL); err != nil {
+			exit.Error(reason.InetCacheBinaries, "Failed to cache binaries", err)
+		}
+		if _, err := CacheKubectlBinary(k8sVersion, binariesURL); err != nil {
+			exit.Error(reason.InetCacheKubectl, "Failed to cache kubectl", err)
+		}
 	}
 	waitCacheRequiredImages(cacheGroup)
 	if driver.IsKIC(driverName) {
@@ -180,7 +191,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		// that he should at least get access to github
 		// print essential warnings
 		out.WarningT("minikube cannot pull kicbase image from any docker registry, and is trying to download kicbase tarball from github release page via HTTP.")
-		out.WarningT("It's very likely that you have an internet issue. Please ensure that you can access the internet at least via HTTP, directly or with proxy. Currently your proxy configure is:")
+		out.WarningT("It's very likely that you have an internet issue. Please ensure that you can access the internet at least via HTTP, directly or with proxy. Currently your proxy configuration is:")
 		envs := []string{"HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "NO_PROXY"}
 		for _, env := range envs {
 			if v := os.Getenv(env); v != "" {
@@ -217,7 +228,7 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 				klog.Warningf("Error downloading kic artifacts: %v", err)
 				out.ErrT(style.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": image.Tag(kic.BaseImage)})
 				out.WarningT("In order to use the fall back image, you need to log in to the github packages registry")
-				out.Styled(style.Documentation, `Please visit the following link for documentation around this: 
+				out.Styled(style.Documentation, `Please visit the following link for documentation around this:
 	https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages
 `)
 			}
@@ -257,7 +268,7 @@ func saveImagesToTarFromConfig() error {
 
 // CacheAndLoadImagesInConfig loads the images currently in the config file
 // called by 'start' and 'cache reload' commands.
-func CacheAndLoadImagesInConfig(profiles []*config.Profile) error {
+func CacheAndLoadImagesInConfig(profiles []*config.Profile, options *run.CommandOptions) error {
 	images, err := imagesInConfigFile()
 	if err != nil {
 		return errors.Wrap(err, "images")
@@ -265,7 +276,7 @@ func CacheAndLoadImagesInConfig(profiles []*config.Profile) error {
 	if len(images) == 0 {
 		return nil
 	}
-	return machine.CacheAndLoadImages(images, profiles, false)
+	return machine.CacheAndLoadImages(images, profiles, false, options)
 }
 
 func imagesInConfigFile() ([]string, error) {

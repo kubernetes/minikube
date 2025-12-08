@@ -23,6 +23,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // LogOptions are options to be passed to LogCommands
@@ -37,7 +38,7 @@ type LogOptions struct {
 type Bootstrapper interface {
 	// LabelAndUntaintNode applies minikube labels to node and removes NoSchedule taints from control-plane nodes.
 	LabelAndUntaintNode(config.ClusterConfig, config.Node) error
-	StartCluster(config.ClusterConfig) error
+	StartCluster(config.ClusterConfig, *run.CommandOptions) error
 	UpdateCluster(config.ClusterConfig) error
 	DeleteCluster(config.KubernetesConfig) error
 	WaitForNode(config.ClusterConfig, config.Node, time.Duration) error

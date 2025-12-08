@@ -31,7 +31,7 @@ import (
 
 	"k8s.io/minikube/hack/update"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v79/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -106,7 +106,10 @@ func main() {
 		data = Data{ImageMap: imageMapString}
 		schema[minikubeConstantsFilePath].Replace[`KubeadmImages = .*`] =
 			`KubeadmImages = map[string]map[string]string{ {{.ImageMap}}`
-		update.Apply(schema, data)
+
+		if err := update.Apply(schema, data); err != nil {
+			klog.Fatalf("unable to apply update: %v", err)
+		}
 	}
 }
 

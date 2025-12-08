@@ -34,7 +34,7 @@ var (
 	schema = map[string]update.Item{
 		"Makefile": {
 			Replace: map[string]string{
-				`GOLINT_VERSION \?= v1.*`: `GOLINT_VERSION ?= {{.StableVersion}}`,
+				`GOLINT_VERSION \?= v2.*`: `GOLINT_VERSION ?= {{.StableVersion}}`,
 			},
 		},
 	}
@@ -58,5 +58,7 @@ func main() {
 	data := Data{StableVersion: stable}
 	klog.Infof("Golint stable version: %s", data.StableVersion)
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }

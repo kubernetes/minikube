@@ -25,20 +25,27 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 // TransferBinaries transfers all required Kubernetes binaries
 func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.Manager, binariesURL string) error {
+	// Skip binary transfer in --no-kubernetes mode
+	if viper.GetBool("no-kubernetes") {
+		klog.Info("Skipping Kubernetes binary transfer due to --no-kubernetes flag")
+		return nil
+	}
+
 	ok, err := binariesExist(cfg, c)
 	if err == nil && ok {
 		klog.Info("Found k8s binaries, skipping transfer")
@@ -68,7 +75,7 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.
 			}
 
 			dst := path.Join(dir, name)
-			if err := machine.CopyBinary(c, src, dst); err != nil {
+			if err := copyBinary(c, src, dst); err != nil {
 				return errors.Wrapf(err, "copybinary %s -> %s", src, dst)
 			}
 			return nil
@@ -100,4 +107,22 @@ func binariesExist(cfg config.KubernetesConfig, c command.Runner) (bool, error) 
 // binRoot returns the persistent path binaries are stored in
 func binRoot(version string) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", version)
+}
+
+// copyBinary copies a locally cached binary to the guest VM
+func copyBinary(cr command.Runner, src, dest string) error {
+	f, err := assets.NewFileAsset(src, path.Dir(dest), path.Base(dest), "0755")
+	if err != nil {
+		return errors.Wrap(err, "new file asset")
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+		}
+	}()
+
+	if err := cr.Copy(f); err != nil {
+		return errors.Wrapf(err, "copy")
+	}
+	return nil
 }

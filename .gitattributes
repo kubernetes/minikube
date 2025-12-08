@@ -1,0 +1,4 @@
+# Prevent Git from altering line endings for test fixtures; enforce LF for YAML/JSON under any testdata directory.
+**/testdata/**/*.yaml text eol=lf
+**/testdata/**/*.yml  text eol=lf
+**/testdata/**/*.json text eol=lf

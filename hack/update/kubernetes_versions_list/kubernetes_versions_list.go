@@ -25,7 +25,7 @@ import (
 
 	"k8s.io/minikube/hack/update"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v79/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 )
@@ -80,7 +80,9 @@ func main() {
 		klog.Fatal(err)
 	}
 
-	update.Apply(schema, Data{formatted})
+	if err := update.Apply(schema, Data{formatted}); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }
 
 func formatKubernetesVersionsList(versions []string) (string, error) {

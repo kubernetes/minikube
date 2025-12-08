@@ -53,6 +53,11 @@ var (
 				`VERSION_TO_INSTALL=.*`: `VERSION_TO_INSTALL={{.StableVersion}}`,
 			},
 		},
+		"hack/prow/common.sh": {
+			Replace: map[string]string{
+				`GOLANG_VERSION_TO_INSTALL=.*`: `GOLANG_VERSION_TO_INSTALL={{.StableVersion}}`,
+			},
+		},
 		"hack/jenkins/installers/check_install_golang.ps1": {
 			Replace: map[string]string{
 				`GoVersion = ".*"`: `GoVersion = "{{.StableVersion}}"`,
@@ -104,7 +109,9 @@ func main() {
 	data := Data{StableVersion: stable, MajorMinor: majorMinor, K8SVersion: k8sVersion}
 	klog.Infof("Golang stable version: %s, MajorMinor: %s", data.StableVersion, data.MajorMinor)
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 
 	if err := updateGoHashFile(stable); err != nil {
 		klog.Fatalf("failed to update go hash file: %v", err)

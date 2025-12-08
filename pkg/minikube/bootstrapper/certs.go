@@ -43,6 +43,7 @@ import (
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -418,9 +419,8 @@ func renewExpiredKubeadmCerts(cmd command.Runner, cc config.ClusterConfig) error
 		return nil
 	}
 	out.WarningT("kubeadm certificates have expired. Generating new ones...")
-	kubeadmPath := path.Join(vmpath.GuestPersistentDir, "binaries", cc.KubernetesConfig.KubernetesVersion)
-	bashCmd := fmt.Sprintf("sudo env PATH=\"%s:$PATH\" kubeadm certs renew all --config %s", kubeadmPath, constants.KubeadmYamlPath)
-	if _, err := cmd.RunCmd(exec.Command("/bin/bash", "-c", bashCmd)); err != nil {
+	bashCmd := fmt.Sprintf("%s certs renew all --config %s", bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion), constants.KubeadmYamlPath)
+	if _, err := cmd.RunCmd(exec.Command("sudo", "/bin/bash", "-c", bashCmd)); err != nil {
 		return errors.Wrap(err, "kubeadm certs renew")
 	}
 	return nil
@@ -552,9 +552,11 @@ func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
 	for _, caCertFile := range caCerts {
 		dstFilename := path.Base(caCertFile)
 		certStorePath := path.Join(vmpath.GuestCertStoreDir, dstFilename)
-
-		cmd := fmt.Sprintf("test -s %s && ln -fs %s %s", caCertFile, caCertFile, certStorePath)
-		if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
+		// to avoid shell-based command exploitation will run these separately not in one command
+		if _, err := cr.RunCmd(exec.Command("sudo", "test", "-s", caCertFile)); err != nil {
+			return errors.Wrapf(err, "verify ca cert %s", caCertFile)
+		}
+		if _, err := cr.RunCmd(exec.Command("sudo", "ln", "-fs", caCertFile, certStorePath)); err != nil {
 			return errors.Wrapf(err, "create symlink for %s", caCertFile)
 		}
 
@@ -569,8 +571,11 @@ func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
 		subjectHashLink := path.Join(vmpath.GuestCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
 
 		// NOTE: This symlink may exist, but point to a missing file
-		cmd = fmt.Sprintf("test -L %s || ln -fs %s %s", subjectHashLink, certStorePath, subjectHashLink)
-		if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
+		if _, err := cr.RunCmd(exec.Command("sudo", "test", "-L", subjectHashLink)); err == nil {
+			// equivalent to previous unsafe code: fmt.Sprintf("test -L %s || ln -fs %s %s", subjectHashLink, certStorePath, subjectHashLink)
+			continue
+		}
+		if _, err := cr.RunCmd(exec.Command("sudo", "ln", "-fs", certStorePath, subjectHashLink)); err != nil {
 			return errors.Wrapf(err, "create symlink for %s", caCertFile)
 		}
 	}

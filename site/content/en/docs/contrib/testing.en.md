@@ -45,15 +45,19 @@ make integration
 You may find it useful to set various options to test only a particular test against a non-default driver. For instance:
 
 ```shell
- env TEST_ARGS="-minikube-start-args=--driver=hyperkit -test.run TestStartStop" make integration
+make integration TEST_ARGS="-minikube-start-args='--driver=vfkit --network=vmnet-shared' -test.run TestStartStop"
 ```
+
+IMPORTANT:
+- To pass multiple flags to `-minikube-start-args` you must quote the value
+- flag values cannot contain space since the string is split by space
 
 ### Quickly iterating on a single test
 
 Run a single test on an active cluster:
 
 ```shell
-make integration -e TEST_ARGS="-test.run TestFunctional/parallel/MountCmd --profile=minikube --cleanup=false"
+make integration TEST_ARGS="-test.run TestFunctional/parallel/MountCmd --profile=minikube --cleanup=false"
 ```
 
 WARNING: For this to work repeatedly, the test must be written so that it cleans up after itself.
@@ -65,7 +69,7 @@ See [main_test.go](https://github.com/kubernetes/minikube/blob/master/test/integ
 ### Disabling parallelism
 
 ```shell
-make integration -e TEST_ARGS="-test.parallel=1"
+make integration TEST_ARGS="-test.parallel=1"
 ```
 
 ### Testing philosophy
@@ -85,14 +89,14 @@ Install [docker](https://docs.docker.com/engine/install/)
 Install [kubectl](https://v1-18.docs.kubernetes.io/docs/tasks/tools/install-kubectl/)
 Clone the [minikube repo](https://github.com/kubernetes/minikube)
 
-## Compile the latest minikube binary
+### Compile the latest minikube binary
 
 ```console
 % cd <minikube dir>
 % make
 ```
 
-## Trigger the tests and get back the results
+### Trigger the tests and get back the results
 
 ```console
 % cd <minikube dir>

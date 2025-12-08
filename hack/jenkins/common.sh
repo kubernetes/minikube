@@ -176,18 +176,17 @@ echo
 echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH}" \
-  "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver"-* \
-  "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" out
+  "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" \
+  out
 
 gsutil -qm cp -r "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
 
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
 
-
 # Set the executable bit on the e2e binary and out binary
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
-chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
+chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}"
 "${MINIKUBE_BIN}" version
 
 procs=$(pgrep "minikube-${OS_ARCH}|e2e-${OS_ARCH}" || true)
@@ -500,7 +499,7 @@ if [ -z "${EXTERNAL}" ]; then
   echo ">> uploading ${SUMMARY_OUT} to gs://${JOB_GCS_BUCKET}_summary.json"
   echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}_summary.json"
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
-else 
+else
   # Otherwise, put the results in a predictable spot so the upload job can find them
   REPORTS_PATH=test_reports
   mkdir -p "$REPORTS_PATH"

@@ -75,19 +75,19 @@ func CRUpdateAll(ctx context.Context, image, version string) (updated bool) {
 // crUpdate tags image with version, pushes it to container registry, and returns any error occurred.
 func crUpdate(ctx context.Context, reg registry, image, version string) error {
 	login := exec.CommandContext(ctx, "docker", "login", "--username", reg.username, "--password-stdin", reg.image)
-	if err := RunWithRetryNotify(ctx, login, strings.NewReader(reg.password), 1*time.Minute, 10); err != nil {
+	if err := runWithRetryNotify(ctx, login, strings.NewReader(reg.password), 1*time.Minute, 10); err != nil {
 		return fmt.Errorf("unable to login to %s: %w", reg.name, err)
 	}
 	klog.Infof("Successfully logged in to %s", reg.name)
 
 	tag := exec.CommandContext(ctx, "docker", "tag", image+":"+version, reg.image+":"+version)
-	if err := RunWithRetryNotify(ctx, tag, nil, 1*time.Minute, 10); err != nil {
+	if err := runWithRetryNotify(ctx, tag, nil, 1*time.Minute, 10); err != nil {
 		return fmt.Errorf("unable to tag %s for %s: %w", reg.image+":"+version, reg.name, err)
 	}
 	klog.Infof("Successfully tagged %s for %s", reg.image+":"+version, reg.name)
 
 	push := exec.CommandContext(ctx, "docker", "push", reg.image+":"+version)
-	if err := RunWithRetryNotify(ctx, push, nil, 2*time.Minute, 10); err != nil {
+	if err := runWithRetryNotify(ctx, push, nil, 2*time.Minute, 10); err != nil {
 		return fmt.Errorf("unable to push %s to %s: %w", reg.image+":"+version, reg.name, err)
 	}
 	klog.Infof("Successfully pushed %s to %s", reg.image+":"+version, reg.name)
@@ -98,7 +98,7 @@ func crUpdate(ctx context.Context, reg registry, image, version string) error {
 // TagImage tags local image:current with stable version, and returns any error occurred.
 func TagImage(ctx context.Context, image, current, stable string) error {
 	tag := exec.CommandContext(ctx, "docker", "tag", image+":"+current, image+":"+stable)
-	return RunWithRetryNotify(ctx, tag, nil, 1*time.Second, 10)
+	return runWithRetryNotify(ctx, tag, nil, 1*time.Second, 10)
 }
 
 // PullImage checks if current image exists locally, tries to pull it if not, and returns reference image url and any error occurred.
@@ -106,7 +106,7 @@ func PullImage(ctx context.Context, current string) (image string, err error) {
 	// check if image exists locally
 	for _, reg := range registries {
 		inspect := exec.CommandContext(ctx, "docker", "inspect", reg.image+":"+current, "--format", "{{.Id}}")
-		if err := RunWithRetryNotify(ctx, inspect, nil, 1*time.Second, 10); err != nil {
+		if err := runWithRetryNotify(ctx, inspect, nil, 1*time.Second, 10); err != nil {
 			continue
 		}
 		image = reg.image
@@ -116,7 +116,7 @@ func PullImage(ctx context.Context, current string) (image string, err error) {
 		// try to pull image locally
 		for _, reg := range registries {
 			pull := exec.CommandContext(ctx, "docker", "pull", reg.image+":"+current)
-			if err := RunWithRetryNotify(ctx, pull, nil, 2*time.Minute, 10); err != nil {
+			if err := runWithRetryNotify(ctx, pull, nil, 2*time.Minute, 10); err != nil {
 				continue
 			}
 			image = reg.image
