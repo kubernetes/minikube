@@ -712,8 +712,11 @@ endif
 	./deploy/kicbase/build_auto_pause.sh $(KICBASE_ARCH)
 	docker buildx build -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --build-arg PREBUILT_AUTO_PAUSE=true .
 
+PRELOAD_GENERATOR := github.com/kubernetes-sigs/minikube-preloads/cmd/preload-generator
+
 out/preload-tool:
-	cd hack && go build -ldflags="$(MINIKUBE_LDFLAGS)" -o ../$@ preload-images/*.go
+	GOBIN=$(BUILD_DIR) go install $(PRELOAD_GENERATOR)@latest
+	mv $(BUILD_DIR)/preload-generator $@
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube out/preload-tool ## Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
@@ -1088,4 +1091,3 @@ _update-all:
 
 # targets for tests on prow
 include ./hack/prow/prow.mk
-
