@@ -9,4 +9,4 @@ spec:
   runtimeClassName: gvisor
   containers:
   - name: nginx
-    image: docker.io/nginx
+    image: public.ecr.aws/nginx/nginx:alpine
