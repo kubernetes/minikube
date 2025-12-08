@@ -24,7 +24,7 @@ spec:
         app: mysql
     spec:
       containers:
-      - image: docker.io/mysql:5.7
+      - image: public.ecr.aws/docker/library/mysql:8.4
         name: mysql
         resources:
           requests:
