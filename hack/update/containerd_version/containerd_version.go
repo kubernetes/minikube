@@ -64,7 +64,11 @@ func main() {
 		klog.Fatalf("Unable to get containerd stable version: %v", err)
 	}
 
-	data := Data{Version: stable.Tag, Commit: stable.Commit}
+	data := Data{
+		// Makefile needs "2.1.4" instead of "v2.1.4"
+		Version: strings.TrimPrefix(stable.Tag, "v"),
+		Commit:  stable.Commit,
+	}
 
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
@@ -75,34 +79,50 @@ func main() {
 	}
 }
 
+type archInfo struct {
+	name   string
+	goname string
+	suffix string
+}
+
 func updateHashFiles(version string) error {
-	r, err := http.Get(fmt.Sprintf("https://github.com/containerd/containerd/archive/%s.tar.gz", version))
-	if err != nil {
-		return fmt.Errorf("failed to download source code: %v", err)
+	// Match deploy/iso/minikube-iso/arch/aarch64/package/containerd-bin-*/containerd-bin.mk
+	// 		CONTAINERD_BIN_VERSION = 2.1.4
+	// 		CONTAINERD_BIN_SITE = https://github.com/containerd/containerd/releases/download/v$(CONTAINERD_BIN_VERSION)
+	// 		CONTAINERD_BIN_SOURCE = containerd-$(CONTAINERD_BIN_VERSION)-linux-amd64.tar.gz
+
+	for _, arch := range []archInfo{
+		{"aarch64", "arm64", "-aarch64"},
+		{"x86_64", "amd64", ""},
+	} {
+		source := fmt.Sprintf("containerd-%s-linux-%s.tar.gz", version, arch.goname)
+		url := fmt.Sprintf("https://github.com/containerd/containerd/releases/download/v%s/%s", version, source)
+		r, err := http.Get(url)
+		if err != nil {
+			return fmt.Errorf("failed to download release tarball: %v", err)
+		}
+		defer r.Body.Close()
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read response body: %v", err)
+		}
+		sum := sha256.Sum256(b)
+		if err := updateHashFile(source, arch, sum); err != nil {
+			return fmt.Errorf("%v: %v", arch, err)
+		}
 	}
-	defer r.Body.Close()
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %v", err)
-	}
-	sum := sha256.Sum256(b)
-	if err := updateHashFile(version, "aarch64", "-aarch64", sum); err != nil {
-		return fmt.Errorf("aarch64: %v", err)
-	}
-	if err := updateHashFile(version, "x86_64", "", sum); err != nil {
-		return fmt.Errorf("x86_64: %v", err)
-	}
+
 	return nil
 }
 
-func updateHashFile(version, arch, folderSuffix string, shaSum [sha256.Size]byte) error {
-	filePath := fmt.Sprintf("../deploy/iso/minikube-iso/arch/%s/package/containerd-bin%s/containerd-bin.hash", arch, folderSuffix)
+func updateHashFile(source string, arch archInfo, shaSum [sha256.Size]byte) error {
+	filePath := fmt.Sprintf("../deploy/iso/minikube-iso/arch/%s/package/containerd-bin%s/containerd-bin.hash", arch.name, arch.suffix)
 	b, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)
 	}
-	if strings.Contains(string(b), version) {
-		klog.Infof("hash file already contains %q", version)
+	if strings.Contains(string(b), source) {
+		klog.Infof("hash file already contains %q", source)
 		return nil
 	}
 	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
@@ -110,7 +130,7 @@ func updateHashFile(version, arch, folderSuffix string, shaSum [sha256.Size]byte
 		return fmt.Errorf("failed to open hash file: %v", err)
 	}
 	defer f.Close()
-	if _, err := fmt.Fprintf(f, "sha256 %x %s.tar.gz\n", shaSum, version); err != nil {
+	if _, err := fmt.Fprintf(f, "sha256 %x %s\n", shaSum, source); err != nil {
 		return fmt.Errorf("failed to write to hash file: %v", err)
 	}
 	return nil
