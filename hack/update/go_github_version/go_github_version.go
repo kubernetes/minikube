@@ -73,7 +73,6 @@ func generateSchema() map[string]update.Item {
 	files := []string{
 		"cmd/minikube/cmd/config/kubernetes_version.go",
 		"pkg/perf/monitor/github.go",
-		"hack/preload-images/kubernetes.go",
 		"hack/update/kubeadm_constants/kubeadm_constants.go",
 		"hack/update/ingress_version/ingress_version.go",
 		"hack/update/site_node_version/site_node_version.go",
