@@ -6,7 +6,7 @@ on:
     - cron: "0 8 * * 6"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.25.3'
+  GO_VERSION: '1.25.5'
 permissions:
   contents: read
 
@@ -14,7 +14,7 @@ jobs:
   bump-nerdctl-version:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
         with:
           go-version: ${{env.GO_VERSION}}
@@ -31,7 +31,7 @@ jobs:
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpNerdctl.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@84ae59a2cdc2258d6fa0732dd66352dddae2a412
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Kicbase/ISO: Update nerdctl from ${{ steps.bumpNerdctl.outputs.OLD_VERSION }} to ${{ steps.bumpNerdctl.outputs.NEW_VERSION }}'

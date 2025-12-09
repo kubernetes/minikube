@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.37.0-1763503576-21924
+ISO_VERSION ?= v1.37.0-1765151505-21409
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -35,7 +35,7 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.25.3
+GO_VERSION ?= 1.25.5
 # set GOTOOLCHAIN to GO_VERSION to override any toolchain version specified in
 # go.mod (ref: https://go.dev/doc/toolchain#GOTOOLCHAIN)
 export GOTOOLCHAIN := go$(GO_VERSION)
@@ -72,7 +72,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v2.6.2
+GOLINT_VERSION ?= v2.7.1
 # see https://golangci-lint.run/docs/configuration/file/ for config details
 GOLINT_CONFIG ?= .golangci.min.yaml
 # Set this to --verbose to see details about the linters and formatters used
@@ -378,7 +378,7 @@ html_report: ## Generate HTML  report out of the last ran integration test logs.
 	# install gopogh if not already installed
 	@if ! command -v gopogh >/dev/null 2>&1; then \
 		echo "gopogh not found, installing..."; \
-		GOBIN=$(shell go env GOPATH)/bin go install github.com/medyagh/gopogh/cmd/gopogh@latest; \
+		GOBIN=$(shell go env GOPATH)/bin go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0; \
 	fi
 	@gopogh -in "./out/testout_$(COMMIT_SHORT).json" -out ./out/testout_$(COMMIT_SHORT).html -name "$(shell git rev-parse --abbrev-ref HEAD)" -pr "" -repo github.com/kubernetes/minikube/  -details "${COMMIT_SHORT}"
 	@echo "-------------------------- Open HTML Report in Browser: ---------------------------"
@@ -712,16 +712,29 @@ endif
 	./deploy/kicbase/build_auto_pause.sh $(KICBASE_ARCH)
 	docker buildx build -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --build-arg PREBUILT_AUTO_PAUSE=true .
 
-out/preload-tool:
-	cd hack && go build -ldflags="$(MINIKUBE_LDFLAGS)" -o ../$@ preload-images/*.go
+# preload scripts been moved to https://github.com/kubernetes-sigs/minikube-preloads/tree/main/cmd/preload-generator 
+# in order to be able to publish them as github assets 
+PRELOAD_GENERATOR_REPO ?= https://github.com/kubernetes-sigs/minikube-preloads.git
+PRELOAD_GENERATOR_DIR := $(BUILD_DIR)/preload-generator-src
+PRELOAD_GENERATOR_BIN := $(BUILD_DIR)/preload-generator
+
+$(PRELOAD_GENERATOR_DIR):
+	rm -rf $(PRELOAD_GENERATOR_DIR)
+	git clone --depth=1 --branch main $(PRELOAD_GENERATOR_REPO) $(PRELOAD_GENERATOR_DIR)
+
+$(PRELOAD_GENERATOR_BIN): $(PRELOAD_GENERATOR_DIR)
+	cd $(PRELOAD_GENERATOR_DIR) && GOWORK=off GOBIN=$(BUILD_DIR) go install ./cmd/preload-generator
+
+out/preload-generator: $(PRELOAD_GENERATOR_BIN)
+	cp $(PRELOAD_GENERATOR_BIN) $@
 
 .PHONY: upload-preloaded-images-tar
-upload-preloaded-images-tar: out/minikube out/preload-tool ## Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
-	out/preload-tool
+upload-preloaded-images-tar: out/minikube out/preload-generator ## Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
+	out/preload-generator
 
 .PHONY: generate-preloaded-images-tar
-generate-preloaded-images-tar: out/minikube out/preload-tool ## Generates the preloaded images for oldest supported, newest supported, and default kubernetes versions
-	out/preload-tool --no-upload
+generate-preloaded-images-tar: out/minikube out/preload-generator ## Generates the preloaded images for oldest supported, newest supported, and default kubernetes versions
+	out/preload-generator --no-upload
 
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 IMAGE = $(REGISTRY)/storage-provisioner

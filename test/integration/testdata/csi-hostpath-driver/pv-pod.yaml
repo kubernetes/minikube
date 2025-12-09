@@ -11,7 +11,7 @@ spec:
         claimName: hpvc
   containers:
     - name: task-pv-container
-      image: docker.io/nginx
+      image: public.ecr.aws/nginx/nginx:alpine
       ports:
         - containerPort: 80
           name: "http-server"

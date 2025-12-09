@@ -4,9 +4,7 @@
 [![GoReport Widget]][GoReport Status]
 [![GitHub All Releases](https://img.shields.io/github/downloads/kubernetes/minikube/total.svg)](https://github.com/kubernetes/minikube/releases/latest)
 [![Latest Release](https://img.shields.io/github/v/release/kubernetes/minikube?include_prereleases)](https://github.com/kubernetes/minikube/releases/latest)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/5015/badge)](https://www.bestpractices.dev/en/projects/5015)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kubernetes/minikube/badge)](https://api.securityscorecards.dev/projects/github.com/kubernetes/minikube)
- 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kubernetes/minikube?quickstart=1) 
 
 [GoReport Status]: https://goreportcard.com/report/github.com/kubernetes/minikube
 [GoReport Widget]: https://goreportcard.com/badge/github.com/kubernetes/minikube
@@ -45,6 +43,15 @@ As well as developer-friendly features:
 See the [Getting Started Guide](https://minikube.sigs.k8s.io/docs/start/)
 
 :mega: **Please fill out our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A)** so that we can learn how & why you use minikube, and what improvements we should make. Thank you! :dancers:
+
+## Github Codespace
+
+You can run minikube in a Gihub Codespace by clicking here: 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kubernetes/minikube?quickstart=1)
+
+This will launch a Github Codespace. You can then run `minikube start` and `minikube dashboard` - You can then open Minikube Dashboard by clicking opening the link displayed in the terminal.  
+
+You can also run Minikube in a Dev Container locally using your favourit IDE, for more infor mation see Dev Containers https://code.visualstudio.com/docs/devcontainers/containers
 
 ## Documentation
 

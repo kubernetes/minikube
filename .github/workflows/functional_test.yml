@@ -26,7 +26,7 @@ concurrency:
   cancel-in-progress: true
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.25.3'
+  GO_VERSION: '1.25.5'
 permissions:
   contents: read
 jobs:
@@ -34,7 +34,7 @@ jobs:
   build-test-binaries:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
         with:
           go-version: ${{env.GO_VERSION}}
@@ -91,13 +91,13 @@ jobs:
           - name: qemu-docker-macos-13-x86_64
             driver: qemu
             cruntime: docker
-            os: macos-13
+            os: macos-15-intel
             extra-start-args: --network socket_vmnet
             test-timeout: 50m
-          - name: vfkit-docker-macos-13-x86_64
+          - name: vfkit-docker-macos-15-x86_64
             driver: vfkit
             cruntime: docker
-            os: macos-13
+            os: macos-15-intel
             extra-start-args: --network vmnet-shared
             test-timeout: 50m            
     steps:
@@ -258,17 +258,8 @@ jobs:
           curl https://get.docker.com | sudo sh
           dockerd-rootless-setuptool.sh install -f
           docker context use rootless
-      - name: Ensure bootpd is enabled (macos-13)
-        if: matrix.os == 'macos-13'
-        shell: bash
-        run: |
-          set -x
-          fw=/usr/libexec/ApplicationFirewall/socketfilterfw
-          sudo $fw --remove /usr/libexec/bootpd
-          sudo $fw --add /usr/libexec/bootpd
-          sudo $fw --unblock /usr/libexec/bootpd
       - name: Update brew package index (macos)
-        if: runner.os == 'macOS'
+        if: contains(matrix.os, 'macos')
         run: brew update
       - name: Update apt-get package index (ubuntu)
         if: runner.os == 'Linux' && (matrix.driver == 'podman' || matrix.driver == 'none')
@@ -369,12 +360,12 @@ jobs:
           fi
           kubectl version --client=true
       - name: Install qemu and socket_vmnet (macos)
-        if: matrix.os == 'macos-13' && matrix.driver == 'qemu'
+        if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
       - name: Install vfkit and vmnet_helper (macos)
-        if: matrix.os == 'macos-13' && matrix.driver == 'vfkit'
+        if: matrix.driver == 'vfkit'
         run: |
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
