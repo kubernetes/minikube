@@ -722,7 +722,7 @@ $(PRELOAD_GENERATOR_DIR):
 	git clone --depth=1 --branch main $(PRELOAD_GENERATOR_REPO) $(PRELOAD_GENERATOR_DIR)
 
 out/preload-generator: $(PRELOAD_GENERATOR_DIR)
-	cd $(PRELOAD_GENERATOR_DIR) && GOWORK=off GOBIN=$(BUILD_DIR) go install ./cmd/preload-generator
+	cd $(PRELOAD_GENERATOR_DIR) && GOWORK=off GOBIN=$(BUILD_DIR) go install -ldflags="$(MINIKUBE_LDFLAGS)" ./cmd/preload-generator
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube out/preload-generator ## Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
