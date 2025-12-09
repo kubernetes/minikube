@@ -93,15 +93,7 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: make
-      - name: Ensure bootpd is enabled (macos)
-        if: matrix.os == 'macos-15-intel'
-        shell: bash
-        run: |
-          set -x
-          fw=/usr/libexec/ApplicationFirewall/socketfilterfw
-          sudo $fw --remove /usr/libexec/bootpd
-          sudo $fw --add /usr/libexec/bootpd
-          sudo $fw --unblock /usr/libexec/bootpd
+      #removed bootpd
       - name: Update brew (macos)
         if: contains(matrix.os, 'macos')
         run: brew update
