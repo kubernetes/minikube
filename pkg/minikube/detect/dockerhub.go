@@ -66,7 +66,11 @@ func DockerHubRateLimitRemaining(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("docker hub rate limit exceeded (HTTP 429)")
 	}
 
+	// Go canonicalizes header keys, so both ratelimit-remaining and RateLimit-Remaining work.
 	remainingHeader := resp.Header.Get("RateLimit-Remaining")
+	if remainingHeader == "" {
+		remainingHeader = resp.Header.Get("ratelimit-remaining")
+	}
 	if remainingHeader == "" {
 		return 0, errors.New("docker hub RateLimit-Remaining header missing")
 	}
