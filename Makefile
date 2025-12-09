@@ -716,17 +716,13 @@ endif
 # in order to be able to publish them as github assets 
 PRELOAD_GENERATOR_REPO ?= https://github.com/kubernetes-sigs/minikube-preloads.git
 PRELOAD_GENERATOR_DIR := $(BUILD_DIR)/preload-generator-src
-PRELOAD_GENERATOR_BIN := $(BUILD_DIR)/preload-generator
 
 $(PRELOAD_GENERATOR_DIR):
 	rm -rf $(PRELOAD_GENERATOR_DIR)
 	git clone --depth=1 --branch main $(PRELOAD_GENERATOR_REPO) $(PRELOAD_GENERATOR_DIR)
 
-$(PRELOAD_GENERATOR_BIN): $(PRELOAD_GENERATOR_DIR)
+out/preload-generator: $(PRELOAD_GENERATOR_DIR)
 	cd $(PRELOAD_GENERATOR_DIR) && GOWORK=off GOBIN=$(BUILD_DIR) go install ./cmd/preload-generator
-
-out/preload-generator: $(PRELOAD_GENERATOR_BIN)
-	cp $(PRELOAD_GENERATOR_BIN) $@
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube out/preload-generator ## Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
