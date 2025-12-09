@@ -93,7 +93,6 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: make
-      #removed bootpd
       - name: Update brew (macos)
         if: contains(matrix.os, 'macos')
         run: brew update
