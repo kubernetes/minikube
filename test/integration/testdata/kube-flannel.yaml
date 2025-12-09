@@ -1,14 +1,26 @@
----
-kind: Namespace
+# From Flannel Repo
+# https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
 apiVersion: v1
+kind: Namespace
 metadata:
-  name: kube-flannel
   labels:
+    k8s-app: flannel
     pod-security.kubernetes.io/enforce: privileged
+  name: kube-flannel
 ---
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
+apiVersion: v1
+kind: ServiceAccount
 metadata:
+  labels:
+    k8s-app: flannel
+  name: flannel
+  namespace: kube-flannel
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    k8s-app: flannel
   name: flannel
 rules:
 - apiGroups:
@@ -32,9 +44,11 @@ rules:
   verbs:
   - patch
 ---
-kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
 metadata:
+  labels:
+    k8s-app: flannel
   name: flannel
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -46,19 +60,6 @@ subjects:
   namespace: kube-flannel
 ---
 apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: flannel
-  namespace: kube-flannel
----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: kube-flannel-cfg
-  namespace: kube-flannel
-  labels:
-    tier: node
-    app: flannel
 data:
   cni-conf.json: |
     {
@@ -83,28 +84,40 @@ data:
   net-conf.json: |
     {
       "Network": "10.244.0.0/16",
+      "EnableNFTables": false,
       "Backend": {
         "Type": "vxlan"
       }
     }
+kind: ConfigMap
+metadata:
+  labels:
+    app: flannel
+    k8s-app: flannel
+    tier: node
+  name: kube-flannel-cfg
+  namespace: kube-flannel
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
+  labels:
+    app: flannel
+    k8s-app: flannel
+    tier: node
   name: kube-flannel-ds
   namespace: kube-flannel
-  labels:
-    tier: node
-    app: flannel
 spec:
   selector:
     matchLabels:
       app: flannel
+      k8s-app: flannel
   template:
     metadata:
       labels:
-        tier: node
         app: flannel
+        k8s-app: flannel
+        tier: node
     spec:
       affinity:
         nodeAffinity:
@@ -115,59 +128,12 @@ spec:
                 operator: In
                 values:
                 - linux
-      hostNetwork: true
-      priorityClassName: system-node-critical
-      tolerations:
-      - operator: Exists
-        effect: NoSchedule
-      serviceAccountName: flannel
-      initContainers:
-      - name: install-cni-plugin
-       #image: flannelcni/flannel-cni-plugin:v1.1.0 for ppc64le and mips64le (dockerhub limitations may apply)
-        image: docker.io/rancher/mirrored-flannelcni-flannel-cni-plugin:v1.1.0
-        command:
-        - cp
-        args:
-        - -f
-        - /flannel
-        - /opt/cni/bin/flannel
-        volumeMounts:
-        - name: cni-plugin
-          mountPath: /opt/cni/bin
-      - name: install-cni
-       #image: flannelcni/flannel:v0.20.2 for ppc64le and mips64le (dockerhub limitations may apply)
-        image: docker.io/rancher/mirrored-flannelcni-flannel:v0.20.2
-        command:
-        - cp
-        args:
-        - -f
-        - /etc/kube-flannel/cni-conf.json
-        - /etc/cni/net.d/10-flannel.conflist
-        volumeMounts:
-        - name: cni
-          mountPath: /etc/cni/net.d
-        - name: flannel-cfg
-          mountPath: /etc/kube-flannel/
       containers:
-      - name: kube-flannel
-       #image: flannelcni/flannel:v0.20.2 for ppc64le and mips64le (dockerhub limitations may apply)
-        image: docker.io/rancher/mirrored-flannelcni-flannel:v0.20.2
-        command:
-        - /opt/bin/flanneld
-        args:
+      - args:
         - --ip-masq
         - --kube-subnet-mgr
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "50Mi"
-          limits:
-            cpu: "100m"
-            memory: "50Mi"
-        securityContext:
-          privileged: false
-          capabilities:
-            add: ["NET_ADMIN", "NET_RAW"]
+        command:
+        - /opt/bin/flanneld
         env:
         - name: POD_NAME
           valueFrom:
@@ -179,27 +145,72 @@ spec:
               fieldPath: metadata.namespace
         - name: EVENT_QUEUE_DEPTH
           value: "5000"
+        - name: CONT_WHEN_CACHE_NOT_READY
+          value: "false"
+        image: ghcr.io/flannel-io/flannel:v0.27.4
+        name: kube-flannel
+        resources:
+          requests:
+            cpu: 100m
+            memory: 50Mi
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+            - NET_RAW
+          privileged: false
         volumeMounts:
-        - name: run
-          mountPath: /run/flannel
-        - name: flannel-cfg
-          mountPath: /etc/kube-flannel/
-        - name: xtables-lock
-          mountPath: /run/xtables.lock
+        - mountPath: /run/flannel
+          name: run
+        - mountPath: /etc/kube-flannel/
+          name: flannel-cfg
+        - mountPath: /run/xtables.lock
+          name: xtables-lock
+      hostNetwork: true
+      initContainers:
+      - args:
+        - -f
+        - /flannel
+        - /opt/cni/bin/flannel
+        command:
+        - cp
+        image: ghcr.io/flannel-io/flannel-cni-plugin:v1.8.0-flannel1
+        name: install-cni-plugin
+        volumeMounts:
+        - mountPath: /opt/cni/bin
+          name: cni-plugin
+      - args:
+        - -f
+        - /etc/kube-flannel/cni-conf.json
+        - /etc/cni/net.d/10-flannel.conflist
+        command:
+        - cp
+        image: ghcr.io/flannel-io/flannel:v0.27.4
+        name: install-cni
+        volumeMounts:
+        - mountPath: /etc/cni/net.d
+          name: cni
+        - mountPath: /etc/kube-flannel/
+          name: flannel-cfg
+      priorityClassName: system-node-critical
+      serviceAccountName: flannel
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
       volumes:
-      - name: run
-        hostPath:
+      - hostPath:
           path: /run/flannel
-      - name: cni-plugin
-        hostPath:
+        name: run
+      - hostPath:
           path: /opt/cni/bin
-      - name: cni
-        hostPath:
+        name: cni-plugin
+      - hostPath:
           path: /etc/cni/net.d
-      - name: flannel-cfg
-        configMap:
+        name: cni
+      - configMap:
           name: kube-flannel-cfg
-      - name: xtables-lock
-        hostPath:
+        name: flannel-cfg
+      - hostPath:
           path: /run/xtables.lock
           type: FileOrCreate
+        name: xtables-lock
