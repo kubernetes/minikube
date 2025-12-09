@@ -44,6 +44,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/detect"
 )
 
 // RunResult stores the result of an cmd.Run call
@@ -703,4 +704,18 @@ func CopyDir(src, dst string) error {
 	}
 
 	return nil
+}
+
+// FailFast proactively stops the addon suite when Docker Hub is rate limited.
+func FailFastDockerHubRateLimited(t *testing.T) {
+	t.Helper()
+	remaining, err := detect.DockerHubRateLimitRemaining(t.Context())
+	if err != nil {
+		t.Logf("unable to check Docker Hub rate limit (continuing): %v", err)
+		return
+	}
+
+	if remaining <= 0 {
+		t.Fatalf("failing fast: Docker Hub rate limit reached (remaining=%d)", remaining)
+	}
 }

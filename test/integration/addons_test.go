@@ -32,7 +32,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -46,8 +45,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/util/retry"
 )
-
-const dockerHubRateLimitURL = "https://registry-1.docker.io/v2/"
 
 // TestAddons tests addons that require no special environment in parallel
 func TestAddons(t *testing.T) {
@@ -192,61 +189,6 @@ func TestAddons(t *testing.T) {
 			t.Errorf("failed to disable non-enabled addon: args %q : %v", rr.Command(), err)
 		}
 	})
-}
-
-// skipAddonsIfDockerHubRateLimited proactively stops the addon suite when Docker Hub is rate limited.
-func skipAddonsIfDockerHubRateLimited(t *testing.T) {
-	t.Helper()
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, dockerHubRateLimitURL, nil)
-	if err != nil {
-		t.Logf("unable to build Docker Hub rate limit request: %v", err)
-		return
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		t.Logf("unable to check Docker Hub rate limit (continuing): %v", err)
-		return
-	}
-	resp.Body.Close()
-
-	if resp.StatusCode == http.StatusTooManyRequests {
-		t.Fatalf("failing TestAddons: Docker Hub rate limit exceeded (HTTP 429)")
-	}
-
-	remainingHeader := resp.Header.Get("RateLimit-Remaining")
-	if remainingHeader == "" {
-		t.Log("Docker Hub RateLimit-Remaining header missing; continuing")
-		return
-	}
-
-	remaining, err := parseDockerHubRemaining(remainingHeader)
-	if err != nil {
-		t.Logf("unable to parse Docker Hub RateLimit-Remaining header %q: %v", remainingHeader, err)
-		return
-	}
-
-	if remaining <= 0 {
-		t.Fatalf("failing TestAddons: Docker Hub rate limit reached (remaining=%d)", remaining)
-	}
-}
-
-func parseDockerHubRemaining(headerVal string) (int, error) {
-	separators := func(r rune) bool {
-		return r == ';' || r == ','
-	}
-	for _, part := range strings.FieldsFunc(headerVal, separators) {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-		if remaining, err := strconv.Atoi(part); err == nil {
-			return remaining, nil
-		}
-	}
-	return 0, fmt.Errorf("unable to find integer value in RateLimit-Remaining header %q", headerVal)
 }
 
 // validateIngressAddon tests the ingress addon by deploying a default nginx pod
