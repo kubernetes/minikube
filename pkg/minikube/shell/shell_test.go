@@ -149,6 +149,6 @@ func TestSetScript(t *testing.T) {
 		t.Fatalf("Unexpected error: '%v' during Setting script", err)
 	}
 	if w.String() != "foo" {
-		t.Fatalf("Expected foo writed by SetScript, but got '%v'", w.String())
+		t.Fatalf("Expected foo written by SetScript, but got '%v'", w.String())
 	}
 }

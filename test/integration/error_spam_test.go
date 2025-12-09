@@ -75,7 +75,7 @@ func TestErrorSpam(t *testing.T) {
 
 	t.Run("setup", func(t *testing.T) {
 		// This should likely use multi-node once it's ready
-		// use `--log_dir` flag to run isolated and avoid race condition - ie, failing to clean up (locked) log files created by other concurently-run tests, or counting them in results
+		// use `--log_dir` flag to run isolated and avoid race condition - ie, failing to clean up (locked) log files created by other concurrently-run tests, or counting them in results
 		args := append([]string{"start", "-p", profile, "-n=1", "--memory=3072", "--wait=false", fmt.Sprintf("--log_dir=%s", logDir)}, StartArgs()...)
 
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))

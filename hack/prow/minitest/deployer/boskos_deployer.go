@@ -53,7 +53,7 @@ type MiniTestBosKosDeployer struct {
 	sshAddr          string
 
 	boskosClient *client.Client
-	// this channel serves as a signal channel for the hearbeat goroutine
+	// this channel serves as a signal channel for the heartbeat goroutine
 	// so that it can be explicitly closed
 	boskosHeartbeatClose chan struct{}
 }
@@ -104,7 +104,7 @@ func (m *MiniTestBosKosDeployer) Up() error {
 		return err
 	}
 	if err := sshConnectionCheck(m.ctx, m.remoteUserName, m.sshAddr, nil); err != nil {
-		klog.Errorf("Failed to conntect via ssh: %v", err)
+		klog.Errorf("Failed to connect via ssh: %v", err)
 		return err
 	}
 

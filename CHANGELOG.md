@@ -29,7 +29,7 @@ Run AI workloads on Macbook's GPU in Kubernetes using the new `krunkit driver`. 
 * Don't call startKicServiceTunnel for non-kic drivers (#20863)
 * krunkit: Disable offloading for faster networking (#21341)
 
-## Deprication
+## Deprecation
 
 * Deprecate HyperKit driver with warning (#21024)
 
@@ -379,7 +379,7 @@ Improvements:
 * Improved error message when enabling KVM addons on non-KVM cluster [#19195](https://github.com/kubernetes/minikube/pull/19195)
 * Added warning when loading image with wrong arch [#19229](https://github.com/kubernetes/minikube/pull/19229)
 * `profile list --output json` handle empty config folder  [#16900](https://github.com/kubernetes/minikube/pull/16900)
-* Check connectivity outside minikube when connectivity issuse [#18859](https://github.com/kubernetes/minikube/pull/18859)
+* Check connectivity outside minikube when connectivity issues [#18859](https://github.com/kubernetes/minikube/pull/18859)
 
 Bugs:
 
@@ -813,7 +813,7 @@ Minor Improvements:
 * Hyper-V: Add memory validation for odd numbers [#17325](https://github.com/kubernetes/minikube/pull/17325)
 * QEMU: Improve cpu type and IP detection [#17217](https://github.com/kubernetes/minikube/pull/17217)
 * Mask http(s)_proxy password from startup output [#17116](https://github.com/kubernetes/minikube/pull/17116)
-* `--delete-on-faliure` also recreates cluster for kubeadm failures [#16890](https://github.com/kubernetes/minikube/pull/16890)
+* `--delete-on-failure` also recreates cluster for kubeadm failures [#16890](https://github.com/kubernetes/minikube/pull/16890)
 * Addon auto-pause: Configure intervals using `--auto-pause-interval` [#17070](https://github.com/kubernetes/minikube/pull/17070)
 * `--kubernetes-version` checks GitHub for version validation and improved error output for invalid versions [#16865](https://github.com/kubernetes/minikube/pull/16865)
 
@@ -1588,7 +1588,7 @@ Minor Improvements:
 * Limit number of audit entries [#14695](https://github.com/kubernetes/minikube/pull/14695)
 * Optimize audit logging [#14596](https://github.com/kubernetes/minikube/pull/14596)
 * Show the container runtime when running without kubernetes #13432  [#14200](https://github.com/kubernetes/minikube/pull/14200)
-* Add warning when enabling thrid-party addons [#14499](https://github.com/kubernetes/minikube/pull/14499)
+* Add warning when enabling third-party addons [#14499](https://github.com/kubernetes/minikube/pull/14499)
 
 Bug fixes:
 
@@ -3730,7 +3730,7 @@ Minor Improvements:
 * docker-env: restart dockerd inside minikube on failure [#8239](https://github.com/kubernetes/minikube/pull/8239)
 * wait for kubernetes components on soft start [#8199](https://github.com/kubernetes/minikube/pull/8199)
 * improve minikube status display for one node [#8238](https://github.com/kubernetes/minikube/pull/8238)
-* improve solution message for wrong kuberentes-version format [#8118](https://github.com/kubernetes/minikube/pull/8118)
+* improve solution message for wrong kubernetes-version format [#8118](https://github.com/kubernetes/minikube/pull/8118)
 
 Bug fixes:
 
@@ -4024,7 +4024,7 @@ New features & improvements
 
 Bug Fixes
 
-* Re-initalize failed Kubernetes clusters [#7234](https://github.com/kubernetes/minikube/pull/7234)
+* Re-initialize failed Kubernetes clusters [#7234](https://github.com/kubernetes/minikube/pull/7234)
 * do not override hostname if extraConfig is specified [#7238](https://github.com/kubernetes/minikube/pull/7238)
 * Enable HW_RANDOM_VIRTIO to fix sshd startup delays [#7208](https://github.com/kubernetes/minikube/pull/7208)
 * hyperv Delete: call StopHost before removing VM [#7160](https://github.com/kubernetes/minikube/pull/7160)
