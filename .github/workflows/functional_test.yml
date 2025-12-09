@@ -87,8 +87,8 @@ jobs:
             driver: none
             cruntime: docker
             os: ubuntu-22.04
-            test-timeout: 9m
-          - name: qemu-docker-macos-15-x86_64
+            test-timeout: 10m
+          - name: qemu-docker-macos-13-x86_64
             driver: qemu
             cruntime: docker
             os: macos-15-intel

@@ -48,6 +48,8 @@ import (
 
 // TestAddons tests addons that require no special environment in parallel
 func TestAddons(t *testing.T) {
+	FailFastDockerHubRateLimited(t)
+
 	profile := UniqueProfileName("addons")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
