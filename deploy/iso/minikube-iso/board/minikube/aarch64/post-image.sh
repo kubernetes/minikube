@@ -28,14 +28,14 @@ mkdir -p root/EFI/BOOT
 cp efi-part/EFI/BOOT/* root/EFI/BOOT/
 cp efiboot.img root/EFI/BOOT/
 
-mkisofs \
-   -o boot.iso \
-   -R -J -v -d -N \
-   -hide-rr-moved \
-   -no-emul-boot \
-   -eltorito-platform=efi \
-   -eltorito-boot EFI/BOOT/efiboot.img \
-   -V "EFIBOOTISO" \
-   -A "EFI Boot ISO" \
-   root
+xorriso \
+   -outdev boot.iso \
+   -joliet on \
+   -rockridge on \
+   -volid 'EFIBOOTISO' \
+   -publisher 'EFI Boot ISO' \
+   -map root / \
+   -boot_image any platform_id=0xef \
+   -boot_image any efi_path=EFI/BOOT/efiboot.img \
+   -boot_image any cat_path=/boot.cat
 cd -
