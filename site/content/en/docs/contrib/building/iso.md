@@ -11,7 +11,7 @@ The minikube ISO is booted by each hypervisor to provide a stable minimal Linux 
 ## Prerequisites
 
 * Machine with x86\_64 CPU
-* Ubuntu 22.04.5 LTS (Jammy Jellyfish)
+* Ubuntu 22.04.5 LTS (Jammy Jellyfish) or Fedora 43
 * docker
 * A recent GNU Make distribution (>=4.0)
 * A recent Go distribution (>=1.22.0)
@@ -50,6 +50,11 @@ The bootable ISO image will be available in `out/minikube-<arch>.iso`.
 
 Install required tools:
 
+Install Go using these instructions:
+https://go.dev/doc/install
+
+### On Ubuntu
+
 ```shell
 sudo apt-get install \
     automake \
@@ -68,8 +73,31 @@ sudo apt-get install \
     wget \
 ```
 
-Install Go using these instructions:
-https://go.dev/doc/install
+### On Fedora
+
+```shell
+sudo dnf install -y \
+    7zip \
+    automake \
+    bc \
+    cpio \
+    gcc \
+    gcc-c++ \
+    genisoimage \
+    git \
+    glibc-devel \
+    glibc-devel.i686 \
+    glibc-langpack-en \
+    gnupg2 \
+    kernel-devel \
+    libtool \
+    make \
+    patch \
+    perl \
+    unzip \
+    wget \
+    xorriso
+```
 
 To build without docker run:
 
