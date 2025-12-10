@@ -172,7 +172,7 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 		"--security-opt", "seccomp=unconfined", //  ignore seccomp
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
-		// logs,pods be stroed on  filesystem vs inside container,
+		// logs,pods be stored on  filesystem vs inside container,
 		// some k8s things want /lib/modules
 		"-v", fmt.Sprintf("%s:/lib/modules:ro", kernelModulesPath()),
 		"--hostname", p.Name, // make hostname match container name

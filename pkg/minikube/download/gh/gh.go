@@ -29,7 +29,7 @@ import (
 )
 
 // ReleaseAssets retrieves a GitHub release by tag from org/project.
-// Try to not call this too often. preferably cache and re-use. to avoid rate limits.
+// Try to not call this too often. preferably cache and reuse. to avoid rate limits.
 func ReleaseAssets(org, project, tag string) ([]*github.ReleaseAsset, error) {
 	ctx := context.Background()
 	// Use an authenticated client when GITHUB_TOKEN is set to avoid low rate limits.
