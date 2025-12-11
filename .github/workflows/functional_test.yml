@@ -32,7 +32,7 @@ permissions:
 jobs:
   # build-test-binaries job runs before all other jobs and produces binaries/test-data to be shared by all following jobs
   build-test-binaries:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
@@ -60,21 +60,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: docker-docker-ubuntu22.04-x86_64
+          - name: docker-docker-ubuntu24.04-x86_64
             driver: docker
             cruntime: docker
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             test-timeout: 15m 
           - name: docker-docker-ubuntu24.04-arm64
             driver: docker
             cruntime: docker
             os: ubuntu-24.04-arm
             test-timeout: 15m 
-          - name: docker-containerd-ubuntu-22.04-x86_64
+          - name: docker-containerd-ubuntu-24.04-x86_64
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             test-timeout: 15m 
           - name: docker-containerd-ubuntu-24.04-arm64
             driver: docker
@@ -82,10 +82,10 @@ jobs:
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04-arm
             test-timeout: 15m 
-          - name: docker-containerd-rootless-ubuntu-22.04-x86_64
+          - name: docker-containerd-rootless-ubuntu-24.04-x86_64
             driver: docker
             cruntime: containerd
-            os: ubuntu-22.04            
+            os: ubuntu-24.04            
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
             test-timeout: 15m 
@@ -94,23 +94,11 @@ jobs:
             cruntime: docker
             os: ubuntu-24.04
             test-timeout: 15m
-          - name: baremetal-docker-ubuntu-22.04-x86_64
+          - name: baremetal-docker-ubuntu-24.04-x86_64
             driver: none
             cruntime: docker
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             test-timeout: 10m
-          - name: qemu-docker-macos-13-x86_64
-            driver: qemu
-            cruntime: docker
-            os: macos-15-intel
-            extra-start-args: --network socket_vmnet
-            test-timeout: 50m
-          - name: vfkit-docker-macos-15-x86_64
-            driver: vfkit
-            cruntime: docker
-            os: macos-15-intel
-            extra-start-args: --network vmnet-shared
-            test-timeout: 50m            
     steps:
       - name: Info Block (macOS)
         if: runner.os == 'macOS'
