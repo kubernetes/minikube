@@ -24,7 +24,8 @@ on:
 env:
   GOPROXY: https://proxy.golang.org
   LOG_ARGS: --v=8 --alsologtostderr
-  permissions:
+
+permissions:
   contents: read
 # Limit one unit test job running per PR/Branch
 concurrency:
@@ -69,6 +70,7 @@ jobs:
           ifconfig
       - name: Info Block (linux)
         if: contains(matrix.os, 'ubuntu')
+        continue-on-error: true
         shell: bash
         run: |
             uname -a
