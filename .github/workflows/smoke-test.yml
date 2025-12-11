@@ -48,6 +48,9 @@ jobs:
           - driver: docker
             os: ubuntu-24.04
             network_flag: ""
+          - driver: docker
+            os: ubuntu-24.04-arm
+            network_flag: ""
     steps:
       - name: Info Block (macos)
         if: contains(matrix.os, 'macos')
