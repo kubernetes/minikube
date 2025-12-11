@@ -80,12 +80,14 @@ jobs:
             # CPU model (handles x86/ARM; avoid failure if field is missing)
             (grep -E 'model name|Hardware|Processor' /proc/cpuinfo 2>/dev/null || lscpu | awk -F: '/Model name/ {print $2}') | head -n1 || true
             # System model (requires `dmidecode`, may need sudo)
-            sudo dmidecode -s system-product-name
+            command -v dmidecode >/dev/null && sudo dmidecode -s system-product-name || true
             systemd-detect-virt
             # Check if KVM is available (can show virtualization support)
             egrep -c '(vmx|svm)' /proc/cpuinfo
             # Detailed hardware info (like `system_profiler`)
-            sudo lshw -short
+            if command -v lshw >/dev/null; then
+              sudo lshw -short || true
+            fi
             cat /etc/os-release
             ip addr show
             ifconfig
