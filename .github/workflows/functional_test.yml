@@ -43,7 +43,7 @@ jobs:
         run: go mod download
       - name: Build minikube and e2e test binaries
         run: |
-          make e2e-linux-amd64 e2e-darwin-amd64
+          make e2e-linux-arm64 e2e-linux-amd64 e2e-darwin-amd64
           cp -r test/integration/testdata ./out
       - name: Upload Test Binaries
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
@@ -65,11 +65,22 @@ jobs:
             cruntime: docker
             os: ubuntu-22.04
             test-timeout: 15m 
+          - name: docker-docker-ubuntu24.04-arm64
+            driver: docker
+            cruntime: docker
+            os: ubuntu-24.04-arm
+            test-timeout: 15m 
           - name: docker-containerd-ubuntu-22.04-x86_64
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-22.04
+            test-timeout: 15m 
+          - name: docker-containerd-ubuntu-24.04-arm64
+            driver: docker
+            cruntime: containerd
+            extra-start-args: --container-runtime=containerd
+            os: ubuntu-24.04-arm
             test-timeout: 15m 
           - name: docker-containerd-rootless-ubuntu-22.04-x86_64
             driver: docker
@@ -161,6 +172,7 @@ jobs:
           csrutil status || true
       - name: Info Block (linux)
         if: runner.os == 'Linux'
+        continue-on-error: true
         shell: bash
         run: |
           set -x
@@ -345,20 +357,7 @@ jobs:
           echo "=== podman ps ==="
           podman ps || true
       - name: Install kubectl
-        shell: bash
-        run: |
-          if [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew install kubectl
-          elif [[ "$RUNNER_OS" == "Linux" ]]; then
-            tmp=$(mktemp)
-            curl -fsSL -o "$tmp" "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-            sudo install -m 0755 "$tmp" /usr/local/bin/kubectl
-            rm "$tmp"
-          else
-            echo "Unsupported OS: $RUNNER_OS"
-            exit 1
-          fi
-          kubectl version --client=true
+        uses: azure/setup-kubectl@v4
       - name: Install qemu and socket_vmnet (macos)
         if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
         run: |
