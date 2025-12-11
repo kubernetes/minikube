@@ -24,7 +24,8 @@ on:
 env:
   GOPROXY: https://proxy.golang.org
   LOG_ARGS: --v=8 --alsologtostderr
-  permissions:
+
+permissions:
   contents: read
 # Limit one unit test job running per PR/Branch
 concurrency:
@@ -48,6 +49,9 @@ jobs:
           - driver: docker
             os: ubuntu-24.04
             network_flag: ""
+          - driver: docker
+            os: ubuntu-24.04-arm
+            network_flag: ""
     steps:
       - name: Info Block (macos)
         if: contains(matrix.os, 'macos')
@@ -66,20 +70,26 @@ jobs:
           ifconfig
       - name: Info Block (linux)
         if: contains(matrix.os, 'ubuntu')
+        continue-on-error: true
         shell: bash
         run: |
             uname -a
             grep MemTotal /proc/meminfo
             awk '/MemTotal/ {printf "%.2f\n", $2 / 1024 / 1024}' /proc/meminfo
             nproc
-            grep 'model name' /proc/cpuinfo | head -n1
+            # CPU model (handles x86/ARM; avoid failure if field is missing)
+            (grep -E 'model name|Hardware|Processor' /proc/cpuinfo 2>/dev/null || lscpu | awk -F: '/Model name/ {print $2}') | head -n1 || true
             # System model (requires `dmidecode`, may need sudo)
-            sudo dmidecode -s system-product-name
-            systemd-detect-virt
+            command -v dmidecode >/dev/null && sudo dmidecode -s system-product-name || true
+            if command -v systemd-detect-virt >/dev/null; then
+              sudo systemd-detect-virt -short | grep -i system || true
+            fi            
             # Check if KVM is available (can show virtualization support)
-            egrep -c '(vmx|svm)' /proc/cpuinfo
+            egrep -c '(vmx|svm)' /proc/cpuinfo || true
             # Detailed hardware info (like `system_profiler`)
-            sudo lshw -short
+            if command -v lshw >/dev/null; then
+              sudo lshw -short || true
+            fi
             cat /etc/os-release
             ip addr show
             ifconfig
