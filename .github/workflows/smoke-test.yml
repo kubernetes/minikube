@@ -81,9 +81,11 @@ jobs:
             (grep -E 'model name|Hardware|Processor' /proc/cpuinfo 2>/dev/null || lscpu | awk -F: '/Model name/ {print $2}') | head -n1 || true
             # System model (requires `dmidecode`, may need sudo)
             command -v dmidecode >/dev/null && sudo dmidecode -s system-product-name || true
-            systemd-detect-virt
+            if command -v systemd-detect-virt >/dev/null; then
+              sudo systemd-detect-virt -short | grep -i system || true
+            fi            
             # Check if KVM is available (can show virtualization support)
-            egrep -c '(vmx|svm)' /proc/cpuinfo
+            egrep -c '(vmx|svm)' /proc/cpuinfo || true
             # Detailed hardware info (like `system_profiler`)
             if command -v lshw >/dev/null; then
               sudo lshw -short || true
