@@ -77,7 +77,8 @@ jobs:
             grep MemTotal /proc/meminfo
             awk '/MemTotal/ {printf "%.2f\n", $2 / 1024 / 1024}' /proc/meminfo
             nproc
-            grep 'model name' /proc/cpuinfo | head -n1
+            # CPU model (handles x86/ARM; avoid failure if field is missing)
+            (grep -E 'model name|Hardware|Processor' /proc/cpuinfo 2>/dev/null || lscpu | awk -F: '/Model name/ {print $2}') | head -n1 || true
             # System model (requires `dmidecode`, may need sudo)
             sudo dmidecode -s system-product-name
             systemd-detect-virt
