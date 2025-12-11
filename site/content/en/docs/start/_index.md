@@ -6,16 +6,6 @@ aliases:
   - /docs/start
 ---
 
-## GitHub Codespace
-
-You can run minikube in a GitHub Codespace by clicking here: 
-
-[![Open in GitHub Codespaces](https://img.shields.io/badge/Open%20in-GitHub%20Codespaces-blue?logo=github)](https://codespaces.new/kubernetes/minikube?quickstart=1) 
-
-This will launch a Github Codespace. You can then run `minikube start` and `minikube dashboard` - You can then open Minikube Dashboard by clicking opening the link displayed in the terminal.  
-
-You can also run Minikube in a Dev Container locally using your favorite IDE, for more information see Dev Containers https://code.visualstudio.com/docs/devcontainers/containers
-
 ## Run Minikube Locally
 
 minikube is local Kubernetes, focusing on making it easy to learn and develop for Kubernetes.
@@ -778,6 +768,12 @@ Delete all of the minikube clusters:
 ```shell
 minikube delete --all
 ```
+
+<h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">6</strong></span>Run Minikube in a Github Codespace or Dev Container</h2>
+
+You can also run Minikube in a Github Codespaces or locally in a Dev Container
+
+See this link [Minikube Dev Container or Github Codespace]({{<ref "/docs/tutorials/dev_container_codespaces.md">}})
 
 ## Take the next step
 
