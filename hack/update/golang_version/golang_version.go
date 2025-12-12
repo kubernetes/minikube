@@ -143,26 +143,29 @@ func updateGoHashFile(version string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)
 	}
-	if strings.Contains(string(b), version) {
-		klog.Infof("hash file already contains %q", version)
-		return nil
-	}
-	r, err := http.Get(fmt.Sprintf("https://dl.google.com/go/go%s.src.tar.gz.sha256", version))
-	if err != nil {
-		return fmt.Errorf("failed to download golang sha256 file: %v", err)
-	}
-	defer r.Body.Close()
-	sha, err := io.ReadAll(r.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %v", err)
-	}
-	f, err := os.OpenFile(hashFilePath, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open go.hash file: %v", err)
-	}
-	defer f.Close()
-	if _, err := fmt.Fprintf(f, "sha256  %s  go%s.src.tar.gz\n", sha, version); err != nil {
-		return fmt.Errorf("failed to write to go.hash file: %v", err)
+	for _, release := range []string{"src", "linux-amd64", "linux-arm64"} {
+		filename := fmt.Sprintf("go%s.%s.tar.gz", version, release)
+		if strings.Contains(string(b), filename) {
+			klog.Infof("hash file already contains %q", filename)
+			continue
+		}
+		r, err := http.Get(fmt.Sprintf("https://dl.google.com/go/%s.sha256", filename))
+		if err != nil {
+			return fmt.Errorf("failed to download golang sha256 file: %v", err)
+		}
+		defer r.Body.Close()
+		sha, err := io.ReadAll(r.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read response body: %v", err)
+		}
+		f, err := os.OpenFile(hashFilePath, os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			return fmt.Errorf("failed to open go.hash file: %v", err)
+		}
+		defer f.Close()
+		if _, err := fmt.Fprintf(f, "sha256  %s  %s\n", sha, filename); err != nil {
+			return fmt.Errorf("failed to write to go.hash file: %v", err)
+		}
 	}
 	return nil
 }
