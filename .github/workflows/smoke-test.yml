@@ -126,7 +126,7 @@ jobs:
               --no-kubernetes \
               --memory 1200mb \
               --force \
-              --cpus 2 \
+              --cpus 1 \
               --wait-timeout=13m \
               --driver ${{ matrix.driver }} \
               ${{ matrix.network_flag }} \
