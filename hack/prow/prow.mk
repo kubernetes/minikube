@@ -56,6 +56,14 @@ integration-prow-kvm-crio-linux-x86: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./out/minitest  --deployer boskos --tester kvm-crio-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
 
+.PHONY: integration-vfkit-docker-macos-arm64
+integration-vfkit-docker-macos-arm64:
+	echo "This test is not supported in Prow"
+	ls -al /etc/aws-ssh/aws-ssh-private
+	ssh -i /etc/aws-ssh/aws-ssh-private ec2-user@28zmx-sibu3-yy3oc-zmvxf-smpwu-058cv95.us-east-2.ip.aws "uname"
+
+
+
 .PHONY: build-mini-test
 build-mini-test: # build minitest binary
 	GOTOOLCHAIN=auto go build -C ./hack/prow/minitest -o $(PWD)/out/minitest .
