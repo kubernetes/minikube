@@ -7,6 +7,7 @@ on:
       - "go.mod"
       - "**.go"
       - "Makefile"
+      - .github/workflows/functional_test.yml
       - "!site/**"
       - "!**.md"
       - "!**.json"
@@ -30,9 +31,22 @@ env:
 permissions:
   contents: read
 jobs:
-  # build-test-binaries job runs before all other jobs and produces binaries/test-data to be shared by all following jobs
+  # build-test-binaries job runs before all other jobs and produces binaries/test-data per arch to be shared by all following jobs
   build-test-binaries:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: build-test-binaries-x86
+            arch: amd64
+            runs-on: ubuntu-24.04
+            make-targets: e2e-linux-amd64
+          - name: build-test-binaries-arm64
+            arch: arm64
+            runs-on: ubuntu-24.04-arm
+            make-targets: e2e-linux-arm64
+    runs-on: ${{ matrix.runs-on }}
+    name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
@@ -43,12 +57,12 @@ jobs:
         run: go mod download
       - name: Build minikube and e2e test binaries
         run: |
-          make e2e-linux-arm64 e2e-linux-amd64 e2e-darwin-amd64
+          make ${{ matrix.make-targets }}
           cp -r test/integration/testdata ./out
       - name: Upload Test Binaries
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
-          name: binaries
+          name: binaries-${{ matrix.arch }}
           path: out
   functional-test:
     name: ${{ matrix.name }}
@@ -64,23 +78,27 @@ jobs:
             driver: docker
             cruntime: docker
             os: ubuntu-24.04
+            arch: amd64
             test-timeout: 15m 
           - name: docker-docker-ubuntu24.04-arm64
             driver: docker
             cruntime: docker
             os: ubuntu-24.04-arm
+            arch: arm64
             test-timeout: 15m 
           - name: docker-containerd-ubuntu-24.04-x86_64
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04
+            arch: amd64
             test-timeout: 15m 
           - name: docker-containerd-ubuntu-24.04-arm64
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04-arm
+            arch: arm64
             test-timeout: 15m 
           - name: docker-containerd-rootless-ubuntu-24.04-x86_64
             driver: docker
@@ -88,16 +106,19 @@ jobs:
             os: ubuntu-24.04            
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
+            arch: amd64
             test-timeout: 15m 
           - name: podman-docker-ubuntu-24.04-x86_64
             driver: podman
             cruntime: docker
             os: ubuntu-24.04
+            arch: amd64
             test-timeout: 15m
           - name: baremetal-docker-ubuntu-24.04-x86_64
             driver: none
             cruntime: docker
             os: ubuntu-24.04
+            arch: amd64
             test-timeout: 10m
     steps:
       - name: Info Block (macOS)
@@ -359,7 +380,7 @@ jobs:
       - name: Download Test Binaries
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          name: binaries
+          name: binaries-${{ matrix.arch }}
       - name: Disable AppArmor for MySQL
         if: runner.os == 'Linux'
         run: |
