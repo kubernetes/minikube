@@ -44,7 +44,7 @@ GO_K8S_VERSION_PREFIX ?= v1.35.0
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2025.02
-GOLANG_OPTIONS = GOWORK=off GO_VERSION=$(GO_VERSION) GO_HASH_FILES=$(PWD)/deploy/iso/minikube-iso/go.hash
+GOLANG_OPTIONS = GO_VERSION=$(GO_VERSION) GO_HASH_FILES=$(PWD)/deploy/iso/minikube-iso/go.hash
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
 
