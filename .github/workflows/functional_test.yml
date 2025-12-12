@@ -31,9 +31,19 @@ env:
 permissions:
   contents: read
 jobs:
-  # build-test-binaries-* jobs run before all other jobs and produce binaries/test-data to be shared by all following jobs
-  build-test-binaries-amd64:
-    runs-on: ubuntu-24.04
+  # build-test-binaries job runs before all other jobs and produces binaries/test-data per arch to be shared by all following jobs
+  build-test-binaries:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runs-on: ubuntu-24.04
+            make-targets: e2e-linux-amd64
+          - arch: arm64
+            runs-on: ubuntu-24.04-arm
+            make-targets: e2e-linux-arm64
+    runs-on: ${{ matrix.runs-on }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
@@ -44,37 +54,16 @@ jobs:
         run: go mod download
       - name: Build minikube and e2e test binaries
         run: |
-          make e2e-linux-amd64
+          make ${{ matrix.make-targets }}
           cp -r test/integration/testdata ./out
       - name: Upload Test Binaries
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
-          name: binaries-amd64
-          path: out
-  build-test-binaries-arm64:
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
-        with:
-          go-version: ${{env.GO_VERSION}}
-          cache: true      
-      - name: Download Dependencies
-        run: go mod download
-      - name: Build minikube and e2e test binaries
-        run: |
-          make e2e-linux-arm64
-          cp -r test/integration/testdata ./out
-      - name: Upload Test Binaries
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
-        with:
-          name: binaries-arm64
+          name: binaries-${{ matrix.arch }}
           path: out
   functional-test:
     name: ${{ matrix.name }}
-    needs:
-      - build-test-binaries-amd64
-      - build-test-binaries-arm64
+    needs: build-test-binaries
     runs-on: ${{ matrix.os }}
     permissions:
       contents: none
