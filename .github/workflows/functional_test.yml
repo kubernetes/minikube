@@ -46,6 +46,7 @@ jobs:
             runs-on: ubuntu-24.04-arm
             make-targets: e2e-linux-arm64
     runs-on: ${{ matrix.runs-on }}
+    name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
