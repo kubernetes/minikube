@@ -3,6 +3,8 @@ title: "Run Minikube in a Dev Container or in a Github Codespace"
 linkTitle: "Minikube in a Dev Container or in a Github Codespace"
 weight: 1
 date: 2025-12-12
+description: >
+  Running Minikube and the Minikube Dashboard inside a Dev Container or in a Github Codespace
 ---
 
 This tutorial shows how to run minikube in a Github Codespace or locally in a Dev Container.
@@ -20,7 +22,6 @@ This tutorial shows how to run minikube in a Github Codespace or locally in a De
 - Docker installed locally. [Docker](https://www.docker.com/get-started/)
 - Visual Studio Code installed locally. [VSCode](https://code.visualstudio.com/)
 - Install the Dev Containers extension for VSCode. [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-
 
 ## Instructions
 
