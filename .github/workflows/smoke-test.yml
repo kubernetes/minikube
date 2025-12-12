@@ -123,7 +123,9 @@ jobs:
         run: |
           ./out/minikube start \
               --no-kubernetes \
-              --memory 4gb \
+              --memory 2gb \
+              --cpus 2 \
+              --wait-timeout=13m \
               --driver ${{ matrix.driver }} \
               ${{ matrix.network_flag }} \
               ${{ env.LOG_ARGS }}
@@ -141,6 +143,6 @@ jobs:
       - name: Stop minikube
         run: ./out/minikube stop ${{ env.LOG_ARGS }}
       - name: Start minikube again (2nd boot)
-        run: ./out/minikube start ${{ env.LOG_ARGS }}
+        run: ./out/minikube start ${{ env.LOG_ARGS }} --wait-timeout=13m
       - name: Delete minikube
         run: ./out/minikube delete ${{ env.LOG_ARGS }}
