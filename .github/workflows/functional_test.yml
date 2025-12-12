@@ -37,10 +37,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - arch: amd64
+          - name: build-test-binaries-x86
+            arch: amd64
             runs-on: ubuntu-24.04
             make-targets: e2e-linux-amd64
-          - arch: arm64
+          - name: build-test-binaries-arm
+            arch: arm64
             runs-on: ubuntu-24.04-arm
             make-targets: e2e-linux-arm64
     runs-on: ${{ matrix.runs-on }}
