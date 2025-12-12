@@ -41,7 +41,7 @@ jobs:
             arch: amd64
             runs-on: ubuntu-24.04
             make-targets: e2e-linux-amd64
-          - name: build-test-binaries-arm
+          - name: build-test-binaries-arm64
             arch: arm64
             runs-on: ubuntu-24.04-arm
             make-targets: e2e-linux-arm64
