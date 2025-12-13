@@ -121,65 +121,8 @@ jobs:
             arch: amd64
             test-timeout: 10m
     steps:
-      - name: Info Block (macOS)
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          set -x
-          echo "=== Kernel and OS ==="
-          uname -a
-          sw_vers
-          sysctl kern.osrelease kern.osversion kern.version || true
-
-          echo "=== CPU ==="
-            sysctl -n machdep.cpu.brand_string
-          sysctl -n hw.ncpu
-          sysctl -n machdep.cpu.core_count || true
-          sysctl -n machdep.cpu.thread_count || true
-          sysctl -n machdep.cpu.features || true
-          sysctl -n machdep.cpu.leaf7_features || true
-          sysctl -n machdep.cpu.extfeatures || true
-
-          echo "=== Memory ==="
-          sysctl -n hw.memsize
-          echo "$(sysctl -n hw.memsize) / 1024 / 1024 / 1024" | bc
-          sysctl -n hw.pagesize || true
-          vm_stat || true
-
-          echo "=== Virtualization ==="
-          sysctl -n kern.hv_vmm_present
-          sysctl -n kern.hv_support
-          sysctl -n machdep.cpu.features | grep -i vmx || true
-
-          echo "=== Hardware Inventory ==="
-          sysctl hw.model
-          system_profiler SPHardwareDataType
-
-          echo "=== Storage ==="
-          diskutil list || true
-          df -h
-          system_profiler SPStorageDataType | sed -n '1,200p' || true
-
-          echo "=== Network ==="
-          echo $HTTP_PROXY
-          ifconfig
-          networksetup -listallhardwareports || true
-          scutil --get HostName || true
-          scutil --get LocalHostName || true
-          scutil --get ComputerName || true
-          route -n get default || true
-          netstat -rn || true
-          scutil --dns || true
-
-          echo "=== Uptime and Load ==="
-          uptime
-          sysctl kern.boottime || true
-          top -l 1 -n 0 | head -n 10 || true
-
-          echo "=== Security ==="
-          spctl --status || true
-          csrutil status || true
-      - name: Info Block (linux)
+      - id: info-block
+        uses: medyagh/info-block@main
         if: runner.os == 'Linux'
         continue-on-error: true
         shell: bash
