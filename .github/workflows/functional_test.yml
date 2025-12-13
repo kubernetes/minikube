@@ -120,6 +120,12 @@ jobs:
             os: ubuntu-24.04
             arch: amd64
             test-timeout: 10m
+          - name: baremetal-docker-ubuntu-24.04-arm64
+            driver: none
+            cruntime: docker
+            os: ubuntu-24.04-arm
+            arch: arm64
+            test-timeout: 10m
     steps:
       - id: info-block
         uses: medyagh/info-block@main
@@ -169,7 +175,8 @@ jobs:
           CRI_DOCKERD_VERSION="v0.4.1"
           CRI_DOCKERD_COMMIT="55d6e1a1d6f2ee58949e13a0c66afe7d779ac942"
           CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
-          sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
+          ARCH="${{ matrix.arch }}"
+          sudo curl -L "${CRI_DOCKERD_BASE_URL}/${ARCH}/cri-dockerd" -o /usr/bin/cri-dockerd
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
           sudo chmod +x /usr/bin/cri-dockerd
@@ -178,8 +185,10 @@ jobs:
         if: matrix.driver == 'none'
         run: |
           CRICTL_VERSION="v1.34.0"
-          curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
-          sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
+          ARCH="${{ matrix.arch }}"
+          CRICTL_TAR="crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz"
+          curl -L "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/${CRICTL_TAR}" --output "${CRICTL_TAR}"
+          sudo tar zxvf "${CRICTL_TAR}" -C /usr/local/bin
       # conntrack is required for kubernetes 1.18 and higher
       - name: Install conntrack & socat (baremetal only)
         shell: bash
@@ -195,7 +204,8 @@ jobs:
         if: matrix.driver == 'none'
         run: |
           CNI_PLUGIN_VERSION="v1.7.1"
-          CNI_PLUGIN_TAR="cni-plugins-linux-amd64-$CNI_PLUGIN_VERSION.tgz"
+          ARCH="${{ matrix.arch }}"
+          CNI_PLUGIN_TAR="cni-plugins-linux-${ARCH}-$CNI_PLUGIN_VERSION.tgz"
           CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"
           curl -LO "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/$CNI_PLUGIN_TAR"
           sudo mkdir -p "$CNI_PLUGIN_INSTALL_DIR"
