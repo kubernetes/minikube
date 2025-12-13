@@ -40,7 +40,6 @@ type MiniTestBosKosMacOSDeployer struct {
 	isUp   bool
 
 	remoteUserName string
-	instanceName   string
 	sshAddr        string
 
 	boskosClient *client.Client
@@ -80,14 +79,14 @@ func (m *MiniTestBosKosMacOSDeployer) Up() error {
 		klog.Errorf("Failed to request macos instance from boskos: %v", err)
 		return err
 	}
-	fmt.Printf("get instance %s\n", m.instanceName)
+	fmt.Printf("get instance %s\n", m.sshAddr)
 
 	if err := sshConnectionCheck(m.ctx, m.remoteUserName, m.sshAddr, []string{"-i", sshPrivateKeyPath}); err != nil {
 		klog.Errorf("Failed to conntect via ssh: %v", err)
 		return err
 	}
 
-	klog.Infof("Successfully connected to macos instance: %s", m.instanceName)
+	klog.Infof("Successfully connected to macos instance: %s", m.sshAddr)
 	m.isUp = true
 	return nil
 
@@ -102,7 +101,7 @@ func (m *MiniTestBosKosMacOSDeployer) Down() error {
 	}
 	err := boskos.Release(
 		m.boskosClient,
-		[]string{m.instanceName},
+		[]string{m.sshAddr},
 		m.boskosHeartbeatClose,
 	)
 	if err != nil {
@@ -156,7 +155,7 @@ func (m *MiniTestBosKosMacOSDeployer) requestMacOSInstance() error {
 	}
 
 	klog.Infof("Got instance %q from boskos", resource.Name)
-	m.instanceName = resource.Name
+	m.sshAddr = resource.Name
 	return nil
 }
 func (m *MiniTestBosKosMacOSDeployer) additionalSSHArgs() []string {
