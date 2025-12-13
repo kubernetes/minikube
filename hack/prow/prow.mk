@@ -58,6 +58,7 @@ integration-prow-kvm-crio-linux-x86: setup-prow-gcp-ssh-keys build-mini-test
 
 .PHONY: integration-vfkit-docker-macos-arm64
 integration-vfkit-docker-macos-arm64: build-mini-test
+	curl -X POST "http://boskos.test-pods.svc.cluster.local/release?name=mac-instances&dest=dirty&owner=${JOB_NAME}-kubetest2"
 	./out/minitest  --deployer boskos-macos --tester vfkit-docker-macos-arm64-integration --config hack/prow/boskos-cfg-macos.json
 
 .PHONY: build-mini-test

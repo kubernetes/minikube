@@ -60,7 +60,8 @@ func MainWithReturnValue() int {
 	tester := getTester(*testerName)
 
 	defer func() {
-		// some resource, like mac instances is very precious, we must make sure they are released
+		// some resource, like mac instance is very precious
+		// no matter what happens we must make sure they are released
 		if err := dep.Down(); err != nil {
 			klog.Errorf("failed to stop deployer after panic: %v", err)
 		}
@@ -76,9 +77,6 @@ func MainWithReturnValue() int {
 		return 1
 	}
 
-	if testErr != nil {
-		return 1
-	}
 	return 0
 }
 
