@@ -44,6 +44,11 @@ integration-prow-kvm-crio-linux-x86-64: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./out/minitest  --deployer boskos --tester kvm-crio-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
 
+.PHONY: integration-vfkit-docker-macos-arm64
+integration-vfkit-docker-macos-arm64: build-mini-test
+	curl -X POST "http://boskos.test-pods.svc.cluster.local/release?name=28zmx-sibu3-yy3oc-zmvxf-smpwu-058cv95.us-east-2.ip.aws&dest=dirty&owner=${JOB_NAME}-kubetest2"
+	./out/minitest  --deployer boskos-macos --tester vfkit-docker-macos-arm64-integration --config hack/prow/boskos-cfg-macos.json
+
 .PHONY: build-mini-test
 build-mini-test: # build minitest binary
 	GOTOOLCHAIN=auto go build -C ./hack/prow/minitest -o $(PWD)/out/minitest .
