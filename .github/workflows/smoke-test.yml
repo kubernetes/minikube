@@ -53,47 +53,14 @@ jobs:
             os: ubuntu-24.04-arm
             network_flag: ""
     steps:
-      - name: Info Block (macos)
-        if: contains(matrix.os, 'macos')
-        shell: bash
+      - id: info-block
+        uses: medyagh/info-block@main
+      - name: Load avg and free memory
         run: |
-          uname -a
-          sysctl -n hw.memsize
-          echo "$(sysctl -n hw.memsize) / 1024 / 1024 / 1024" | bc
-          sysctl -n hw.ncpu
-          sysctl -n machdep.cpu.brand_string
-          sysctl hw.model
-          sysctl -n kern.hv_vmm_present
-          sysctl -n kern.hv_support
-          system_profiler SPHardwareDataType
-          sw_vers
-          ifconfig
-      - name: Info Block (linux)
-        if: contains(matrix.os, 'ubuntu')
-        continue-on-error: true
-        shell: bash
-        run: |
-            uname -a
-            grep MemTotal /proc/meminfo
-            awk '/MemTotal/ {printf "%.2f\n", $2 / 1024 / 1024}' /proc/meminfo
-            nproc
-            # CPU model (handles x86/ARM; avoid failure if field is missing)
-            (grep -E 'model name|Hardware|Processor' /proc/cpuinfo 2>/dev/null || lscpu | awk -F: '/Model name/ {print $2}') | head -n1 || true
-            # System model (requires `dmidecode`, may need sudo)
-            command -v dmidecode >/dev/null && sudo dmidecode -s system-product-name || true
-            if command -v systemd-detect-virt >/dev/null; then
-              sudo systemd-detect-virt -short | grep -i system || true
-            fi            
-            # Check if KVM is available (can show virtualization support)
-            egrep -c '(vmx|svm)' /proc/cpuinfo || true
-            # Detailed hardware info (like `system_profiler`)
-            if command -v lshw >/dev/null; then
-              sudo lshw -short || true
-            fi
-            cat /etc/os-release
-            ip addr show
-            ifconfig
-            docker version
+          echo "memory_gb=${{ steps.info-block.outputs.memory_gb }}"
+          echo "cpu_cores=${{ steps.info-block.outputs.cpu_cores }}"
+          echo "load_average=${{ steps.info-block.outputs.load_average }}"
+          echo "free_mem=${{ steps.info-block.outputs.free_mem }}"
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
         with:
