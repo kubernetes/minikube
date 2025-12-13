@@ -32,6 +32,7 @@ var deployers = map[string]func(string) deployer.MiniTestDeployer{
 	"boskos": deployer.NewMiniTestBosKosDeployerFromConfigFile,
 	//docker deployer is for testing minitest. This should never be used for testing minikube
 	"docker": deployer.NewMiniTestDockerDeployerFromConfigFile,
+	"boskos-macos": deployer.NewMiniTestBosKosMacOSDeployerFromConfigFile,
 }
 var testers = map[string]tester.MiniTestTester{
 	"kvm-docker-linux-amd64-integration":     &tester.KVMDockerLinuxAmd64IntegrationTester{},
@@ -40,6 +41,7 @@ var testers = map[string]tester.MiniTestTester{
 	"none-docker-linux-amd64-integration":      &tester.NoneDockerLinuxAmd64IntegrationTester{},
 	"none-containerd-linux-amd64-integration":  &tester.NoneContainerdLinuxAmd64IntegrationTester{},
 	"docker-linux-arm64-integration":         &tester.DockerLinuxArm64IntegrationTester{},
+	"vfkit-docker-macos-arm64-integration":   &tester.VfkitDockerMacOSARM64IntegrationTester{},
 }
 
 func main() {
