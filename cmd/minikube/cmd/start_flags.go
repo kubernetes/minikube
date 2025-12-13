@@ -147,6 +147,7 @@ const (
 	gpus                    = "gpus"
 	autoPauseInterval       = "auto-pause-interval"
 	preloadSrc              = "preload-source"
+	rosetta                 = "rosetta"
 )
 
 var (
@@ -287,6 +288,9 @@ func initDriverFlags() {
 
 	// qemu
 	startCmd.Flags().String(qemuFirmwarePath, "", "Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\\Program Files\\qemu\\share")
+
+	// vfkit
+	startCmd.Flags().Bool(rosetta, false, "Enable Rosetta to support apps built for Intel processor on a Mac with Apple silicon (vfkit driver only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -551,6 +555,24 @@ func validateVfkitNetwork(n string, options *run.CommandOptions) string {
 	return n
 }
 
+func getRosetta(driverName string) bool {
+	enabled := viper.GetBool(rosetta)
+	if enabled {
+		if !driver.IsVFKit(driverName) {
+			out.WarningT("--rosetta flag is only valid with the vfkit driver, it will be ignored")
+			return false
+		}
+		if runtime.GOARCH != "arm64" {
+			out.WarningT("--rosetta flag is only valid on Apple silicon, it will be ignored")
+			return false
+		}
+		if !viper.GetBool(flags.Interactive) {
+			out.Styled(style.Warning, "Skipping Rosetta automatic install in non-interactive mode")
+		}
+	}
+	return enabled
+}
+
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
 func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string, options *run.CommandOptions) config.ClusterConfig {
 	var cc config.ClusterConfig
@@ -655,6 +677,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		MultiNodeRequested: viper.GetInt(nodes) > 1 || viper.GetBool(ha),
 		GPUs:               viper.GetString(gpus),
 		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
+		Rosetta:            getRosetta(drvName),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 
@@ -885,6 +908,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.SocketVMnetClientPath, socketVMnetClientPath)
 	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 	updateDurationFromFlag(cmd, &cc.AutoPauseInterval, autoPauseInterval)
+	updateBoolFromFlag(cmd, &cc.Rosetta, rosetta)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		kubeVer, err := getKubernetesVersion(existing)
