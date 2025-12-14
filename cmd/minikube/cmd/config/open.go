@@ -91,7 +91,7 @@ minikube addons enable {{.name}}`, out.V{"name": addonName})
 You can add one by annotating a service with the label {{.labelName}}:{{.addonName}}`, out.V{"labelName": key, "addonName": addonName})
 		}
 		for i := range serviceList.Items {
-			svc := serviceList.Items[i].ObjectMeta.Name
+			svc := serviceList.Items[i].Name
 			var urlString []string
 
 			if urlString, err = service.WaitForService(co.API, co.Config.Name, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {

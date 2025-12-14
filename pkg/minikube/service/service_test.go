@@ -350,7 +350,7 @@ func (s *MockServiceInterface) List(_ context.Context, opts meta.ListOptions) (*
 
 func (s *MockServiceInterface) Get(_ context.Context, name string, _ meta.GetOptions) (*core.Service, error) {
 	for _, svc := range s.ServiceList.Items {
-		if svc.ObjectMeta.Name == name {
+		if svc.Name == name {
 			return &svc, nil
 		}
 	}

@@ -38,7 +38,7 @@ func TestHiddenPrint(t *testing.T) {
 	}
 	for _, test := range testCases {
 		b := new(bytes.Buffer)
-		_, err := b.WriteString(fmt.Sprintf("%s\r\n", test.TestString)) // you need the \r!
+		_, err := fmt.Fprintf(b, "%s\r\n", test.TestString) // you need the \r!
 		if err != nil {
 			t.Errorf("Could not prepare bytestring")
 		}
