@@ -142,7 +142,7 @@ MARKDOWNLINT ?= markdownlint
 MINIKUBE_MARKDOWN_FILES := README.md CONTRIBUTING.md CHANGELOG.md
 
 # The `libvirt_dlopen` build tag is used only linux to avoid linking with
-# libvirt shared library. This is not documnted but can be found in the source.
+# libvirt shared library. This is not documented but can be found in the source.
 # https://gitlab.com/libvirt/libvirt-go-module/-/blob/f7cdeba9979dd248582901d2aaf7ab1f2d27cbe0/domain.go#L30
 MINIKUBE_BUILD_TAGS := libvirt_dlopen
 
