@@ -103,11 +103,11 @@ jobs:
         run: |
           ./out/minikube start \
               --no-kubernetes \
-              --cpus 2 \
-              --memory 2gb \
+              --cpus 1 \
+              --memory 1200mb \
               --driver ${{ matrix.driver }} \
               --wait-timeout=15m \
-              --force-systemd \
+              --force\
               ${{ matrix.network_flag }} \
               ${{ env.LOG_ARGS }}
       - name: Inspect minikube
