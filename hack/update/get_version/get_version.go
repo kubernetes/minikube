@@ -73,6 +73,7 @@ var dependencies = map[string]dependency{
 	"nerdctld":                {"deploy/kicbase/Dockerfile", `NERDCTLD_VERSION="(.*)"`},
 	"node":                    {"netlify.toml", `NODE_VERSION = "(.*)"`},
 	"nvidia-device-plugin":    {addonsFile, `nvidia/k8s-device-plugin:(.*)@`},
+	"portainer":               {addonsFile, `portainer/portainer-ce:(.*)@`},
 	"registry":                {addonsFile, `registry:(.*)@`},
 	"runc":                    {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
 	"debian":                  {dockerfile, `debian:bookworm-(.*)-slim`},
