@@ -63,8 +63,9 @@ jobs:
           echo "load_average=${{ steps.info-block.outputs.load_average }}"
           echo "free_mem=${{ steps.info-block.outputs.free_mem }}"
           load_avg=${{ steps.info-block.outputs.load_average }}
-          if (( $(echo "$load_avg > 3" | bc -l) )); then
-            echo "Load average is above 3; stopping job early."
+          cores=${{ steps.info-block.outputs.cpu_cores }}
+          if (( $(echo "$load_avg / $cores > 2" | bc -l) )); then
+            echo "Load average per core is above 2; stopping job early."
             exit 1
           fi
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
