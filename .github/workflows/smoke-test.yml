@@ -77,10 +77,6 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: make
-      - name: Clean Mac (macos)
-        if: contains(matrix.os, 'macos')
-        run: |
-          sudo killall socketfilterfw bootpd
       - name: Update brew (macos)
         if: contains(matrix.os, 'macos')
         run: brew update
@@ -97,6 +93,14 @@ jobs:
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
+      - name: Clean Mac (macos)
+        if: contains(matrix.os, 'macos')
+        run: |
+          sudo killall socketfilterfw bootpd
+          sudo mdutil -a -i off
+          sudo pkill -f "mds_stores|mds|mdworker_shared|mdworker|spotlightknowledged|Spotlight|photoanalysisd|cloudphotod|mediaanalysisd|analyticsd|mediaanalysisd|mdwrite|corespotlightd|geod|weatherd"
+
+
       - name: Start minikube (1st boot)
         run: |
           ./out/minikube start \
