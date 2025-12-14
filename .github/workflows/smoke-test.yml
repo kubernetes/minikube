@@ -124,6 +124,6 @@ jobs:
       - name: Stop minikube
         run: ./out/minikube stop ${{ env.LOG_ARGS }}
       - name: Start minikube again (2nd boot)
-        run: ./out/minikube start ${{ env.LOG_ARGS }}
+        run: ./out/minikube start --force ${{ env.LOG_ARGS }}
       - name: Delete minikube
         run: ./out/minikube delete ${{ env.LOG_ARGS }}
