@@ -413,11 +413,43 @@ func (d *Driver) logVFKitStatus(reason string) {
 	} else {
 		log.Infof("vfkit status: REST state=%s", state)
 	}
+	d.logSerialTail()
 }
 
 func (d *Driver) openLogfile() (*os.File, error) {
 	logfile := d.ResolveStorePath(logFileName)
 	return os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+}
+
+// logSerialTail emits the tail of the vfkit serial log for debugging boot stalls.
+func (d *Driver) logSerialTail() {
+	const maxBytes = 16 * 1024
+	serialPath := d.ResolveStorePath(serialFileName)
+	info, err := os.Stat(serialPath)
+	if err != nil {
+		log.Debugf("vfkit status: serial log not available: %v", err)
+		return
+	}
+	start := info.Size() - maxBytes
+	if start < 0 {
+		start = 0
+	}
+	f, err := os.Open(serialPath)
+	if err != nil {
+		log.Debugf("vfkit status: cannot open serial log: %v", err)
+		return
+	}
+	defer f.Close()
+	if _, err := f.Seek(start, io.SeekStart); err != nil {
+		log.Debugf("vfkit status: cannot seek serial log: %v", err)
+		return
+	}
+	data, err := io.ReadAll(f)
+	if err != nil {
+		log.Debugf("vfkit status: cannot read serial log: %v", err)
+		return
+	}
+	log.Infof("vfkit status: serial.log tail (%s, last %d bytes):\n%s", serialPath, len(data), string(data))
 }
 
 func (d *Driver) stopVfkit() error {
