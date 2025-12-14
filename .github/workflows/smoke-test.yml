@@ -107,6 +107,7 @@ jobs:
               --memory 2gb \
               --driver ${{ matrix.driver }} \
               --wait-timeout=15m \
+              --force-systemd \
               ${{ matrix.network_flag }} \
               ${{ env.LOG_ARGS }}
       - name: Inspect minikube
