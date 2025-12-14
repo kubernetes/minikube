@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
 env:
   GOPROXY: https://proxy.golang.org
-  LOG_ARGS: --v=8 --alsologtostderr
+  LOG_ARGS: --v=10 --alsologtostderr
 
 permissions:
   contents: read
