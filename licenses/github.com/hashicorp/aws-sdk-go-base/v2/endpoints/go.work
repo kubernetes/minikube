@@ -1,0 +1,7 @@
+go 1.23.6
+
+use (
+	.
+	./tools
+	./v2/awsv1shim
+)

@@ -1,0 +1,106 @@
+name: Pull Request Checks
+on: [pull_request]
+
+jobs:
+  go_mod:
+    name: go mod
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        path: [".", "tools", "v2/awsv1shim"]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: ./go.mod
+
+      - name: go mod
+        working-directory: ${{ matrix.path }}
+        run: |
+          go mod tidy
+          git diff --exit-code --quiet -- go.mod go.sum || \
+            (echo; echo "Unexpected difference in ${{ matrix.path }}/go.mod or ${{ matrix.path }}/go.sum files. Run 'go mod tidy' command or revert any go.mod/go.sum changes and commit."; exit 1)
+
+  go_work_sync:
+    name: go work sync
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        path: [".", "tools", "v2/awsv1shim"]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: ./go.mod
+
+      - name: go work sync
+        run: |
+          go work sync
+          git diff --exit-code --quiet -- ${{ matrix.path }}/go.mod ${{ matrix.path }}/go.sum || \
+            (echo; echo "Modules out of sync in ${{ matrix.path }}/. Run 'go mod sync' and 'cd ${{ matrix.path }} && go mod tidy' to bring them in sync."; exit 1)
+
+  go_test:
+    name: go test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: ./go.mod
+
+      - run: |
+          go test ./...
+          cd v2/awsv1shim && go test ./...
+
+  golangci-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: ./go.mod
+
+      - run: cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
+
+      - run: |
+          golangci-lint run ./...
+          cd v2/awsv1shim && golangci-lint run ./...
+
+  import-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: ./go.mod
+
+      - run: cd tools && go install github.com/pavius/impi/cmd/impi
+
+      # impi runs against the whole directory tree, ignoring modules
+      - run: impi --local . --scheme stdThirdPartyLocal ./...
+
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - run: semgrep --error --quiet --config .semgrep
+        env:
+          REWRITE_RULE_IDS: 0
+
+  markdown-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: avto-dev/markdown-lint@04d43ee9191307b50935a753da3b775ab695eceb # v1.5.0
+        with:
+          config: ".markdownlint.yml"
+          args: "./README.md"
