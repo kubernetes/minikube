@@ -370,6 +370,10 @@ func (d *Driver) setupIP(mac string) error {
 		if err == nil {
 			break
 		}
+		// When DHCP discovery is slow or stuck, surface vfkit state to aid debugging.
+		if i > 0 && i%10 == 0 { // every 10th attempt
+			d.logVFKitStatus(fmt.Sprintf("ip lookup still failing (attempt %d)", i))
+		}
 		time.Sleep(2 * time.Second)
 	}
 
@@ -384,12 +388,31 @@ func (d *Driver) setupIP(mac string) error {
 		klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
 		exit.Error(reason.IfBootpdFirewall, "ip not found", err)
 	}
+	d.logVFKitStatus("ip lookup exhausted retries")
 	out.Styled(style.Restarting, "Successfully unblocked bootpd process from firewall, retrying")
 	return fmt.Errorf("ip not found: %v", err)
 }
 
 func isBootpdError(err error) bool {
 	return strings.Contains(err.Error(), "could not find an IP address")
+}
+
+// logVFKitStatus emits a best-effort snapshot of vfkit's process and REST state.
+func (d *Driver) logVFKitStatus(reason string) {
+	log.Infof("vfkit status: %s", reason)
+	pid, err := process.ReadPidfile(d.pidfilePath())
+	if err != nil {
+		log.Debugf("vfkit status: cannot read pidfile: %v", err)
+	} else if running, perr := process.Exists(pid, "vfkit"); perr != nil {
+		log.Debugf("vfkit status: pid %d existence check failed: %v", pid, perr)
+	} else {
+		log.Infof("vfkit status: pid=%d running=%t", pid, running)
+	}
+	if state, err := d.GetVFKitState(); err != nil {
+		log.Debugf("vfkit status: REST query failed: %v", err)
+	} else {
+		log.Infof("vfkit status: REST state=%s", state)
+	}
 }
 
 func (d *Driver) openLogfile() (*os.File, error) {
