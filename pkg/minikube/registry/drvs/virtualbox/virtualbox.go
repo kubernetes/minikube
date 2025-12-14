@@ -24,10 +24,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/virtualbox"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
