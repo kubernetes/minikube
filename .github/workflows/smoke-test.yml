@@ -16,6 +16,7 @@ on:
       - "go.mod"
       - "**.go"
       - "Makefile"
+      - ".github/workflows/smoke-test.yml"
       - "!hack/**"
       - "!site/**"
       - "!**.md"
@@ -61,6 +62,12 @@ jobs:
           echo "cpu_cores=${{ steps.info-block.outputs.cpu_cores }}"
           echo "load_average=${{ steps.info-block.outputs.load_average }}"
           echo "free_mem=${{ steps.info-block.outputs.free_mem }}"
+          load_avg=${{ steps.info-block.outputs.load_average }}
+          cores=${{ steps.info-block.outputs.cpu_cores }}
+          if (( $(echo "$load_avg / $cores > 2" | bc -l) )); then
+            echo "Load average per core is above 2; stopping job early."
+            exit 1
+          fi
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
         with:
