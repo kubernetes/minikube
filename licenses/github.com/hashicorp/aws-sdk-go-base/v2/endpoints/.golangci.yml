@@ -1,0 +1,59 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    - path: configtesting
+      linters:
+        - goconst
+    - linters:
+        - staticcheck
+      text: "SA1019: aws.Endpoint is deprecated"
+    - linters:
+        - staticcheck
+      text: "SA1019: aws.EndpointResolverWithOptions is deprecated"
+    - linters:
+        - staticcheck
+      text: "SA1019: aws.EndpointResolverWithOptionsFunc is deprecated"
+    - linters:
+        - staticcheck
+      text: "SA1019: config.WithEndpointResolverWithOptions is deprecated"
+
+linters:
+  disable-all: true
+  enable:
+    - copyloopvar
+    - dogsled
+    - errcheck
+    - errname
+    - goconst
+    - gofmt
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - mnd
+    - staticcheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - usetesting
+    - whitespace
+
+linters-settings:
+  copyloopvar:
+    check-alias: true
+  goconst:
+    ignore-tests: true
+  mnd:
+    ignored-functions:
+      - strings.SplitN
+      - strings.SplitAfterN
+      - os.MkdirAll
+  usetesting:
+    os-create-temp: false
+    os-mkdir-temp: false
+    os-setenv: false
