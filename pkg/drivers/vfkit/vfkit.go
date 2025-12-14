@@ -280,15 +280,13 @@ func (d *Driver) startVfkit(socketPath string) error {
 		"--restful-uri", fmt.Sprintf("unix://%s", d.sockfilePath()),
 		"--log-level", "debug")
 
-	// On arm64 console= is required get boot messages in serial.log. On x86_64
-	// serial log is always empty.
-	var cmdline string
-	switch runtime.GOARCH {
-	case "arm64":
-		cmdline = "console=hvc0"
-	case "amd64":
-		cmdline = "console=ttyS0"
+	// Use virtio console (hvc0) so vfkit's serial capture has guest output.
+	// Keep ttyS0 as a secondary console on amd64 to preserve prior behavior.
+	cmdlineParts := []string{"console=hvc0"}
+	if runtime.GOARCH == "amd64" {
+		cmdlineParts = append(cmdlineParts, "console=ttyS0")
 	}
+	cmdline := strings.Join(cmdlineParts, " ")
 
 	// TODO: Switch to --bootloader efi when x86_64 iso changed to EFI.
 	startCmd = append(startCmd,
