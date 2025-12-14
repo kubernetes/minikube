@@ -84,7 +84,7 @@ func helmInstallBinary(addon *assets.Addon, runner command.Runner) error {
 			}
 		}
 
-		installCmd := fmt.Sprint("curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh")
+		installCmd := "curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh"
 		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd))
 		if err != nil {
 			return errors.Wrap(err, "downloading helm")

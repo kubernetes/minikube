@@ -92,7 +92,7 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 			continue
 		}
 
-		for k, v := range pod.ObjectMeta.Labels {
+		for k, v := range pod.Labels {
 			if k == "component" || k == "k8s-app" {
 				found[v] = true
 			}
@@ -130,7 +130,7 @@ func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout tim
 // podStatusMsg returns a human-readable pod status, for generating debug status
 func podStatusMsg(pod core.Pod) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.ObjectMeta.GetName(), pod.ObjectMeta.GetUID(), pod.Status.Phase))
+	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.GetName(), pod.GetUID(), pod.Status.Phase))
 	for i, c := range pod.Status.Conditions {
 		if c.Reason != "" {
 			if i == 0 {

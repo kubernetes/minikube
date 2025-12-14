@@ -120,7 +120,7 @@ func Styled(st style.Enum, format string, a ...V) {
 func boxedCommon(printFunc func(format string, a ...interface{}), cfg box.Config, title string, format string, a ...V) {
 	b := box.New(cfg)
 	if !useColor {
-		b.Config.Color = nil
+		b.Color = nil
 	}
 	str := Sprintf(style.None, format, a...)
 	printFunc(b.String(title, strings.TrimSpace(str)))

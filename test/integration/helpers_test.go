@@ -298,7 +298,7 @@ func PostMortemLogs(t *testing.T, profile string, multinode ...bool) {
 // podStatusMsg returns a human-readable pod status, for generating debug status
 func podStatusMsg(pod core.Pod) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.ObjectMeta.GetName(), pod.ObjectMeta.GetUID(), pod.Status.Phase))
+	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.GetName(), pod.GetUID(), pod.Status.Phase))
 	for i, c := range pod.Status.Conditions {
 		if c.Reason != "" {
 			if i == 0 {
@@ -346,7 +346,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 		}
 
 		for _, pod := range pods.Items {
-			foundNames[pod.ObjectMeta.Name] = true
+			foundNames[pod.Name] = true
 			msg := podStatusMsg(pod)
 			// Prevent spamming logs with identical messages
 			if msg != lastMsg {
