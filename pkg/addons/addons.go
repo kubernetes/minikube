@@ -31,7 +31,6 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -270,7 +269,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string, opt
 	}
 
 	// Persist images even if the machine is running so starting gets the correct images.
-	images, customRegistries, err := assets.SelectAndPersistImages(addon, cc)
+	images, customRegistries, err := assets.SelectAndPersistImages(addon, cc, options)
 	if err != nil {
 		exit.Error(reason.HostSaveProfile, "Failed to persist images", err)
 	}
@@ -491,7 +490,7 @@ func verifyAddonStatus(cc *config.ClusterConfig, name string, val string, option
 	return verifyAddonStatusInternal(cc, name, val, ns, options)
 }
 
-func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string, ns string, _ *run.CommandOptions) error {
+func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string, ns string, options *run.CommandOptions) error {
 	klog.Infof("Verifying addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
@@ -501,7 +500,7 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 	label, ok := addonPodLabels[name]
 	if ok && enable {
 		out.Step(style.HealthCheck, "Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
-		client, err := kapi.Client(viper.GetString(config.ProfileName))
+		client, err := kapi.Client(options.ProfileName)
 		if err != nil {
 			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)
 		}
