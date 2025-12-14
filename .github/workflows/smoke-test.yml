@@ -77,6 +77,10 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: make
+      - name: Clean Mac (macos)
+        if: contains(matrix.os, 'macos')
+        run: |
+          sudo killall socketfilterfw bootpd
       - name: Update brew (macos)
         if: contains(matrix.os, 'macos')
         run: brew update
