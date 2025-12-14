@@ -64,10 +64,7 @@ func TestIsInBlock(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%s in %s Want: %t WantAErr: %t", tc.ip, tc.block, tc.want, tc.wanntAErr), func(t *testing.T) {
 			got, err := isInBlock(tc.ip, tc.block)
-			gotErr := false
-			if err != nil {
-				gotErr = true
-			}
+			gotErr := err != nil
 			if gotErr != tc.wanntAErr {
 				t.Errorf("isInBlock(%v,%v) got error is %v ; want error is %v", tc.ip, tc.block, gotErr, tc.wanntAErr)
 			}
