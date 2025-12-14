@@ -767,6 +767,12 @@ Delete all of the minikube clusters:
 minikube delete --all
 ```
 
+<h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">6</strong></span>Run Minikube in a Github Codespace or Dev Container</h2>
+
+You can also run Minikube in a Github Codespaces or locally in a Dev Container
+
+See this link [Minikube Dev Container or Github Codespace]({{<ref "/docs/tutorials/dev_container_codespaces.md">}})
+
 ## Take the next step
 
 * [The minikube handbook]({{<ref "/docs/handbook">}})
