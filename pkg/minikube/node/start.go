@@ -674,6 +674,33 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to validate network")
 	}
 
+	if driver.IsKIC(cfg.Driver) {
+		containerName := config.MachineName(*cfg, *node)
+
+		// Pick the right OCI binary for the KIC driver
+		ociBin := "docker"
+		if cfg.Driver == "podman" {
+			ociBin = "podman"
+		}
+
+		ipv4, ipv6, cipErr := oci.ContainerIPs(ociBin, containerName)
+		if cipErr != nil {
+			klog.Warningf("failed to get container IPs for %q via %s, falling back to host IP %q: %v",
+				containerName, ociBin, ip, cipErr)
+		} else {
+			if ipv4 != "" {
+				// prefer the container IPv4 for node.IP
+				node.IP = ipv4
+			} else {
+				// keep whatever validateNetwork gave us as a fallback
+				node.IP = ip
+			}
+			node.IPv6 = ipv6
+			klog.Infof("updated node %q IPs from container: ipv4=%q ipv6=%q",
+				node.Name, node.IP, node.IPv6)
+		}
+	}
+
 	if driver.IsQEMU(hostInfo.Driver.DriverName()) && network.IsBuiltinQEMU(cfg.Network) {
 		apiServerPort, err := getPort()
 		if err != nil {
