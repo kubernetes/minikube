@@ -429,7 +429,7 @@ SSH_AGENT_PID: "29228"
 	}
 	for _, tc := range tests {
 		t.Run(tc.config.profile, func(t *testing.T) {
-			tc.config.EnvConfig.Shell = tc.shell
+			tc.config.Shell = tc.shell
 			// set global variable
 			outputFormat = tc.output
 			defaultNoProxyGetter = tc.noProxyGetter

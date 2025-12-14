@@ -260,7 +260,7 @@ func createSha256File(filePath string) error {
 	}
 	defer f.Close()
 
-	_, err = f.WriteString(fmt.Sprintf("%x", sum[:]))
+	_, err = fmt.Fprintf(f, "%x", sum[:])
 	if err != nil {
 		return err
 	}
