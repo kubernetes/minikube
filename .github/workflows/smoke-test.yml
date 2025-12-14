@@ -16,6 +16,7 @@ on:
       - "go.mod"
       - "**.go"
       - "Makefile"
+      - ".github/workflows/smoke-test.yml"
       - "!hack/**"
       - "!site/**"
       - "!**.md"
