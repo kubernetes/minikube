@@ -104,7 +104,6 @@ jobs:
           ./out/minikube start \
               --no-kubernetes \
               --cpus 1 \
-              --memory 1200mb \
               --driver ${{ matrix.driver }} \
               --wait-timeout=15m \
               --force\
