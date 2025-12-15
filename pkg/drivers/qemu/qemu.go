@@ -531,6 +531,10 @@ func (d *Driver) Start() error {
 			if err == nil {
 				break
 			}
+			// Surface qemu state when DHCP discovery is slow or stuck.
+			if i > 0 && i%10 == 0 {
+				d.logQEMUStatus(fmt.Sprintf("ip lookup still failing (attempt %d)", i))
+			}
 			time.Sleep(2 * time.Second)
 		}
 
@@ -541,6 +545,7 @@ func (d *Driver) Start() error {
 		if !isBootpdError(err) {
 			return errors.Wrap(err, "IP address never found in dhcp leases file")
 		}
+		d.logQEMUStatus("ip lookup exhausted retries")
 		if unblockErr := firewall.UnblockBootpd(&d.CommandOptions); unblockErr != nil {
 			klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
 			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
@@ -607,6 +612,74 @@ func cmdStart(cmdStr string, args ...string) (string, string, error) {
 	cmd := exec.Command(cmdStr, args...)
 	log.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
 	return "", "", cmd.Start()
+}
+
+// logQEMUStatus emits a best-effort snapshot of qemu state and serial output.
+func (d *Driver) logQEMUStatus(reason string) {
+	log.Infof("qemu status: %s", reason)
+	pid, err := d.readQEMUPID()
+	if err != nil {
+		log.Debugf("qemu status: cannot read pidfile: %v", err)
+	} else {
+		running := checkPid(pid) == nil
+		log.Infof("qemu status: pid=%d running=%t", pid, running)
+	}
+	if state, err := d.qmpState(); err != nil {
+		log.Debugf("qemu status: monitor query failed: %v", err)
+	} else {
+		log.Infof("qemu status: QMP state=%s", state)
+	}
+	d.logSerialTail()
+}
+
+func (d *Driver) qmpState() (string, error) {
+	ret, err := d.RunQMPCommand("query-status")
+	if err != nil {
+		return "", err
+	}
+	if status, ok := ret["status"].(string); ok {
+		return status, nil
+	}
+	return "", fmt.Errorf("status not found in qmp response: %+v", ret)
+}
+
+func (d *Driver) readQEMUPID() (int, error) {
+	p, err := os.ReadFile(d.pidfilePath())
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(strings.TrimSpace(string(p)))
+}
+
+// logSerialTail emits the tail of the qemu serial log for debugging boot stalls.
+func (d *Driver) logSerialTail() {
+	const maxBytes = 16 * 1024
+	serialPath := d.ResolveStorePath(serialFileName)
+	info, err := os.Stat(serialPath)
+	if err != nil {
+		log.Debugf("qemu status: serial log not available: %v", err)
+		return
+	}
+	start := info.Size() - maxBytes
+	if start < 0 {
+		start = 0
+	}
+	f, err := os.Open(serialPath)
+	if err != nil {
+		log.Debugf("qemu status: cannot open serial log: %v", err)
+		return
+	}
+	defer f.Close()
+	if _, err := f.Seek(start, io.SeekStart); err != nil {
+		log.Debugf("qemu status: cannot seek serial log: %v", err)
+		return
+	}
+	data, err := io.ReadAll(f)
+	if err != nil {
+		log.Debugf("qemu status: cannot read serial log: %v", err)
+		return
+	}
+	log.Infof("qemu status: serial.log tail (%s, last %d bytes):\n%s", serialPath, len(data), string(data))
 }
 
 func (d *Driver) Stop() error {
