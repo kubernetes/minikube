@@ -60,7 +60,7 @@ jobs:
           make ${{ matrix.make-targets }}
           cp -r test/integration/testdata ./out
       - name: Upload Test Binaries
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: binaries-${{ matrix.arch }}
           path: out
@@ -341,7 +341,7 @@ jobs:
             echo "RUN_ID_SHORT=${RUN_ID_SHORT}" >> $GITHUB_OUTPUT
       - name: Upload Gopogh report
         id: upload_gopogh
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
             name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}-run-${{ steps.vars.outputs.RUN_ID_SHORT}}
             path: ./report
