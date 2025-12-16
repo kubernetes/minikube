@@ -131,6 +131,7 @@ jobs:
             cruntime: containerd
             os: ubuntu-24.04
             arch: amd64
+            extra-start-args: --container-runtime=containerd
             test-timeout: 10m
     steps:
       - id: info-block
