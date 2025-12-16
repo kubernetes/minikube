@@ -126,6 +126,12 @@ jobs:
             os: ubuntu-24.04-arm
             arch: arm64
             test-timeout: 10m
+          - name: baremetal-containerd-ubuntu-24.04-x86_64
+            driver: none
+            cruntime: containerd
+            os: ubuntu-24.04
+            arch: amd64
+            test-timeout: 10m
     steps:
       - id: info-block
         uses: medyagh/info-block@main
@@ -170,7 +176,7 @@ jobs:
         run: sudo apt-get update -qq
       - name: Install cri_dockerd (baremetal only)
         shell: bash
-        if: matrix.driver == 'none'
+        if: matrix.driver == 'none' && matrix.cruntime == 'docker'
         run: |
           CRI_DOCKERD_VERSION="v0.4.1"
           CRI_DOCKERD_COMMIT="55d6e1a1d6f2ee58949e13a0c66afe7d779ac942"
@@ -273,6 +279,15 @@ jobs:
         run: |
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+      - name: Install containerd (baremetal only)
+        if: matrix.driver == 'none' && matrix.cruntime == 'containerd'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y containerd
+          # Configure containerd
+          sudo mkdir -p /etc/containerd
+          containerd config default | sudo tee /etc/containerd/config.toml
+          sudo systemctl restart containerd
       - name: Run Functional Test
         id: run_test
         continue-on-error: true
