@@ -157,7 +157,8 @@ func validateStartNoK8S(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// docs: start minikube with no Kubernetes.
-	args := append([]string{"start", "-p", profile, "--no-kubernetes", "--memory=3072", "--alsologtostderr", "-v=5"}, StartArgs()...)
+	// Use --cpus=1 to verify that the 2 CPU minimum is not enforced when --no-kubernetes is set.
+	args := append([]string{"start", "-p", profile, "--no-kubernetes", "--cpus=1", "--memory=3072", "--alsologtostderr", "-v=5"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
