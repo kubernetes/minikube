@@ -42,6 +42,7 @@ func TestAddonsList(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to create pipe: %v", err)
 			}
+			defer r.Close()
 			old := os.Stdout
 			defer func() {
 				os.Stdout = old
