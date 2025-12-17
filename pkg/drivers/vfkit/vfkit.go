@@ -24,7 +24,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -254,8 +253,7 @@ func (d *Driver) Start() error {
 		return err
 	}
 
-	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
-	if err := WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second); err != nil {
+	if err := common.WaitForSSHAccess(d, time.Second); err != nil {
 		return err
 	}
 
@@ -658,21 +656,5 @@ func (d *Driver) SetVFKitState(s string) error {
 		return err
 	}
 	log.Infof("Set vfkit state: %+v", vmstate)
-	return nil
-}
-
-func WaitForTCPWithDelay(addr string, duration time.Duration) error {
-	for {
-		conn, err := net.Dial("tcp", addr)
-		if err != nil {
-			continue
-		}
-		defer conn.Close()
-		if _, err := conn.Read(make([]byte, 1)); err != nil && err != io.EOF {
-			time.Sleep(duration)
-			continue
-		}
-		break
-	}
 	return nil
 }
