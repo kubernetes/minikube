@@ -41,7 +41,7 @@ jobs:
             arch: amd64
             runs-on: ubuntu-24.04
             make-targets: e2e-linux-amd64
-          - name: build-test-binaries-arm64
+          - name: build-test-binaries-arm
             arch: arm64
             runs-on: ubuntu-24.04-arm
             make-targets: e2e-linux-arm64
@@ -74,33 +74,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: docker-docker-ubuntu24.04-x86_64
+          - name: docker-docker-ubuntu24.04-x86
             driver: docker
             cruntime: docker
             os: ubuntu-24.04
             arch: amd64
             test-timeout: 15m 
-          - name: docker-docker-ubuntu24.04-arm64
+          - name: docker-docker-ubuntu24.04-arm
             driver: docker
             cruntime: docker
             os: ubuntu-24.04-arm
             arch: arm64
             test-timeout: 15m 
-          - name: docker-containerd-ubuntu-24.04-x86_64
+          - name: docker-containerd-ubuntu-24.04-x86
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04
             arch: amd64
             test-timeout: 15m 
-          - name: docker-containerd-ubuntu-24.04-arm64
+          - name: docker-containerd-ubuntu-24.04-arm
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04-arm
             arch: arm64
             test-timeout: 15m 
-          - name: docker-containerd-rootless-ubuntu-24.04-x86_64
+          - name: docker-containerd-rootless-ubuntu-24.04-x86
             driver: docker
             cruntime: containerd
             os: ubuntu-24.04            
@@ -108,32 +108,32 @@ jobs:
             rootless: true
             arch: amd64
             test-timeout: 15m 
-          - name: podman-docker-ubuntu-24.04-x86_64
+          - name: podman-docker-ubuntu-24.04-x86
             driver: podman
             cruntime: docker
             os: ubuntu-24.04
             arch: amd64
             test-timeout: 15m
-          - name: baremetal-docker-ubuntu-24.04-x86_64
+          - name: baremetal-docker-ubuntu-24.04-x86
             driver: none
             cruntime: docker
             os: ubuntu-24.04
             arch: amd64
             test-timeout: 10m
-          - name: baremetal-docker-ubuntu-24.04-arm64
+          - name: baremetal-docker-ubuntu-24.04-arm
             driver: none
             cruntime: docker
             os: ubuntu-24.04-arm
             arch: arm64
             test-timeout: 10m
-          - name: baremetal-containerd-ubuntu-24.04-x86_64
+          - name: baremetal-containerd-ubuntu-24.04-x86
             driver: none
             cruntime: containerd
             os: ubuntu-24.04
             arch: amd64
             extra-start-args: --container-runtime=containerd
             test-timeout: 10m
-          - name: baremetal-containerd-ubuntu-24.04-arm64
+          - name: baremetal-containerd-ubuntu-24.04-arm
             driver: none
             cruntime: containerd
             os: ubuntu-24.04-arm
