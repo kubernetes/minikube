@@ -56,18 +56,6 @@ jobs:
     steps:
       - id: info-block
         uses: medyagh/info-block@main
-      - name: Load avg and free memory
-        run: |
-          echo "memory_gb=${{ steps.info-block.outputs.memory_gb }}"
-          echo "cpu_cores=${{ steps.info-block.outputs.cpu_cores }}"
-          echo "load_average=${{ steps.info-block.outputs.load_average }}"
-          echo "free_mem=${{ steps.info-block.outputs.free_mem }}"
-          load_avg=${{ steps.info-block.outputs.load_average }}
-          cores=${{ steps.info-block.outputs.cpu_cores }}
-          if (( $(echo "$load_avg / $cores > 2" | bc -l) )); then
-            echo "Load average per core is above 2; stopping job early."
-            exit 1
-          fi
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
         with:
@@ -93,6 +81,17 @@ jobs:
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
+      - name: Inspect host before test (macos)
+        if: contains(matrix.os, 'macos')
+        run: |
+          echo "=== Top ==="
+          top -l 2 -s 10 -n 20 -stats pid,command,cpu,time,mem
+          echo "=== Interfaces ==="
+          ifconfig -u
+          echo "=== Routing table ==="
+          netstat -rn -f inet
+          echo "=== Packet Filter ==="
+          sudo pfctl -s all || true
       - name: Start minikube (1st boot)
         run: |
           ./out/minikube start \
@@ -101,6 +100,17 @@ jobs:
               --driver ${{ matrix.driver }} \
               ${{ matrix.network_flag }} \
               ${{ env.LOG_ARGS }}
+      - name: Inspect host after test (macos)
+        if: always() && contains(matrix.os, 'macos')
+        run: |
+          echo "=== Top ==="
+          top -l 2 -s 10 -n 20 -stats pid,command,cpu,time,mem
+          echo "=== Interfaces ==="
+          ifconfig -u
+          echo "=== Routing table ==="
+          netstat -rn -f inet
+          echo "=== Packet Filter ==="
+          sudo pfctl -s all || true
       - name: Inspect minikube
         if: always()
         run: |
