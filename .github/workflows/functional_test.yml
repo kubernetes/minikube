@@ -133,6 +133,13 @@ jobs:
             arch: amd64
             extra-start-args: --container-runtime=containerd
             test-timeout: 10m
+          - name: baremetal-containerd-ubuntu-24.04-arm64
+            driver: none
+            cruntime: containerd
+            os: ubuntu-24.04-arm
+            arch: arm64
+            extra-start-args: --container-runtime=containerd
+            test-timeout: 10m
     steps:
       - id: info-block
         uses: medyagh/info-block@main
