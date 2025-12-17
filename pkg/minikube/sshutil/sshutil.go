@@ -33,6 +33,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/pkg/util/retry"
+	"k8s.io/minikube/pkg/util/sshkeys"
 )
 
 // NewSSHClient returns an SSH client object for running commands.
@@ -42,7 +43,9 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 		return nil, errors.Wrap(err, "Error creating new ssh host from driver")
 
 	}
-	defaultKeyPath := filepath.Join(homedir.HomeDir(), ".ssh", "id_rsa")
+	primary := filepath.Join(homedir.HomeDir(), ".ssh", sshkeys.Ed25519KeyName)
+	fallback := filepath.Join(homedir.HomeDir(), ".ssh", sshkeys.RSAKeyName)
+	defaultKeyPath := sshkeys.ResolveKeyPath(primary, fallback)
 	auth := &machinessh.Auth{}
 	if h.SSHKeyPath != "" {
 		auth.Keys = []string{h.SSHKeyPath}
