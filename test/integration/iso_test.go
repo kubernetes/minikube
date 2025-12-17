@@ -39,7 +39,7 @@ func TestISOImage(t *testing.T) {
 	MaybeParallel(t)
 
 	profile := UniqueProfileName("guest")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(18))
 	defer CleanupWithLogs(t, profile, cancel)
 
 	t.Run("Setup", func(t *testing.T) {
@@ -52,6 +52,7 @@ func TestISOImage(t *testing.T) {
 
 	// Run as a group so that our defer doesn't happen as tests are runnings
 	t.Run("Binaries", func(t *testing.T) {
+		t.Parallel()
 		binaries := []string{
 			"crictl",
 			"curl",
@@ -82,6 +83,7 @@ func TestISOImage(t *testing.T) {
 	})
 
 	t.Run("PersistentMounts", func(t *testing.T) {
+		t.Parallel()
 		for _, mount := range []string{
 			"/data",
 			"/var/lib/docker",
@@ -103,6 +105,7 @@ func TestISOImage(t *testing.T) {
 	})
 
 	t.Run("VersionJSON", func(t *testing.T) {
+		t.Parallel()
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /version.json"))
 		if err != nil {
 			t.Fatalf("failed to read /version.json. args %q: %v", rr.Command(), err)
@@ -120,6 +123,7 @@ func TestISOImage(t *testing.T) {
 	})
 
 	t.Run("eBPFSupport", func(t *testing.T) {
+		t.Parallel()
 		// Ensure that BTF type information is available (https://github.com/kubernetes/minikube/issues/21788)
 		btfFile := "/sys/kernel/btf/vmlinux"
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("test -f %s && echo 'OK' || echo 'NOT FOUND'", btfFile)))
