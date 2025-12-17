@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math/rand"
 	"net"
 	"os"
@@ -549,9 +548,7 @@ func (d *Driver) Start() error {
 		return fmt.Errorf("ip not found: %v", err)
 	}
 
-	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
-
-	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
+	return common.WaitForSSHAccess(d, time.Second)
 }
 
 func hardwareAcceleration() string {
@@ -872,20 +869,4 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("%s failed: %v", command, response.Return)
 	}
 	return response.Return, nil
-}
-
-func WaitForTCPWithDelay(addr string, duration time.Duration) error {
-	for {
-		conn, err := net.Dial("tcp", addr)
-		if err != nil {
-			continue
-		}
-		defer conn.Close()
-		if _, err := conn.Read(make([]byte, 1)); err != nil && err != io.EOF {
-			time.Sleep(duration)
-			continue
-		}
-		break
-	}
-	return nil
 }
