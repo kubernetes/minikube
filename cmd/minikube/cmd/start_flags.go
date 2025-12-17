@@ -392,11 +392,12 @@ func getMemorySize(cmd *cobra.Command, drvName string) int {
 	if cmd.Flags().Changed(memory) || viper.IsSet(memory) {
 		memString := viper.GetString(memory)
 		var err error
-		if memString == constants.NoLimit && driver.IsKIC(drvName) {
+		switch {
+		case memString == constants.NoLimit && driver.IsKIC(drvName):
 			mem = 0
-		} else if memString == constants.MaxResources {
+		case memString == constants.MaxResources:
 			mem = noLimitMemory(sysLimit, containerLimit, drvName)
-		} else {
+		default:
 			mem, err = pkgutil.CalculateSizeInMB(memString)
 			if err != nil {
 				exit.Message(reason.Usage, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": memString, "error": err})
