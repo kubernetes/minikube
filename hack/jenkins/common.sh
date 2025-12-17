@@ -183,11 +183,6 @@ gsutil -qm cp -r "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata
 
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
 
-if [[ "${DRIVER}" == "hyperkit" ]]; then
-    gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver-hyperkit" out
-    chmod +x out/docker-machine-driver-hyperkit
-fi
-
 # Set the executable bit on the e2e binary and out binary
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"

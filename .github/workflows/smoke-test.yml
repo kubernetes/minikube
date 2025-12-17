@@ -16,6 +16,7 @@ on:
       - "go.mod"
       - "**.go"
       - "Makefile"
+      - ".github/workflows/smoke-test.yml"
       - "!hack/**"
       - "!site/**"
       - "!**.md"
@@ -24,7 +25,8 @@ on:
 env:
   GOPROXY: https://proxy.golang.org
   LOG_ARGS: --v=8 --alsologtostderr
-  permissions:
+
+permissions:
   contents: read
 # Limit one unit test job running per PR/Branch
 concurrency:
@@ -40,52 +42,34 @@ jobs:
       matrix:
         include:
           - driver: qemu
-            os: macos-13
+            os: macos-15-intel
             network_flag: --network socket_vmnet
           - driver: vfkit
-            os: macos-13
+            os: macos-15-intel
             network_flag: --network vmnet-shared
           - driver: docker
             os: ubuntu-24.04
             network_flag: ""
+          - driver: docker
+            os: ubuntu-24.04-arm
+            network_flag: ""
     steps:
-      - name: Info Block (macos)
-        if: contains(matrix.os, 'macos')
-        shell: bash
+      - id: info-block
+        uses: medyagh/info-block@main
+      - name: Load avg and free memory
         run: |
-          uname -a
-          sysctl -n hw.memsize
-          echo "$(sysctl -n hw.memsize) / 1024 / 1024 / 1024" | bc
-          sysctl -n hw.ncpu
-          sysctl -n machdep.cpu.brand_string
-          sysctl hw.model
-          sysctl -n kern.hv_vmm_present
-          sysctl -n kern.hv_support
-          system_profiler SPHardwareDataType
-          sw_vers
-          ifconfig
-      - name: Info Block (linux)
-        if: contains(matrix.os, 'ubuntu')
-        shell: bash
-        run: |
-            uname -a
-            grep MemTotal /proc/meminfo
-            awk '/MemTotal/ {printf "%.2f\n", $2 / 1024 / 1024}' /proc/meminfo
-            nproc
-            grep 'model name' /proc/cpuinfo | head -n1
-            # System model (requires `dmidecode`, may need sudo)
-            sudo dmidecode -s system-product-name
-            systemd-detect-virt
-            # Check if KVM is available (can show virtualization support)
-            egrep -c '(vmx|svm)' /proc/cpuinfo
-            # Detailed hardware info (like `system_profiler`)
-            sudo lshw -short
-            cat /etc/os-release
-            ip addr show
-            ifconfig
-            docker version
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
+          echo "memory_gb=${{ steps.info-block.outputs.memory_gb }}"
+          echo "cpu_cores=${{ steps.info-block.outputs.cpu_cores }}"
+          echo "load_average=${{ steps.info-block.outputs.load_average }}"
+          echo "free_mem=${{ steps.info-block.outputs.free_mem }}"
+          load_avg=${{ steps.info-block.outputs.load_average }}
+          cores=${{ steps.info-block.outputs.cpu_cores }}
+          if (( $(echo "$load_avg / $cores > 2" | bc -l) )); then
+            echo "Load average per core is above 2; stopping job early."
+            exit 1
+          fi
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
         with:
           go-version-file: go.mod
           cache: true
@@ -93,20 +77,11 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: make
-      - name: Ensure bootpd is enabled (macos)
-        if: matrix.os == 'macos-13'
-        shell: bash
-        run: |
-          set -x
-          fw=/usr/libexec/ApplicationFirewall/socketfilterfw
-          sudo $fw --remove /usr/libexec/bootpd
-          sudo $fw --add /usr/libexec/bootpd
-          sudo $fw --unblock /usr/libexec/bootpd
       - name: Update brew (macos)
-        if: matrix.os == 'macos-13'
+        if: contains(matrix.os, 'macos')
         run: brew update
       - name: Install tools (macos)
-        if: matrix.os == 'macos-13'
+        if: contains(matrix.os, 'macos')
         run: brew install tree
       - name: Install vfkit and vmnet-helper (macos)
         if: matrix.driver == 'vfkit'
@@ -114,7 +89,7 @@ jobs:
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
       - name: Install qemu and socket_vmnet (macos)
-        if: matrix.os == 'macos-13' && matrix.driver == 'qemu'
+        if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet

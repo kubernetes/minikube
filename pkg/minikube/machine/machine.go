@@ -50,19 +50,19 @@ func (h *Machine) IsValid() bool {
 		return false
 	}
 
-	if h.Host.Name == "" {
+	if h.Name == "" {
 		return false
 	}
 
-	if h.Host.Driver == nil {
+	if h.Driver == nil {
 		return false
 	}
 
-	if h.Host.HostOptions == nil {
+	if h.HostOptions == nil {
 		return false
 	}
 
-	if h.Host.RawDriver == nil {
+	if h.RawDriver == nil {
 		return false
 	}
 	return true

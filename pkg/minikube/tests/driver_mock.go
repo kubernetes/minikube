@@ -68,8 +68,8 @@ func (d *MockDriver) GetIP() (string, error) {
 	if d.IP != "" {
 		return d.IP, nil
 	}
-	if d.BaseDriver.IPAddress != "" {
-		return d.BaseDriver.IPAddress, nil
+	if d.IPAddress != "" {
+		return d.IPAddress, nil
 	}
 	return "127.0.0.1", nil
 }
@@ -94,7 +94,7 @@ func (d *MockDriver) GetSSHHostname() (string, error) {
 
 // GetSSHKeyPath returns the key path for SSH
 func (d *MockDriver) GetSSHKeyPath() string {
-	return d.BaseDriver.SSHKeyPath
+	return d.SSHKeyPath
 }
 
 // GetState returns the state of the driver

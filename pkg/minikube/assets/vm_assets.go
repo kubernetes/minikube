@@ -20,13 +20,13 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"text/template"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/pkg/errors"
@@ -354,12 +354,12 @@ func defaultValue(defValue string, val interface{}) string {
 }
 
 func (m *BinAsset) loadData() error {
-	contents, err := m.FS.ReadFile(m.SourcePath)
+	contents, err := m.ReadFile(m.SourcePath)
 	if err != nil {
 		return err
 	}
 
-	if strings.HasSuffix(m.BaseAsset.SourcePath, ".tmpl") {
+	if strings.HasSuffix(m.SourcePath, ".tmpl") {
 		tpl, err := template.New(m.SourcePath).Funcs(template.FuncMap{"default": defaultValue}).Parse(string(contents))
 		if err != nil {
 			return err

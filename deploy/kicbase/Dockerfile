@@ -19,9 +19,9 @@
 
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
-ARG KICBASE_IMAGE="debian:bookworm-20250908-slim"
+ARG KICBASE_IMAGE="debian:bookworm-20251117-slim"
 # multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.24.6 AS auto-pause
+FROM golang:1.25.5 AS auto-pause
 WORKDIR /src
 # auto-pause depends on core minikube code so we need to pass the whole source code as the context
 # copy in the minimal amount of source code possible
@@ -44,11 +44,11 @@ FROM ${KICBASE_IMAGE} AS kicbase
 ARG BUILDKIT_VERSION="v0.18.1"
 ARG CRIO_VERSION="v1.34"
 ARG CRICTL_VERSION="v1.34.0"
-ARG CRI_DOCKERD_VERSION="v0.4.0"
-ARG CRI_DOCKERD_COMMIT="b9b889355f3002c01db294427964e454dfbc3feb"
+ARG CRI_DOCKERD_VERSION="v0.4.1"
+ARG CRI_DOCKERD_COMMIT="55d6e1a1d6f2ee58949e13a0c66afe7d779ac942"
 ARG CNI_PLUGINS_VERSION="v1.4.0"
 ARG TARGETARCH
-ARG NERDCTL_VERSION="1.7.7"
+ARG NERDCTL_VERSION="2.2.0"
 ARG NERDCTLD_VERSION="0.7.0"
 
 # copy in static files (configs, scripts)
@@ -171,6 +171,10 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
     tee /etc/apt/sources.list.d/docker.list > /dev/null \
     && clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
+
+# Set ulimit for containerd to match docker's default-ulimit setting
+# This ensures consistent file descriptor limits (1048576) across container runtimes
+RUN sed -i '/^\[Service\]/a LimitNOFILE=1048576' /lib/systemd/system/containerd.service
 
 # install buildkit
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \

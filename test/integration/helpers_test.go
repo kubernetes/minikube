@@ -44,6 +44,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/detect"
 )
 
 // RunResult stores the result of an cmd.Run call
@@ -297,7 +298,7 @@ func PostMortemLogs(t *testing.T, profile string, multinode ...bool) {
 // podStatusMsg returns a human-readable pod status, for generating debug status
 func podStatusMsg(pod core.Pod) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.ObjectMeta.GetName(), pod.ObjectMeta.GetUID(), pod.Status.Phase))
+	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.GetName(), pod.GetUID(), pod.Status.Phase))
 	for i, c := range pod.Status.Conditions {
 		if c.Reason != "" {
 			if i == 0 {
@@ -345,7 +346,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 		}
 
 		for _, pod := range pods.Items {
-			foundNames[pod.ObjectMeta.Name] = true
+			foundNames[pod.Name] = true
 			msg := podStatusMsg(pod)
 			// Prevent spamming logs with identical messages
 			if msg != lastMsg {
@@ -703,4 +704,18 @@ func CopyDir(src, dst string) error {
 	}
 
 	return nil
+}
+
+// FailFast proactively stops the addon suite when Docker Hub is rate limited.
+func FailFastDockerHubRateLimited(t *testing.T) {
+	t.Helper()
+	remaining, err := detect.DockerHubRateLimitRemaining(t.Context())
+	if err != nil {
+		t.Logf("unable to check Docker Hub rate limit (continuing): %v", err)
+		return
+	}
+
+	if remaining <= 0 {
+		t.Fatalf("failing fast: Docker Hub rate limit reached (remaining=%d)", remaining)
+	}
 }

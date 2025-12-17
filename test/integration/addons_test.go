@@ -48,6 +48,8 @@ import (
 
 // TestAddons tests addons that require no special environment in parallel
 func TestAddons(t *testing.T) {
+	FailFastDockerHubRateLimited(t)
+
 	profile := UniqueProfileName("addons")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
@@ -1029,7 +1031,7 @@ func validateNvidiaDevicePlugin(ctx context.Context, t *testing.T, profile strin
 
 // validateAmdGpuDevicePlugin tests the amd-gpu-device-plugin addon by ensuring the pod comes up and the addon disables
 func validateAmdGpuDevicePlugin(ctx context.Context, t *testing.T, profile string) {
-	if !(DockerDriver() && amd64Platform()) {
+	if !DockerDriver() || !amd64Platform() {
 		t.Skipf("skip amd gpu test on all but docker driver and amd64 platform")
 	}
 	defer disableAddon(t, "amd-gpu-device-plugin", profile)

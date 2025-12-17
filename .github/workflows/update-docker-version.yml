@@ -6,7 +6,7 @@ on:
     - cron: "0 10 * * 4"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.24.6'
+  GO_VERSION: '1.25.5'
 permissions:
   contents: read
 
@@ -14,8 +14,8 @@ jobs:
   bump-docker-version:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Bump docker Version
@@ -31,7 +31,7 @@ jobs:
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpDocker.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
+        uses: peter-evans/create-pull-request@98357b18bf14b5342f975ff684046ec3b2a07725
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Kicbase/ISO: Update docker from ${{ steps.bumpDocker.outputs.OLD_VERSION }} to ${{ steps.bumpDocker.outputs.NEW_VERSION }}'

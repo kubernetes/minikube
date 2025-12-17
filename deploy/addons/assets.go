@@ -60,7 +60,7 @@ var (
 	IstioAssets embed.FS
 
 	// InspektorGadgetAssets assets for inspektor-gadget addon
-	//go:embed inspektor-gadget/*.tmpl inspektor-gadget/*.yaml
+	//go:embed inspektor-gadget/*.tmpl
 	InspektorGadgetAssets embed.FS
 
 	// KongAssets assets for kong addon
@@ -131,7 +131,7 @@ var (
 	//go:embed gcp-auth/*.tmpl gcp-auth/*.yaml
 	GcpAuthAssets embed.FS
 
-	// Volcano assets for volcano addon
+	// VolcanoAssets assets for volcano addon
 	//go:embed volcano/*.tmpl
 	VolcanoAssets embed.FS
 

@@ -20,13 +20,12 @@ package integration
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
 )
 
-// TestPreload verifies the preload tarballs get pulled in properly by minikube
+// TestPreload verifies that disabling the initial preload, pulling a specific image, and restarting the cluster preserves the image across restarts.
 func TestPreload(t *testing.T) {
 	if NoneDriver() {
 		t.Skipf("skipping %s - incompatible with none driver", t.Name())
@@ -38,7 +37,6 @@ func TestPreload(t *testing.T) {
 
 	startArgs := []string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--wait=true", "--preload=false"}
 	startArgs = append(startArgs, StartArgs()...)
-	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", legacyVersion()))
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
@@ -59,8 +57,8 @@ func TestPreload(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
-	// re-start the cluster and check if image is preserved
-	startArgs = []string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "-v=1", "--wait=true"}
+	// re-start the cluster and check if image is preserved with enabled preload
+	startArgs = []string{"start", "-p", profile, "--preload=true", "--alsologtostderr", "-v=1", "--wait=true"}
 	startArgs = append(startArgs, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {

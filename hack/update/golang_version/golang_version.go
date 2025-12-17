@@ -53,6 +53,11 @@ var (
 				`VERSION_TO_INSTALL=.*`: `VERSION_TO_INSTALL={{.StableVersion}}`,
 			},
 		},
+		"hack/prow/common.sh": {
+			Replace: map[string]string{
+				`GOLANG_VERSION_TO_INSTALL=.*`: `GOLANG_VERSION_TO_INSTALL={{.StableVersion}}`,
+			},
+		},
 		"hack/jenkins/installers/check_install_golang.ps1": {
 			Replace: map[string]string{
 				`GoVersion = ".*"`: `GoVersion = "{{.StableVersion}}"`,
@@ -104,7 +109,9 @@ func main() {
 	data := Data{StableVersion: stable, MajorMinor: majorMinor, K8SVersion: k8sVersion}
 	klog.Infof("Golang stable version: %s, MajorMinor: %s", data.StableVersion, data.MajorMinor)
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 
 	if err := updateGoHashFile(stable); err != nil {
 		klog.Fatalf("failed to update go hash file: %v", err)
@@ -136,26 +143,29 @@ func updateGoHashFile(version string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)
 	}
-	if strings.Contains(string(b), version) {
-		klog.Infof("hash file already contains %q", version)
-		return nil
-	}
-	r, err := http.Get(fmt.Sprintf("https://dl.google.com/go/go%s.src.tar.gz.sha256", version))
-	if err != nil {
-		return fmt.Errorf("failed to download golang sha256 file: %v", err)
-	}
-	defer r.Body.Close()
-	sha, err := io.ReadAll(r.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %v", err)
-	}
-	f, err := os.OpenFile(hashFilePath, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open go.hash file: %v", err)
-	}
-	defer f.Close()
-	if _, err := fmt.Fprintf(f, "sha256  %s  go%s.src.tar.gz\n", sha, version); err != nil {
-		return fmt.Errorf("failed to write to go.hash file: %v", err)
+	for _, release := range []string{"src", "linux-amd64", "linux-arm64"} {
+		filename := fmt.Sprintf("go%s.%s.tar.gz", version, release)
+		if strings.Contains(string(b), filename) {
+			klog.Infof("hash file already contains %q", filename)
+			continue
+		}
+		r, err := http.Get(fmt.Sprintf("https://dl.google.com/go/%s.sha256", filename))
+		if err != nil {
+			return fmt.Errorf("failed to download golang sha256 file: %v", err)
+		}
+		defer r.Body.Close()
+		sha, err := io.ReadAll(r.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read response body: %v", err)
+		}
+		f, err := os.OpenFile(hashFilePath, os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			return fmt.Errorf("failed to open go.hash file: %v", err)
+		}
+		defer f.Close()
+		if _, err := fmt.Fprintf(f, "sha256  %s  %s\n", sha, filename); err != nil {
+			return fmt.Errorf("failed to write to go.hash file: %v", err)
+		}
 	}
 	return nil
 }

@@ -53,9 +53,17 @@ var ErrAuxDriverVersionCommandFailed error
 var ErrAuxDriverVersionNotinPath error
 
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
-func InstallOrUpdate(name string, directory string, v semver.Version, interactive bool, autoUpdate bool) error {
+// this is currently only used for hyperkit driver on macOS
+func InstallOrUpdate(name string, directory string, interactive bool, autoUpdate bool) error {
 	if name != driver.HyperKit {
 		return nil
+	}
+	// v1.37.0 was the last release that we built hyperkit driver https://github.com/kubernetes/minikube/issues/21940
+	// this will be used till we completely remove hyperkit driver support
+	v, err := semver.Make("1.37.0")
+	out.WarningT("Hyperkit driver will be removed in the next minikube release, we have other drivers that work on macOS such as docker or qemu, vfkit. Please consider switching to one of them. For more information, please visit: https://minikube.sigs.k8s.io/docs/drivers/hyperkit/")
+	if err != nil {
+		return errors.Wrap(err, "can't parse version")
 	}
 
 	executable := fmt.Sprintf("docker-machine-driver-%s", name)

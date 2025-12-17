@@ -7,6 +7,7 @@ on:
       - "go.mod"
       - "**.go"
       - "Makefile"
+      - .github/workflows/functional_test.yml
       - "!site/**"
       - "!**.md"
       - "!**.json"
@@ -26,16 +27,29 @@ concurrency:
   cancel-in-progress: true
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.24.6'
+  GO_VERSION: '1.25.5'
 permissions:
   contents: read
 jobs:
-  # build-test-binaries job runs before all other jobs and produces binaries/test-data to be shared by all following jobs
+  # build-test-binaries job runs before all other jobs and produces binaries/test-data per arch to be shared by all following jobs
   build-test-binaries:
-    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: build-test-binaries-x86
+            arch: amd64
+            runs-on: ubuntu-24.04
+            make-targets: e2e-linux-amd64
+          - name: build-test-binaries-arm
+            arch: arm64
+            runs-on: ubuntu-24.04-arm
+            make-targets: e2e-linux-arm64
+    runs-on: ${{ matrix.runs-on }}
+    name: ${{ matrix.name }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
         with:
           go-version: ${{env.GO_VERSION}}
           cache: true      
@@ -43,12 +57,12 @@ jobs:
         run: go mod download
       - name: Build minikube and e2e test binaries
         run: |
-          make e2e-linux-amd64 e2e-darwin-amd64
+          make ${{ matrix.make-targets }}
           cp -r test/integration/testdata ./out
       - name: Upload Test Binaries
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: binaries
+          name: binaries-${{ matrix.arch }}
           path: out
   functional-test:
     name: ${{ matrix.name }}
@@ -60,172 +74,76 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: docker-docker-ubuntu22.04-x86_64
+          - name: docker-docker-ubuntu24.04-x86
             driver: docker
             cruntime: docker
-            os: ubuntu-22.04
+            os: ubuntu-24.04
+            arch: amd64
             test-timeout: 15m 
-          - name: docker-containerd-ubuntu-22.04-x86_64
+          - name: docker-docker-ubuntu24.04-arm
+            driver: docker
+            cruntime: docker
+            os: ubuntu-24.04-arm
+            arch: arm64
+            test-timeout: 15m 
+          - name: docker-containerd-ubuntu-24.04-x86
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
-            os: ubuntu-22.04
+            os: ubuntu-24.04
+            arch: amd64
             test-timeout: 15m 
-          - name: docker-containerd-rootless-ubuntu-22.04-x86_64
+          - name: docker-containerd-ubuntu-24.04-arm
             driver: docker
             cruntime: containerd
-            os: ubuntu-22.04            
+            extra-start-args: --container-runtime=containerd
+            os: ubuntu-24.04-arm
+            arch: arm64
+            test-timeout: 15m 
+          - name: docker-containerd-rootless-ubuntu-24.04-x86
+            driver: docker
+            cruntime: containerd
+            os: ubuntu-24.04            
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
+            arch: amd64
             test-timeout: 15m 
-          - name: podman-docker-ubuntu-24.04-x86_64
+          - name: podman-docker-ubuntu-24.04-x86
             driver: podman
             cruntime: docker
             os: ubuntu-24.04
+            arch: amd64
             test-timeout: 15m
-          - name: baremetal-docker-ubuntu-22.04-x86_64
+          - name: baremetal-docker-ubuntu-24.04-x86
             driver: none
             cruntime: docker
-            os: ubuntu-22.04
-            test-timeout: 7m
-          - name: qemu-docker-macos-13-x86_64
-            driver: qemu
+            os: ubuntu-24.04
+            arch: amd64
+            test-timeout: 10m
+          - name: baremetal-docker-ubuntu-24.04-arm
+            driver: none
             cruntime: docker
-            os: macos-13
-            extra-start-args: --network socket_vmnet
-            test-timeout: 50m
-          - name: vfkit-docker-macos-13-x86_64
-            driver: vfkit
-            cruntime: docker
-            os: macos-13
-            extra-start-args: --network vmnet-shared
-            test-timeout: 50m            
+            os: ubuntu-24.04-arm
+            arch: arm64
+            test-timeout: 10m
+          - name: baremetal-containerd-ubuntu-24.04-x86
+            driver: none
+            cruntime: containerd
+            os: ubuntu-24.04
+            arch: amd64
+            extra-start-args: --container-runtime=containerd
+            test-timeout: 10m
+          - name: baremetal-containerd-ubuntu-24.04-arm
+            driver: none
+            cruntime: containerd
+            os: ubuntu-24.04-arm
+            arch: arm64
+            extra-start-args: --container-runtime=containerd
+            test-timeout: 10m
     steps:
-      - name: Info Block (macOS)
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          set -x
-          echo "=== Kernel and OS ==="
-          uname -a
-          sw_vers
-          sysctl kern.osrelease kern.osversion kern.version || true
-
-          echo "=== CPU ==="
-            sysctl -n machdep.cpu.brand_string
-          sysctl -n hw.ncpu
-          sysctl -n machdep.cpu.core_count || true
-          sysctl -n machdep.cpu.thread_count || true
-          sysctl -n machdep.cpu.features || true
-          sysctl -n machdep.cpu.leaf7_features || true
-          sysctl -n machdep.cpu.extfeatures || true
-
-          echo "=== Memory ==="
-          sysctl -n hw.memsize
-          echo "$(sysctl -n hw.memsize) / 1024 / 1024 / 1024" | bc
-          sysctl -n hw.pagesize || true
-          vm_stat || true
-
-          echo "=== Virtualization ==="
-          sysctl -n kern.hv_vmm_present
-          sysctl -n kern.hv_support
-          sysctl -n machdep.cpu.features | grep -i vmx || true
-
-          echo "=== Hardware Inventory ==="
-          sysctl hw.model
-          system_profiler SPHardwareDataType
-
-          echo "=== Storage ==="
-          diskutil list || true
-          df -h
-          system_profiler SPStorageDataType | sed -n '1,200p' || true
-
-          echo "=== Network ==="
-          echo $HTTP_PROXY
-          ifconfig
-          networksetup -listallhardwareports || true
-          scutil --get HostName || true
-          scutil --get LocalHostName || true
-          scutil --get ComputerName || true
-          route -n get default || true
-          netstat -rn || true
-          scutil --dns || true
-
-          echo "=== Uptime and Load ==="
-          uptime
-          sysctl kern.boottime || true
-          top -l 1 -n 0 | head -n 10 || true
-
-          echo "=== Security ==="
-          spctl --status || true
-          csrutil status || true
-      - name: Info Block (linux)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          set -x
-          echo "=== Kernel and OS ==="
-          uname -a
-          cat /etc/os-release
-
-          echo "=== CPU ==="
-          nproc
-          grep -m1 'model name' /proc/cpuinfo || true
-          grep -m1 '^flags' /proc/cpuinfo || true
-          lscpu || true
-          lscpu | grep -i 'hypervisor\|virt' || true
-
-          echo "=== Memory ==="
-          grep MemTotal /proc/meminfo || true
-          awk '/MemTotal/ {printf "%.2f\n", $2 / 1024 / 1024}' /proc/meminfo || true
-          free -h || true
-
-          echo "=== Virtualization ==="
-          systemd-detect-virt || true
-          # CPU virtualization flags present
-          egrep -c '(vmx|svm)' /proc/cpuinfo || true
-          # KVM modules and nested virtualization status
-          lsmod | grep -E '(^kvm|kvm_(intel|amd))' || true
-          if [ -f /sys/module/kvm_intel/parameters/nested ]; then
-            echo -n "kvm_intel nested: "; cat /sys/module/kvm_intel/parameters/nested
-          fi
-          if [ -f /sys/module/kvm_amd/parameters/nested ]; then
-            echo -n "kvm_amd nested: "; cat /sys/module/kvm_amd/parameters/nested
-          fi
-          sudo journalctl -k | grep -i kvm | tail -n 100 || true
-          if command -v virt-host-validate >/dev/null 2>&1; then
-            sudo virt-host-validate || true
-          fi
-
-          echo "=== Hardware Inventory ==="
-          sudo dmidecode -s system-manufacturer || true
-          sudo dmidecode -s system-product-name || true
-          sudo dmidecode -t bios -t system -t processor -t memory | sed -n '1,200p' || true
-          sudo lshw -short || true
-          lspci -nn || true
-          lsusb || true
-
-          echo "=== Storage ==="
-          lsblk -o NAME,MODEL,SIZE,TYPE,MOUNTPOINT,FSTYPE || true
-          df -h || true
-
-          echo "=== Network ==="
-          echo $HTTP_PROXY
-          ip addr show || true
-          ip route || true
-          ip -s link || true
-          ifconfig || true
-
-          echo "=== Cgroups ==="
-          stat -fc %T /sys/fs/cgroup || true
-
-          echo "=== Uptime and Load ==="
-          uptime || true
-          who -b || true
-          top -b -n1 | head -n 10 || true
-          cat /proc/loadavg || true
-          awk '{printf "Uptime (seconds): %s\n", $1}' /proc/uptime 2>/dev/null || true
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
+      - id: info-block
+        uses: medyagh/info-block@main
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
         with:
           go-version: ${{env.GO_VERSION}}
           cache: true      
@@ -258,29 +176,21 @@ jobs:
           curl https://get.docker.com | sudo sh
           dockerd-rootless-setuptool.sh install -f
           docker context use rootless
-      - name: Ensure bootpd is enabled (macos-13)
-        if: matrix.os == 'macos-13'
-        shell: bash
-        run: |
-          set -x
-          fw=/usr/libexec/ApplicationFirewall/socketfilterfw
-          sudo $fw --remove /usr/libexec/bootpd
-          sudo $fw --add /usr/libexec/bootpd
-          sudo $fw --unblock /usr/libexec/bootpd
       - name: Update brew package index (macos)
-        if: runner.os == 'macOS'
+        if: contains(matrix.os, 'macos')
         run: brew update
       - name: Update apt-get package index (ubuntu)
         if: runner.os == 'Linux' && (matrix.driver == 'podman' || matrix.driver == 'none')
         run: sudo apt-get update -qq
       - name: Install cri_dockerd (baremetal only)
         shell: bash
-        if: matrix.driver == 'none'
+        if: matrix.driver == 'none' && matrix.cruntime == 'docker'
         run: |
-          CRI_DOCKERD_VERSION="v0.4.0"
-          CRI_DOCKERD_COMMIT="b9b889355f3002c01db294427964e454dfbc3feb"
+          CRI_DOCKERD_VERSION="v0.4.1"
+          CRI_DOCKERD_COMMIT="55d6e1a1d6f2ee58949e13a0c66afe7d779ac942"
           CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
-          sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
+          ARCH="${{ matrix.arch }}"
+          sudo curl -L "${CRI_DOCKERD_BASE_URL}/${ARCH}/cri-dockerd" -o /usr/bin/cri-dockerd
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
           sudo chmod +x /usr/bin/cri-dockerd
@@ -288,9 +198,11 @@ jobs:
         shell: bash
         if: matrix.driver == 'none'
         run: |
-          CRICTL_VERSION="v1.28.0"
-          curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
-          sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
+          CRICTL_VERSION="v1.34.0"
+          ARCH="${{ matrix.arch }}"
+          CRICTL_TAR="crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz"
+          curl -L "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/${CRICTL_TAR}" --output "${CRICTL_TAR}"
+          sudo tar zxvf "${CRICTL_TAR}" -C /usr/local/bin
       # conntrack is required for kubernetes 1.18 and higher
       - name: Install conntrack & socat (baremetal only)
         shell: bash
@@ -306,7 +218,8 @@ jobs:
         if: matrix.driver == 'none'
         run: |
           CNI_PLUGIN_VERSION="v1.7.1"
-          CNI_PLUGIN_TAR="cni-plugins-linux-amd64-$CNI_PLUGIN_VERSION.tgz"
+          ARCH="${{ matrix.arch }}"
+          CNI_PLUGIN_TAR="cni-plugins-linux-${ARCH}-$CNI_PLUGIN_VERSION.tgz"
           CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"
           curl -LO "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/$CNI_PLUGIN_TAR"
           sudo mkdir -p "$CNI_PLUGIN_INSTALL_DIR"
@@ -354,39 +267,35 @@ jobs:
           echo "=== podman ps ==="
           podman ps || true
       - name: Install kubectl
-        shell: bash
-        run: |
-          if [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew install kubectl
-          elif [[ "$RUNNER_OS" == "Linux" ]]; then
-            tmp=$(mktemp)
-            curl -fsSL -o "$tmp" "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-            sudo install -m 0755 "$tmp" /usr/local/bin/kubectl
-            rm "$tmp"
-          else
-            echo "Unsupported OS: $RUNNER_OS"
-            exit 1
-          fi
-          kubectl version --client=true
+        uses: azure/setup-kubectl@v4
       - name: Install qemu and socket_vmnet (macos)
-        if: matrix.os == 'macos-13' && matrix.driver == 'qemu'
+        if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
       - name: Install vfkit and vmnet_helper (macos)
-        if: matrix.os == 'macos-13' && matrix.driver == 'vfkit'
+        if: matrix.driver == 'vfkit'
         run: |
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
       - name: Download Test Binaries
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
-          name: binaries
+          name: binaries-${{ matrix.arch }}
       - name: Disable AppArmor for MySQL
         if: runner.os == 'Linux'
         run: |
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+      - name: Install containerd (baremetal only)
+        if: matrix.driver == 'none' && matrix.cruntime == 'containerd'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y containerd
+          # Configure containerd
+          sudo mkdir -p /etc/containerd
+          containerd config default | sudo tee /etc/containerd/config.toml
+          sudo systemctl restart containerd
       - name: Run Functional Test
         id: run_test
         continue-on-error: true
@@ -455,7 +364,7 @@ jobs:
             echo "RUN_ID_SHORT=${RUN_ID_SHORT}" >> $GITHUB_OUTPUT
       - name: Upload Gopogh report
         id: upload_gopogh
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
             name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}-run-${{ steps.vars.outputs.RUN_ID_SHORT}}
             path: ./report

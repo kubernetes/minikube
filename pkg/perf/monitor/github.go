@@ -22,7 +22,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v80/github"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
@@ -62,7 +62,7 @@ func (g *Client) CommentOnPR(pr int, message string) error {
 	}
 
 	log.Printf("Creating comment on PR %d: %s", pr, message)
-	_, _, err := g.Client.Issues.CreateComment(g.ctx, g.owner, g.repo, pr, comment)
+	_, _, err := g.Issues.CreateComment(g.ctx, g.owner, g.repo, pr, comment)
 	if err != nil {
 		return errors.Wrap(err, "creating github comment")
 	}
@@ -73,7 +73,7 @@ func (g *Client) CommentOnPR(pr int, message string) error {
 // ListOpenPRsWithLabel returns all open PRs with the specified label
 func (g *Client) ListOpenPRsWithLabel(label string) ([]int, error) {
 	validPrs := []int{}
-	prs, _, err := g.Client.PullRequests.List(g.ctx, g.owner, g.repo, &github.PullRequestListOptions{})
+	prs, _, err := g.PullRequests.List(g.ctx, g.owner, g.repo, &github.PullRequestListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "listing pull requests")
 	}
@@ -117,7 +117,7 @@ func (g *Client) timeOfLastCommit(pr int) (time.Time, error) {
 	page := 0
 	resultsPerPage := 30
 	for {
-		c, _, err := g.Client.PullRequests.ListCommits(g.ctx, g.owner, g.repo, pr, &github.ListOptions{
+		c, _, err := g.PullRequests.ListCommits(g.ctx, g.owner, g.repo, pr, &github.ListOptions{
 			Page:    page,
 			PerPage: resultsPerPage,
 		})
@@ -146,7 +146,7 @@ func (g *Client) timeOfLastComment(pr int, login string) (time.Time, error) {
 	page := 0
 	resultsPerPage := 30
 	for {
-		c, _, err := g.Client.Issues.ListComments(g.ctx, g.owner, g.repo, pr, &github.IssueListCommentsOptions{
+		c, _, err := g.Issues.ListComments(g.ctx, g.owner, g.repo, pr, &github.IssueListCommentsOptions{
 			ListOptions: github.ListOptions{
 				Page:    page,
 				PerPage: resultsPerPage,

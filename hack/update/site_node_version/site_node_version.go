@@ -24,7 +24,7 @@ import (
 
 	"k8s.io/minikube/hack/update"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v80/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 )
@@ -62,7 +62,9 @@ func main() {
 
 	data := Data{Version: version}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }
 
 func latestNodeVersionByMajor(ctx context.Context, major string) (string, error) {
