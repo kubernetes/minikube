@@ -451,7 +451,7 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 	}
 
 	if addon.HelmChart != nil {
-		err := helmInstallBinary(addon, runner)
+		err := helmInstallBinary(runner)
 		if err != nil {
 			return err
 		}

@@ -73,7 +73,7 @@ func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable
 	return uninstalllHelmChart(ctx, chart)
 }
 
-func helmInstallBinary(addon *assets.Addon, runner command.Runner) error {
+func helmInstallBinary(runner command.Runner) error {
 	_, err := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
 	if err != nil {
 		_, err = runner.RunCmd(exec.Command("test", "-d", "/usr/local/bin"))
