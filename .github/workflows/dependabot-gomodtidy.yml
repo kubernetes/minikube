@@ -32,7 +32,7 @@ jobs:
           if [[ -n $(git status --porcelain) ]]; then
             git config --global user.name "minikube-bot"
             git config --global user.email "minikube-bot@google.com"
-            git add go.mod go.sum
+            git add .
             git commit -m "update go.mod and go.sum"
             git push origin HEAD:${{ github.event.pull_request.head.ref }}
           fi
