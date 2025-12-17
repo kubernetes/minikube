@@ -793,11 +793,12 @@ func selectDriver(existing *config.ClusterConfig, options *run.CommandOptions) (
 				break
 			}
 		}
-		if foundStoppedDocker {
+		switch {
+		case foundStoppedDocker:
 			exit.Message(reason.DrvDockerNotRunning, "Found docker, but the docker service isn't running. Try restarting the docker service.")
-		} else if foundUnhealthy {
+		case foundUnhealthy:
 			exit.Message(reason.DrvNotHealthy, "Found driver(s) but none were healthy. See above for suggestions how to fix installed drivers.")
-		} else {
+		default:
 			exit.Message(reason.DrvNotDetected, "No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
 		}
 	}
@@ -1238,12 +1239,14 @@ func validateCPUCount(drvName string) {
 		availableCPUs = ci
 	}
 
-	if availableCPUs < 2 {
-		if drvName == oci.Docker && runtime.GOOS == "darwin" {
+	switch {
+	case availableCPUs < 2:
+		switch {
+		case drvName == oci.Docker && runtime.GOOS == "darwin":
 			exitIfNotForced(reason.RsrcInsufficientDarwinDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
-		} else if drvName == oci.Docker && runtime.GOOS == "windows" {
+		case drvName == oci.Docker && runtime.GOOS == "windows":
 			exitIfNotForced(reason.RsrcInsufficientWindowsDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
-		} else {
+		default:
 			exitIfNotForced(reason.RsrcInsufficientCores, "{{.driver_name}} has less than 2 CPUs available, but Kubernetes requires at least 2 to be available", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
 		}
 	}
@@ -1559,15 +1562,16 @@ func validateChangedMemoryFlags(drvName string) {
 	var req int
 	var err error
 	memString := viper.GetString(memory)
-	if memString == constants.NoLimit && driver.IsKIC(drvName) {
+	switch {
+	case memString == constants.NoLimit && driver.IsKIC(drvName):
 		req = 0
-	} else if memString == constants.MaxResources {
+	case memString == constants.MaxResources:
 		sysLimit, containerLimit, err := memoryLimits(drvName)
 		if err != nil {
 			klog.Warningf("Unable to query memory limits: %+v", err)
 		}
 		req = noLimitMemory(sysLimit, containerLimit, drvName)
-	} else {
+	default:
 		if memString == constants.NoLimit {
 			exit.Message(reason.Usage, "The '{{.name}}' driver does not support --memory=no-limit", out.V{"name": drvName})
 		}
