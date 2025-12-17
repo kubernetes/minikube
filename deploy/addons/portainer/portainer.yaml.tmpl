@@ -14,21 +14,21 @@ metadata:
   labels:
     app.kubernetes.io/name: portainer
     app.kubernetes.io/instance: portainer
-    app.kubernetes.io/version: "ce-latest-ee-2.15.1"
+    app.kubernetes.io/version: "ce-latest-ee-2.27.7"
 ---
 # Source: portainer/templates/pvc.yaml
 kind: "PersistentVolumeClaim"
 apiVersion: "v1"
 metadata:
   name: portainer
-  namespace: portainer  
+  namespace: portainer
   annotations:
     volume.alpha.kubernetes.io/storage-class: "generic"
   labels:
     io.portainer.kubernetes.application.stack: portainer
     app.kubernetes.io/name: portainer
     app.kubernetes.io/instance: portainer
-    app.kubernetes.io/version: "ce-latest-ee-2.15.1"
+    app.kubernetes.io/version: "ce-latest-ee-2.27.7"
 spec:
   accessModes:
     - "ReadWriteOnce"
@@ -44,15 +44,15 @@ metadata:
   labels:
     app.kubernetes.io/name: portainer
     app.kubernetes.io/instance: portainer
-    app.kubernetes.io/version: "ce-latest-ee-2.15.1"
+    app.kubernetes.io/version: "ce-latest-ee-2.27.7"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: cluster-admin
 subjects:
-- kind: ServiceAccount
-  namespace: portainer
-  name: portainer-sa-clusteradmin
+  - kind: ServiceAccount
+    namespace: portainer
+    name: portainer-sa-clusteradmin
 ---
 # Source: portainer/templates/service.yaml
 apiVersion: v1
@@ -64,7 +64,7 @@ metadata:
     io.portainer.kubernetes.application.stack: portainer
     app.kubernetes.io/name: portainer
     app.kubernetes.io/instance: portainer
-    app.kubernetes.io/version: "ce-latest-ee-2.15.1"
+    app.kubernetes.io/version: "ce-latest-ee-2.27.7"
     kubernetes.io/minikube-addons-endpoint: portainer
 spec:
   type: NodePort
@@ -73,12 +73,12 @@ spec:
       targetPort: 9000
       protocol: TCP
       name: http
-      nodePort: 30777  
+      nodePort: 30777
     - port: 9443
       targetPort: 9443
       protocol: TCP
       name: https
-      nodePort: 30779      
+      nodePort: 30779
     - port: 30776
       targetPort: 30776
       protocol: TCP
@@ -98,7 +98,7 @@ metadata:
     io.portainer.kubernetes.application.stack: portainer
     app.kubernetes.io/name: portainer
     app.kubernetes.io/instance: portainer
-    app.kubernetes.io/version: "ce-latest-ee-2.15.1"
+    app.kubernetes.io/version: "ce-latest-ee-2.27.7"
 spec:
   replicas: 1
   strategy:
@@ -125,20 +125,20 @@ spec:
           image: {{.CustomRegistries.Portainer | default .ImageRepository | default .Registries.Portainer}}{{.Images.Portainer}}
           imagePullPolicy: Always
           args:
-          - '--tunnel-port=30776'          
+            - '--tunnel-port=30776'
           volumeMounts:
             - name: data
-              mountPath: /data              
+              mountPath: /data
           ports:
             - name: http
               containerPort: 9000
               protocol: TCP
             - name: https
               containerPort: 9443
-              protocol: TCP                
+              protocol: TCP
             - name: tcp-edge
               containerPort: 8000
-              protocol: TCP              
+              protocol: TCP
           livenessProbe:
             httpGet:
               path: /
@@ -148,6 +148,6 @@ spec:
             httpGet:
               path: /
               port: 9443
-              scheme: HTTPS        
+              scheme: HTTPS
           resources:
             {}
