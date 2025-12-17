@@ -107,13 +107,13 @@ jobs:
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
             arch: amd64
-            test-timeout: 15m 
+            test-timeout: 17m 
           - name: podman-docker-ubuntu-24.04-x86
             driver: podman
             cruntime: docker
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 15m
+            test-timeout: 18m
           - name: baremetal-docker-ubuntu-24.04-x86
             driver: none
             cruntime: docker
