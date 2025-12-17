@@ -246,7 +246,7 @@ var mountCmd = &cobra.Command{
 			}
 		}()
 
-		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg, pid)
+		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg, pid, options)
 		if err != nil {
 			if rtErr, ok := err.(*cluster.MountError); ok && rtErr.ErrorType == cluster.MountErrorConnect {
 				exit.Error(reason.GuestMountCouldNotConnect, "mount could not connect", rtErr)

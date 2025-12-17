@@ -18,6 +18,7 @@ package flags
 
 import (
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/run"
 )
 
@@ -25,6 +26,7 @@ import (
 const (
 	Interactive  = "interactive"
 	DownloadOnly = "download-only"
+	Force        = "force"
 )
 
 // CommandOptions returns minikube runtime options from command line flags.
@@ -34,5 +36,7 @@ func CommandOptions() *run.CommandOptions {
 	return &run.CommandOptions{
 		NonInteractive: !viper.GetBool(Interactive),
 		DownloadOnly:   viper.GetBool(DownloadOnly),
+		ProfileName:    viper.GetString(config.ProfileName),
+		Force:          viper.GetBool(Force),
 	}
 }

@@ -23,10 +23,14 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func TestAddonsList(t *testing.T) {
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
+
 	tests := []struct {
 		name      string
 		printDocs bool
@@ -45,7 +49,7 @@ func TestAddonsList(t *testing.T) {
 			old := os.Stdout
 			defer func() { os.Stdout = old }()
 			os.Stdout = w
-			printAddonsList(nil, tt.printDocs)
+			printAddonsList(nil, tt.printDocs, options)
 			if err := w.Close(); err != nil {
 				t.Fatalf("failed to close pipe: %v", err)
 			}

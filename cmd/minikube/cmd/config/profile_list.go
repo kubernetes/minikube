@@ -70,18 +70,18 @@ var profileListCmd = &cobra.Command{
 	},
 }
 
-func listProfiles() (validProfiles, invalidProfiles []*config.Profile, err error) {
+func listProfiles(options *run.CommandOptions) (validProfiles, invalidProfiles []*config.Profile, err error) {
 	if isLight {
-		validProfiles, err = config.ListValidProfiles()
+		validProfiles, err = config.ListValidProfiles(options)
 	} else {
-		validProfiles, invalidProfiles, err = config.ListProfiles()
+		validProfiles, invalidProfiles, err = config.ListProfiles(options)
 	}
 
 	return validProfiles, invalidProfiles, err
 }
 
 func printProfilesTable(options *run.CommandOptions) {
-	validProfiles, invalidProfiles, err := listProfiles()
+	validProfiles, invalidProfiles, err := listProfiles(options)
 
 	if err != nil {
 		klog.Warningf("error loading profiles: %v", err)
@@ -209,7 +209,7 @@ func warnInvalidProfiles(invalidProfiles []*config.Profile) {
 }
 
 func printProfilesJSON(options *run.CommandOptions) {
-	validProfiles, invalidProfiles, err := listProfiles()
+	validProfiles, invalidProfiles, err := listProfiles(options)
 	updateProfilesStatus(validProfiles, options)
 
 	var body = map[string]interface{}{}

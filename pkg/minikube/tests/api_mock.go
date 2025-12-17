@@ -19,14 +19,12 @@ package tests
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"testing"
 
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 
 	"k8s.io/klog/v2"
 )
@@ -78,16 +76,13 @@ func (api *MockAPI) NewHost(drvName string, rawDriver []byte) (*host.Host, error
 	h := &host.Host{
 		DriverName: drvName,
 		RawDriver:  rawDriver,
-		Driver:     &MockDriver{},
-		Name:       fmt.Sprintf("mock-machine-%.8f", rand.Float64()),
+		Driver:     &driver,
+		Name:       driver.GetMachineName(),
 		HostOptions: &host.Options{
 			AuthOptions:  &auth.Options{},
 			SwarmOptions: &swarm.Options{},
 		},
 	}
-
-	api.Logf("MockAPI.NewHost: Setting profile=%q", h.Name)
-	viper.Set("profile", h.Name)
 
 	api.Logf("MockAPI.NewHost: %+v", h)
 	return h, nil

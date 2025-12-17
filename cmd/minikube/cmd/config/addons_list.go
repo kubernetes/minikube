@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -63,7 +64,7 @@ var addonsListCmd = &cobra.Command{
 		}
 		switch strings.ToLower(addonListOutput) {
 		case "list":
-			printAddonsList(cc, addonPrintDocs)
+			printAddonsList(cc, addonPrintDocs, options)
 		case "json":
 			printAddonsJSON(cc)
 		default:
@@ -92,7 +93,7 @@ var stringFromStatus = func(addonStatus bool) string {
 	return "disabled"
 }
 
-var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
+var printAddonsList = func(cc *config.ClusterConfig, printDocs bool, options *run.CommandOptions) {
 	addonNames := slices.Sorted(maps.Keys(assets.Addons))
 	table := tablewriter.NewWriter(os.Stdout)
 
@@ -142,7 +143,7 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	if err := table.Render(); err != nil {
 		klog.Error("Error rendering table", err)
 	}
-	v, _, err := config.ListProfiles()
+	v, _, err := config.ListProfiles(options)
 	if err != nil {
 		klog.Errorf("list profiles returned error: %v", err)
 	}

@@ -26,7 +26,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -44,7 +43,7 @@ import (
 
 // Add adds a new node config to an existing cluster.
 func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool, options *run.CommandOptions) error {
-	profiles, err := config.ListValidProfiles()
+	profiles, err := config.ListValidProfiles(options)
 	if err != nil {
 		return err
 	}
@@ -66,7 +65,7 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool, options *run.C
 		n.Port = cc.APIServerPort
 	}
 
-	if err := config.SaveNode(cc, &n); err != nil {
+	if err := config.SaveNode(cc, &n, options); err != nil {
 		return errors.Wrap(err, "save node")
 	}
 
@@ -207,7 +206,7 @@ func Delete(cc config.ClusterConfig, name string, options *run.CommandOptions) (
 	}
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
+	return n, config.SaveProfile(options.ProfileName, &cc)
 }
 
 // Retrieve finds the node by name in the given cluster
@@ -228,7 +227,7 @@ func Retrieve(cc config.ClusterConfig, name string) (*config.Node, int, error) {
 }
 
 // Save saves a node to a cluster
-func Save(cfg *config.ClusterConfig, node *config.Node) error {
+func Save(cfg *config.ClusterConfig, node *config.Node, options *run.CommandOptions) error {
 	update := false
 	for i, n := range cfg.Nodes {
 		if n.Name == node.Name {
@@ -241,7 +240,7 @@ func Save(cfg *config.ClusterConfig, node *config.Node) error {
 	if !update {
 		cfg.Nodes = append(cfg.Nodes, *node)
 	}
-	return config.SaveProfile(viper.GetString(config.ProfileName), cfg)
+	return config.SaveProfile(options.ProfileName, cfg)
 }
 
 // Name returns the appropriate name for the node given the node index.

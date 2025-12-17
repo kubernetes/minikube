@@ -35,7 +35,6 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/juju/mutex/v2"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -49,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
@@ -70,7 +70,7 @@ var requiredDirectories = []string{
 }
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
+func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node, options *run.CommandOptions) (*host.Host, bool, error) {
 	machineName := config.MachineName(*cfg, *n)
 
 	// Prevent machine-driver boot races, as well as our own certificate race
@@ -91,10 +91,10 @@ func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*
 	var h *host.Host
 	if !exists {
 		klog.Infof("Provisioning new machine with config: %+v %+v", cfg, n)
-		h, err = createHost(api, cfg, n)
+		h, err = createHost(api, cfg, n, options)
 	} else {
 		klog.Infoln("Skipping create...Using existing machine configuration")
-		h, err = fixHost(api, cfg, n)
+		h, err = fixHost(api, cfg, n, options)
 	}
 	if err != nil {
 		return h, exists, err
@@ -121,7 +121,7 @@ func engineOptions(cfg config.ClusterConfig) *engine.Options {
 	return &o
 }
 
-func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, error) {
+func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node, options *run.CommandOptions) (*host.Host, error) {
 	klog.Infof("createHost starting for %q (driver=%q)", n.Name, cfg.Driver)
 	start := time.Now()
 	defer func() {
@@ -149,7 +149,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	if err != nil {
 		return nil, errors.Wrap(err, "new host")
 	}
-	defer postStartValidations(h, cfg.Driver)
+	defer postStartValidations(h, cfg.Driver, options)
 
 	h.HostOptions.AuthOptions.CertDir = localpath.MiniPath()
 	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
@@ -173,7 +173,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 		return h, errors.Wrap(err, "post-start")
 	}
 
-	if err := saveHost(api, h, cfg, n); err != nil {
+	if err := saveHost(api, h, cfg, n, options); err != nil {
 		return h, err
 	}
 	return h, nil
@@ -201,7 +201,7 @@ func timedCreateHost(h *host.Host, api libmachine.API, t time.Duration) error {
 
 // postStartValidations are validations against the host after it is created
 // TODO: Add validations for VM drivers as well, see issue #9035
-func postStartValidations(h *host.Host, drvName string) {
+func postStartValidations(h *host.Host, drvName string, options *run.CommandOptions) {
 	if !driver.IsKIC(drvName) {
 		return
 	}
@@ -225,7 +225,7 @@ func postStartValidations(h *host.Host, drvName string) {
 		return
 	}
 
-	if viper.GetBool("force") {
+	if options.Force {
 		return
 	}
 

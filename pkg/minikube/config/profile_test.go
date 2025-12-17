@@ -20,11 +20,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // TestListProfiles uses a different MINIKUBE_HOME with rest of tests since it relies on file list index
 func TestListProfiles(t *testing.T) {
+	options := &run.CommandOptions{ProfileName: constants.DefaultClusterName}
+
 	miniDir, err := filepath.Abs("./testdata/profile/.minikube")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
@@ -53,7 +56,7 @@ func TestListProfiles(t *testing.T) {
 	DockerContainers = func() ([]string, error) {
 		return []string{}, nil
 	}
-	val, inv, err := ListProfiles(miniDir)
+	val, inv, err := ListProfiles(options, miniDir)
 
 	num := len(testCasesValidProfs) + len(testCasesInValidProfs)
 	if num != len(val)+len(inv) {
@@ -288,8 +291,6 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 				t.Fatalf("Failed to load config for %s", tc.description)
 			}
 
-			// get control-plane node
-			viper.Set(ProfileName, tc.profile)
 			n, err := ControlPlane(*cc)
 			if err != nil {
 				t.Fatalf("Unexpected error getting primary control plane: %v", err)

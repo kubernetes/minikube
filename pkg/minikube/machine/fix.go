@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -49,7 +50,7 @@ const (
 )
 
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
-func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*host.Host, error) {
+func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, options *run.CommandOptions) (*host.Host, error) {
 	start := time.Now()
 	klog.Infof("fixHost starting: %s", n.Name)
 	defer func() {
@@ -60,14 +61,14 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 	if err != nil {
 		return h, errors.Wrap(err, "error loading existing host. Please try running [minikube delete], then run [minikube start] again")
 	}
-	defer postStartValidations(h, cc.Driver)
+	defer postStartValidations(h, cc.Driver, options)
 
 	driverName := h.Driver.DriverName()
 
 	// check if need to re-run docker-env
 	maybeWarnAboutEvalEnv(driverName, cc.Name)
 
-	h, err = recreateIfNeeded(api, cc, n, h)
+	h, err = recreateIfNeeded(api, cc, n, h, options)
 	if err != nil {
 		return h, err
 	}
@@ -103,7 +104,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 	return h, nil
 }
 
-func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.Node, h *host.Host) (*host.Host, error) {
+func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.Node, h *host.Host, options *run.CommandOptions) (*host.Host, error) {
 	machineName := config.MachineName(*cc, *n)
 	machineType := driver.MachineType(cc.Driver)
 	recreated := false
@@ -124,7 +125,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 			klog.Infof("Sleeping 1 second for extra luck!")
 			time.Sleep(1 * time.Second)
 
-			h, err = createHost(api, cc, n)
+			h, err = createHost(api, cc, n, options)
 			if err != nil {
 				return nil, errors.Wrap(err, "recreate")
 			}
@@ -153,7 +154,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 		MaybeDisplayAdvice(err, h.DriverName)
 		return h, errors.Wrap(err, "driver start")
 	}
-	if err := saveHost(api, h, cc, n); err != nil {
+	if err := saveHost(api, h, cc, n, options); err != nil {
 		return h, err
 	}
 
