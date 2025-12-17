@@ -74,8 +74,8 @@ require (
 	golang.org/x/text v0.31.0
 	google.golang.org/api v0.248.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.34.1
-	k8s.io/apimachinery v0.34.1
+	k8s.io/api v0.34.3
+	k8s.io/apimachinery v0.34.3
 	k8s.io/client-go v0.34.1
 	k8s.io/cluster-bootstrap v0.34.1
 	k8s.io/component-base v0.34.1
