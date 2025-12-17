@@ -34,6 +34,7 @@ RUN apt-get update \
 		p7zip-full \
 		locales \
 		rsync \
+		cmake \
 		dumb-init \
 		golang-go \
 		libpcre3-dev \
@@ -45,6 +46,11 @@ RUN chmod 777 /app
 
 RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 ENV LANG=en_US.utf8
+
+# the default ccache dir is "$HOME/.buildroot-ccache"
+ENV BR2_CCACHE_DIR=/var/cache/buildroot/ccache
+RUN mkdir -p /var/cache/buildroot/ccache && chmod 1777 /var/cache/buildroot/ccache
+VOLUME ["/var/cache/buildroot"]
 
 # dumb init will allow us to interrupt the build with ^C
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
