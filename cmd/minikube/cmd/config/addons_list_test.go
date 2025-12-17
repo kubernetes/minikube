@@ -17,8 +17,8 @@ limitations under the License.
 package config
 
 import (
-	"bufio"
 	"encoding/json"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -43,25 +43,36 @@ func TestAddonsList(t *testing.T) {
 				t.Fatalf("failed to create pipe: %v", err)
 			}
 			old := os.Stdout
-			defer func() { os.Stdout = old }()
+			defer func() {
+				os.Stdout = old
+				out.SetOutFile(old)
+			}()
 			os.Stdout = w
+			out.SetOutFile(w)
+
+			done := make(chan string, 1)
+			go func() {
+				b, _ := io.ReadAll(r)
+				done <- string(b)
+			}()
+
 			printAddonsList(nil, tt.printDocs)
+
 			if err := w.Close(); err != nil {
 				t.Fatalf("failed to close pipe: %v", err)
 			}
-			buf := bufio.NewScanner(r)
+
+			s := <-done
+			lines := strings.Split(s, "\n")
+			if len(lines) < 3 {
+				t.Fatalf("failed to read stdout: got %d lines: %q", len(lines), s)
+			}
+
 			pipeCount := 0
 			got := ""
-			// Pull the first 3 lines from stdout
 			for i := 0; i < 3; i++ {
-				if !buf.Scan() {
-					t.Fatalf("failed to read stdout")
-				}
-				pipeCount += strings.Count(buf.Text(), "│")
-				got += buf.Text()
-			}
-			if err := buf.Err(); err != nil {
-				t.Errorf("failed to read stdout: %v", err)
+				pipeCount += strings.Count(lines[i], "│")
+				got += lines[i]
 			}
 			// ┌─────────────────────────────┬────────────────────────────────────────┐
 			// │         ADDON NAME          │               MAINTAINER               │
