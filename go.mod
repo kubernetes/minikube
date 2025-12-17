@@ -31,6 +31,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-getter v1.8.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
+	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95
 	github.com/hooklift/iso9660 v1.0.0
 	github.com/icza/dyno v0.0.0-20230330125955-09f820a8d9c0
 	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
@@ -167,7 +168,6 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
-	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
