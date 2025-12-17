@@ -1059,7 +1059,7 @@ var guestIssues = []match{
 			Advice:   "minikube is missing files relating to your guest environment. This can be fixed by running 'minikube delete'",
 			Issues:   []int{9130},
 		},
-		Regexp: re(`id_rsa: no such file or directory`),
+		Regexp: re(`id_(ed25519|rsa): no such file or directory`),
 	},
 	{
 		Kind: Kind{
