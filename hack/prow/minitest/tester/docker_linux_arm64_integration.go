@@ -45,7 +45,7 @@ func (k *DockerLinuxArm64IntegrationTester) Run(runner MiniTestRunner) error {
 		klog.Errorf("failed to install docker in env: %v", err)
 		return err
 	}
-	if testErr = runner.Execute(fmt.Sprintf("cd minikube && PULL_NUMBER=\"%s\" ./hack/prow/integration_docker_docker_linux_arm64.sh", pr)); testErr != nil {
+	if testErr = runner.Execute(fmt.Sprintf("cd minikube && PULL_NUMBER=\"%s\" ./hack/prow/integration_docker_docker_linux_arm.sh", pr)); testErr != nil {
 		klog.Errorf("failed to execute command in env: %v", testErr)
 		// don't return here, we still want to collect the test reports
 	}
