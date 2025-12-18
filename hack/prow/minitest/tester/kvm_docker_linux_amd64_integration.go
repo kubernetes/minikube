@@ -24,5 +24,5 @@ type KVMDockerLinuxAmd64IntegrationTester struct {
 
 // Run implements MiniTestTester.
 func (k *KVMDockerLinuxAmd64IntegrationTester) Run(runner MiniTestRunner) error {
-	return kvmGeneralTester(runner, "./hack/prow/integration_kvm_docker_linux_x86-64.sh")
+	return kvmGeneralTester(runner, "./hack/prow/integration_kvm_docker_linux_x86.sh")
 }

@@ -23,7 +23,7 @@ DRIVER="docker"
 CONTAINER_RUNTIME="crio"
 EXTRA_START_ARGS="" 
 EXTRA_TEST_ARGS=""
-JOB_NAME="Docker_Crio_Linux_x86-64"
+JOB_NAME="Docker_Crio_Linux_x86"
 
 git config --global --add safe.directory '*'
 COMMIT=$(git rev-parse HEAD)

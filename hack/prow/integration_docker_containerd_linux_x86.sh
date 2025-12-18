@@ -23,7 +23,7 @@ DRIVER="docker"
 CONTAINER_RUNTIME="containerd"
 EXTRA_START_ARGS="" 
 EXTRA_TEST_ARGS=""
-JOB_NAME="Docker_Containerd_Linux_x86-64"
+JOB_NAME="Docker_Containerd_Linux_x86"
 
 git config --global --add safe.directory '*'
 COMMIT=$(git rev-parse HEAD)
