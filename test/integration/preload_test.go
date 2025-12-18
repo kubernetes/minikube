@@ -83,9 +83,10 @@ func TestPreload(t *testing.T) {
 		}
 	})
 	// PreloadSrc verifies that downloading preload from github and gcs works using --preload-src and --download-only
+	// "auto" is the default preload source (tries both gcs and github); here we explicitly verify each source
 	t.Run("PreloadSrc", func(t *testing.T) {
 		MaybeParallel(t)
-		// "gcs" is the default source, so we can verify it by default
+		
 		tests := []struct {
 			name              string
 			source            string
@@ -94,8 +95,7 @@ func TestPreload(t *testing.T) {
 		}{
 			{"gcs", "gcs", "v1.34.0-rc.1", "Downloading preload from https://storage.googleapis.com"},
 			{"github", "github", "v1.34.0-rc.2", "Downloading preload from https://github.com"},
-			// TODO add a test that downloads "v1.34.0-rc.2 again from gcs and expect not to redownload and logs to be
-			//   Found "<path>" in cache, skipping download
+			{"gcs-cached", "gcs", "v1.34.0-rc.2", "in cache, skipping download"},
 		}
 
 		for _, tc := range tests {
