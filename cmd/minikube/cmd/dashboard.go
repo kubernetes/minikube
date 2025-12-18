@@ -91,7 +91,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		ns := "kubernetes-dashboard"
-		svc := "kubernetes-dashboard"
+		svc := "kubernetes-dashboard-web"
 		out.ErrT(style.Verifying, "Verifying dashboard health ...")
 		checkSVC := func() error { return service.CheckService(cname, ns, svc) }
 		// for slow machines or parallels in CI to avoid #7503
