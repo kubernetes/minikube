@@ -548,7 +548,7 @@ func (d *Driver) Start() error {
 		return fmt.Errorf("ip not found: %v", err)
 	}
 
-	return common.WaitForSSHAccess(d, time.Second)
+	return common.WaitForSSHAccess(d)
 }
 
 func hardwareAcceleration() string {

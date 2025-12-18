@@ -253,7 +253,7 @@ func (d *Driver) Start() error {
 		return err
 	}
 
-	if err := common.WaitForSSHAccess(d, time.Second); err != nil {
+	if err := common.WaitForSSHAccess(d); err != nil {
 		return err
 	}
 
