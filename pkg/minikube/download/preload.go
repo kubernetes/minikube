@@ -205,14 +205,27 @@ func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload
 		return true
 	}
 
-	if PreloadExistsGCS(k8sVersion, containerRuntime) {
-		setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGCS})
-		return true
-	}
-
-	if PreloadExistsGH(k8sVersion, containerRuntime) {
-		setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGitHub})
-		return true
+	switch viper.GetString("preload-src") {
+	case "github":
+		if PreloadExistsGH(k8sVersion, containerRuntime) {
+			setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGitHub})
+			return true
+		}
+	case "gcs":
+		if PreloadExistsGCS(k8sVersion, containerRuntime) {
+			setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGCS})
+			return true
+		}
+	default:
+		// auto or unknown - try both
+		if PreloadExistsGCS(k8sVersion, containerRuntime) {
+			setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGCS})
+			return true
+		}
+		if PreloadExistsGH(k8sVersion, containerRuntime) {
+			setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGitHub})
+			return true
+		}
 	}
 
 	setPreloadState(k8sVersion, containerRuntime, preloadState{exists: false, source: preloadSourceNone})
