@@ -36,11 +36,12 @@ import (
 
 // HelmChart holds information about a helm chart.
 type HelmChart struct {
-	Name       string
-	Repo       string
-	Namespace  string
-	Values     []string
-	ValueFiles []string
+	Name          string
+	Repo          string
+	RepositoryURL string
+	Namespace     string
+	Values        []string
+	ValueFiles    []string
 }
 
 // Addon is a named list of assets, that can be enabled
@@ -152,25 +153,13 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"AutoPauseHook": "gcr.io",
 	}, nil),
-	"dashboard": NewAddon([]*BinAsset{
-		// We want to create the kubernetes-dashboard ns first so that every subsequent object can be created
-		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-ns.yaml", vmpath.GuestAddonsDir, "dashboard-ns.yaml", "0640"),
-		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-clusterrole.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrole.yaml", "0640"),
-		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrolebinding.yaml", "0640"),
-		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-configmap.yaml", vmpath.GuestAddonsDir, "dashboard-configmap.yaml", "0640"),
-		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-dp.yaml.tmpl", vmpath.GuestAddonsDir, "dashboard-dp.yaml", "0640"),
-		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-role.yaml", vmpath.GuestAddonsDir, "dashboard-role.yaml", "0640"),
-		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-rolebinding.yaml", vmpath.GuestAddonsDir, "dashboard-rolebinding.yaml", "0640"),
-		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-sa.yaml", vmpath.GuestAddonsDir, "dashboard-sa.yaml", "0640"),
-		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-secret.yaml", vmpath.GuestAddonsDir, "dashboard-secret.yaml", "0640"),
-		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-svc.yaml", vmpath.GuestAddonsDir, "dashboard-svc.yaml", "0640"),
-	}, false, "dashboard", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/dashboard/", map[string]string{
-		"Dashboard":      "kubernetesui/dashboard:v2.7.0@sha256:2e500d29e9d5f4a086b908eb8dfe7ecac57d2ab09d65b24f588b1d449841ef93",
-		"MetricsScraper": "kubernetesui/metrics-scraper:v1.0.8@sha256:76049887f07a0476dc93efc2d3569b9529bf982b22d29f356092ce206e98765c",
-	}, map[string]string{
-		"Dashboard":      "docker.io",
-		"MetricsScraper": "docker.io",
-	}, nil),
+	"dashboard": NewAddon([]*BinAsset{}, false, "dashboard", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/dashboard/", nil, nil, &HelmChart{
+		Name:          "kubernetes-dashboard",
+		Repo:          "kubernetes-dashboard",
+		RepositoryURL: "https://kubernetes.github.io/dashboard/",
+		Namespace:     "kubernetes-dashboard",
+		Values:        []string{"nginx.enabled=false", "cert-manager.enabled=false", "kong.enabled=false", "metrics-server.enabled=false"},
+	}),
 	"default-storageclass": NewAddon([]*BinAsset{
 		MustBinAsset(addons.DefaultStorageClassAssets,
 			"storageclass/storageclass.yaml",
