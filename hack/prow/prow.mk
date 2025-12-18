@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------
 # Bellow Integration tests run in a prow container (no external cloud vm)
 # ----------------------------------------------------------------
-.PHONY: integration-prow-kvm-docker-linux-x86
+.PHONY: integration-prow-docker-docker-linux-x86
 integration-prow-docker-docker-linux-x86:
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_docker_linux_x86.sh
@@ -16,7 +16,7 @@ integration-prow-docker-containerd-linux-x86:
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_containerd_linux_x86.sh
 
-.PHONY:integration-prow-docker-crio-linux-x86:
+.PHONY: integration-prow-docker-crio-linux-x86
 integration-prow-docker-crio-linux-x86:
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_crio_linux_x86.sh
