@@ -21,16 +21,16 @@ package integration
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"testing"
-
-	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-// TestPreload verifies that disabling the initial preload, pulling a specific image, and restarting the cluster preserves the image across restarts.
+// TestPreload verifies that disabling the initial preload, pulling a specific image,
+// and restarting the cluster preserves the image across restarts.
+// also tests --preload-src should work for both github and gcs
 func TestPreload(t *testing.T) {
+	MaybeParallel(t)
 	if NoneDriver() {
 		t.Skipf("skipping %s - incompatible with none driver", t.Name())
 	}
@@ -39,84 +39,79 @@ func TestPreload(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	startArgs := []string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--wait=true", "--preload=false"}
-	startArgs = append(startArgs, StartArgs()...)
+	userImage := "public.ecr.aws/docker/library/busybox:latest"
 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
+	// These subtests run sequentially (t.Run blocks until completion) to share the same profile/cluster state.
+	t.Run("StartNoPreloadAndPullImage", func(t *testing.T) {
+		startArgs := []string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--wait=true", "--preload=false"}
+		startArgs = append(startArgs, StartArgs()...)
 
-	// Now, pull the busybox image into minikube
-	image := "gcr.io/k8s-minikube/busybox"
-	cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "pull", image)
-	rr, err = Run(t, cmd)
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+		if err != nil {
+			t.Fatalf("%s failed: %v", rr.Command(), err)
+		}
 
-	// stop the cluster
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
+		// Now, pull the busybox image into minikube
+		cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "pull", userImage)
+		rr, err = Run(t, cmd)
+		if err != nil {
+			t.Fatalf("%s failed: %v", rr.Command(), err)
+		}
 
-	// re-start the cluster and check if image is preserved with enabled preload
-	startArgs = []string{"start", "-p", profile, "--preload=true", "--alsologtostderr", "-v=1", "--wait=true"}
-	startArgs = append(startArgs, StartArgs()...)
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-	cmd = exec.CommandContext(ctx, Target(), "-p", profile, "image", "list")
-	rr, err = Run(t, cmd)
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-	if !strings.Contains(rr.Output(), image) {
-		t.Fatalf("Expected to find %s in image list output, instead got %s", image, rr.Output())
-	}
-}
+		// stop the cluster
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
+		if err != nil {
+			t.Fatalf("%s failed: %v", rr.Command(), err)
+		}
+	})
 
-// TestPreloadDownloadOnly verifies that downloading preload from github and gcs works
-func TestPreloadDownloadOnly(t *testing.T) {
-	if NoneDriver() {
-		t.Skipf("skipping %s - incompatible with none driver", t.Name())
-	}
-	// "gcs" is the default source, so we can verify it by default
-	tests := []struct {
-		name    string
-		source  string
-		wantLog string
-	}{
-		{"gcs", "gcs", "Downloading preload from https://storage.googleapis.com"},
-		{"github", "github", "Downloading preload from https://github.com"},
-	}
+	t.Run("RestartWithPreloadAndCheckUserImage", func(t *testing.T) {
+		// re-start the cluster and check if image is preserved with enabled preload
+		startArgs := []string{"start", "-p", profile, "--preload=true", "--alsologtostderr", "-v=1", "--wait=true"}
+		startArgs = append(startArgs, StartArgs()...)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+		if err != nil {
+			t.Fatalf("%s failed: %v", rr.Command(), err)
+		}
+		cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "list")
+		rr, err = Run(t, cmd)
+		if err != nil {
+			t.Fatalf("%s failed: %v", rr.Command(), err)
+		}
+		if !strings.Contains(rr.Output(), userImage) {
+			t.Fatalf("Expected to find %s in image list output, instead got %s", userImage, rr.Output())
+		}
+	})
+	// PreloadSrc verifies that downloading preload from github and gcs works using --preload-src and --download-only
+	t.Run("PreloadSrc", func(t *testing.T) {
+		MaybeParallel(t)
+		// "gcs" is the default source, so we can verify it by default
+		tests := []struct {
+			name    string
+			source  string
+			wantLog string
+		}{
+			{"gcs", "gcs", "Downloading preload from https://storage.googleapis.com"},
+			{"github", "github", "Downloading preload from https://github.com"},
+		}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			profile := UniqueProfileName("test-preload-dl-" + tc.name)
-			ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
-			defer CleanupWithLogs(t, profile, cancel)
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				profile := UniqueProfileName("test-preload-dl-" + tc.name)
+				ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
+				defer CleanupWithLogs(t, profile, cancel)
 
-			// Clean up the cache to force download
-			cacheDir := localpath.MakeMiniPath("cache", "preloaded-tarball")
-			if err := os.RemoveAll(cacheDir); err != nil {
-				t.Logf("Failed to clean preload cache at %s: %v", cacheDir, err)
-			} else {
-				t.Logf("Cleaned preload cache at %s", cacheDir)
-			}
+				startArgs := []string{"start", "-p", profile, "--download-only", fmt.Sprintf("--preload-src=%s", tc.source), "--alsologtostderr", "--v=1"}
+				startArgs = append(startArgs, StartArgs()...)
 
-			startArgs := []string{"start", "-p", profile, "--download-only", fmt.Sprintf("--preload-src=%s", tc.source), "--alsologtostderr", "--v=1"}
-			startArgs = append(startArgs, StartArgs()...)
-
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
-			if err != nil {
-				t.Fatalf("%s failed: %v", rr.Command(), err)
-			}
-			if !strings.Contains(rr.Output(), tc.wantLog) {
-				t.Fatalf("Expected to find %q in output, but got:\n%s", tc.wantLog, rr.Output())
-			}
-		})
-	}
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+				if err != nil {
+					t.Fatalf("%s failed: %v", rr.Command(), err)
+				}
+				if !strings.Contains(rr.Output(), tc.wantLog) {
+					t.Fatalf("Expected to find %q in output, but got:\n%s", tc.wantLog, rr.Output())
+				}
+			})
+		}
+	})
 }
