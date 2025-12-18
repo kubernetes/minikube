@@ -73,3 +73,22 @@ func TestPreload(t *testing.T) {
 		t.Fatalf("Expected to find %s in image list output, instead got %s", image, rr.Output())
 	}
 }
+
+// TestPreloadDownloadOnly verifies that downloading preload from github works
+func TestPreloadDownloadOnly(t *testing.T) {
+	if NoneDriver() {
+		t.Skipf("skipping %s - incompatible with none driver", t.Name())
+	}
+
+	profile := UniqueProfileName("test-preload-dl")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
+	defer CleanupWithLogs(t, profile, cancel)
+
+	startArgs := []string{"start", "-p", profile, "--download-only", "--preload-src=github", "--alsologtostderr", "--v=1"}
+	startArgs = append(startArgs, StartArgs()...)
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+}
