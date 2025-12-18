@@ -1,6 +1,11 @@
 {
 	"name": "Kubernetes - Minikube-in-Docker",
 	"image": "mcr.microsoft.com/devcontainers/base:bullseye",
+	"runArgs": [
+		"--privileged",
+		"--device",
+		"/dev/kvm"
+	],
 	"features": {
 		"ghcr.io/devcontainers/features/docker-in-docker:2": {
 			"enableNonRootDocker": "true",
@@ -10,6 +15,6 @@
 			"version": "latest",
 			"helm": "latest",
 			"minikube": "latest"
-		}
+		},
 	}
 }
