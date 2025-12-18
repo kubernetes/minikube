@@ -87,12 +87,15 @@ func TestPreload(t *testing.T) {
 		MaybeParallel(t)
 		// "gcs" is the default source, so we can verify it by default
 		tests := []struct {
-			name    string
-			source  string
-			wantLog string
+			name              string
+			source            string
+			kubernetesVersion string // using verions that are not used in the test to make sure they dont pre-exist
+			wantLog           string
 		}{
-			{"gcs", "gcs", "Downloading preload from https://storage.googleapis.com"},
-			{"github", "github", "Downloading preload from https://github.com"},
+			{"gcs", "gcs", "v1.34.0-rc.1", "Downloading preload from https://storage.googleapis.com"},
+			{"github", "github", "v1.34.0-rc.2", "Downloading preload from https://github.com"},
+			// TODO add a test that downloads "v1.34.0-rc.2 again from gcs and expect not to redownload and logs to be
+			//   Found "<path>" in cache, skipping download
 		}
 
 		for _, tc := range tests {
@@ -101,7 +104,7 @@ func TestPreload(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := []string{"start", "-p", profile, "--download-only", fmt.Sprintf("--preload-src=%s", tc.source), "--alsologtostderr", "--v=1"}
+				startArgs := []string{"start", "-p", profile, "--download-only", "--kubernetes-version", tc.kubernetesVersion, fmt.Sprintf("--preload-src=%s", tc.source), "--alsologtostderr", "--v=1"}
 				startArgs = append(startArgs, StartArgs()...)
 
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
