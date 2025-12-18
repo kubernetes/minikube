@@ -37,6 +37,9 @@ func ReleaseAssets(org, project, tag string) ([]*github.ReleaseAsset, error) {
 	ghc := github.NewClient(httpClient)
 
 	rel, _, err := ghc.Repositories.GetReleaseByTag(ctx, org, project, tag)
+	if err != nil {
+		return nil, err
+	}
 	return rel.Assets, err
 }
 
