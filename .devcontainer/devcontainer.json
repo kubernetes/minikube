@@ -15,6 +15,9 @@
 			"version": "latest",
 			"helm": "latest",
 			"minikube": "latest"
+		},
+		"ghcr.io/devcontainers/features/go:1": {
+			"version": "latest"
 		}
 	}
 }
