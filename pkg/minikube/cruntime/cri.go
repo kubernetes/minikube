@@ -49,12 +49,15 @@ type crictlImages struct {
 	} `json:"images"`
 }
 
+// timeoutOverride flag overrides the default 2s timeout for crictl commands
+const timeoutOverrideFlag = "--timeout=10s"
+
 // crictlList returns the output of 'crictl ps' in an efficient manner
 func crictlList(cr CommandRunner, root string, o ListContainersOptions) (*command.RunResult, error) {
 	klog.Infof("listing CRI containers in root %s: %+v", root, o)
 
 	// Use -a because otherwise paused containers are missed
-	baseCmd := []string{"crictl", "ps", "-a", "--quiet"}
+	baseCmd := []string{"crictl", timeoutOverrideFlag, "ps", "-a", "--quiet"}
 
 	if o.Name != "" {
 		baseCmd = append(baseCmd, fmt.Sprintf("--name=%s", o.Name))
@@ -286,7 +289,7 @@ func populateCRIConfig(cr CommandRunner, socket string) error {
 
 // getCRIInfo returns current information
 func getCRIInfo(cr CommandRunner) (map[string]interface{}, error) {
-	args := []string{"crictl", "info"}
+	args := []string{"crictl",timeoutOverrideFlag, "info"}
 	c := exec.Command("sudo", args...)
 	rr, err := cr.RunCmd(c)
 	if err != nil {
@@ -303,7 +306,7 @@ func getCRIInfo(cr CommandRunner) (map[string]interface{}, error) {
 
 // listCRIImages lists images using crictl
 func listCRIImages(cr CommandRunner) ([]ListImage, error) {
-	c := exec.Command("sudo", "crictl", "--timeout=10s", "images", "--output", "json")
+	c := exec.Command("sudo", "crictl", timeoutOverrideFlag, "images", "--output", "json")
 	rr, err := cr.RunCmd(c)
 	if err != nil {
 		return nil, errors.Wrapf(err, "crictl images")
