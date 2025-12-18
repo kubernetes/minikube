@@ -289,7 +289,7 @@ func populateCRIConfig(cr CommandRunner, socket string) error {
 
 // getCRIInfo returns current information
 func getCRIInfo(cr CommandRunner) (map[string]interface{}, error) {
-	args := []string{"crictl",timeoutOverrideFlag, "info"}
+	args := []string{"crictl", timeoutOverrideFlag, "info"}
 	c := exec.Command("sudo", args...)
 	rr, err := cr.RunCmd(c)
 	if err != nil {
