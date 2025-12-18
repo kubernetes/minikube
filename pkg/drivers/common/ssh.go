@@ -26,8 +26,12 @@ import (
 	"github.com/docker/machine/libmachine/log"
 )
 
+var (
+	retryDelay = time.Second
+)
+
 // WaitForSSHAccess waits until remote SSH server is responing.
-func WaitForSSHAccess(d drivers.Driver, duration time.Duration) error {
+func WaitForSSHAccess(d drivers.Driver) error {
 	ip, err := d.GetIP()
 	if err != nil {
 		return err
@@ -46,7 +50,7 @@ func WaitForSSHAccess(d drivers.Driver, duration time.Duration) error {
 		conn, err := net.Dial("tcp", addr)
 		if err != nil {
 			log.Debugf("Failed to dial: %v", err)
-			time.Sleep(duration)
+			time.Sleep(retryDelay)
 			continue
 		}
 
@@ -54,7 +58,7 @@ func WaitForSSHAccess(d drivers.Driver, duration time.Duration) error {
 		log.Debugf("Reading from SSH server %q", addr)
 		if _, err := conn.Read(make([]byte, 1)); err != nil && err != io.EOF {
 			log.Debugf("Failed to read: %v", err)
-			time.Sleep(duration)
+			time.Sleep(retryDelay)
 			continue
 		}
 
