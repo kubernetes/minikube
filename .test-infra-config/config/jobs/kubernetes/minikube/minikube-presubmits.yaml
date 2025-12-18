@@ -1,0 +1,298 @@
+presubmits:
+  kubernetes/minikube:
+  - name: pull-minikube-build
+    cluster: k8s-infra-prow-build
+    decorate: true
+    path_alias: "k8s.io/minikube"
+    always_run: true
+    labels:
+      preset-dind-enabled: "true"
+    annotations:
+      testgrid-dashboards: minikube-presubmits
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251209-855adc2699-master
+        command:
+        - runner.sh
+        args:
+        - bash
+        - -c
+        - make && ./out/minikube start --force-systemd --force && kubectl get pods -A
+        # we need privileged mode in order to do docker in docker
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            memory: "2000Mi"
+            cpu: 2
+          limits:
+            memory: "2000Mi"
+            cpu: 2
+  # name convention: integration-<driver>-<container-runtime>-<OS>-<arch>
+  - name: integration-kvm-docker-linux-x86
+    cluster: k8s-infra-prow-build
+    optional: true
+    decorate: true
+    path_alias: "k8s.io/minikube"
+    always_run: true
+    labels:
+      preset-dind-enabled: "true"
+      preset-service-account: "true"
+      preset-k8s-ssh: "true"
+    annotations:
+      testgrid-dashboards: minikube-presubmits
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251209-855adc2699-master
+        command:
+        - runner.sh
+        args:
+        - make
+        - integration-prow-kvm-docker-linux-x86
+        # we need privileged mode in order to do docker in docker
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            memory: 20Gi
+            cpu: 7
+          limits:
+            memory: 20Gi
+            cpu: 7
+  - name: integration-docker-docker-linux-arm
+    cluster: k8s-infra-prow-build
+    decorate: true
+    path_alias: "k8s.io/minikube"
+    always_run: true
+    labels:
+      preset-dind-enabled: "true"
+      preset-service-account: "true"
+      preset-k8s-ssh: "true"
+    annotations:
+      testgrid-dashboards: minikube-presubmits
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      containers:
+      - image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251209-855adc2699-master
+        command:
+        - runner.sh
+        args:
+        - make
+        - integration-prow-docker-docker-linux-arm
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            memory: 20Gi
+            cpu: 7
+          limits:
+            memory: 20Gi
+            cpu: 7
+  - name: integration-kvm-containerd-linux-x86
+    cluster: k8s-infra-prow-build
+    optional: true
+    decorate: true
+    path_alias: "k8s.io/minikube"
+    always_run: true
+    labels:
+      preset-dind-enabled: "true"
+      preset-service-account: "true"
+      preset-k8s-ssh: "true"
+    annotations:
+      testgrid-dashboards: minikube-presubmits
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251209-855adc2699-master
+        command:
+        - runner.sh
+        args:
+        - make
+        - integration-prow-kvm-containerd-linux-x86
+        # we need privileged mode in order to do docker in docker
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            memory: 20Gi
+            cpu: 7
+          limits:
+            memory: 20Gi
+            cpu: 7
+  - name: integration-kvm-crio-linux-x86
+    cluster: k8s-infra-prow-build
+    decorate: true
+    path_alias: "k8s.io/minikube"
+    always_run: true
+    labels:
+      preset-dind-enabled: "true"
+      preset-service-account: "true"
+      preset-k8s-ssh: "true"
+    annotations:
+      testgrid-dashboards: minikube-presubmits
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251209-855adc2699-master
+        command:
+        - runner.sh
+        args:
+        - make
+        - integration-prow-kvm-crio-linux-x86
+        # we need privileged mode in order to do docker in docker
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            memory: 20Gi
+            cpu: 7
+          limits:
+            memory: 20Gi
+            cpu: 7
+  - name: integration-docker-docker-linux-x86
+    cluster: k8s-infra-prow-build
+    decorate: true
+    path_alias: "k8s.io/minikube"
+    always_run: true
+    labels:
+      preset-dind-enabled: "true"
+      preset-service-account: "true"
+      preset-k8s-ssh: "true"
+    annotations:
+      testgrid-dashboards: minikube-presubmits
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251209-855adc2699-master
+        command:
+        - runner.sh
+        args:
+        - make
+        - integration-prow-docker-docker-linux-x86
+        # we need privileged mode in order to do docker in docker
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            memory: 20Gi
+            cpu: 7
+          limits:
+            memory: 20Gi
+            cpu: 7
+  - name: integration-docker-containerd-linux-x86
+    cluster: k8s-infra-prow-build
+    decorate: true
+    path_alias: "k8s.io/minikube"
+    always_run: true
+    labels:
+      preset-dind-enabled: "true"
+      preset-service-account: "true"
+      preset-k8s-ssh: "true"
+    annotations:
+      testgrid-dashboards: minikube-presubmits
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251209-855adc2699-master
+        command:
+        - runner.sh
+        args:
+        - make
+        - integration-prow-docker-containerd-linux-x86
+        # we need privileged mode in order to do docker in docker
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            memory: 20Gi
+            cpu: 7
+          limits:
+            memory: 20Gi
+            cpu: 7
+  - name: integration-docker-crio-linux-x86
+    cluster: k8s-infra-prow-build
+    decorate: true
+    path_alias: "k8s.io/minikube"
+    always_run: true
+    labels:
+      preset-dind-enabled: "true"
+      preset-service-account: "true"
+      preset-k8s-ssh: "true"
+    annotations:
+      testgrid-dashboards: minikube-presubmits
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251209-855adc2699-master
+        command:
+        - runner.sh
+        args:
+        - make
+        - integration-prow-docker-crio-linux-x86
+        # we need privileged mode in order to do docker in docker
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            memory: 20Gi
+            cpu: 7
+          limits:
+            memory: 20Gi
+            cpu: 7
+  - name: integration-none-docker-linux-x86
+    cluster: k8s-infra-prow-build
+    decorate: true
+    path_alias: "k8s.io/minikube"
+    always_run: true
+    labels:
+      preset-dind-enabled: "true"
+      preset-service-account: "true"
+      preset-k8s-ssh: "true"
+    annotations:
+      testgrid-dashboards: minikube-presubmits
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251209-855adc2699-master
+        command:
+        - runner.sh
+        args:
+        - make
+        - integration-prow-none-docker-linux-x86
+        # we need privileged mode in order to do docker in docker
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            memory: 20Gi
+            cpu: 7
+          limits:
+            memory: 20Gi
+            cpu: 7
+  - name: integration-vfkit-docker-macos-arm
+    cluster: k8s-infra-prow-build
+    optional: true # macos machine is precious, so only run when matainers explicitly trigger with /test <job_name>
+    decorate: true
+    path_alias: "k8s.io/minikube"
+    always_run: true
+    labels:
+      preset-dind-enabled: "true"
+      preset-service-account: "true"
+      preset-aws-ssh: "true" # enable aws ssh credentials
+    annotations:
+      testgrid-dashboards: minikube-presubmits
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251209-855adc2699-master
+        command:
+        - runner.sh
+        args:
+        - make
+        - integration-vfkit-docker-macos-arm
+        # we need privileged mode in order to do docker in docker
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            memory: 20Gi
+            cpu: 7
+          limits:
+            memory: 20Gi
+            cpu: 7
+      nodeSelector:
+        kubernetes.io/arch: arm64
