@@ -261,10 +261,12 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	out.Step(style.FileDownload, "Downloading Kubernetes {{.version}} preload ...", out.V{"version": k8sVersion})
 	state, ok := getPreloadState(k8sVersion, containerRuntime)
 	source := preloadSourceNone
+	// check if one of the sources are set to be used
 	if ok && state.source != preloadSourceNone {
 		source = state.source
 	}
 	url := remoteTarballURL(k8sVersion, containerRuntime, source)
+	klog.Infof("Downloading preload from %s", url)
 	var checksum []byte
 	var chksErr error
 	checksum, chksErr = getChecksum(source, k8sVersion, containerRuntime)
