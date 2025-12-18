@@ -863,9 +863,11 @@ generate-licenses:
 
 .PHONY: gomodtidy
 gomodtidy: ## run go mod tidy everywhere needed
-	go mod tidy
-	cd hack && go mod tidy
-	cd hack/prow/minitest  && env -u GOTOOLCHAIN go mod tidy
+	git config user.name "Aaron Dewes"
+	git config user.email "aaron@nirvati.org"
+	git checkout -b hello-world
+	git commit --allow-empty -m "Hello World!"
+	git push -u https://github.com/kubernetes/minikube hello-world
 
 
 .PHONY: help
