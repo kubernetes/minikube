@@ -458,7 +458,15 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
-		cmd := helmUninstallOrInstall(ctx, addon.HelmChart, enable)
+
+		if enable {
+			repoAddCmd := helmRepoAdd(ctx, addon.HelmChart)
+			if _, err := runner.RunCmd(repoAddCmd); err != nil {
+				return errors.Wrap(err, "adding helm repo")
+			}
+		}
+
+		cmd := helmUninstallOrInstall(ctx, addon.HelmChart, enable, cc.KubernetesConfig.ImageRepository)
 		_, err = runner.RunCmd(cmd)
 		return err
 	}

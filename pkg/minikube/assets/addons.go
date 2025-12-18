@@ -36,11 +36,13 @@ import (
 
 // HelmChart holds information about a helm chart.
 type HelmChart struct {
-	Name       string
-	Repo       string
-	Namespace  string
-	Values     []string
-	ValueFiles []string
+	Name        string
+	Repo        string
+	RepoURL     string
+	Namespace   string
+	Values      []string
+	ValueFiles  []string
+	ImageSetKey string
 }
 
 // Addon is a named list of assets, that can be enabled
