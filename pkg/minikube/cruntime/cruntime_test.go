@@ -428,6 +428,9 @@ func (f *FakeRunner) containerd(args []string, _ bool) (string, error) {
 // crictl is a fake implementation of crictl
 func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 	f.t.Logf("crictl args: %s", args)
+	if len(args) > 0 && strings.HasPrefix(args[0], "--timeout=") {
+		args = args[1:]
+	}
 	switch cmd := args[0]; cmd {
 	case "info":
 		return `{
