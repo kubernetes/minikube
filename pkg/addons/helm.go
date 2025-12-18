@@ -21,14 +21,52 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
+	"strings"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
+// ParsedImageRepo holds the parsed components of an image repository string
+type ParsedImageRepo struct {
+	Registry string
+	Org      string
+	Tag      string
+}
+
+// parseImageRepository parses an image repository string in format "registry/org[:tag]"
+// Examples:
+//   - ghcr.io/volcano-sh:latest -> {ghcr.io, volcano-sh, latest}
+//   - docker.io/volcanosh:v1.12.0 -> {docker.io, volcanosh, v1.12.0}
+//   - my-mirror.cn/volcanosh -> {my-mirror.cn, volcanosh, ""} (tag defaults to "latest")
+//
+// Returns an error if the format is invalid (missing org part).
+func parseImageRepository(imageRepo string) (*ParsedImageRepo, error) {
+	if imageRepo == "" {
+		return nil, nil
+	}
+
+	result := &ParsedImageRepo{Tag: "latest"}
+
+	if idx := strings.LastIndex(imageRepo, ":"); idx > strings.LastIndex(imageRepo, "/") {
+		result.Tag = imageRepo[idx+1:]
+		imageRepo = imageRepo[:idx]
+	}
+
+	parts := strings.SplitN(imageRepo, "/", 2)
+	if len(parts) != 2 || parts[1] == "" {
+		return nil, fmt.Errorf("invalid image repository format %q: must be registry/org[:tag] (e.g., ghcr.io/volcano-sh:latest)", imageRepo)
+	}
+
+	result.Registry = parts[0]
+	result.Org = parts[1]
+
+	return result, nil
+}
+
 // runs a helm install within the minikube vm or container based on the contents of chart *assets.HelmChart
-func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
+func installHelmChart(ctx context.Context, chart *assets.HelmChart, imageRepository string) *exec.Cmd {
 	args := []string{
 		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"helm", "upgrade", "--install", chart.Name, chart.Repo, "--create-namespace",
@@ -49,6 +87,46 @@ func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 		}
 	}
 
+	// Parse image repository and apply settings
+	if imageRepository != "" && chart.ImageNameKeys != nil {
+		parsed, err := parseImageRepository(imageRepository)
+		if err == nil && parsed != nil {
+			// Set registry
+			if chart.ImageSetKey != "" {
+				args = append(args, "--set", fmt.Sprintf("%s=%s", chart.ImageSetKey, parsed.Registry))
+			}
+
+			// Set image names with org prefix
+			for imageName, helmKey := range chart.ImageNameKeys {
+				args = append(args, "--set", fmt.Sprintf("%s=%s/%s", helmKey, parsed.Org, imageName))
+			}
+
+			// Set tag
+			if chart.TagSetKey != "" && parsed.Tag != "" {
+				args = append(args, "--set", fmt.Sprintf("%s=%s", chart.TagSetKey, parsed.Tag))
+			}
+		}
+	} else if imageRepository != "" && chart.ImageSetKey != "" {
+		// Fallback for charts without ImageNameKeys (simple registry override)
+		args = append(args, "--set", fmt.Sprintf("%s=%s", chart.ImageSetKey, imageRepository))
+	}
+
+	return exec.CommandContext(ctx, "sudo", args...)
+}
+
+// helmRepoAdd adds a helm repository before chart installation
+func helmRepoAdd(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
+	repoName := chart.Repo
+	if parts := strings.Split(chart.Repo, "/"); len(parts) > 0 {
+		repoName = parts[0]
+	}
+	if chart.RepoURL == "" {
+		return nil
+	}
+	args := []string{
+		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
+		"helm", "repo", "add", repoName, chart.RepoURL, "--force-update",
+	}
 	return exec.CommandContext(ctx, "sudo", args...)
 }
 
@@ -65,9 +143,9 @@ func uninstalllHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd
 }
 
 // based on enable will execute installHelmChart or uninstallHelmChart
-func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable bool) *exec.Cmd {
+func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable bool, imageRepository string) *exec.Cmd {
 	if enable {
-		return installHelmChart(ctx, chart)
+		return installHelmChart(ctx, chart, imageRepository)
 	}
 	return uninstalllHelmChart(ctx, chart)
 }

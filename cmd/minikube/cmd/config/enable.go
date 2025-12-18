@@ -86,6 +86,9 @@ You can view the list of minikube maintainers at: https://github.com/kubernetes/
 		if registries != "" {
 			viper.Set(config.AddonRegistries, registries)
 		}
+		if imageRepository != "" {
+			viper.Set(config.AddonImageRepository, imageRepository)
+		}
 		err = addons.SetAndSave(ClusterFlagValue(), addon, "true", options)
 		if err != nil && !errors.Is(err, addons.ErrSkipThisAddon) {
 			exit.Error(reason.InternalAddonEnable, "enable failed", err)
@@ -104,13 +107,15 @@ func isOfficialMaintainer(maintainer string) bool {
 }
 
 var (
-	images     string
-	registries string
+	images          string
+	registries      string
+	imageRepository string
 )
 
 func init() {
 	addonsEnableCmd.Flags().StringVar(&images, "images", "", "Images used by this addon. Separated by commas.")
 	addonsEnableCmd.Flags().StringVar(&registries, "registries", "", "Registries used by this addon. Separated by commas.")
+	addonsEnableCmd.Flags().StringVar(&imageRepository, "image-repository", "", "Alternative image repository to pull images from for Helm-based addons. Useful for users in China.")
 	addonsEnableCmd.Flags().BoolVar(&addons.Force, "force", false, "If true, will perform potentially dangerous operations. Use with discretion.")
 	addonsEnableCmd.Flags().BoolVar(&addons.Refresh, "refresh", false, "If true, pods might get deleted and restarted on addon enable")
 	AddonsCmd.AddCommand(addonsEnableCmd)
