@@ -327,7 +327,7 @@ var getChecksumGCS = func(k8sVersion, containerRuntime string) ([]byte, error) {
 // getChecksumGithub returns the SHA256 checksum of the preload tarball
 var getChecksumGithub = func(k8sVersion, containerRuntime string) ([]byte, error) {
 	klog.Infof("getting checksum for %s from github api...", TarballName(k8sVersion, containerRuntime))
-	assets, err := gh.ReleaseAssets(PreloadGitHubRepo, PreloadGitHubRepo, PreloadVersion)
+	assets, err := gh.ReleaseAssets(PreloadGitHubOrg, PreloadGitHubRepo, PreloadVersion)
 	if err != nil { // could not find release or rate limited
 		return nil, err
 	}
