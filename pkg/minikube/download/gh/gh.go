@@ -40,7 +40,7 @@ func ReleaseAssets(org, project, tag string) ([]*github.ReleaseAsset, error) {
 	if err != nil {
 		return nil, err
 	}
-	return rel.Assets, err
+	return rel.Assets, nil
 }
 
 // AssetSHA256 returns the  SHA-256 digest for the asset with the given name
