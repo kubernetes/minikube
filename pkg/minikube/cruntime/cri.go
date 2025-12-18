@@ -303,7 +303,7 @@ func getCRIInfo(cr CommandRunner) (map[string]interface{}, error) {
 
 // listCRIImages lists images using crictl
 func listCRIImages(cr CommandRunner) ([]ListImage, error) {
-	c := exec.Command("sudo", "crictl", "images", "--output", "json")
+	c := exec.Command("sudo", "crictl", "--timeout=10s", "images", "--output", "json")
 	rr, err := cr.RunCmd(c)
 	if err != nil {
 		return nil, errors.Wrapf(err, "crictl images")
