@@ -266,7 +266,7 @@ presubmits:
             cpu: 7
   - name: integration-vfkit-docker-macos-arm
     cluster: k8s-infra-prow-build
-    optional: true # macos machine is precious, so only run when matainers explicitly trigger with /test <job_name>
+    optional: true # macos machine is precious, so only run when maintainers explicitly trigger with /test <job_name>
     decorate: true
     path_alias: "k8s.io/minikube"
     always_run: true
