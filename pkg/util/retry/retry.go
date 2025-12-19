@@ -18,6 +18,7 @@ limitations under the License.
 package retry
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -26,25 +27,43 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const defaultMaxRetries = 113
-const logDedupWindow = 3*time.Second  // don't log the same error more than once within this time
+const (
+	defaultMaxRetries = 113
+	// logDedupWindow is the minimum time between identical log messages
+	logDedupWindow = 3 * time.Second
+	// logStuckThreshold is the time after which a persistent error is flagged as "maybe stuck"
+	logStuckThreshold = 10 * time.Second
+)
+
 var (
-	lastLogTime time.Time
-	lastLogErr  string
-	logMu       sync.Mutex
+	firstLogTime time.Time
+	lastLogTime  time.Time
+	lastLogErr   string
+	logMu        sync.Mutex
 )
 
 func notify(err error, d time.Duration) {
 	logMu.Lock()
-	if err.Error() == lastLogErr && time.Since(lastLogTime) < logDedupWindow {
+	if err.Error() != lastLogErr {
+		firstLogTime = time.Now()
+		lastLogErr = err.Error()
+	}
+
+	now := time.Now()
+	if time.Since(lastLogTime) < logDedupWindow {
+		lastLogTime = now
 		logMu.Unlock()
 		return
 	}
-	lastLogErr = err.Error()
-	lastLogTime = time.Now()
+	lastLogTime = now
+
+	msg := fmt.Sprintf("will retry after %s: %v", d, err)
+	if time.Since(firstLogTime) > logStuckThreshold {
+		msg += fmt.Sprintf(" - maybe stuck %s", time.Since(firstLogTime).Round(time.Second))
+	}
 	logMu.Unlock()
 
-	klog.Infof("will retry after %s: %v", d, err)
+	klog.Info(msg)
 }
 
 // Local is back-off retry for local connections
