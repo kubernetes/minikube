@@ -217,7 +217,7 @@ func checkURL(url string) error {
 		klog.Warningf("%s response: %v %+v", url, err, resp)
 		return errors.Wrap(err, "checkURL")
 	}
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusServiceUnavailable {
 		klog.Warningf("%s response: %v %+v", url, err, resp)
 		return &retry.RetriableError{
 			Err: fmt.Errorf("unexpected response code: %d", resp.StatusCode),
