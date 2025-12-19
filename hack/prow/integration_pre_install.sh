@@ -19,7 +19,7 @@ set -x
 
 OS="linux"
 ARCH="amd64"
-DRIVER="kvm2"
+DRIVER="${DRIVER:-kvm2}"
 CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-docker}"
 # in prow, if you want libvirtd to be run, you have to start a privileged container as root
 EXTRA_START_ARGS="" 
@@ -36,9 +36,11 @@ ARCH="$ARCH" hack/prow/installer/check_install_docker.sh || true
 sudo adduser $(whoami) docker || true
 
 
-sudo apt-get update
-sudo apt-get -y install qemu-system qemu-kvm libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
-sudo adduser $(whoami) libvirt || true
+if [ "${DRIVER}" == "kvm2" ] || [ "${DRIVER}" == "qemu2" ]; then
+    sudo apt-get update
+    sudo apt-get -y install qemu-system qemu-kvm libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
+    sudo adduser $(whoami) libvirt || true
 
-# start libvirtd 
-sudo systemctl start libvirtd
+    # start libvirtd 
+    sudo systemctl start libvirtd
+fi
