@@ -64,11 +64,11 @@ func notify(err error, d time.Duration) {
 
 	if logCount > maxDuplicateLogEntries {
 		logMu.Unlock()
-		klog.Infof("will retry after %s: stuck on same error as above...", d)
+		klog.Infof("will retry after %s: stuck on same error as above...", d.Round(10*time.Millisecond))
 		return
 	}
 
-	msg := fmt.Sprintf("will retry after %s: %v", d, err)
+	msg := fmt.Sprintf("will retry after %s: %v", d.Round(10*time.Millisecond), err)
 	if time.Since(firstLogTime) > logStuckThreshold {
 		msg += fmt.Sprintf(" - maybe stuck %s", time.Since(firstLogTime).Round(time.Second))
 	}
