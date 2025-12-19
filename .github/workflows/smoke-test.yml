@@ -44,19 +44,23 @@ jobs:
           - name: qemu-docker-macos-15-x86
             driver: qemu
             os: macos-15-intel
-            network_flag: --network socket_vmnet
+            start_flags: --network socket_vmnet --force
+            sudo: "sudo"
           - name: vfkit-docker-macos-15-x86
             driver: vfkit
             os: macos-15-intel
-            network_flag: --network vmnet-shared
+            start_flags: --network vmnet-shared --force
+            sudo: "sudo"
           - name: docker-docker-ubuntu-24.04-x86
             driver: docker
             os: ubuntu-24.04
-            network_flag: ""
+            start_flags: ""
+            sudo: ""
           - name: docker-docker-ubuntu-24.04-arm
             driver: docker
             os: ubuntu-24.04-arm
-            network_flag: ""
+            start_flags: ""
+            sudo: ""
     steps:
       - id: info-block
         uses: medyagh/info-block@main
@@ -105,13 +109,13 @@ jobs:
           sudo pfctl -s all || true
       - name: Start minikube (1st boot)
         run: |
-          ./out/minikube start \
+          ${{ matrix.sudo }} ./out/minikube start \
+              ${{ env.LOG_ARGS }} \
               --no-kubernetes \
               --cpus 2 \
               --memory 3gb \
               --driver ${{ matrix.driver }} \
-              ${{ matrix.network_flag }} \
-              ${{ env.LOG_ARGS }}
+              ${{ matrix.start_flags }}
       - name: Inspect host after test (macos)
         if: always() && contains(matrix.os, 'macos')
         run: |
@@ -126,17 +130,17 @@ jobs:
       - name: Inspect minikube
         if: always()
         run: |
-          tree -h ~/.minikube
+          ${{ matrix.sudo }} tree -h ~/.minikube
           machine="$HOME/.minikube/machines/minikube"
-          machine_logs=$(find "$machine" -name "*.log")
+          machine_logs=$(${{ matrix.sudo }} find "$machine" -name "*.log")
           minikube_logs="$HOME/.minikube/logs/lastStart.txt"
           for f in $machine_logs $minikube_logs /var/db/dhcpd_leases; do
             echo "==> $f <=="
-            head -n 1000 "$f" || true
+            ${{ matrix.sudo }} head -n 1000 "$f" || true
           done
       - name: Stop minikube
-        run: ./out/minikube stop ${{ env.LOG_ARGS }}
+        run: ${{ matrix.sudo }} ./out/minikube stop ${{ env.LOG_ARGS }}
       - name: Start minikube again (2nd boot)
-        run: ./out/minikube start ${{ env.LOG_ARGS }}
+        run: ${{ matrix.sudo }} ./out/minikube start ${{ env.LOG_ARGS }} ${{ matrix.start_flags }}
       - name: Delete minikube
-        run: ./out/minikube delete ${{ env.LOG_ARGS }}
+        run: ${{ matrix.sudo }} ./out/minikube delete ${{ env.LOG_ARGS }}
