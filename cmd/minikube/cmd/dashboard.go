@@ -216,7 +216,7 @@ func checkURL(url string) error {
 	if err != nil {
 		return errors.Wrapf(err, "hitting URL:%q\n response: %+v", url, resp)
 	}
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusServiceUnavailable {
+	if resp.StatusCode != http.StatusOK {
 		return &retry.RetriableError{
 			Err: fmt.Errorf("unexpected response code: %d", resp.StatusCode),
 		}
