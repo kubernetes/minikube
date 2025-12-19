@@ -137,11 +137,6 @@ var dashboardCmd = &cobra.Command{
 }
 
 func printDashboardToken(kubectlVersion, binaryURL, cname, ns string) {
-	if err := ensureDashboardUser(kubectlVersion, binaryURL, cname, ns); err != nil {
-		out.WarningT("Unable to ensure dashboard admin user: {{.error}}", out.V{"error": err})
-		return
-	}
-
 	// 5 = the previous max-attempts for retry.Expo
 	token, err := getDashboardToken(kubectlVersion, binaryURL, cname, ns, 5)
 	if err != nil {
@@ -152,35 +147,9 @@ func printDashboardToken(kubectlVersion, binaryURL, cname, ns string) {
 	out.Ln(token)
 }
 
-func ensureDashboardUser(kubectlVersion, binaryURL, cname, ns string) error {
-	sa := "minikube-dashboard"
-	// 1. Create ServiceAccount
-	if _, err := runKubectl(kubectlVersion, binaryURL, cname, ns, "create", "sa", sa); err != nil {
-		if !strings.Contains(err.Error(), "AlreadyExists") {
-			return errors.Wrap(err, "create sa")
-		}
-	}
 
-	// 2. Create ClusterRoleBinding
-	// We need to use "apply" or check existence to be safe / idempotent? 
-	// "create clusterrolebinding ... --dry-run=client -o yaml | kubectl apply -f -" is a common pattern but complex to run via exec.
-	// just "create" and ignore "AlreadyExists" is simpler for this CLI tool.
-	crbName := "minikube-dashboard-binding"
-	
-	// We must run this in default namespace or just cluster-wide. Namespace arg for clusterrolebinding creation is for the object itself (not namespaced) but context needs namespace?
-	// Actually CRB is cluster restricted.
-	// The Subject is namespaced.
-	args := []string{"create", "clusterrolebinding", crbName, "--clusterrole=cluster-admin", fmt.Sprintf("--serviceaccount=%s:%s", ns, sa)}
-	if _, err := runKubectl(kubectlVersion, binaryURL, cname, ns, args...); err != nil {
-		if !strings.Contains(err.Error(), "AlreadyExists") {
-			return errors.Wrap(err, "create crb")
-		}
-	}
-	return nil
-}
-
-func runKubectl(kubectlVersion, binaryURL, cname, ns string, args ...string) (string, error) {
-	fullArgs := append([]string{"--context", cname, "-n", ns}, args...)
+func runKubectl(kubectlVersion, binaryURL, cxtName, ns string, args ...string) (string, error) {
+	fullArgs := append([]string{"--context", cxtName, "-n", ns}, args...)
 	var cmd *exec.Cmd
 	var err error
 	if kubectl, errLookup := exec.LookPath("kubectl"); errLookup == nil {
@@ -195,16 +164,16 @@ func runKubectl(kubectlVersion, binaryURL, cname, ns string, args ...string) (st
 	return string(out), nil
 }
 
-func getDashboardToken(kubectlVersion, binaryURL, cname, ns string, attempts int) (string, error) {
-	sa := "minikube-dashboard"
-	
-	// kubectl create token ...
-	output, err := runKubectl(kubectlVersion, binaryURL, cname, ns, "create", "token", sa, "--duration=24h")
+func getDashboardToken(kubectlVersion, binaryURL, ctxName, ns string, attempts int) (string, error) {
+	sa := "admin-user" 
+	// docs https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md#creating-a-service-account
+	// kubectl -n kubernetes-dashboard create token admin-user
+	output, err := runKubectl(kubectlVersion, binaryURL, ctxName, ns, "create", "token", sa, "--duration=24h")
 	if err != nil {
 		// If the SA doesn't exist (race?), try retry?
 		if strings.Contains(output, "not found") && attempts > 0 {
 			time.Sleep(500 * time.Millisecond)
-			return getDashboardToken(kubectlVersion, binaryURL, cname, ns, attempts-1)
+			return getDashboardToken(kubectlVersion, binaryURL, ctxName, ns, attempts-1)
 		}
 		return "", errors.Wrapf(err, "kubectl create token: %s", output)
 	}
