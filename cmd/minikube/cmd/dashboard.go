@@ -25,6 +25,7 @@ import (
 	"os/user"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -91,7 +92,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		ns := "kubernetes-dashboard"
-		svc := "kubernetes-dashboard-web"
+		svc := "kubernetes-dashboard-kong-proxy"
 		out.ErrT(style.Verifying, "Verifying dashboard health ...")
 		checkSVC := func() error { return service.CheckService(cname, ns, svc) }
 		// for slow machines or parallels in CI to avoid #7503
@@ -112,6 +113,8 @@ var dashboardCmd = &cobra.Command{
 			exit.Message(reason.SvcURLTimeout, "{{.url}} is not accessible: {{.error}}", out.V{"url": url, "error": err})
 		}
 
+		printDashboardToken(kubectlVersion, co.Config.BinaryMirror, cname, ns)
+
 		// check if current user is root
 		user, err := user.Current()
 		if err != nil {
@@ -131,6 +134,81 @@ var dashboardCmd = &cobra.Command{
 			klog.Errorf("Wait: %v", err)
 		}
 	},
+}
+
+func printDashboardToken(kubectlVersion, binaryURL, cname, ns string) {
+	if err := ensureDashboardUser(kubectlVersion, binaryURL, cname, ns); err != nil {
+		out.WarningT("Unable to ensure dashboard admin user: {{.error}}", out.V{"error": err})
+		return
+	}
+
+	// 5 = the previous max-attempts for retry.Expo
+	token, err := getDashboardToken(kubectlVersion, binaryURL, cname, ns, 5)
+	if err != nil {
+		out.WarningT("Unable to generate dashboard token: {{.error}}", out.V{"error": err})
+		return
+	}
+	out.Styled(style.Permissions, "Dashboard Token:")
+	out.Ln(token)
+}
+
+func ensureDashboardUser(kubectlVersion, binaryURL, cname, ns string) error {
+	sa := "minikube-dashboard"
+	// 1. Create ServiceAccount
+	if _, err := runKubectl(kubectlVersion, binaryURL, cname, ns, "create", "sa", sa); err != nil {
+		if !strings.Contains(err.Error(), "AlreadyExists") {
+			return errors.Wrap(err, "create sa")
+		}
+	}
+
+	// 2. Create ClusterRoleBinding
+	// We need to use "apply" or check existence to be safe / idempotent? 
+	// "create clusterrolebinding ... --dry-run=client -o yaml | kubectl apply -f -" is a common pattern but complex to run via exec.
+	// just "create" and ignore "AlreadyExists" is simpler for this CLI tool.
+	crbName := "minikube-dashboard-binding"
+	
+	// We must run this in default namespace or just cluster-wide. Namespace arg for clusterrolebinding creation is for the object itself (not namespaced) but context needs namespace?
+	// Actually CRB is cluster restricted.
+	// The Subject is namespaced.
+	args := []string{"create", "clusterrolebinding", crbName, "--clusterrole=cluster-admin", fmt.Sprintf("--serviceaccount=%s:%s", ns, sa)}
+	if _, err := runKubectl(kubectlVersion, binaryURL, cname, ns, args...); err != nil {
+		if !strings.Contains(err.Error(), "AlreadyExists") {
+			return errors.Wrap(err, "create crb")
+		}
+	}
+	return nil
+}
+
+func runKubectl(kubectlVersion, binaryURL, cname, ns string, args ...string) (string, error) {
+	fullArgs := append([]string{"--context", cname, "-n", ns}, args...)
+	var cmd *exec.Cmd
+	var err error
+	if kubectl, errLookup := exec.LookPath("kubectl"); errLookup == nil {
+		cmd = exec.Command(kubectl, fullArgs...)
+	} else if cmd, err = KubectlCommand(kubectlVersion, binaryURL, fullArgs...); err != nil {
+		return "", err
+	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), err
+	}
+	return string(out), nil
+}
+
+func getDashboardToken(kubectlVersion, binaryURL, cname, ns string, attempts int) (string, error) {
+	sa := "minikube-dashboard"
+	
+	// kubectl create token ...
+	output, err := runKubectl(kubectlVersion, binaryURL, cname, ns, "create", "token", sa, "--duration=24h")
+	if err != nil {
+		// If the SA doesn't exist (race?), try retry?
+		if strings.Contains(output, "not found") && attempts > 0 {
+			time.Sleep(500 * time.Millisecond)
+			return getDashboardToken(kubectlVersion, binaryURL, cname, ns, attempts-1)
+		}
+		return "", errors.Wrapf(err, "kubectl create token: %s", output)
+	}
+	return strings.TrimSpace(output), nil
 }
 
 // kubectlProxy runs "kubectl proxy", returning host:port
@@ -207,7 +285,7 @@ func readByteWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, er
 // dashboardURL generates a URL for accessing the dashboard service
 func dashboardURL(addr string, ns string, svc string) string {
 	// Reference: https://github.com/kubernetes/dashboard/wiki/Accessing-Dashboard---1.7.X-and-above
-	return fmt.Sprintf("http://%s/api/v1/namespaces/%s/services/http:%s:/proxy/", addr, ns, svc)
+	return fmt.Sprintf("http://%s/api/v1/namespaces/%s/services/https:%s:443/proxy/", addr, ns, svc)
 }
 
 // checkURL checks if a URL returns 200 HTTP OK

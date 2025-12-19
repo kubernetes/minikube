@@ -158,7 +158,7 @@ var Addons = map[string]*Addon{
 		Repo:          "kubernetes-dashboard",
 		RepositoryURL: "https://kubernetes.github.io/dashboard/",
 		Namespace:     "kubernetes-dashboard",
-		Values:        []string{"nginx.enabled=false", "cert-manager.enabled=false", "kong.enabled=false", "metrics-server.enabled=false"},
+		Values:        []string{"nginx.enabled=false", "cert-manager.enabled=false", "metrics-server.enabled=false"},
 	}),
 	"default-storageclass": NewAddon([]*BinAsset{
 		MustBinAsset(addons.DefaultStorageClassAssets,
