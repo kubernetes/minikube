@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/pkg/errors"
@@ -91,6 +92,7 @@ var dashboardCmd = &cobra.Command{
 			}
 		}
 
+
 		ns := "kubernetes-dashboard"
 		svc := "kubernetes-dashboard-kong-proxy"
 		out.ErrT(style.Verifying, "Verifying dashboard health ...")
@@ -98,6 +100,32 @@ var dashboardCmd = &cobra.Command{
 		// for slow machines or parallels in CI to avoid #7503
 		if err = retry.Expo(checkSVC, 100*time.Microsecond, time.Minute*10); err != nil {
 			exit.Message(reason.SvcCheckTimeout, "dashboard service is not running: {{.error}}", out.V{"error": err})
+		}
+
+		// Attempt to finding the service URL directly (e.g. NodePort)
+		// If found, we usage it directly and skip the proxy
+		// The user requested HTTPS URL
+		tmpl := template.Must(template.New("svc-template").Parse("https://{{.IP}}:{{.Port}}"))
+		urls, err := service.GetServiceURLs(co.API, cname, ns, tmpl)
+		if err == nil {
+			for _, u := range urls {
+				if u.Name == svc && len(u.URLs) > 0 {
+					url := u.URLs[0]
+					printDashboardToken(kubectlVersion, co.Config.BinaryMirror, cname, ns)
+					if dashboardURLMode {
+						out.Ln(url)
+					} else {
+						out.Styled(style.Celebrate, "Opening {{.url}} in your default browser...", out.V{"url": url})
+						if err = browser.OpenURL(url); err != nil {
+							exit.Message(reason.HostBrowser, "failed to open browser: {{.error}}", out.V{"error": err})
+						}
+					}
+					return
+				}
+			}
+		} else {
+			// Log error but proceed to proxy
+			klog.Infof("GetServiceURLs failed: %v", err)
 		}
 
 		out.ErrT(style.Launch, "Launching proxy ...")
