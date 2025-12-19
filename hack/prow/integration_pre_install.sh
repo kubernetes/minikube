@@ -29,10 +29,12 @@ EXTRA_TEST_ARGS=""
 # install runtime if not present
 if [ "${CONTAINER_RUNTIME}" == "containerd" ]; then
     ARCH="$ARCH" hack/prow/installer/check_install_containerd.sh || true
-else
-    ARCH="$ARCH" hack/prow/installer/check_install_docker.sh || true
-    sudo adduser $(whoami) docker || true
 fi
+
+# instsll docker for all of them
+ARCH="$ARCH" hack/prow/installer/check_install_docker.sh || true
+sudo adduser $(whoami) docker || true
+
 
 sudo apt-get update
 sudo apt-get -y install qemu-system qemu-kvm libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
