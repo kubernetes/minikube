@@ -33,8 +33,10 @@ const (
 	logDedupWindow = 3 * time.Second
 	// logStuckThreshold is the time after which a persistent error is flagged as "maybe stuck"
 	logStuckThreshold = 30 * time.Second
-	// maxDuplicateLogEntries is the maximum number of times a specific error is logged before suppressing it
-	maxDuplicateLogEntries = 10
+	// maxDuplicateLogEntries is the maximum number of times a specific error is logged before displaying a shorter message
+	maxDuplicateLogEntries = 5
+	// logRoundPrecision is the precision used for rounding duration in logs
+	logRoundPrecision = 100 * time.Millisecond
 )
 
 var (
@@ -62,15 +64,15 @@ func notify(err error, d time.Duration) {
 	lastLogTime = now
 	logCount++
 
-	if logCount > maxDuplicateLogEntries {
+	if logCount > maxDuplicateLogEntries { // do not repeat the error message after maxDuplicateLogEntries
 		logMu.Unlock()
-		klog.Infof("will retry after %s: stuck on same error as above...", d.Round(10*time.Millisecond))
+		klog.Infof("will retry after %s: stuck on same error as above for %s...", d.Round(logRoundPrecision), time.Since(firstLogTime).Round(logRoundPrecision))
 		return
 	}
 
-	msg := fmt.Sprintf("will retry after %s: %v", d.Round(10*time.Millisecond), err)
-	if time.Since(firstLogTime) > logStuckThreshold {
-		msg += fmt.Sprintf(" - maybe stuck %s", time.Since(firstLogTime).Round(time.Second))
+	msg := fmt.Sprintf("will retry after %s: %v", d.Round(logRoundPrecision), err)
+	if time.Since(firstLogTime) > logStuckThreshold { // let user know if the error is repeated within logStuckThreshold
+		msg += fmt.Sprintf(" (duplicate log for %s)", time.Since(firstLogTime).Round(logRoundPrecision))
 	}
 	logMu.Unlock()
 

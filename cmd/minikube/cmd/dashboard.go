@@ -214,11 +214,9 @@ func dashboardURL(addr string, ns string, svc string) string {
 func checkURL(url string) error {
 	resp, err := http.Get(url)
 	if err != nil {
-		klog.Warningf("%s response: %v %+v", url, err, resp)
-		return errors.Wrap(err, "checkURL")
+		return errors.Wrapf(err, "hitting URL:%q\n response: %+v", url, resp)
 	}
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusServiceUnavailable {
-		klog.Warningf("%s response: %v %+v", url, err, resp)
 		return &retry.RetriableError{
 			Err: fmt.Errorf("unexpected response code: %d", resp.StatusCode),
 		}
