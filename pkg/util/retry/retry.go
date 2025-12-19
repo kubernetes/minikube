@@ -29,14 +29,19 @@ import (
 
 const (
 	defaultMaxRetries = 113
+	// logRoundPrecision is the precision used for rounding duration in logs
+	logRoundPrecision = 100 * time.Millisecond
+)
+
+var (
 	// logDedupWindow is the minimum time between identical log messages
 	logDedupWindow = 3 * time.Second
 	// logStuckThreshold is the time after which a persistent error is flagged as "maybe stuck"
 	logStuckThreshold = 30 * time.Second
 	// maxDuplicateLogEntries is the maximum number of times a specific error is logged before displaying a shorter message
 	maxDuplicateLogEntries = 5
-	// logRoundPrecision is the precision used for rounding duration in logs
-	logRoundPrecision = 100 * time.Millisecond
+	// timeNow is the func used for testing
+	timeNow = time.Now
 )
 
 var (
@@ -50,13 +55,13 @@ var (
 func notify(err error, d time.Duration) {
 	logMu.Lock()
 	if err.Error() != lastLogErr {
-		firstLogTime = time.Now()
+		firstLogTime = timeNow()
 		lastLogErr = err.Error()
 		logCount = 0
 	}
 
-	now := time.Now()
-	if time.Since(lastLogTime) < logDedupWindow {
+	now := timeNow()
+	if now.Sub(lastLogTime) < logDedupWindow {
 		lastLogTime = now
 		logMu.Unlock()
 		return
@@ -66,13 +71,13 @@ func notify(err error, d time.Duration) {
 
 	if logCount > maxDuplicateLogEntries { // do not repeat the error message after maxDuplicateLogEntries
 		logMu.Unlock()
-		klog.Infof("will retry after %s: stuck on same error as above for %s...", d.Round(logRoundPrecision), time.Since(firstLogTime).Round(logRoundPrecision))
+		klog.Infof("will retry after %s: stuck on same error as above for %s...", d.Round(logRoundPrecision), timeNow().Sub(firstLogTime).Round(logRoundPrecision))
 		return
 	}
 
 	msg := fmt.Sprintf("will retry after %s: %v", d.Round(logRoundPrecision), err)
-	if time.Since(firstLogTime) > logStuckThreshold { // let user know if the error is repeated within logStuckThreshold
-		msg += fmt.Sprintf(" (duplicate log for %s)", time.Since(firstLogTime).Round(logRoundPrecision))
+	if timeNow().Sub(firstLogTime) > logStuckThreshold { // let user know if the error is repeated within logStuckThreshold
+		msg += fmt.Sprintf(" (duplicate log for %s)", timeNow().Sub(firstLogTime).Round(logRoundPrecision))
 	}
 	logMu.Unlock()
 
