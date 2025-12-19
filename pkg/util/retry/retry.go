@@ -18,6 +18,7 @@ limitations under the License.
 package retry
 
 import (
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -27,7 +28,22 @@ import (
 
 const defaultMaxRetries = 113
 
+var (
+	lastLogTime time.Time
+	lastLogErr  string
+	logMu       sync.Mutex
+)
+
 func notify(err error, d time.Duration) {
+	logMu.Lock()
+	if err.Error() == lastLogErr && time.Since(lastLogTime) < 2*time.Second {
+		logMu.Unlock()
+		return
+	}
+	lastLogErr = err.Error()
+	lastLogTime = time.Now()
+	logMu.Unlock()
+
 	klog.Infof("will retry after %s: %v", d, err)
 }
 

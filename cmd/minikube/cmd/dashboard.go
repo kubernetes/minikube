@@ -213,8 +213,8 @@ func dashboardURL(addr string, ns string, svc string) string {
 // checkURL checks if a URL returns 200 HTTP OK
 func checkURL(url string) error {
 	resp, err := http.Get(url)
-	klog.Infof("%s response: %v %+v", url, err, resp)
 	if err != nil {
+		klog.Warningf("%s response: %v %+v", url, err, resp)
 		return errors.Wrap(err, "checkURL")
 	}
 	if resp.StatusCode != http.StatusOK {
