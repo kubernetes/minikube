@@ -39,6 +39,10 @@ var (
 	//go:embed storage-provisioner-rancher/*.tmpl
 	StorageProvisionerRancherAssets embed.FS
 
+	// DashboardAssets assets for dashboard addon
+	//go:embed dashboard/*.yaml
+	DashboardAssets embed.FS
+
 	// EfkAssets assets for efk addon
 	//go:embed efk/*.tmpl efk/*.yaml
 	EfkAssets embed.FS

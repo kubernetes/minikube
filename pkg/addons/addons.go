@@ -460,7 +460,9 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		defer cancel()
 		cmd := helmUninstallOrInstall(ctx, addon.HelmChart, enable)
 		_, err = runner.RunCmd(cmd)
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	// on the first attempt try without force, but on subsequent attempts use force
@@ -494,11 +496,22 @@ func verifyAddonStatus(cc *config.ClusterConfig, nameSpace string, val string, o
 	return verifyAddonStatusInternal(cc, nameSpace, val, ns, options)
 }
 
-func verifyAddonStatusInternal(cc *config.ClusterConfig, nameSpace string, val string, ns string, _ *run.CommandOptions) error {
+func verifyAddonStatusInternal(cc *config.ClusterConfig, nameSpace string, val string, ns string, options *run.CommandOptions) error {
 	klog.Infof("Verifying addon %s=%s in %q", nameSpace, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", nameSpace)
+	}
+
+	api, err := machine.NewAPIClient(options)
+	if err != nil {
+		return errors.Wrap(err, "machine client")
+	}
+	defer api.Close()
+
+	if !machine.IsRunning(api, cc.Name) {
+		klog.Infof("cluster %q is not running, skipping verification of %s", cc.Name, nameSpace)
+		return nil
 	}
 
 	label, ok := addonPodLabels[nameSpace]

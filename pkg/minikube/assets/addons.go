@@ -153,7 +153,14 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"AutoPauseHook": "gcr.io",
 	}, nil),
-	"dashboard": NewAddon([]*BinAsset{}, false, "dashboard", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/dashboard/", nil, nil, &HelmChart{
+	"dashboard": NewAddon([]*BinAsset{
+		MustBinAsset(
+			addons.DashboardAssets,
+			"dashboard/dashboard-admin.yaml",
+			vmpath.GuestAddonsDir,
+			"dashboard-admin.yaml",
+			"0640"),
+	}, false, "dashboard", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/dashboard/", nil, nil, &HelmChart{
 		Name:          "kubernetes-dashboard",
 		Repo:          "kubernetes-dashboard",
 		RepositoryURL: "https://kubernetes.github.io/dashboard/",
