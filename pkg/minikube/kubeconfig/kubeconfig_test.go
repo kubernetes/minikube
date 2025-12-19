@@ -778,7 +778,7 @@ func TestGetKubeConfigPath(t *testing.T) {
 	// Ensure $HOME expands sensibly on Windows where HOME may be unset.
 	if runtime.GOOS == "windows" && os.Getenv("HOME") == "" {
 		if h, err := os.UserHomeDir(); err == nil && h != "" {
-			_ = os.Setenv("HOME", h)
+			t.Setenv("HOME", h)
 		}
 	}
 
