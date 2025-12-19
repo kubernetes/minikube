@@ -157,6 +157,10 @@ type Config struct {
 	InsecureRegistry []string
 	// GPUs add GPU devices to the container
 	GPUs string
+	// StorageRoot custom storage root directory for container runtime
+	StorageRoot string
+	// StorageRunRoot custom storage state directory for container runtime
+	StorageRunRoot string
 }
 
 // ListContainersOptions are the options to use for listing containers
@@ -238,6 +242,8 @@ func New(c Config) (Manager, error) {
 			ImageRepository:   c.ImageRepository,
 			KubernetesVersion: c.KubernetesVersion,
 			Init:              sm,
+			StorageRoot:       c.StorageRoot,
+			StorageRunRoot:    c.StorageRunRoot,
 		}, nil
 	case "containerd":
 		return &Containerd{

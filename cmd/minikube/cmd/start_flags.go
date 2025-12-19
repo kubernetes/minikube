@@ -146,6 +146,8 @@ const (
 	staticIP                = "static-ip"
 	gpus                    = "gpus"
 	autoPauseInterval       = "auto-pause-interval"
+	containerStorageRoot    = "container-storage-root"
+	containerStorageRunRoot = "container-storage-runroot"
 )
 
 var (
@@ -211,6 +213,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
 	startCmd.Flags().StringP(gpus, "g", "", "Allow pods to use your GPUs. Options include: [all,nvidia,amd] (Docker driver with Docker container-runtime only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
+	startCmd.Flags().String(containerStorageRoot, "", "Absolute path for container runtime storage root directory (e.g. /host-containers/storage for CRI-O). Works with CRI-O and other compatible runtimes.")
+	startCmd.Flags().String(containerStorageRunRoot, "", "Absolute path for container runtime storage state directory (e.g. /host-containers/storage for CRI-O). Works with CRI-O and other compatible runtimes.")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -653,11 +657,51 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		MultiNodeRequested: viper.GetInt(nodes) > 1 || viper.GetBool(ha),
 		GPUs:               viper.GetString(gpus),
 		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
+		ContainerStorageRoot:    viper.GetString(containerStorageRoot),
+		ContainerStorageRunRoot: viper.GetString(containerStorageRunRoot),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 
 	if viper.GetString(mountString) != "" && driver.IsKIC(drvName) {
 		cc.ContainerVolumeMounts = []string{viper.GetString(mountString)}
+	}
+
+	// Validate and warn about custom storage paths
+	if cc.ContainerStorageRoot != "" || cc.ContainerStorageRunRoot != "" {
+		// Validate that custom storage paths are only used with supported runtimes
+		if rtime != constants.CRIO && rtime != "cri-o" {
+			out.WarningT("Custom container storage paths (--container-storage-root, --container-storage-runroot) are currently only supported with CRI-O runtime. The specified paths may be ignored.")
+		}
+
+		// Validate paths are absolute
+		if cc.ContainerStorageRoot != "" && !strings.HasPrefix(cc.ContainerStorageRoot, "/") {
+			exit.Message(reason.Usage, "--container-storage-root must be an absolute path, got: {{.path}}", out.V{"path": cc.ContainerStorageRoot})
+		}
+		if cc.ContainerStorageRunRoot != "" && !strings.HasPrefix(cc.ContainerStorageRunRoot, "/") {
+			exit.Message(reason.Usage, "--container-storage-runroot must be an absolute path, got: {{.path}}", out.V{"path": cc.ContainerStorageRunRoot})
+		}
+
+		// Automatically add storage path mounts for KIC drivers
+		if driver.IsKIC(drvName) {
+			if cc.ContainerVolumeMounts == nil {
+				cc.ContainerVolumeMounts = []string{}
+			}
+			if cc.ContainerStorageRoot != "" {
+				// Mount host storage directory to the same path in container
+				cc.ContainerVolumeMounts = append(cc.ContainerVolumeMounts, fmt.Sprintf("%s:%s", cc.ContainerStorageRoot, cc.ContainerStorageRoot))
+			}
+			if cc.ContainerStorageRunRoot != "" {
+				// Mount host runroot directory to the same path in container
+				cc.ContainerVolumeMounts = append(cc.ContainerVolumeMounts, fmt.Sprintf("%s:%s", cc.ContainerStorageRunRoot, cc.ContainerStorageRunRoot))
+			}
+		}
+
+		// Informational message about the feature
+		if rtime == constants.CRIO || rtime == "cri-o" {
+			if driver.IsKIC(drvName) {
+				out.Styled(style.Tip, "Using custom storage paths with {{.runtime}}. Storage directories will be automatically mounted.", out.V{"runtime": rtime})
+			}
+		}
 	}
 
 	if driver.IsKIC(drvName) {
@@ -883,6 +927,8 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.SocketVMnetClientPath, socketVMnetClientPath)
 	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 	updateDurationFromFlag(cmd, &cc.AutoPauseInterval, autoPauseInterval)
+	updateStringFromFlag(cmd, &cc.ContainerStorageRoot, containerStorageRoot)
+	updateStringFromFlag(cmd, &cc.ContainerStorageRunRoot, containerStorageRunRoot)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		kubeVer, err := getKubernetesVersion(existing)

@@ -263,7 +263,13 @@ func handleNoKubernetes(starter Starter) (bool, error) {
 	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion {
 		// Stop existing Kubernetes node if applicable.
 		if starter.StopK8s {
-			cr, err := cruntime.New(cruntime.Config{Type: starter.Cfg.KubernetesConfig.ContainerRuntime, Runner: starter.Runner, Socket: starter.Cfg.KubernetesConfig.CRISocket})
+			cr, err := cruntime.New(cruntime.Config{
+				Type:           starter.Cfg.KubernetesConfig.ContainerRuntime,
+				Runner:         starter.Runner,
+				Socket:         starter.Cfg.KubernetesConfig.CRISocket,
+				StorageRoot:    starter.Cfg.ContainerStorageRoot,
+				StorageRunRoot: starter.Cfg.ContainerStorageRunRoot,
+			})
 			if err != nil {
 				return false, err
 			}
@@ -418,6 +424,8 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		ImageRepository:   cc.KubernetesConfig.ImageRepository,
 		KubernetesVersion: kv,
 		InsecureRegistry:  cc.InsecureRegistry,
+		StorageRoot:       cc.ContainerStorageRoot,
+		StorageRunRoot:    cc.ContainerStorageRunRoot,
 	}
 	if cc.GPUs != "" {
 		co.GPUs = cc.GPUs

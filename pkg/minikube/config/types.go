@@ -109,6 +109,8 @@ type ClusterConfig struct {
 	SSHAgentPID             int
 	GPUs                    string
 	AutoPauseInterval       time.Duration // Specifies interval of time to wait before checking if cluster should be paused
+	ContainerStorageRoot    string        // Custom storage root directory for container runtime (e.g., CRI-O root path)
+	ContainerStorageRunRoot string        // Custom storage state directory for container runtime (e.g., CRI-O runroot path)
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
