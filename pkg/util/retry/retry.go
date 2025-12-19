@@ -27,7 +27,7 @@ import (
 )
 
 const defaultMaxRetries = 113
-
+const logDedupWindow = 3*time.Second  // don't log the same error more than once within this time
 var (
 	lastLogTime time.Time
 	lastLogErr  string
@@ -36,7 +36,7 @@ var (
 
 func notify(err error, d time.Duration) {
 	logMu.Lock()
-	if err.Error() == lastLogErr && time.Since(lastLogTime) < 2*time.Second {
+	if err.Error() == lastLogErr && time.Since(lastLogTime) < logDedupWindow {
 		logMu.Unlock()
 		return
 	}
