@@ -11,6 +11,11 @@ integration-prow-docker-docker-linux-arm:
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux arm64
 	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_docker_linux_arm.sh
 
+.PHONY: integration-prow-docker-containerd-linux-arm
+integration-prow-docker-containerd-linux-arm:
+	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux arm64
+	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_containterd_linux_arm.sh
+
 .PHONY: integration-prow-docker-containerd-linux-x86
 integration-prow-docker-containerd-linux-x86:
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
