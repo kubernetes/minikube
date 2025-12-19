@@ -34,6 +34,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -127,6 +129,78 @@ func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 				if preloadExists {
 					t.Skip("Preload exists, images won't be cached")
 				}
+				imgs, err := images.Kubeadm("", v)
+				if err != nil {
+					t.Errorf("failed to get kubeadm images for %v: %+v", v, err)
+				}
+
+				for _, img := range imgs {
+					pathToImage := []string{localpath.MiniPath(), "cache", "images", runtime.GOARCH}
+					img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
+					imagePath := strings.Split(img, "/")    // changes "gcr.io/k8s-minikube/storage-provisioner_v5" into ["gcr.io", "k8s-minikube", "storage-provisioner_v5"] to match cache folder structure
+					pathToImage = append(pathToImage, imagePath...)
+					fp := filepath.Join(pathToImage...)
+					_, err := os.Stat(fp)
+					if err != nil {
+						t.Errorf("expected image file exist at %q but got error: %v", fp, err)
+					}
+				}
+			})
+
+			t.Run("preload-failed", func(t *testing.T) {
+				args := []string{"start", "-p", profile, "--download-only", "--alsologtostderr"}
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+				if err != nil {
+					t.Logf("start with invalid preload-url failed as expected %q : %v", rr.Command(), err)
+				} else {
+					t.Errorf("start with invalid preload-url expected to fail, but succeeded: %q", rr.Command())
+				}
+				viper.Set("preload-url", "http://invalid-url/preload.tar.gz")
+				klog.Infof("preload-url: %s", viper.GetString("preload-url"))
+
+				// checking binaries downloaded (kubelet,kubeadm)
+				for _, bin := range constants.KubernetesReleaseBinaries {
+					fp := filepath.Join(localpath.MiniPath(), "cache", "linux", runtime.GOARCH, v, bin)
+					_, err := os.Stat(fp)
+					if err != nil {
+						t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
+					}
+				}
+
+				imgs, err := images.Kubeadm("", v)
+				if err != nil {
+					t.Errorf("failed to get kubeadm images for %v: %+v", v, err)
+				}
+
+				for _, img := range imgs {
+					pathToImage := []string{localpath.MiniPath(), "cache", "images", runtime.GOARCH}
+					img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
+					imagePath := strings.Split(img, "/")    // changes "gcr.io/k8s-minikube/storage-provisioner_v5" into ["gcr.io", "k8s-minikube", "storage-provisioner_v5"] to match cache folder structure
+					pathToImage = append(pathToImage, imagePath...)
+					fp := filepath.Join(pathToImage...)
+					_, err := os.Stat(fp)
+					if err != nil {
+						t.Errorf("expected image file exist at %q but got error: %v", fp, err)
+					}
+				}
+			})
+
+			t.Run("preload-false", func(t *testing.T) {
+				args := []string{"start", "-p", profile, "--alsologtostderr", "--preload=false"}
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+				if err != nil {
+					t.Errorf("start with preload=false failed %q : %v", rr.Command(), err)
+				}
+
+				// checking binaries downloaded (kubelet,kubeadm)
+				for _, bin := range constants.KubernetesReleaseBinaries {
+					fp := filepath.Join(localpath.MiniPath(), "cache", "linux", runtime.GOARCH, v, bin)
+					_, err := os.Stat(fp)
+					if err != nil {
+						t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
+					}
+				}
+
 				imgs, err := images.Kubeadm("", v)
 				if err != nil {
 					t.Errorf("failed to get kubeadm images for %v: %+v", v, err)
