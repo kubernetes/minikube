@@ -18,6 +18,7 @@ RUN apt-get update \
 	&& apt-get install -y apt dpkg apt-utils ca-certificates software-properties-common \
 	&& add-apt-repository -y ppa:longsleep/golang-backports \
 	&& apt-get upgrade -y \
+	&& if [ "$(uname -ms)" = "Linux x86_64" ]; then apt-get install -y gcc-multilib; fi \
 	&& apt-get install -y \
 		build-essential \
 		git \
@@ -26,7 +27,7 @@ RUN apt-get update \
 		python3 \
 		unzip \
 		bc \
-		gcc-multilib \
+		gcc \
 		automake \
 		libtool \
 		gnupg2 \
