@@ -16,7 +16,7 @@ env:
 permissions:
   contents: read
 jobs:
-    Lint-:
+    Lint:
         runs-on: ubuntu-22.04
         steps:
         - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
@@ -52,25 +52,38 @@ jobs:
             TESTSUITE: boilerplate
           run: make test
           continue-on-error: false
-    Gomodtidy:
+    Housekeeping:
        runs-on: ubuntu-22.04
        steps:
         - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
           with:
             go-version: ${{env.GO_VERSION}}
-            cache: true  
+            cache: true
+        - name: Install goimports
+          run: go install golang.org/x/tools/cmd/goimports@latest
         - name: Verify go mod tidy
-          timeout-minutes: 2
-          continue-on-error: false
           run: |
-            echo "::group::go mod tidy"
             make gomodtidy
-            echo "::endgroup::"
             if ! git diff-index --quiet HEAD; then
-              echo "::group::diff"
               git --no-pager diff
-              echo "::endgroup::"
               echo "::notice::Please run 'make gomodtidy' and commit the changes"
               exit 1
             fi
+        - name: Verify make fmt
+          run: |
+            make fmt
+            if ! git diff-index --quiet HEAD; then
+              git --no-pager diff
+              echo "::notice::Please run 'make fmt' and commit the changes"
+              exit 1
+            fi
+        - name: Verify make imports
+          run: |
+            make imports
+            if ! git diff-index --quiet HEAD; then
+              git --no-pager diff
+              echo "::notice::Please run 'make imports' and commit the changes"
+              exit 1
+            fi
+
