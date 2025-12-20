@@ -65,8 +65,12 @@ function install_dependencies() {
 	if [ "$(uname)" != "Darwin" ]; then
 		sudo apt-get -y install lsof psmisc dnsutils
 	else
-		brew install pstree coreutils pidof
+		# install vfkit
+		brew update
+		brew install vfkit pstree coreutils pidof
 		ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
+		# install vmnet shared on macos in non-interactive mode
+		curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
 	fi
 	# do NOT change manually - only using make update-golang-version
 	GOLANG_VERSION_TO_INSTALL=1.25.5
@@ -95,22 +99,24 @@ function install_dependencies() {
 }
 
 function docker_setup() {
+	if [ "$(uname)" != "Darwin" ]; then
+		# clean all docker artifacts up
+		docker system prune -a --volumes -f || true
+		docker system df || true
+		docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 
-	# clean all docker artifacts up
-	docker system prune -a --volumes -f || true
-	docker system df || true
-	docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
-
-	# read only token, never expires
-	#todo: do we need this token
-	# docker login -u minikubebot -p "$DOCKERHUB_READONLY_TOKEN"
+		# read only token, never expires
+		#todo: do we need this token
+		# docker login -u minikubebot -p "$DOCKERHUB_READONLY_TOKEN"
+	fi
 }
 
 function gvisor_image_build() {
-	# Build the gvisor image so that we can integration test changes to pkg/gvisor
-	chmod +x testdata/gvisor-addon
+	
 	# skipping gvisor mac because ofg https://github.com/kubernetes/minikube/issues/5137
 	if [ "$(uname)" != "Darwin" ]; then
+		# Build the gvisor image so that we can integration test changes to pkg/gvisor
+		chmod +x testdata/gvisor-addon
 		# Should match GVISOR_IMAGE_VERSION in Makefile
 		docker build -t gcr.io/k8s-minikube/gvisor-addon:2 -f testdata/gvisor-addon-Dockerfile ./testdata
 	fi
@@ -125,8 +131,8 @@ function run_gopogh() {
 
 # this is where the script starts
 readonly OS_ARCH="${OS}-${ARCH}"
-readonly TEST_ROOT="${HOME}/minikube-integration"
-readonly TEST_HOME="${TEST_ROOT}/${MINIKUBE_LOCATION}-$$"
+readonly TEST_ROOT="${PWD}/minikube-integration"
+readonly TEST_HOME="$(pwd)/${MINIKUBE_LOCATION}-$$"
 
 export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
