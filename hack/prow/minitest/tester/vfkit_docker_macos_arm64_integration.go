@@ -35,7 +35,7 @@ func (k *VfkitDockerMacOSARM64IntegrationTester) Run(runner MiniTestRunner) erro
 	}
 
 	defer func() {
-		if err := runner.Execute("rm -rf ~/minikube"); err != nil {
+		if err := runner.Execute("sudo rm -rf ~/minikube"); err != nil {
 			klog.Errorf("failed to delete minikube in vfkit docker macos arm64 tester: %v", err)
 		}
 	}()

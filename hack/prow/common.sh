@@ -65,6 +65,8 @@ function install_dependencies() {
 	if [ "$(uname)" != "Darwin" ]; then
 		sudo apt-get -y install lsof psmisc dnsutils
 	else
+		# install brew if not present
+		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 		# install vfkit
 		brew update
 		brew install vfkit pstree coreutils pidof
