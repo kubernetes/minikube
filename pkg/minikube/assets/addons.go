@@ -774,10 +774,10 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.YakdAssets, "yakd/yakd-dp.yaml.tmpl", vmpath.GuestAddonsDir, "yakd-dp.yaml", "0640"),
 	}, false, "yakd", "3rd party (marcnuri.com)", "manusa", "https://minikube.sigs.k8s.io/docs/handbook/addons/yakd-kubernetes-dashboard/",
 		map[string]string{
-			"Yakd": "marcnuri/yakd:0.0.6@sha256:29c201915027beafbdc53861fd0b302a00b0fb4d9cef9172cde2abd81e410e3c",
+			"Yakd": "manusa/yakd:0.0.6@sha256:29c201915027beafbdc53861fd0b302a00b0fb4d9cef9172cde2abd81e410e3c",
 		},
 		map[string]string{
-			"Yakd": "docker.io",
+			"Yakd": "ghcr.io",
 		}, nil),
 	"kubetail": NewAddon([]*BinAsset{
 		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-namespace.yaml", vmpath.GuestAddonsDir, "kubetail-namespace.yaml", "0640"),
