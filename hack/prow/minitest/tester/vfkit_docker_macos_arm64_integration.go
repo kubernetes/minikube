@@ -18,8 +18,8 @@ package tester
 
 import (
 	"fmt"
-
 	"k8s.io/klog/v2"
+	"os"
 )
 
 var _ MiniTestTester = &VfkitDockerMacOSARM64IntegrationTester{}
@@ -33,8 +33,20 @@ func (k *VfkitDockerMacOSARM64IntegrationTester) Run(runner MiniTestRunner) erro
 	if up, err := runner.IsUp(); err != nil || !up {
 		klog.Errorf("tester: deployed environment is not up: %v", err)
 	}
+
+	defer func() {
+		if err := runner.Execute("rm -rf ~/minikube"); err != nil {
+			klog.Errorf("failed to delete minikube in vfkit docker macos arm64 tester: %v", err)
+		}
+	}()
+
+	if err := runner.SyncToRemote(".", "~/minikube", []string{".cache"}); err != nil {
+		klog.Errorf("failed to sync file in docker deployer: %v", err)
+	}
+	pr := os.Getenv("PULL_NUMBER")
 	var testErr error
-	if testErr = runner.Execute(fmt.Sprintf("uname && ls")); testErr != nil {
+
+	if testErr = runner.Execute(fmt.Sprintf("cd minikube && PULL_NUMBER=\"%s\" %s", pr, "./hack/prow/integration_vfkit_docker_macos_arm64.sh")); testErr != nil {
 		klog.Errorf("failed to execute command in env: %v", testErr)
 		// don't return here, we still want to collect the test reports
 	}
