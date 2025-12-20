@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.37.0-1765965980-22186
+ISO_VERSION ?= v1.37.0-1766254259-22261
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -291,7 +291,6 @@ minikube-iso-amd64: minikube-iso-x86_64
 minikube-iso-arm64: minikube-iso-aarch64
 
 minikube-iso-%: iso-prepare-% deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python3
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
 	# x86_64 ISO is still BIOS rather than EFI because of AppArmor issues for KVM, and Gen 2 issues for Hyper-V
 	if [ "$*" = "aarch64" ]; then \
