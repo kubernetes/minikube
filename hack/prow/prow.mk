@@ -56,8 +56,9 @@ integration-prow-kvm-crio-linux-x86: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./out/minitest  --deployer boskos --tester kvm-crio-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
 
-.PHONY: integration-vfkit-docker-macos-arm64
-integration-vfkit-docker-macos-arm64: build-mini-test
+.PHONY: integration-vfkit-docker-macos-arm
+integration-vfkit-docker-macos-arm: build-mini-test
+	./hack/prow/minikube_cross_build.sh $(GO_VERSION) macos arm64
 	./out/minitest  --deployer boskos-macos --tester vfkit-docker-macos-arm64-integration --config hack/prow/boskos-cfg-macos.json
 
 .PHONY: build-mini-test
