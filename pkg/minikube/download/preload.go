@@ -205,7 +205,7 @@ func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload
 		return true
 	}
 
-	switch viper.GetString("preload-src") {
+	switch viper.GetString("preload-source") {
 	case "github":
 		if PreloadExistsGH(k8sVersion, containerRuntime) {
 			setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGitHub})

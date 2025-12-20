@@ -146,7 +146,7 @@ const (
 	staticIP                = "static-ip"
 	gpus                    = "gpus"
 	autoPauseInterval       = "auto-pause-interval"
-	preloadSrc              = "preload-src"
+	preloadSrc              = "preload-source"
 )
 
 var (
