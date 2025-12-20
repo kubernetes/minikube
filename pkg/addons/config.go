@@ -38,6 +38,7 @@ var addonPodLabels = map[string]string{
 	"gvisor":              "kubernetes.io/minikube-addons=gvisor",
 	"gcp-auth":            "kubernetes.io/minikube-addons=gcp-auth",
 	"csi-hostpath-driver": "kubernetes.io/minikube-addons=csi-hostpath-driver",
+	"dashboard":           "app.kubernetes.io/name=kubernetes-dashboard-web",
 }
 
 // Addons is a list of all addons
@@ -51,7 +52,7 @@ var Addons = []*Addon{
 	{
 		name:      "dashboard",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 
 	{
