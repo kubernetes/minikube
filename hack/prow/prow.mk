@@ -36,6 +36,11 @@ integration-prow-none-docker-linux-x86: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./out/minitest  --deployer boskos --tester none-docker-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
 
+.PHONY: integration-prow-none-containerd-linux-x86
+integration-prow-none-containerd-linux-x86: setup-prow-gcp-ssh-keys build-mini-test
+	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
+	./out/minitest  --deployer boskos --tester none-containerd-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
+
 .PHONY: integration-prow-kvm-docker-linux-x86
 integration-prow-kvm-docker-linux-x86: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
