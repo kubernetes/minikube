@@ -315,8 +315,6 @@ buildroot:
 		perl -pi -e 's@\s+source "package/sysdig/Config\.in"\n@@;' $(BUILD_DIR)/buildroot/package/Config.in; \
 		rm -r $(BUILD_DIR)/buildroot/package/sysdig; \
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
-		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.email "dev@random.com"; \
-		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.name "Random developer"; \
 	fi;
 
 # Change buildroot configuration for the minikube ISO
