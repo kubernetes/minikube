@@ -936,6 +936,7 @@
 	"Want kubectl {{.version}}? Try 'minikube kubectl -- get pods -A'": "kubectl {{.version}} が必要ですか？ 'minikube kubectl -- get pods -A' を試してみてください",
 	"Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only)": "NFS 共有のルートに指定する場所。デフォルトは /nfsshares (hyperkit ドライバーのみ)",
 	"Whether to use external switch over Default Switch if virtual switch not explicitly specified. (hyperv driver only)": "仮想スイッチが明示的に設定されていない場合、Default Switch 越しに外部のスイッチを使用するかどうか (Hyper-V ドライバーのみ)。",
+	"Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try both).": "",
 	"With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative": "--network-plugin=cni を用いる場合、自身の CNI を提供する必要があります。便利な代替策として --cni フラグを参照してください",
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).": "プロキシーを使用しようとしていますが、minikube の IP ({{.ip_address}}) が NO_PROXY 環境変数に含まれていません。",
 	"You are trying to run a windows .exe binary inside WSL. For better integration please use a Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force": "WSL 内で Windows の .exe バイナリーを実行しようとしています。これより優れた統合として、Linux バイナリーを代わりに使用してください (https://minikube.sigs.k8s.io/docs/start/ でダウンロードしてください)。そうではなく、引き続きこのバイナリーを使用したい場合、--force オプションを使用してください",
