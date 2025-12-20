@@ -25,11 +25,15 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/blang/semver/v4"
+
 	"github.com/pkg/errors"
+
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // container maps to 'runc list -f json'
@@ -224,27 +228,37 @@ func removeCRIImage(cr CommandRunner, name string) error {
 	args := append([]string{crictl, "rmi"}, name)
 	c := exec.Command("sudo", args...)
 	var err error
+	success := false
 	if _, err = cr.RunCmd(c); err == nil {
-		return nil
-	}
-	// the reason why we are doing this is that
-	// unlike other tool, podman assume the image has a localhost registry (not docker.io)
-	// if the image is loaded with a tarball without a registry specified in tag
-	// see https://github.com/containers/podman/issues/15974
-
-	// then retry with dockerio prefix
-	if _, err := cr.RunCmd(exec.Command("sudo", crictl, "rmi", AddDockerIO(name))); err == nil {
-		return nil
+		success = true
+	} else if _, err := cr.RunCmd(exec.Command("sudo", crictl, "rmi", AddDockerIO(name))); err == nil {
+		// see https://github.com/containers/podman/issues/15974
+		success = true
+	} else if _, err := cr.RunCmd(exec.Command("sudo", crictl, "rmi", AddLocalhostPrefix(name))); err == nil {
+		success = true
 	}
 
-	// then retry with localhost prefix
-	if _, err := cr.RunCmd(exec.Command("sudo", crictl, "rmi", AddLocalhostPrefix(name))); err == nil {
+	if !success {
+		return errors.Wrap(err, "crictl")
+	}
 
+	// Verify that the image is removed
+	check := func() error {
+		c := exec.Command("sudo", crictl, "images", "--quiet", name)
+		rr, err := cr.RunCmd(c)
+		if err != nil {
+			return err
+		}
+		if len(strings.TrimSpace(rr.Stdout.String())) > 0 {
+			return fmt.Errorf("image %s still exists", name)
+		}
 		return nil
 	}
 
-	// if all of above failed, return original error
-	return errors.Wrap(err, "crictl")
+	if err := retry.Expo(check, 250*time.Millisecond, 10*time.Second); err != nil {
+		return errors.Wrapf(err, "image %s still exists after removal", name)
+	}
+	return nil
 }
 
 // stopCRIContainers stops containers using crictl
