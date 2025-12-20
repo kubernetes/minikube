@@ -551,7 +551,14 @@ spec:
         - mountPath: /usr/local/certificates/
           name: webhook-cert
           readOnly: true
+      {{- if eq .ContainerRuntime "crio"}}
+      # CRIO/CNI loopback hairpin NAT is unreliable. See #22238
+      # with hostNetwork: true, we need ClusterFirstWithHostNet for DNS to work
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- else}}
       dnsPolicy: ClusterFirst
+      {{- end}}
       nodeSelector:
         minikube.k8s.io/primary: "true"
         kubernetes.io/os: linux
