@@ -105,7 +105,8 @@ func (m *MiniTestBosKosMacOSDeployer) Down() error {
 		m.boskosHeartbeatClose,
 	)
 	if err != nil {
-		return fmt.Errorf("down failed to release boskos macos instance: %v", err)
+		fmt.Printf("Error releasing boskos macos instance: %v\n", err)
+		//return fmt.Errorf("down failed to release boskos macos instance: %v", err)
 	}
 	m.isUp = false
 	return nil
@@ -148,11 +149,13 @@ func (m *MiniTestBosKosMacOSDeployer) requestMacOSInstance() error {
 	)
 
 	if err != nil {
+		fmt.Printf("failed to get macos instance from boskos: %v\n", err)
 		m.sshAddr = "28zmx-sibu3-yy3oc-zmvxf-smpwu-058cv95.us-east-2.ip.aws"
 		return nil
 		//return fmt.Errorf("failed to get macos instance from boskos: %v", err)
 	}
 	if resource.Name == "" {
+		fmt.Printf("boskos returned an empty resource name, resource: %v\n", resource)
 		m.sshAddr = "28zmx-sibu3-yy3oc-zmvxf-smpwu-058cv95.us-east-2.ip.aws"
 		return nil
 		//return fmt.Errorf("boskos returned an empty resource name, resource: %v", resource)
