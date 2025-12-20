@@ -174,9 +174,16 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 	// Get the freezer cgroup entry for this pid
 	rr, err := cr.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", fmt.Sprintf("/proc/%d/cgroup", pid)))
 	if err != nil {
+		// Try cgroup v2 before giving up
+		if paused, err2 := isCgroupV2Paused(cr, pid); err2 == nil {
+			if paused {
+				return state.Paused, nil
+			}
+			return apiServerHealthz(hostname, port)
+		}
+
 		klog.Warningf("unable to find freezer cgroup: %v", err)
 		return nonFreezerServerStatus(cr, hostname, port)
-
 	}
 	freezer := strings.TrimSpace(rr.Stdout.String())
 	klog.Infof("apiserver freezer: %q", freezer)
@@ -206,6 +213,29 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 		return state.Paused, nil
 	}
 	return apiServerHealthz(hostname, port)
+}
+
+// isCgroupV2Paused checks if the process is paused using cgroup v2
+// ref: https://docs.kernel.org/admin-guide/cgroup-v2.html#freezer
+func isCgroupV2Paused(cr command.Runner, pid int) (bool, error) {
+	// 0::/path/to/cgroup
+	rr, err := cr.RunCmd(exec.Command("sudo", "grep", "^0::", fmt.Sprintf("/proc/%d/cgroup", pid)))
+	if err != nil {
+		return false, err
+	}
+	parts := strings.SplitN(strings.TrimSpace(rr.Stdout.String()), ":", 3)
+	if len(parts) < 3 {
+		return false, fmt.Errorf("invalid cgroup v2 format")
+	}
+	cgroupPath := parts[2]
+
+	// Check cgroup.freeze
+	rr, err = cr.RunCmd(exec.Command("sudo", "cat", path.Join("/sys/fs/cgroup", cgroupPath, "cgroup.freeze")))
+	if err != nil {
+		return false, err
+	}
+
+	return strings.TrimSpace(rr.Stdout.String()) == "1", nil
 }
 
 // nonFreezerServerStatus is the alternative flow if the guest does not have the freezer cgroup so different methods to detect the apiserver status are used
