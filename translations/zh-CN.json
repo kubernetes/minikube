@@ -1109,6 +1109,7 @@
 	"Warning: Your kubectl is pointing to stale minikube-vm.\\nTo fix the kubectl context, run `minikube update-context`": "警告：您的 kubectl 指向了过时的 minikube-vm。执行 `minikube update-context` 来修复 kubectl 上下文。",
 	"Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only)": "NFS 共享的根目录位置，默认为 /nfsshares（仅限 hyperkit 驱动程序）",
 	"Whether to use external switch over Default Switch if virtual switch not explicitly specified. (hyperv driver only)": "是否在未显式指定虚拟开关时使用外部开关而不是默认开关。仅适用于 hyperv 驱动程序。",
+	"Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try both).": "",
 	"With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative": "使用 --network-plugin=cni，您需要提供自己的 CNI。查看 --cni 标志作为用户友好的替代方法",
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).": "您似乎在使用代理，但您的 NO_PROXY 环境不包含 minikube IP ({{.ip_address}})。",
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see {{.documentation_url}} for more details": "您似乎正在使用代理，但您的 NO_PROXY 环境不包含 minikube IP ({{.ip_address}})。如需了解详情，请参阅 {{.documentation_url}}",

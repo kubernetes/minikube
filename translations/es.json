@@ -949,6 +949,7 @@
 	"Want kubectl {{.version}}? Try 'minikube kubectl -- get pods -A'": "",
 	"Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only)": "Ruta en la raíz de los recursos compartidos de NFS. Su valor predeterminado es /nfsshares (solo con el controlador de hyperkit)",
 	"Whether to use external switch over Default Switch if virtual switch not explicitly specified. (hyperv driver only)": "",
+	"Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try both).": "",
 	"With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative": "",
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).": "",
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see {{.documentation_url}} for more details": "Parece que estás usando un proxy, pero tu entorno NO_PROXY no incluye la dirección IP de minikube ({{.ip_address}}). Consulta {{.documentation_url}} para obtener más información",
