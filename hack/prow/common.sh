@@ -85,7 +85,7 @@ function install_dependencies() {
 	# install golang if not present
 	sudo -E hack/prow/installer/check_install_golang.sh /usr/local $GOLANG_VERSION_TO_INSTALL || true
 	# install gotestsum if not present
-	GOROOT="/usr/local/go" hack/prow/installer/check_install_gotestsum.sh || true
+	hack/prow/installer/check_install_gotestsum.sh || true
 	# install gopogh
 	hack/prow/installer/check_install_gopogh.sh || true
 
