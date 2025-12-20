@@ -221,7 +221,8 @@ func pullCRIImage(cr CommandRunner, name string) error {
 }
 
 // removeCRIImage remove image using crictl
-func removeCRIImage(cr CommandRunner, name string) error {
+// verifyRemoval only used for CRIO due to #22242
+func removeCRIImage(cr CommandRunner, name string, verifyRemoval bool) error {
 	klog.Infof("Removing image: %s", name)
 
 	crictl := getCrictlPath(cr)
@@ -242,8 +243,12 @@ func removeCRIImage(cr CommandRunner, name string) error {
 		return errors.Wrap(err, "crictl")
 	}
 
+	if !verifyRemoval {
+		return nil
+	}
+
 	// Verify that the image is removed
-	check := func() error {
+	checkFunc := func() error {
 		c := exec.Command("sudo", crictl, "images", "--quiet", name)
 		rr, err := cr.RunCmd(c)
 		if err != nil {
@@ -255,7 +260,7 @@ func removeCRIImage(cr CommandRunner, name string) error {
 		return nil
 	}
 
-	if err := retry.Expo(check, 250*time.Millisecond, 10*time.Second); err != nil {
+	if err := retry.Expo(checkFunc, 250*time.Millisecond, 10*time.Second); err != nil {
 		return errors.Wrapf(err, "image %s still exists after removal", name)
 	}
 	return nil
