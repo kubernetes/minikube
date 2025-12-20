@@ -53,7 +53,6 @@ func TestErrorGenerator(t *testing.T) {
 	}
 }
 
-
 func TestNotify(t *testing.T) {
 	// Mock time
 	mockTime := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -65,11 +64,11 @@ func TestNotify(t *testing.T) {
 	origDedup := logDedupWindow
 	origStuck := logStuckThreshold
 	origMax := maxDuplicateLogEntries
-	
+
 	logDedupWindow = 5 * time.Second
 	logStuckThreshold = 10 * time.Second
 	maxDuplicateLogEntries = 3
-	
+
 	defer func() {
 		logDedupWindow = origDedup
 		logStuckThreshold = origStuck
@@ -90,7 +89,7 @@ func TestNotify(t *testing.T) {
 		resetState()
 		// First call
 		notify(errors.New("foo"), time.Second)
-		
+
 		logMu.Lock()
 		if logCount != 1 {
 			t.Errorf("expected logCount 1 after first call, got %d", logCount)
@@ -100,7 +99,7 @@ func TestNotify(t *testing.T) {
 		// Second call soon
 		mockTime = mockTime.Add(1 * time.Second)
 		notify(errors.New("foo"), time.Second)
-		
+
 		logMu.Lock()
 		if logCount != 1 {
 			t.Errorf("expected logCount 1 after rapid duplicate, got %d", logCount)
@@ -110,7 +109,7 @@ func TestNotify(t *testing.T) {
 		// Third call later
 		mockTime = mockTime.Add(6 * time.Second) // Total 7s from start, > 5s window
 		notify(errors.New("foo"), time.Second)
-		
+
 		logMu.Lock()
 		if logCount != 2 {
 			t.Errorf("expected logCount 2 after window, got %d", logCount)
@@ -134,24 +133,24 @@ func TestNotify(t *testing.T) {
 		}
 		logMu.Unlock()
 	})
-	
+
 	t.Run("ResetOnNewError", func(t *testing.T) {
 		resetState()
 		notify(errors.New("err1"), time.Second)
-		
+
 		mockTime = mockTime.Add(6 * time.Second)
 		notify(errors.New("err1"), time.Second)
-		
+
 		logMu.Lock()
 		if logCount != 2 {
 			t.Errorf("expected logCount 2, got %d", logCount)
 		}
 		logMu.Unlock()
-		
+
 		// Different error
 		mockTime = mockTime.Add(6 * time.Second)
 		notify(errors.New("err2"), time.Second)
-		
+
 		logMu.Lock()
 		if logCount != 1 {
 			t.Errorf("expected logCount 1 after new error, got %d", logCount)
