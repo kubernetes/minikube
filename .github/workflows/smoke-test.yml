@@ -35,22 +35,26 @@ concurrency:
   cancel-in-progress: true
 jobs:
   minikube-vm-boot:
-    name: Boot
+    name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - driver: qemu
+          - name: qemu-docker-macos-15-x86
+            driver: qemu
             os: macos-15-intel
             network_flag: --network socket_vmnet
-          - driver: vfkit
+          - name: vfkit-docker-macos-15-x86
+            driver: vfkit
             os: macos-15-intel
             network_flag: --network vmnet-shared
-          - driver: docker
+          - name: docker-docker-ubuntu-24.04-x86
+            driver: docker
             os: ubuntu-24.04
             network_flag: ""
-          - driver: docker
+          - name: docker-docker-ubuntu-24.04-arm
+            driver: docker
             os: ubuntu-24.04-arm
             network_flag: ""
     steps:
