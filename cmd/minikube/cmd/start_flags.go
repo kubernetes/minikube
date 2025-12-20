@@ -24,7 +24,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
