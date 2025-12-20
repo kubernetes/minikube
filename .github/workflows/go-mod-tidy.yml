@@ -34,6 +34,11 @@ jobs:
         id: gitchanges
         run: |
           c=$(git status --porcelain)
+          if echo "$c" | grep -qE "go.mod|go.sum"; then
+            echo "title=build: go mod tidy" >> "$GITHUB_OUTPUT"
+          else
+            echo "title=build: gofmt/goimports" >> "$GITHUB_OUTPUT"
+          fi
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
           echo "changes<<EOF" >> "$GITHUB_OUTPUT"
           echo "$c" >> "$GITHUB_OUTPUT"
@@ -50,7 +55,7 @@ jobs:
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: 'build: go mod tidy'
+          title: ${{ steps.gitchanges.outputs.title }}
           body: |
             Committing changes resulting from 
             - `make gomodtidy`
