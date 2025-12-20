@@ -280,6 +280,9 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 			return errors.Wrap(err, "tempfile")
 		}
 		targetPath = tmp.Name()
+		if err := tmp.Close(); err != nil {
+			return errors.Wrap(err, "tempfile close")
+		}
 	} else if checksum != nil { // add URL parameter for go-getter to automatically verify the checksum
 		url = addChecksumToURL(url, source, checksum)
 	}
