@@ -85,12 +85,11 @@ func TestPreload(t *testing.T) {
 	// PreloadSrc verifies that downloading preload from github and gcs works using --preload-src and --download-only
 	// "auto" is the default preload source (tries both gcs and github); here we explicitly verify each source
 	t.Run("PreloadSrc", func(t *testing.T) {
-		MaybeParallel(t)
-		
+		MaybeParallel(t)		
 		tests := []struct {
 			name              string
 			source            string
-			kubernetesVersion string // using verions that are not used in the test to make sure they dont pre-exist
+			kubernetesVersion string // using versions that are not used in the test to make sure they dont pre-exist
 			wantLog           string
 		}{
 			{"gcs", "gcs", "v1.34.0-rc.1", "Downloading preload from https://storage.googleapis.com"},
