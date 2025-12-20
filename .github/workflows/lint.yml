@@ -86,4 +86,8 @@ jobs:
               echo "::notice::Please run 'make imports' and commit the changes"
               exit 1
             fi
+        - name: Install markdownlint
+          run: npm install -g markdownlint-cli
+        - name: Verify make mdlint
+          run: make mdlint
 
