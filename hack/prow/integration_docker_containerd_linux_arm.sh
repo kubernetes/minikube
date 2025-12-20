@@ -18,13 +18,14 @@ set -e
 set -x
 
 OS="linux"
-ARCH="amd64"
+ARCH="arm64"
 DRIVER="docker"
-CONTAINER_RUNTIME="crio"
+CONTAINER_RUNTIME="containerd"
 EXTRA_START_ARGS="" 
 EXTRA_TEST_ARGS=""
-JOB_NAME="Docker_Crio_Linux_x86"
+JOB_NAME="Docker_containerd_Linux_arm64"
 
+#  marking all directories ('*') as trusted, since .git belongs to root, not minikube  user
 git config --global --add safe.directory '*'
 COMMIT=$(git rev-parse HEAD)
 MINIKUBE_LOCATION=$COMMIT
