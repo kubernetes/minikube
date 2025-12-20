@@ -28,7 +28,7 @@ import (
 
 // TestPreload verifies that disabling the initial preload, pulling a specific image,
 // and restarting the cluster preserves the image across restarts.
-// also tests --preload-src should work for both github and gcs
+// also tests --preload-source should work for both github and gcs
 func TestPreload(t *testing.T) {
 	MaybeParallel(t)
 	if NoneDriver() {
@@ -85,12 +85,11 @@ func TestPreload(t *testing.T) {
 	// PreloadSrc verifies that downloading preload from github and gcs works using --preload-src and --download-only
 	// "auto" is the default preload source (tries both gcs and github); here we explicitly verify each source
 	t.Run("PreloadSrc", func(t *testing.T) {
-		MaybeParallel(t)
-		
+		MaybeParallel(t)		
 		tests := []struct {
 			name              string
 			source            string
-			kubernetesVersion string // using verions that are not used in the test to make sure they dont pre-exist
+			kubernetesVersion string // using versions that are not used in the test to make sure they dont pre-exist
 			wantLog           string
 		}{
 			{"gcs", "gcs", "v1.34.0-rc.1", "Downloading preload from https://storage.googleapis.com"},
@@ -104,7 +103,7 @@ func TestPreload(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := []string{"start", "-p", profile, "--download-only", "--kubernetes-version", tc.kubernetesVersion, fmt.Sprintf("--preload-src=%s", tc.source), "--alsologtostderr", "--v=1"}
+				startArgs := []string{"start", "-p", profile, "--download-only", "--kubernetes-version", tc.kubernetesVersion, fmt.Sprintf("--preload-source=%s", tc.source), "--alsologtostderr", "--v=1"}
 				startArgs = append(startArgs, StartArgs()...)
 
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
