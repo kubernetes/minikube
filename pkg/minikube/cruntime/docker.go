@@ -262,6 +262,9 @@ func (r *Docker) ImageExists(name string, sha string) bool {
 
 // ListImages returns a list of images managed by this container runtime
 func (r *Docker) ListImages(ListImagesOptions) ([]ListImage, error) {
+	if r.UseCRI {
+		return listCRIImages(r.Runner)
+	}
 	c := exec.Command("docker", "images", "--no-trunc", "--format", "{{json .}}")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
