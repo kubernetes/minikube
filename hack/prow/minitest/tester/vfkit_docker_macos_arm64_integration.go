@@ -40,7 +40,7 @@ func (k *VfkitDockerMacOSARM64IntegrationTester) Run(runner MiniTestRunner) erro
 		}
 	}()
 
-	if err := runner.SyncToRemote(".", "~/minikube", []string{".cache"}); err != nil {
+	if err := runner.SyncToRemote(".", "~/minikube", []string{".cache",".modcache"}); err != nil {
 		klog.Errorf("failed to sync file in docker deployer: %v", err)
 	}
 	pr := os.Getenv("PULL_NUMBER")

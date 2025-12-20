@@ -66,7 +66,13 @@ function install_dependencies() {
 		sudo apt-get -y install lsof psmisc dnsutils
 	else
 		# install brew if not present
-		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+		if ! command -v brew >/dev/null 2>&1; then
+			/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+			echo >> /Users/ec2-user/.zprofile
+			echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> /Users/ec2-user/.zprofile
+			eval "$(/opt/homebrew/bin/brew shellenv)"
+		fi
+		
 		# install vfkit
 		brew update
 		brew install vfkit pstree coreutils pidof
