@@ -107,7 +107,8 @@ jobs:
         run: |
           ./out/minikube start \
               --no-kubernetes \
-              --memory 4gb \
+              --cpus 2 \
+              --memory 3gb \
               --driver ${{ matrix.driver }} \
               ${{ matrix.network_flag }} \
               ${{ env.LOG_ARGS }}
