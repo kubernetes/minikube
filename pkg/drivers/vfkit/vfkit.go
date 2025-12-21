@@ -46,7 +46,6 @@ import (
 	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
-	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -360,11 +359,7 @@ func (d *Driver) setupIP(mac string) error {
 		return nil
 	}
 	// Implement a retry loop because IP address isn't added to dhcp leases file immediately
-	multiplier := 1
-	if detect.NestedVM() {
-		multiplier = 3 // will help with running in Free github action Macos VMs (takes 160+ retries on average)
-	}
-	for i := 0; i < 60*multiplier; i++ {
+	for i := 0; i < 60; i++ {
 		log.Debugf("Attempt %d", i)
 		err = getIP()
 		if err == nil {
