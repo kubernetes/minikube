@@ -39,7 +39,6 @@ func TestPreload(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer CleanupWithLogs(t, profile, cancel)
 
-
 	// These subtests run sequentially (t.Run blocks until completion) to share the same profile/cluster state.
 	t.Run("Start-NoPreload-PullImage", func(t *testing.T) {
 		startArgs := []string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--wait=true", "--preload=false"}
