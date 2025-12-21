@@ -19,7 +19,6 @@ limitations under the License.
 package hyperv
 
 import (
-	"bufio"
 	"bytes"
 	"os/exec"
 	"strings"
@@ -53,18 +52,4 @@ func cmdOut(args ...string) (string, error) {
 func cmd(args ...string) error {
 	_, err := cmdOut(args...)
 	return err
-}
-
-func parseLines(stdout string) []string {
-	var resp []string
-
-	s := bufio.NewScanner(strings.NewReader(stdout))
-	for s.Scan() {
-		resp = append(resp, s.Text())
-	}
-	if err := s.Err(); err != nil {
-		klog.Warningf("failed to read stdout: %v", err)
-	}
-
-	return resp
 }
