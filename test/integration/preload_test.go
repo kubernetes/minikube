@@ -42,7 +42,7 @@ func TestPreload(t *testing.T) {
 	userImage := "public.ecr.aws/docker/library/busybox:latest"
 
 	// These subtests run sequentially (t.Run blocks until completion) to share the same profile/cluster state.
-	t.Run("Start-NoPreload-PullImage", func(t *testing.T) {
+	if t.Run("Start-NoPreload-PullImage", func(t *testing.T) {
 		startArgs := []string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--wait=true", "--preload=false"}
 		startArgs = append(startArgs, StartArgs()...)
 
@@ -63,30 +63,30 @@ func TestPreload(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s failed: %v", rr.Command(), err)
 		}
-	})
+	}) {
+		t.Run("Restart-With-Preload-Check-User-Image", func(t *testing.T) {
+			// re-start the cluster and check if image is preserved with enabled preload
+			startArgs := []string{"start", "-p", profile, "--preload=true", "--alsologtostderr", "-v=1", "--wait=true"}
+			startArgs = append(startArgs, StartArgs()...)
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+			if err != nil {
+				t.Fatalf("%s failed: %v", rr.Command(), err)
+			}
+			cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "list")
+			rr, err = Run(t, cmd)
+			if err != nil {
+				t.Fatalf("%s failed: %v", rr.Command(), err)
+			}
+			if !strings.Contains(rr.Output(), userImage) {
+				t.Fatalf("Expected to find %s in image list output, instead got %s", userImage, rr.Output())
+			}
+		})
+	}
 
-	t.Run("Restart-With-Preload-Check-User-Image", func(t *testing.T) {
-		// re-start the cluster and check if image is preserved with enabled preload
-		startArgs := []string{"start", "-p", profile, "--preload=true", "--alsologtostderr", "-v=1", "--wait=true"}
-		startArgs = append(startArgs, StartArgs()...)
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
-		if err != nil {
-			t.Fatalf("%s failed: %v", rr.Command(), err)
-		}
-		cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "list")
-		rr, err = Run(t, cmd)
-		if err != nil {
-			t.Fatalf("%s failed: %v", rr.Command(), err)
-		}
-		if !strings.Contains(rr.Output(), userImage) {
-			t.Fatalf("Expected to find %s in image list output, instead got %s", userImage, rr.Output())
-		}
-	})
 	// PreloadSrc verifies that downloading preload from github and gcs works using --preload-src and --download-only
 	// "auto" is the default preload source (tries both gcs and github); here we explicitly verify each source
 	t.Run("PreloadSrc", func(t *testing.T) {
 		MaybeParallel(t)
-		
 		tests := []struct {
 			name              string
 			source            string
