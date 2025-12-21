@@ -337,7 +337,7 @@ func (r *Docker) SaveImage(name string, imagePath string) error {
 func (r *Docker) RemoveImage(name string) error {
 	klog.Infof("Removing image: %s", name)
 	if r.UseCRI {
-		return removeCRIImage(r.Runner, name)
+		return removeCRIImage(r.Runner, name, false)
 	}
 	c := exec.Command("docker", "rmi", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
