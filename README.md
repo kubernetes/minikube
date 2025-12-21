@@ -4,14 +4,14 @@
 [![GoReport Widget]][GoReport Status]
 [![GitHub All Releases](https://img.shields.io/github/downloads/kubernetes/minikube/total.svg)](https://github.com/kubernetes/minikube/releases/latest)
 [![Latest Release](https://img.shields.io/github/v/release/kubernetes/minikube?include_prereleases)](https://github.com/kubernetes/minikube/releases/latest)
-[![Open in GitHub Codespaces](https://img.shields.io/badge/Open%20in-GitHub%20Codespaces-blue?logo=github)](https://codespaces.new/kubernetes/minikube?quickstart=1) 
+[![Open in GitHub Codespaces](https://img.shields.io/badge/Open%20in-GitHub%20Codespaces-blue?logo=github)](https://codespaces.new/kubernetes/minikube?quickstart=1)
 
 [GoReport Status]: https://goreportcard.com/report/github.com/kubernetes/minikube
 [GoReport Widget]: https://goreportcard.com/badge/github.com/kubernetes/minikube
 
 <img src="https://github.com/kubernetes/minikube/raw/master/images/logo/logo.png" width="100" alt="minikube logo">
 
-minikube implements a local Kubernetes cluster on macOS, Linux, and Windows. minikube's [primary goals](https://minikube.sigs.k8s.io/docs/concepts/principles/) are to be the best tool for local Kubernetes application development and to support all Kubernetes features that fit. 
+minikube implements a local Kubernetes cluster on macOS, Linux, and Windows. minikube's [primary goals](https://minikube.sigs.k8s.io/docs/concepts/principles/) are to be the best tool for local Kubernetes application development and to support all Kubernetes features that fit.
 
 <img src="https://raw.githubusercontent.com/kubernetes/minikube/master/site/static/images/screenshot.png" width="575" height="322" alt="screenshot">
 
@@ -46,17 +46,20 @@ See the [Getting Started Guide](https://minikube.sigs.k8s.io/docs/start/)
 
 ## GitHub Codespace
 
+You can run minikube in a GitHub Codespace by clicking here:
 [![Open in GitHub Codespaces](https://img.shields.io/badge/Open%20in-GitHub%20Codespaces-blue?logo=github)](https://codespaces.new/kubernetes/minikube?quickstart=1)
 
-This will launch a Github Codespace and you can then run `minikube start` followed by `minikube dashboard` - thereafter open minikube dashboard by  opening the link displayed in the terminal.
+This will launch a Github Codespace. You can then run `minikube start` and `minikube dashboard` - You can then open Minikube Dashboard by clicking opening the link displayed in the terminal.  
+
+You can also run Minikube in a Dev Container locally using your favorite IDE, for more information see Dev Containers <https://code.visualstudio.com/docs/devcontainers/containers>
 
 ## Documentation
 
-See https://minikube.sigs.k8s.io/docs/
+See <https://minikube.sigs.k8s.io/docs/>
 
 ## More Examples
 
-See minikube in action [here](https://minikube.sigs.k8s.io/docs/handbook/controls/)
+See minikube in action in the [controls handbook](https://minikube.sigs.k8s.io/docs/handbook/controls/)
 
 ## Governance
 
@@ -78,5 +81,6 @@ minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/
 * [Development Roadmap](https://minikube.sigs.k8s.io/docs/contrib/roadmap/)
 
 Join our community meetings:
+
 * [Bi-weekly office hours, Mondays @ 11am PST](https://tinyurl.com/minikube-oh)
 * [Triage Party](https://minikube.sigs.k8s.io/docs/contrib/triage/)
