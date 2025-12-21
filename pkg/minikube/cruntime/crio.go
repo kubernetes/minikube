@@ -297,7 +297,7 @@ func (r *CRIO) SaveImage(name string, destPath string) error {
 
 // RemoveImage removes a image
 func (r *CRIO) RemoveImage(name string) error {
-	return removeCRIImage(r.Runner, name)
+	return removeCRIImage(r.Runner, name, true)
 }
 
 // TagImage tags an image in this runtime

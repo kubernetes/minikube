@@ -307,7 +307,7 @@ func (r *Containerd) SaveImage(name string, destPath string) error {
 
 // RemoveImage removes a image
 func (r *Containerd) RemoveImage(name string) error {
-	return removeCRIImage(r.Runner, name)
+	return removeCRIImage(r.Runner, name, false)
 }
 
 // TagImage tags an image in this runtime
