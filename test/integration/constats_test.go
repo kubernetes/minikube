@@ -19,5 +19,5 @@ limitations under the License.
 package integration
 
 const (
-	echoServerImage = "kicbase/echo-server"
+	busyboxDockerImage = "public.ecr.aws/docker/library/busybox:latest"
 )

@@ -39,7 +39,6 @@ func TestPreload(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	userImage := "public.ecr.aws/docker/library/busybox:latest"
 
 	// These subtests run sequentially (t.Run blocks until completion) to share the same profile/cluster state.
 	t.Run("Start-NoPreload-PullImage", func(t *testing.T) {
@@ -52,7 +51,7 @@ func TestPreload(t *testing.T) {
 		}
 
 		// Now, pull the busybox image into minikube
-		cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "pull", userImage)
+		cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "pull", busyboxDockerImage)
 		rr, err = Run(t, cmd)
 		if err != nil {
 			t.Fatalf("%s failed: %v", rr.Command(), err)
@@ -78,8 +77,8 @@ func TestPreload(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s failed: %v", rr.Command(), err)
 		}
-		if !strings.Contains(rr.Output(), userImage) {
-			t.Fatalf("Expected to find %s in image list output, instead got %s", userImage, rr.Output())
+		if !strings.Contains(rr.Output(), busyboxDockerImage) {
+			t.Fatalf("Expected to find %s in image list output, instead got %s", busyboxDockerImage, rr.Output())
 		}
 	})
 	// PreloadSrc verifies that downloading preload from github and gcs works using --preload-src and --download-only
