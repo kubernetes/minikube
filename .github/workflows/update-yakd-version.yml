@@ -33,14 +33,14 @@ jobs:
         uses: peter-evans/create-pull-request@98357b18bf14b5342f975ff684046ec3b2a07725
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
-          commit-message: 'Addon yakd: Update marcnuri/yakd image from ${{ steps.bumpYakd.outputs.OLD_VERSION }} to ${{ steps.bumpYakd.outputs.NEW_VERSION }}'
+          commit-message: 'Addon yakd: Update manusa/yakd image from ${{ steps.bumpYakd.outputs.OLD_VERSION }} to ${{ steps.bumpYakd.outputs.NEW_VERSION }}'
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: auto_bump_yakd_version
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: 'Addon yakd: Update marcnuri/yakd image from ${{ steps.bumpYakd.outputs.OLD_VERSION }} to ${{ steps.bumpYakd.outputs.NEW_VERSION }}'
+          title: 'Addon yakd: Update manusa/yakd image from ${{ steps.bumpYakd.outputs.OLD_VERSION }} to ${{ steps.bumpYakd.outputs.NEW_VERSION }}'
           labels: ok-to-test
           body: |
             The [yakd](https://github.com/manusa/yakd) project released a new yakd image
