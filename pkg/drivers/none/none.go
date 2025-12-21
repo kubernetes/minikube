@@ -19,7 +19,6 @@ package none
 import (
 	"fmt"
 	"os/exec"
-	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
@@ -34,7 +33,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 // cleanupPaths are paths to be removed by cleanup, and are used by both kubeadm and minikube.
@@ -219,15 +217,25 @@ func (d *Driver) Stop() error {
 			klog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
 	}
-	containers, err := d.runtime.ListContainers(cruntime.ListContainersOptions{})
+	// Stop running containers
+	running, err := d.runtime.ListContainers(cruntime.ListContainersOptions{State: cruntime.Running})
 	if err != nil {
-		return errors.Wrap(err, "containers")
+		return errors.Wrap(err, "list running containers")
 	}
-	if len(containers) > 0 {
-		if err := retry.Expo(func() error {
-			return d.runtime.StopContainers(containers)
-		}, 500*time.Millisecond, 10*time.Second); err != nil {
-			return errors.Wrap(err, "stop containers")
+	if len(running) > 0 {
+		if err := d.runtime.StopContainers(running); err != nil {
+			return errors.Wrap(err, "stop running containers")
+		}
+	}
+
+	// Stop paused containers
+	paused, err := d.runtime.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused})
+	if err != nil {
+		return errors.Wrap(err, "list paused containers")
+	}
+	if len(paused) > 0 {
+		if err := d.runtime.StopContainers(paused); err != nil {
+			return errors.Wrap(err, "stop paused containers")
 		}
 	}
 	klog.Infof("none driver is stopped!")
