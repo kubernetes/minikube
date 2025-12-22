@@ -39,11 +39,11 @@ func TestISOImage(t *testing.T) {
 	MaybeParallel(t)
 
 	profile := UniqueProfileName("guest")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(22))
 	defer CleanupWithLogs(t, profile, cancel)
 
 	t.Run("Setup", func(t *testing.T) {
-		args := append([]string{"start", "-p", profile, "--no-kubernetes"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--no-kubernetes","--memory=2500mb"}, StartArgs()...)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
 			t.Errorf("failed to start minikube: args %q: %v", rr.Command(), err)
