@@ -43,7 +43,7 @@ func TestISOImage(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	t.Run("Setup", func(t *testing.T) {
-		args := append([]string{"start", "-p", profile, "--no-kubernetes","--memory=2500mb"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--no-kubernetes", "--memory=2500mb"}, StartArgs()...)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
 			t.Errorf("failed to start minikube: args %q: %v", rr.Command(), err)
