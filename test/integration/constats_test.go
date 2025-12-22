@@ -19,5 +19,6 @@ limitations under the License.
 package integration
 
 const (
-	echoServerImage = "kicbase/echo-server"
+	echoServerImage = "ghcr.io/medyagh/image-mirrors/kicbase/echo-server"
+	busyboxImage    = "ghcr.io/medyagh/image-mirrors/busybox:latest"
 )

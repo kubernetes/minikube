@@ -719,7 +719,7 @@ var Addons = map[string]*Addon{
 			"portainer.yaml",
 			"0640"),
 	}, false, "portainer", "3rd party (Portainer.io)", "", "", map[string]string{
-		"Portainer": "portainer/portainer-ce:2.15.1@sha256:5466af30b8eaf3f75edd3c74703d1c9973f0963acd6ef164913ea6f195d640c2",
+		"Portainer": "portainer/portainer-ce:2.27.7@sha256:1b4759b6fd66cec0a6c02c780529d67e8dd0788a4fbd5b541f172daffdf991b9",
 	}, map[string]string{
 		"Portainer": "docker.io",
 	}, nil),
@@ -742,7 +742,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "headlamp-clusterrolebinding.yaml", "0640"),
 	}, false, "headlamp", "3rd party (kinvolk.io)", "yolossn", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
 		map[string]string{
-			"Headlamp": "headlamp-k8s/headlamp:v0.38.0@sha256:62df24952ed956ec36a2d5859a1dcede5fad00b8d0043b9ce19cda914706325a",
+			"Headlamp": "headlamp-k8s/headlamp:v0.39.0@sha256:c8c564ffbf088955efa4d08523df1b76e3bc4594efaf85efe9996ab99ebe48b2",
 		},
 		map[string]string{
 			"Headlamp": "ghcr.io",
@@ -750,7 +750,7 @@ var Addons = map[string]*Addon{
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml.tmpl", vmpath.GuestAddonsDir, "deployment.yaml", "0640"),
 	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
-		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.45@sha256:34bd3a614f89422bdade0c10e1f4a29832c02c13f48ea83abf578e302143bf6e",
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.46@sha256:b2d3afd227d8162688fe448be5c46da917cc01ef8013c150cc9a2a860abbaa0b",
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
 	}, nil),
@@ -762,7 +762,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.NvidiaDevicePlugin, "nvidia-device-plugin/nvidia-device-plugin.yaml.tmpl", vmpath.GuestAddonsDir, "nvidia-device-plugin.yaml", "0640"),
 	}, false, "nvidia-device-plugin", "3rd party (NVIDIA)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/",
 		map[string]string{
-			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.18.0@sha256:2d16df5f3f12081b4bd6b317cf697e5c7a195c53cec7e0bab756db02a06b985c",
+			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.18.1@sha256:50ac011ab941ab0140d52f56aa0e2fdc553bca96836ab3b26be394fc823fd9e7",
 		}, map[string]string{
 			"NvidiaDevicePlugin": "nvcr.io",
 		}, nil),
@@ -774,10 +774,10 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.YakdAssets, "yakd/yakd-dp.yaml.tmpl", vmpath.GuestAddonsDir, "yakd-dp.yaml", "0640"),
 	}, false, "yakd", "3rd party (marcnuri.com)", "manusa", "https://minikube.sigs.k8s.io/docs/handbook/addons/yakd-kubernetes-dashboard/",
 		map[string]string{
-			"Yakd": "marcnuri/yakd:0.0.5@sha256:c5414196116a2266ad097b0468833b73ef1d6c7922241115fe203fb826381624",
+			"Yakd": "manusa/yakd:0.0.6@sha256:29c201915027beafbdc53861fd0b302a00b0fb4d9cef9172cde2abd81e410e3c",
 		},
 		map[string]string{
-			"Yakd": "docker.io",
+			"Yakd": "ghcr.io",
 		}, nil),
 	"kubetail": NewAddon([]*BinAsset{
 		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-namespace.yaml", vmpath.GuestAddonsDir, "kubetail-namespace.yaml", "0640"),

@@ -18,6 +18,8 @@ limitations under the License.
 package retry
 
 import (
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -25,10 +27,61 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const defaultMaxRetries = 113
+const (
+	defaultMaxRetries = 113
+	// logRoundPrecision is the precision used for rounding duration in logs
+	logRoundPrecision = 100 * time.Millisecond
+)
+
+var (
+	// logDedupWindow is the minimum time between identical log messages
+	logDedupWindow = 3 * time.Second
+	// logStuckThreshold is the time after which a persistent error is flagged as "maybe stuck"
+	logStuckThreshold = 30 * time.Second
+	// maxDuplicateLogEntries is the maximum number of times a specific error is logged before displaying a shorter message
+	maxDuplicateLogEntries = 5
+	// timeNow is the func used for testing
+	timeNow = time.Now
+)
+
+var (
+	firstLogTime time.Time
+	lastLogTime  time.Time
+	lastLogErr   string
+	logCount     int
+	logMu        sync.Mutex
+)
 
 func notify(err error, d time.Duration) {
-	klog.Infof("will retry after %s: %v", d, err)
+	logMu.Lock()
+	if err.Error() != lastLogErr {
+		firstLogTime = timeNow()
+		lastLogErr = err.Error()
+		logCount = 0
+	}
+
+	now := timeNow()
+	if now.Sub(lastLogTime) < logDedupWindow {
+		lastLogTime = now
+		logMu.Unlock()
+		return
+	}
+	lastLogTime = now
+	logCount++
+
+	if logCount > maxDuplicateLogEntries { // do not repeat the error message after maxDuplicateLogEntries
+		logMu.Unlock()
+		klog.Infof("will retry after %s: stuck on same error as above for %s...", d.Round(logRoundPrecision), timeNow().Sub(firstLogTime).Round(logRoundPrecision))
+		return
+	}
+
+	msg := fmt.Sprintf("will retry after %s: %v", d.Round(logRoundPrecision), err)
+	if timeNow().Sub(firstLogTime) > logStuckThreshold { // let user know if the error is repeated within logStuckThreshold
+		msg += fmt.Sprintf(" (duplicate log for %s)", timeNow().Sub(firstLogTime).Round(logRoundPrecision))
+	}
+	logMu.Unlock()
+
+	klog.Info(msg)
 }
 
 // Local is back-off retry for local connections

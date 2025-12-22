@@ -12,21 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt-get update \
 	&& apt-get install -y apt dpkg apt-utils ca-certificates software-properties-common \
 	&& add-apt-repository -y ppa:longsleep/golang-backports \
 	&& apt-get upgrade -y \
+	&& if [ "$(uname -ms)" = "Linux x86_64" ]; then apt-get install -y gcc-multilib; fi \
 	&& apt-get install -y \
 		build-essential \
 		git \
 		wget \
 		cpio \
-		python \
+		python3 \
 		unzip \
 		bc \
-		gcc-multilib \
+		gcc \
 		automake \
 		libtool \
 		gnupg2 \

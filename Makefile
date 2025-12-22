@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.37.0-1765151505-21409
+ISO_VERSION ?= v1.37.0-1766410951-22290
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -44,8 +44,7 @@ GO_K8S_VERSION_PREFIX ?= v1.35.0
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2025.02
-# the go version on the line below is for the ISO
-GOLANG_OPTIONS = GOWORK=off GO_VERSION=1.23.4 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
+GOLANG_OPTIONS = GOWORK=off GO_VERSION=$(GO_VERSION) GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
 
@@ -72,7 +71,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v2.7.1
+GOLINT_VERSION ?= v2.7.2
 # see https://golangci-lint.run/docs/configuration/file/ for config details
 GOLINT_CONFIG ?= .golangci.min.yaml
 # Set this to --verbose to see details about the linters and formatters used
@@ -292,7 +291,6 @@ minikube-iso-amd64: minikube-iso-x86_64
 minikube-iso-arm64: minikube-iso-aarch64
 
 minikube-iso-%: iso-prepare-% deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python3
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
 	# x86_64 ISO is still BIOS rather than EFI because of AppArmor issues for KVM, and Gen 2 issues for Hyper-V
 	if [ "$*" = "aarch64" ]; then \
@@ -313,11 +311,7 @@ buildroot:
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
-		perl -pi -e 's@\s+source "package/sysdig/Config\.in"\n@@;' $(BUILD_DIR)/buildroot/package/Config.in; \
-		rm -r $(BUILD_DIR)/buildroot/package/sysdig; \
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
-		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.email "dev@random.com"; \
-		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.name "Random developer"; \
 	fi;
 
 # Change buildroot configuration for the minikube ISO
@@ -1082,6 +1076,10 @@ update-headlamp-version:
 update-kube-vip-version:
 	cd hack && go run update/kube_vip_version/kube_vip_version.go
 
+.PHONY: update-portainer-version
+update-portainer-version:
+	cd hack && go run update/portainer_version/update_portainer_version.go
+
 # used by update- Targets to get before/after versions of tools it updates
 # example usage echo "OLD_VERSION=$(DEP=node make get-dependency-version)" >> "$GITHUB_OUTPUT"
 .PHONY: get-dependency-verison
@@ -1094,7 +1092,5 @@ _update-all:
 	@(cd hack && go run update/update_all/update_all.go)
 
 
-
 # targets for tests on prow
 include ./hack/prow/prow.mk
-

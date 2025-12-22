@@ -19,7 +19,7 @@
 
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
-ARG KICBASE_IMAGE="debian:bookworm-20251117-slim"
+ARG KICBASE_IMAGE="debian:bookworm-20251208-slim"
 # multi-stage docker build so we can build auto-pause for arm64
 FROM golang:1.25.5 AS auto-pause
 WORKDIR /src
@@ -41,14 +41,14 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${KICBASE_IMAGE} AS kicbase
 
-ARG BUILDKIT_VERSION="v0.18.1"
+ARG BUILDKIT_VERSION="v0.26.3"
 ARG CRIO_VERSION="v1.34"
 ARG CRICTL_VERSION="v1.34.0"
 ARG CRI_DOCKERD_VERSION="v0.4.1"
 ARG CRI_DOCKERD_COMMIT="55d6e1a1d6f2ee58949e13a0c66afe7d779ac942"
 ARG CNI_PLUGINS_VERSION="v1.4.0"
 ARG TARGETARCH
-ARG NERDCTL_VERSION="1.7.7"
+ARG NERDCTL_VERSION="2.2.0"
 ARG NERDCTLD_VERSION="0.7.0"
 
 # copy in static files (configs, scripts)

@@ -235,9 +235,7 @@ func TestGetStoragev1(t *testing.T) {
 			tmpDir := t.TempDir()
 			kubeconfigPath := filepath.Join(tmpDir, "kubeconfig")
 
-			if err := setK8SConfig(t, test.config, kubeconfigPath); err != nil {
-				t.Fatalf("setK8SConfig failed: %v", err)
-			}
+			setK8SConfig(t, test.config, kubeconfigPath)
 
 			// context name is hardcoded by mockK8sConfig
 			_, err := GetStoragev1("minikube")
@@ -251,10 +249,9 @@ func TestGetStoragev1(t *testing.T) {
 	}
 }
 
-func setK8SConfig(t *testing.T, config, kubeconfigPath string) error {
+func setK8SConfig(t *testing.T, config, kubeconfigPath string) {
 	if err := os.WriteFile(kubeconfigPath, []byte(config), 0o644); err != nil {
 		t.Fatalf("unexpected error when writing to %v: %v", kubeconfigPath, err)
 	}
 	t.Setenv("KUBECONFIG", kubeconfigPath)
-	return nil
 }

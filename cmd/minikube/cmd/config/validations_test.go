@@ -17,7 +17,9 @@ limitations under the License.
 package config
 
 import (
+	"net/url"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -126,20 +128,23 @@ func TestValidRuntime(t *testing.T) {
 }
 
 func TestIsURLExists(t *testing.T) {
-
 	self, err := os.Executable()
 	if err != nil {
 		t.Error(err)
 	}
 
+	u := (&url.URL{
+		Scheme: "file",
+		Path:   filepath.ToSlash(self),
+	}).String()
+
 	tests := []validationTest{
 		{
-			value:     "file://" + self,
+			value:     u,
 			shouldErr: false,
 		},
-
 		{
-			value:     "file://" + self + "/subpath-of-file",
+			value:     u + "/subpath-of-file",
 			shouldErr: true,
 		},
 	}

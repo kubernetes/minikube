@@ -49,7 +49,7 @@ type gcpTracer struct {
 // StartSpan starts a span for the next step of
 // `minikube start` via the GCP tracer
 func (t *gcpTracer) StartSpan(name string) {
-	_, span := t.Tracer.Start(t.parentCtx, name)
+	_, span := t.Start(t.parentCtx, name)
 	t.spans[name] = span
 }
 

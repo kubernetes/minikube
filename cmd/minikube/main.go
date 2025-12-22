@@ -133,13 +133,14 @@ type machineLogBridge struct{}
 
 // Write passes machine driver logs to klog
 func (lb machineLogBridge) Write(b []byte) (n int, err error) {
-	if machineLogEnvironmentRe.Match(b) {
+	switch {
+	case machineLogEnvironmentRe.Match(b):
 		return len(b), nil
-	} else if machineLogErrorRe.Match(b) {
+	case machineLogErrorRe.Match(b):
 		klog.Errorf("libmachine: %s", b)
-	} else if machineLogWarningRe.Match(b) {
+	case machineLogWarningRe.Match(b):
 		klog.Warningf("libmachine: %s", b)
-	} else {
+	default:
 		klog.Infof("libmachine: %s", b)
 	}
 	return len(b), nil
