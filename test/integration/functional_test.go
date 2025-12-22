@@ -198,8 +198,8 @@ func cleanupUnwantedImages(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Skipf("docker is not installed, cannot delete docker images")
 	} else {
-		t.Run("delete nginx images", func(t *testing.T) {
-			tags := []string{"latest", profile}
+		t.Run("delete echo-server images", func(t *testing.T) {
+			tags := []string{"1.0", profile}
 			for _, tag := range tags {
 				image := fmt.Sprintf("%s:%s", echoServerImage, tag)
 				rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", image))
@@ -342,7 +342,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	})
 
 	taggedImage := fmt.Sprintf("%s:%s", echoServerImage, profile)
-	imageFile := "nginx-save.tar"
+	imageFile := "echo-server-save.tar"
 	var imagePath string
 	defer os.Remove(imageFile)
 
@@ -353,7 +353,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 			t.Fatalf("failed to get absolute path of file %q: %v", imageFile, err)
 		}
 
-		pulledImage := fmt.Sprintf("%s:%s", echoServerImage, "latest")
+		pulledImage := fmt.Sprintf("%s:%s", echoServerImage, "1.0")
 		rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", pulledImage))
 		if err != nil {
 			t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
@@ -1452,7 +1452,7 @@ func validateServiceCmdDeployApp(ctx context.Context, t *testing.T, profile stri
 		if err != nil {
 			t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 		}
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=80"))
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
 		if err != nil {
 			t.Fatalf("failed to expose hello-node deployment: %q : %v", rr.Command(), err)
 		}
@@ -1632,12 +1632,12 @@ func validateServiceCmdConnect(ctx context.Context, t *testing.T, profile string
 	var rr *RunResult
 	var err error
 
-	// docs: Create a new `nginx` deployment
+	// docs: Create a new `kickbase/echo-server` deployment
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node-connect", "--image", echoServerImage))
 	if err != nil {
 		t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 	}
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node-connect", "--type=NodePort", "--port=80"))
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node-connect", "--type=NodePort", "--port=8080"))
 	if err != nil {
 		t.Fatalf("failed to expose hello-node deployment: %q : %v", rr.Command(), err)
 	}
