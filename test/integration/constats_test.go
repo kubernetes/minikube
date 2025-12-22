@@ -19,5 +19,5 @@ limitations under the License.
 package integration
 
 const (
-	echoServerImage = "kicbase/echo-server"
+	echoServerImage = "public.ecr.aws/nginx/nginx"
 )
