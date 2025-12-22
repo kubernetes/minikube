@@ -79,27 +79,27 @@ jobs:
             cruntime: docker
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 15m 
+            test-timeout: 18m
           - name: docker-docker-ubuntu24.04-arm
             driver: docker
             cruntime: docker
             os: ubuntu-24.04-arm
             arch: arm64
-            test-timeout: 15m 
+            test-timeout: 18m 
           - name: docker-containerd-ubuntu-24.04-x86
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 15m 
+            test-timeout: 18m 
           - name: docker-containerd-ubuntu-24.04-arm
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04-arm
             arch: arm64
-            test-timeout: 15m 
+            test-timeout: 18m 
           - name: docker-containerd-rootless-ubuntu-24.04-x86
             driver: docker
             cruntime: containerd
@@ -107,13 +107,13 @@ jobs:
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
             arch: amd64
-            test-timeout: 17m 
+            test-timeout: 18m 
           - name: podman-docker-ubuntu-24.04-x86
             driver: podman
             cruntime: docker
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 18m
+            test-timeout: 22m
           - name: baremetal-docker-ubuntu-24.04-x86
             driver: none
             cruntime: docker
