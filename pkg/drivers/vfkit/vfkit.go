@@ -24,7 +24,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -63,6 +62,10 @@ const (
 	logFileName    = "vfkit.log"
 	serialFileName = "serial.log"
 	defaultSSHUser = "docker"
+
+	// Rosetta mount in the guest.
+	rosettaMountTag   = "minikube-rosetta"
+	rosettaMountPoint = "/mnt/minikube-rosetta"
 )
 
 // Driver is the machine driver for vfkit (Virtualization.framework)
@@ -78,6 +81,7 @@ type Driver struct {
 	Network        string        // "", "nat", "vmnet-shared"
 	MACAddress     string        // For network=nat, network=""
 	VmnetHelper    *vmnet.Helper // For network=vmnet-shared
+	Rosetta        bool          // Enable rosetta support
 }
 
 func NewDriver(hostName, storePath string, options *run.CommandOptions) drivers.Driver {
@@ -254,9 +258,14 @@ func (d *Driver) Start() error {
 		return err
 	}
 
-	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
-	if err := WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second); err != nil {
+	if err := common.WaitForSSHAccess(d); err != nil {
 		return err
+	}
+
+	if d.Rosetta {
+		if err := d.setupRosetta(); err != nil {
+			return err
+		}
 	}
 
 	if len(d.VirtiofsMounts) > 0 {
@@ -329,6 +338,10 @@ func (d *Driver) startVfkit(socketPath string) error {
 
 	}
 
+	if d.Rosetta {
+		startCmd = append(startCmd, d.rosettaOptions()...)
+	}
+
 	log.Debugf("executing: vfkit %s", strings.Join(startCmd, " "))
 	os.Remove(d.sockfilePath())
 	cmd := exec.Command("vfkit", startCmd...)
@@ -348,6 +361,58 @@ func (d *Driver) startVfkit(socketPath string) error {
 		return err
 	}
 	return process.WritePidfile(d.pidfilePath(), cmd.Process.Pid)
+}
+
+// rosettaOptions returns the vfkit command line options for Rosetta support.
+func (d *Driver) rosettaOptions() []string {
+	options := []string{
+		"rosetta",
+		"mountTag=" + rosettaMountTag,
+	}
+
+	// Try to install rosetta automatically for best user experience. The
+	// installation requires user interaction so we must skip it in
+	// non-interactive mode. If Rosetta is not installed vfkit will fail.
+	// For more info see https://support.apple.com/en-us/102527
+	if !d.CommandOptions.NonInteractive {
+		options = append(options, "install")
+	}
+
+	return []string{"--device", strings.Join(options, ",")}
+}
+
+func (d *Driver) setupRosetta() error {
+	// See https://docs.kernel.org/admin-guide/binfmt-misc.html
+	binfmt := strings.Join([]string{
+		// name
+		":rosetta",
+		// type: M (magic number matching), E (extension matching)
+		":M",
+		// offset (default 0)
+		":",
+		// magic
+		`:\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00`,
+		// mask
+		`:\xff\xff\xff\xff\xff\xfe\xfe\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff`,
+		// interpreter
+		":" + filepath.Join(rosettaMountPoint, "rosetta"),
+		// flags: F (fix binary), C (credentials), or O (open binary)
+		":F",
+	}, "")
+
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "set -e\n")
+	fmt.Fprintf(&b, "sudo mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc\n")
+	fmt.Fprintf(&b, "sudo mkdir -p %s\n", rosettaMountPoint)
+	fmt.Fprintf(&b, "sudo mount -t virtiofs %s %s\n", rosettaMountTag, rosettaMountPoint)
+	fmt.Fprintf(&b, "echo '%s' | sudo tee /proc/sys/fs/binfmt_misc/register\n", binfmt)
+
+	if _, err := drivers.RunSSHCommandFromDriver(d, b.String()); err != nil {
+		return fmt.Errorf("failed to setup rosetta: %w", err)
+	}
+
+	return nil
 }
 
 func (d *Driver) setupIP(mac string) error {
@@ -658,21 +723,5 @@ func (d *Driver) SetVFKitState(s string) error {
 		return err
 	}
 	log.Infof("Set vfkit state: %+v", vmstate)
-	return nil
-}
-
-func WaitForTCPWithDelay(addr string, duration time.Duration) error {
-	for {
-		conn, err := net.Dial("tcp", addr)
-		if err != nil {
-			continue
-		}
-		defer conn.Close()
-		if _, err := conn.Read(make([]byte, 1)); err != nil && err != io.EOF {
-			time.Sleep(duration)
-			continue
-		}
-		break
-	}
 	return nil
 }
