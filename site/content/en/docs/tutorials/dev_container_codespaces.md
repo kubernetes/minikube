@@ -1,10 +1,10 @@
 ---
-title: "Run Minikube in a Dev Container or in a Github Codespace"
-linkTitle: "Minikube in a Dev Container or in a Github Codespace"
+title: "Run minikube in a Dev Container or in a Github Codespace"
+linkTitle: "minikube in a Dev Container or in a Github Codespace"
 weight: 1
 date: 2025-12-12
 description: >
-  Running Minikube and the Minikube Dashboard inside a Dev Container or in a Github Codespace
+  Running minikube and the minikube Dashboard inside a Dev Container or in a Github Codespace
 ---
 
 This tutorial shows how to run minikube in a Github Codespace or locally in a Dev Container.
@@ -33,26 +33,26 @@ This tutorial shows how to run minikube in a Github Codespace or locally in a De
   minikube start
   ```
   
-  ![Start Minikube](/images/docs_tutorials_dev_container_codespaces_minikube_start.png)
+  ![Start minikube](/images/docs_tutorials_dev_container_codespaces_minikube_start.png)
 
-- Minikube dashboard:
+- minikube dashboard:
   ```shell
   minikube dashboard
   ```
 
-  Once Minikube dashboard is running you can open the URL locally by clicking on the link displayed or in Github Codespace in the ports tab by opening the URL in a broser window and navigating to the dashboard URL
+  Once minikube dashboard is running you can open the URL locally by clicking on the link displayed or in Github Codespace in the ports tab by opening the URL in a broser window and navigating to the dashboard URL
 
-  ![Start Minikube Dashboard](/images/docs_tutorials_dev_container_codespaces_minikube_dashboard.png)
+  ![Start minikube Dashboard](/images/docs_tutorials_dev_container_codespaces_minikube_dashboard.png)
 
-  ![Open Minikube Dashboard](/images/docs_tutorials_dev_container_codespaces_minikube_dashboard_browser_window.png)
+  ![Open minikube Dashboard](/images/docs_tutorials_dev_container_codespaces_minikube_dashboard_browser_window.png)
 
-  On Github Codespaces the Minikube Dashboard URL needs to be modified to include the Codespace URL and add the Dashboard path /api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/
+  On Github Codespaces the minikube Dashboard URL needs to be modified to include the Codespace URL and add the Dashboard path /api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/
 
-  ![Open Minikube Dashboard](/images/docs_tutorials_dev_container_codespaces_minikube_dashboard_browser_window_codespace.png)
+  ![Open minikube Dashboard](/images/docs_tutorials_dev_container_codespaces_minikube_dashboard_browser_window_codespace.png)
 
-  ![Open Minikube Dashboard](/images/docs_tutorials_dev_container_codespaces_minikube_dashboard_browser_without_path_codespace.png)
+  ![Open minikube Dashboard](/images/docs_tutorials_dev_container_codespaces_minikube_dashboard_browser_without_path_codespace.png)
 
-  ![Open Minikube Dashboard](/images/docs_tutorials_dev_container_codespaces_minikube_dashboard_codespace.png)
+  ![Open minikube Dashboard](/images/docs_tutorials_dev_container_codespaces_minikube_dashboard_codespace.png)
 
 ## Where can I learn more about Dev Containers?
 
