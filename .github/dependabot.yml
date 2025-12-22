@@ -13,5 +13,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "actions/*"
     ignore:
       - dependency-name: "vedantmgoyal2009/winget-releaser"
