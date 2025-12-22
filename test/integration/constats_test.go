@@ -19,5 +19,6 @@ limitations under the License.
 package integration
 
 const (
-	echoServerImage = "kicbase/echo-server"
+	echoServerImage = "docker.io/kicbase/echo-server"
+	pauseImageName  = "registry.k8s.io/pause"
 )
