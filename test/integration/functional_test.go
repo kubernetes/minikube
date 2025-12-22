@@ -916,7 +916,7 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	defer cancel()
 
 	// docs: Run `minikube dashboard --url` to start minikube dashboard and return the URL of it
-	args := []string{"dashboard", "--url", "--port", "36195", "-p", profile, "--alsologtostderr", "-v=1"}
+	args := []string{"dashboard", "--url", "--port", "0", "-p", profile, "--alsologtostderr", "-v=1"}
 	ss, err := Start(t, exec.CommandContext(mctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to run minikube dashboard. args %q : %v", args, err)
@@ -929,6 +929,11 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		if runtime.GOOS == "windows" {
 			t.Skip(err)
+		}
+		// check if the failure was due to rate limiting
+		rr, logErr := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs"))
+		if logErr == nil && (strings.Contains(rr.Output(), "toomanyrequests") || strings.Contains(rr.Output(), "pull rate limit")) {
+			t.Skipf("Skipping dashboard test due to Docker Hub rate limit: %v", err)
 		}
 		t.Fatal(err)
 	}
