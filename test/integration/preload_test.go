@@ -39,7 +39,7 @@ func TestPreload(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	userImage := "public.ecr.aws/docker/library/busybox:latest"
+	userImage := busyboxImage
 
 	// These subtests run sequentially (t.Run blocks until completion) to share the same profile/cluster state.
 	if t.Run("Start-NoPreload-PullImage", func(t *testing.T) {
