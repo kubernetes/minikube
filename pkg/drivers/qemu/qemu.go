@@ -521,7 +521,11 @@ func (d *Driver) Start() error {
 			return nil
 		}
 		// Implement a retry loop because IP address isn't added to dhcp leases file immediately
-		for i := 0; i < 60; i++ {
+		multiplier := 1
+		if detect.NestedVM() {
+			multiplier = 3 // will help with running in Free github action Macos VMs (takes 112+ retries on average)
+		}
+		for i := 0; i < 60*multiplier; i++ {
 			log.Debugf("Attempt %d", i)
 			err = getIP()
 			if err == nil {
