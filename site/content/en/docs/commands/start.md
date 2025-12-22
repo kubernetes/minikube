@@ -107,6 +107,7 @@ minikube start [flags]
       --preload-source string             Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try both). (default "auto")
       --qemu-firmware-path string         Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\Program Files\qemu\share
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
+      --rosetta                           Enable Rosetta to support apps built for Intel processor on a Mac with Apple silicon (vfkit driver only)
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
       --socket-vmnet-client-path string   Path to the socket vmnet client binary (QEMU driver only)
       --socket-vmnet-path string          Path to socket vmnet binary (QEMU driver only)
