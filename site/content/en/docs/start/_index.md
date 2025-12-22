@@ -70,8 +70,19 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/x86-64/Stable" name="Installer type" %}}
-{{% quiz_button option="Binary download" %}} {{% quiz_button option="Debian package" %}} {{% quiz_button option="RPM package" %}}
+{{% quiz_button option="Binary download" %}} {{% quiz_button option="Debian package" %}} {{% quiz_button option="RPM package" %}} {{% quiz_button option="Try in cloud for free" %}}
 {{% /quiz_row %}}
+
+<script type="text/javascript">
+  // Minimal handler only for the single added button — opens Codespaces in a new tab.
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest && e.target.closest('button');
+    if (!btn) return;
+    if ((btn.innerText || '').trim() === 'Try in cloud for free') {
+      window.open('https://codespaces.new/kubernetes/minikube?quickstart=1', '_blank');
+    }
+  }, false);
+</script>
 
 {{% quiz_row base="/Linux/x86-64/Beta" name="Installer type" %}}
 {{% quiz_button option="Binary download" %}} {{% quiz_button option="Debian package" %}} {{% quiz_button option="RPM package" %}}
@@ -767,11 +778,9 @@ Delete all of the minikube clusters:
 minikube delete --all
 ```
 
-<h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">6</strong></span>Run Minikube in a Github Codespace or Dev Container</h2>
+<h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">6</strong></span>Run minikube in a Github Codespace or Dev Container</h2>
 
-You can also run Minikube in a Github Codespaces or locally in a Dev Container
-
-See this link [Minikube Dev Container or Github Codespace]({{<ref "/docs/tutorials/dev_container_codespaces.md">}})
+[minikube Github Codespace or Dev Container]({{<ref "/docs/tutorials/dev_container_codespaces.md">}})
 
 ## Take the next step
 

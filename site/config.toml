@@ -52,9 +52,9 @@ anchor = "smart"
 
 # Additional menu items
 [[menu.main]]
-    name = "GitHub"
-    weight = 50
-    url = "https://github.com/kubernetes/minikube"
+	name = "Open in Codespace"
+	weight = 50
+	url = "https://codespaces.new/kubernetes/minikube?quickstart=1"
 
 [services]
 [services.googleAnalytics]
