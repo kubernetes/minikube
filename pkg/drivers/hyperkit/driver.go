@@ -38,6 +38,7 @@ import (
 	hyperkit "github.com/moby/hyperkit/go"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/minikube/detect"
 )
 
 const (
@@ -296,7 +297,11 @@ func (d *Driver) setupIP(mac string) error {
 	var err error
 
 	// Implement a retry loop without calling any minikube code
-	for i := 0; i < 60; i++ {
+	multiplier := 1
+	if detect.NestedVM() {
+		multiplier = 3 // will help with running in Free github action Macos VMs (takes 112+ retries on average)
+	}
+	for i := 0; i < 60*multiplier; i++ {
 		log.Debugf("Attempt %d", i)
 		err = getIP()
 		if err == nil {
