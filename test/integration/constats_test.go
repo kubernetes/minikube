@@ -20,5 +20,5 @@ package integration
 
 const (
 	echoServerImage = "ghcr.io/medyagh/image-mirrors/kicbase/echo-server"
-	busyboxImage = "ghcr.io/medyagh/image-mirrors/busybox:latest"
+	busyboxImage    = "ghcr.io/medyagh/image-mirrors/busybox:latest"
 )
