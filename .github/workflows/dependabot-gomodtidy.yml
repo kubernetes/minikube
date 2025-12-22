@@ -22,7 +22,7 @@ jobs:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
 
