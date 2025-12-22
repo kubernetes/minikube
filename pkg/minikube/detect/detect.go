@@ -240,7 +240,6 @@ func NestedVM() bool {
 			klog.Infof("nested VM detected (kern.hv_vmm_present=%s)", value)
 			return true
 		}
-		klog.Infof("not a nested VM (kern.hv_vmm_present=%s)", value)
 		return false
 	}
 	return false
