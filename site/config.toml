@@ -134,12 +134,6 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
     desc = "Use this invitation link to join Kubernetes Slack workspace"
 
 [[params.links.user]]
-	name = "minikube-users mailing list"
-	url = "https://groups.google.com/forum/#!forum/minikube-users"
-	icon = "fas fa-envelope"
-	desc = "Interact with the minikube users here"
-
-[[params.links.user]]
 	name = "twitter"
 	url = "https://twitter.com/minikube_dev"
 	icon = "fab fa-twitter"
