@@ -66,13 +66,13 @@ require (
 	go.opentelemetry.io/otel/sdk v1.39.0
 	go.opentelemetry.io/otel/trace v1.39.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
-	golang.org/x/crypto v0.45.0
+	golang.org/x/crypto v0.46.0
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 	golang.org/x/mod v0.30.0
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/sys v0.39.0
-	golang.org/x/term v0.37.0
+	golang.org/x/term v0.38.0
 	golang.org/x/text v0.32.0
 	google.golang.org/api v0.248.0
 	gopkg.in/yaml.v2 v2.4.0
