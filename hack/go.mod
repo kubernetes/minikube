@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.39.0
 	go.opentelemetry.io/otel/sdk/metric v1.39.0
 	golang.org/x/mod v0.30.0
-	golang.org/x/oauth2 v0.30.0
+	golang.org/x/oauth2 v0.34.0
 	gonum.org/v1/plot v0.16.0
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/minikube v1.36.0
