@@ -145,15 +145,18 @@ func IsDocker(name string) bool {
 	return name == Docker
 }
 
-// IsDockerDesktop checks if the driver is a Docker for Desktop (Docker on windows or MacOs)
-// for linux and exotic archs, this will be false
+// IsDockerDesktop checks if the driver is Docker Desktop by querying the daemon info.
+// This properly distinguishes Docker Desktop from other Docker-compatible runtimes.
 func IsDockerDesktop(name string) bool {
-	if IsDocker(name) {
-		if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
-			return true
-		}
+	if !IsDocker(name) {
+		return false
 	}
-	return false
+	si, err := oci.CachedDaemonInfo(name)
+	if err != nil {
+		// Fallback to OS-based heuristic if daemon info unavailable
+		return runtime.GOOS == "darwin" || runtime.GOOS == "windows"
+	}
+	return si.DockerOS == "Docker Desktop"
 }
 
 // IsMock checks if the driver is a mock
@@ -281,8 +284,9 @@ func NeedsShutdown(name string) bool {
 func FullName(name string) string {
 	switch name {
 	case oci.Docker:
-		if IsDockerDesktop(name) {
-			return "Docker Desktop"
+		si, err := oci.CachedDaemonInfo(name)
+		if err == nil && si.DockerOS != "" {
+			return si.DockerOS
 		}
 		return "Docker"
 	default:
