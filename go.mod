@@ -39,7 +39,7 @@ require (
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
 	github.com/juju/mutex/v2 v2.0.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
-	github.com/klauspost/cpuid v1.2.0
+	github.com/klauspost/cpuid v1.3.1
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.5
 	github.com/mattbaird/jsonpatch v0.0.0-20200820163806-098863c1fc24
 	github.com/mattn/go-isatty v0.0.20
