@@ -226,9 +226,10 @@ func isCgroupV2Paused(cr command.Runner, pid int) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	parts := strings.SplitN(strings.TrimSpace(rr.Stdout.String()), ":", 3)
+	line := strings.TrimSpace(rr.Stdout.String())
+	parts := strings.SplitN(line, ":", 3)
 	if len(parts) < 3 {
-		return false, fmt.Errorf("invalid cgroup v2 format")
+		return false, fmt.Errorf("invalid cgroup v2 format: expected at least 3 colon-separated parts, got %d from line %q", len(parts), line)
 	}
 	cgroupPath := parts[2]
 
