@@ -72,7 +72,7 @@ var runCorpProxy = detect.GithubActionRunner() && runtime.GOOS == "linux" && !ar
 
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
-	testFunctional(t, "")
+	testFunctionalInternal(t, "")
 }
 
 // TestFunctionalNewestKubernetes are functionality run functional tests using
@@ -83,12 +83,12 @@ func TestFunctionalNewestKubernetes(t *testing.T) {
 	}
 	k8sVersionString := constants.NewestKubernetesVersion
 	t.Run("Version"+k8sVersionString, func(t *testing.T) {
-		testFunctional(t, k8sVersionString)
+		testFunctionalInternal(t, k8sVersionString)
 	})
 
 }
 
-func testFunctional(t *testing.T, k8sVersion string) {
+func testFunctionalInternal(t *testing.T, k8sVersion string) {
 	profile := UniqueProfileName("functional")
 	ctx := context.WithValue(context.Background(), ContextKey("k8sVersion"), k8sVersion)
 	ctx, cancel := context.WithTimeout(ctx, Minutes(40))
