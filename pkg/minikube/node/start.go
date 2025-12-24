@@ -510,6 +510,12 @@ func cgroupDriver(cc config.ClusterConfig) string {
 
 	// vm driver uses iso that boots with cgroupfs cgroup driver by default atm (keep in sync!)
 	if driver.IsVM(cc.Driver) {
+		if ver, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion); err == nil {
+			if ver.GTE(semver.MustParse("1.22.0")) {
+				klog.Infof("Kubernetes %s+ detected, using %q cgroup driver", ver.String(), constants.SystemdCgroupDriver)
+				return constants.SystemdCgroupDriver
+			}
+		}
 		return constants.CgroupfsCgroupDriver
 	}
 
