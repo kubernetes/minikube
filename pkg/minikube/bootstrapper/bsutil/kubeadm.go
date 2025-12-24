@@ -109,6 +109,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	}
 
 	// Disable cgroup v2 requirement for k8s 1.35+ if using cgroupfs
+	// TODO: remove this when minikube supports cgroup v2 for containerd and cri-o #22318
 	if version.GTE(semver.MustParse("1.35.0-alpha.0")) && cgroupDriver != constants.SystemdCgroupDriver {
 		kubeletConfigOpts["FailCgroupV1"] = "false"
 	}
