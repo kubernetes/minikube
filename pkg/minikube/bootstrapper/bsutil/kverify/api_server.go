@@ -180,6 +180,9 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 				return state.Paused, nil
 			}
 			return apiServerHealthz(hostname, port)
+		} else {
+			// Log cgroup v2 check failure at debug level for troubleshooting
+			klog.V(1).Infof("cgroup v2 apiserver status check for pid %d failed: %v", pid, err2)
 		}
 
 		klog.Warningf("unable to find freezer cgroup: %v", err)
