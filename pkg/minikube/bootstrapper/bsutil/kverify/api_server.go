@@ -235,7 +235,19 @@ func isCgroupV2Paused(cr command.Runner, pid int) (bool, error) {
 		return false, err
 	}
 
-	return strings.TrimSpace(rr.Stdout.String()) == "1", nil
+	freezeVal := strings.TrimSpace(rr.Stdout.String())
+	switch freezeVal {
+	case "1":
+		// 1 means the cgroup is frozen
+		return true, nil
+	case "0":
+		// 0 means the cgroup is not frozen
+		return false, nil
+	default:
+		// Any other value is unexpected and may indicate corruption or an unsupported state
+		klog.Warningf("unexpected cgroup.freeze value %q for pid %d in cgroup path %q", freezeVal, pid, cgroupPath)
+		return false, fmt.Errorf("unexpected cgroup.freeze value %q", freezeVal)
+	}
 }
 
 // nonFreezerServerStatus is the alternative flow if the guest does not have the freezer cgroup so different methods to detect the apiserver status are used
