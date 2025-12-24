@@ -83,6 +83,7 @@ type SvcURL struct {
 	Name      string
 	URLs      []string
 	PortNames []string
+	UseHTTPS  bool
 }
 
 // URLs represents a list of URL
@@ -146,6 +147,7 @@ func GetServiceURLsForService(api libmachine.API, cname string, namespace, servi
 }
 
 func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace string, t *template.Template) (SvcURL, error) {
+	useHTTPS := false
 	if t == nil {
 		return SvcURL{}, errors.New("Error, attempted to generate service url with nil --format template")
 	}
@@ -168,7 +170,9 @@ func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace st
 	urls := []string{}
 	portNames := []string{}
 	for _, port := range svc.Spec.Ports {
-
+		if port.Port == 443 || port.TargetPort.IntVal == 443 {
+			useHTTPS = true
+		}
 		if port.Name != "" {
 			m[port.TargetPort.IntVal] = fmt.Sprintf("%s/%d", port.Name, port.Port)
 		} else {
@@ -193,7 +197,7 @@ func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace st
 			portNames = append(portNames, m[port.TargetPort.IntVal])
 		}
 	}
-	return SvcURL{Namespace: svc.Namespace, Name: svc.Name, URLs: urls, PortNames: portNames}, nil
+	return SvcURL{Namespace: svc.Namespace, Name: svc.Name, URLs: urls, PortNames: portNames, UseHTTPS:  useHTTPS}, nil
 }
 
 // CheckService checks if a service is listening on a port.
@@ -294,7 +298,8 @@ func WaitForService(api libmachine.API, cname string, namespace string, service 
 	}
 
 	for _, bareURLString := range serviceURL.URLs {
-		urlString, _ := OptionallyHTTPSFormattedURLString(bareURLString, https)
+		useHTTPS := https || serviceURL.UseHTTPS
+		urlString, _ := OptionallyHTTPSFormattedURLString(bareURLString, useHTTPS)
 		urlList = append(urlList, urlString)
 	}
 	return urlList, nil
