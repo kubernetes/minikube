@@ -60,6 +60,20 @@ func (f *MockRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 				}
 			}
 		}
+		
+		// Handle crio config
+		if len(args) > 0 && args[0] == "crio" && len(args) > 1 && args[1] == "config" {
+			if f.Output != "" {
+				return &command.RunResult{Stdout: *bytes.NewBufferString(f.Output)}, nil
+			}
+			// Default crio config output
+			configOutput := `[crio.runtime.runtimes.runc]
+runtime_path = "/usr/bin/runc"
+runtime_type = "oci"
+runtime_root = "/run/runc"
+`
+			return &command.RunResult{Stdout: *bytes.NewBufferString(configOutput)}, nil
+		}
 	}
 	return f.FakeRunner.RunCmd(cmd)
 }
@@ -189,4 +203,65 @@ func TestCRIOPreload(t *testing.T) {
 			t.Error("tar not called")
 		}
 	})
+}
+
+func TestGetRuntimeRoot(t *testing.T) {
+	tests := []struct {
+		name           string
+		configOutput   string
+		expectedRoot   string
+	}{
+		{
+			name: "runtime_root configured",
+			configOutput: `[crio.runtime.runtimes.runc]
+runtime_path = "/usr/bin/runc"
+runtime_type = "oci"
+runtime_root = "/run/runc"
+`,
+			expectedRoot: "/run/runc",
+		},
+		{
+			name: "runtime_root with different path",
+			configOutput: `[crio.runtime.runtimes.runc]
+runtime_path = "/usr/bin/runc"
+runtime_type = "oci"
+runtime_root = "/run/crio/runc"
+`,
+			expectedRoot: "/run/crio/runc",
+		},
+		{
+			name: "runtime_root not found",
+			configOutput: `[crio.runtime.runtimes.runc]
+runtime_path = "/usr/bin/runc"
+runtime_type = "oci"
+`,
+			expectedRoot: "/run/runc",
+		},
+		{
+			name: "runtime_root empty",
+			configOutput: `[crio.runtime.runtimes.runc]
+runtime_path = "/usr/bin/runc"
+runtime_type = "oci"
+runtime_root = ""
+`,
+			expectedRoot: "/run/runc",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			fake := NewFakeRunner(t)
+			runner := &MockRunner{FakeRunner: fake, Output: tc.configOutput}
+			
+			r := &CRIO{
+				Runner:            runner,
+				KubernetesVersion: semver.MustParse("1.25.0"),
+			}
+
+			runtimeRoot := r.getRuntimeRoot()
+			if runtimeRoot != tc.expectedRoot {
+				t.Errorf("Expected runtime_root %q, got %q", tc.expectedRoot, runtimeRoot)
+			}
+		})
+	}
 }
