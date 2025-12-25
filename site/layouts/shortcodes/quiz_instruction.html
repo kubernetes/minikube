@@ -7,6 +7,8 @@
 {{ $installer := index $selected 4 }}
 
 <div data-quiz-id="{{ with .Get "id" | lower }}{{.}}{{end}}" class="quiz-instruction">
+{{ if ne (.Get "no_intro") "true" }}
 <p>To install the latest minikube <b>{{ lower $release }}</b> release on <b>{{ $arch }}</b> <b>{{ $os }}</b> using <b>{{ replace $installer "Binary" "binary" }}</b>:</p>
+{{ end }}
 {{ .Inner }}
 </div>
