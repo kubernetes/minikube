@@ -41,7 +41,7 @@ controlPlaneEndpoint: control-plane.minikube.internal:12345
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
-kubernetesVersion: v1.35.0-rc.1
+kubernetesVersion: v1.35.0
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16"
