@@ -383,7 +383,7 @@ func (r *CRIO) getRuntimeRoot() string {
 		klog.Warningf("failed to get crio config: %v", err)
 		return "/run/runc" // fallback to default
 	}
-	
+
 	// Parse the config output to find runtime_root under [crio.runtime.runtimes.runc]
 	lines := strings.Split(rr.Stdout.String(), "\n")
 	inRuncSection := false
@@ -412,7 +412,7 @@ func (r *CRIO) getRuntimeRoot() string {
 			}
 		}
 	}
-	
+
 	// Default fallback if not found
 	klog.Infof("runtime_root not found in crio config, using default: /run/runc")
 	return "/run/runc"
