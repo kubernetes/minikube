@@ -4,7 +4,7 @@
 [![GoReport Widget]][GoReport Status]
 [![GitHub All Releases](https://img.shields.io/github/downloads/kubernetes/minikube/total.svg)](https://github.com/kubernetes/minikube/releases/latest)
 [![Latest Release](https://img.shields.io/github/v/release/kubernetes/minikube?include_prereleases)](https://github.com/kubernetes/minikube/releases/latest)
-[![Open in GitHub Codespaces](https://img.shields.io/badge/Open%20in-GitHub%20Codespaces-blue?logo=github)](https://codespaces.new/kubernetes/minikube?quickstart=1)
+[![Try minikube in the browser (needs github login)](https://img.shields.io/badge/Try%20minikube-in%20browser-%23326ce5?logo=kubernetes&logoColor=white)](https://codespaces.new/kubernetes/minikube?quickstart=1)
 
 [GoReport Status]: https://goreportcard.com/report/github.com/kubernetes/minikube
 [GoReport Widget]: https://goreportcard.com/badge/github.com/kubernetes/minikube
