@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"path"
 	"slices"
+	"strings"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -42,6 +43,7 @@ const remoteContainerRuntime = "remote"
 // GenerateKubeadmYAML generates the kubeadm.yaml file for primary control-plane node.
 func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Manager) ([]byte, error) {
 	k8s := cc.KubernetesConfig
+	family := strings.ToLower(k8s.IPFamily)
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing Kubernetes version")
@@ -77,13 +79,24 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		return nil, errors.Wrap(err, "cni")
 	}
 
-	podCIDR := cnm.CIDR()
-	overrideCIDR := k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm)
-	if overrideCIDR != "" {
-		podCIDR = overrideCIDR
+	// Build podSubnet(s) based on IP family
+	v4Pod := cnm.CIDR()
+	if o := k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm); o != "" {
+		v4Pod = o
 	}
-	klog.Infof("Using pod CIDR: %s", podCIDR)
-
+	var podSubnets []string
+	if family != "ipv6" && v4Pod != "" {
+		podSubnets = append(podSubnets, v4Pod)
+	}
+	if family != "ipv4" && k8s.PodCIDRv6 != "" {
+		podSubnets = append(podSubnets, k8s.PodCIDRv6)
+	}
+	podCIDR := strings.Join(podSubnets, ",")
+	if podCIDR != "" {
+		klog.Infof("Using pod subnet(s): %s", podCIDR)
+	} else {
+		klog.Infof("No pod subnet set via kubeadm (CNI will configure)")
+	}
 	// ref: https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration
 	kubeletConfigOpts := kubeletConfigOpts(k8s.ExtraOptions)
 	// container-runtime-endpoint kubelet flag was deprecated but corresponding containerRuntimeEndpoint kubelet config field is "required" but supported only from k8s v1.27
@@ -108,60 +121,106 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		kubeletConfigOpts["runtimeRequestTimeout"] = "15m"
 	}
 
+	serviceCIDR := buildServiceCIDR(family, k8s)
+	advertiseAddress, nodeIP := advertiseAddressAndNodeIP(family, n)
+
+	cpEndpoint := fmt.Sprintf("%s:%d", constants.ControlPlaneAlias, nodePort)
+	if family == "ipv6" && advertiseAddress != "" {
+		cpEndpoint = fmt.Sprintf("[%s]:%d", advertiseAddress, nodePort)
+	}
+
+	if family == "ipv6" || family == "dual" {
+		ensured := false
+		for i := range componentOpts {
+			// match "apiServer" regardless of accidental casing
+			if strings.EqualFold(componentOpts[i].Component, "apiServer") {
+				if componentOpts[i].ExtraArgs == nil {
+					componentOpts[i].ExtraArgs = map[string]string{}
+				}
+				if _, ok := componentOpts[i].ExtraArgs["bind-address"]; !ok {
+					componentOpts[i].ExtraArgs["bind-address"] = "::"
+				}
+				// normalize the component name so the template emits 'apiServer'
+				componentOpts[i].Component = "apiServer"
+				ensured = true
+				break
+			}
+		}
+		if !ensured {
+			componentOpts = append(componentOpts, componentOptions{
+				Component: "apiServer",
+				ExtraArgs: map[string]string{
+					"bind-address": "::",
+				},
+			})
+		}
+	}
+
+	apiServerCertSANs := []string{constants.ControlPlaneAlias}
+	switch strings.ToLower(k8s.IPFamily) {
+	case "ipv6":
+		apiServerCertSANs = append(apiServerCertSANs, "::1")
+	case "dual":
+		apiServerCertSANs = append(apiServerCertSANs, "127.0.0.1", "::1")
+	default: // ipv4
+		apiServerCertSANs = append(apiServerCertSANs, "127.0.0.1")
+	}
 	opts := struct {
-		CertDir                    string
-		ServiceCIDR                string
-		PodSubnet                  string
-		AdvertiseAddress           string
-		APIServerPort              int
-		KubernetesVersion          string
-		EtcdDataDir                string
-		EtcdExtraArgs              map[string]string
-		ClusterName                string
-		NodeName                   string
-		DNSDomain                  string
-		CRISocket                  string
-		ImageRepository            string
-		ComponentOptions           []componentOptions
-		FeatureArgs                map[string]bool
-		NodeIP                     string
-		CgroupDriver               string
-		ClientCAFile               string
-		StaticPodPath              string
-		ControlPlaneAddress        string
-		KubeProxyOptions           map[string]string
-		ResolvConfSearchRegression bool
-		KubeletConfigOpts          map[string]string
-		PrependCriSocketUnix       bool
+		CertDir                     string
+		ServiceCIDR                 string
+		PodSubnet                   string
+		AdvertiseAddress            string
+		APIServerCertSANs           []string
+		APIServerPort               int
+		KubernetesVersion           string
+		EtcdDataDir                 string
+		EtcdExtraArgs               map[string]string
+		ClusterName                 string
+		NodeName                    string
+		DNSDomain                   string
+		CRISocket                   string
+		ImageRepository             string
+		ComponentOptions            []componentOptions
+		FeatureArgs                 map[string]bool
+		NodeIP                      string
+		CgroupDriver                string
+		ClientCAFile                string
+		StaticPodPath               string
+		ControlPlaneAddress         string
+		KubeProxyOptions            map[string]string
+		ResolvConfSearchRegression  bool
+		KubeletConfigOpts           map[string]string
+		PrependCriSocketUnix        bool
+		ControlPlaneEndpoint        string
+		KubeProxyMetricsBindAddress string
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
-		ServiceCIDR:       constants.DefaultServiceCIDR,
+		ServiceCIDR:       serviceCIDR,
 		PodSubnet:         podCIDR,
-		AdvertiseAddress:  n.IP,
+		AdvertiseAddress:  advertiseAddress,
+		APIServerCertSANs: apiServerCertSANs,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       EtcdDataDir(),
 		EtcdExtraArgs:     etcdExtraArgs(k8s.ExtraOptions),
 		ClusterName:       cc.Name,
 		// kubeadm uses NodeName as the --hostname-override parameter, so this needs to be the name of the machine
-		NodeName:                   KubeNodeName(cc, n),
-		CRISocket:                  r.SocketPath(),
-		ImageRepository:            k8s.ImageRepository,
-		ComponentOptions:           componentOpts,
-		FeatureArgs:                kubeadmFeatureArgs,
-		DNSDomain:                  k8s.DNSDomain,
-		NodeIP:                     n.IP,
-		CgroupDriver:               cgroupDriver,
-		ClientCAFile:               path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
-		StaticPodPath:              vmpath.GuestManifestsDir,
-		ControlPlaneAddress:        constants.ControlPlaneAlias,
-		KubeProxyOptions:           createKubeProxyOptions(k8s.ExtraOptions),
-		ResolvConfSearchRegression: HasResolvConfSearchRegression(k8s.KubernetesVersion),
-		KubeletConfigOpts:          kubeletConfigOpts,
-	}
-
-	if k8s.ServiceCIDR != "" {
-		opts.ServiceCIDR = k8s.ServiceCIDR
+		NodeName:                    KubeNodeName(cc, n),
+		CRISocket:                   r.SocketPath(),
+		ImageRepository:             k8s.ImageRepository,
+		ComponentOptions:            componentOpts,
+		FeatureArgs:                 kubeadmFeatureArgs,
+		DNSDomain:                   k8s.DNSDomain,
+		NodeIP:                      nodeIP,
+		CgroupDriver:                cgroupDriver,
+		ClientCAFile:                path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
+		StaticPodPath:               vmpath.GuestManifestsDir,
+		ControlPlaneAddress:         constants.ControlPlaneAlias,
+		KubeProxyOptions:            createKubeProxyOptions(k8s.ExtraOptions),
+		ResolvConfSearchRegression:  HasResolvConfSearchRegression(k8s.KubernetesVersion),
+		KubeletConfigOpts:           kubeletConfigOpts,
+		ControlPlaneEndpoint:        cpEndpoint,
+		KubeProxyMetricsBindAddress: kubeProxyMetricsBindAddress(family),
 	}
 
 	configTmpl := ktmpl.V1Beta1
@@ -232,6 +291,49 @@ func KubeadmCmdWithPath(version string) string {
 // EtcdDataDir is where etcd data is stored.
 func EtcdDataDir() string {
 	return path.Join(vmpath.GuestPersistentDir, "etcd")
+}
+
+func buildServiceCIDR(family string, k8s config.KubernetesConfig) string {
+	// v4 default comes from constants; v6 is expected to be set via ServiceCIDRv6
+	v4Svc := constants.DefaultServiceCIDR
+	if k8s.ServiceCIDR != "" {
+		v4Svc = k8s.ServiceCIDR
+	}
+
+	var svcSubnets []string
+	if family != "ipv6" && v4Svc != "" {
+		svcSubnets = append(svcSubnets, v4Svc)
+	}
+	if family != "ipv4" && k8s.ServiceCIDRv6 != "" {
+		svcSubnets = append(svcSubnets, k8s.ServiceCIDRv6)
+	}
+	return strings.Join(svcSubnets, ",")
+}
+
+func advertiseAddressAndNodeIP(family string, n config.Node) (string, string) {
+	advertiseAddress := n.IP
+	nodeIP := n.IP
+
+	if family == "ipv6" && n.IPv6 != "" {
+		advertiseAddress = n.IPv6
+		nodeIP = n.IPv6
+	} else if family == "dual" {
+		// Let kubelet auto-detect both; don’t force a single family.
+		nodeIP = ""
+	}
+	return advertiseAddress, nodeIP
+}
+
+func kubeProxyMetricsBindAddress(family string) string {
+	switch strings.ToLower(family) {
+	case "ipv6":
+		return "[::]:10249"
+	case "dual":
+		// Bind v6-any; on most systems this also accepts v4 via v6-mapped addresses (when v6only=0).
+		return "[::]:10249"
+	default: // ipv4
+		return "0.0.0.0:10249"
+	}
 }
 
 func etcdExtraArgs(extraOpts config.ExtraOptionSlice) map[string]string {
