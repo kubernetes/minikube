@@ -20,5 +20,5 @@
 			"version": "latest"
 		}
 	},
-	"postCreateCommand": "cat .devcontainer/aliases.sh >> $HOME/.bashrc"
+	"postCreateCommand": "cat .devcontainer/.bashrc.sh >> $HOME/.bashrc"
 }
