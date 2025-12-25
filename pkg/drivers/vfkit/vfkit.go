@@ -427,7 +427,7 @@ func (d *Driver) setupIP(mac string) error {
 	// Implement a retry loop because IP address isn't added to dhcp leases file immediately
 	multiplier := 1
 	if detect.NestedVM() {
-		multiplier = 3 // will help with running in Free github action Macos VMs (takes 160+ retries on average)
+		multiplier = 3 // will help with running in Free github action Macos VMs (takes 112+ retries on average)
 	}
 	for i := 0; i < 60*multiplier; i++ {
 		log.Debugf("Attempt %d", i)

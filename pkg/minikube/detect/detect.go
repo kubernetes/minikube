@@ -234,8 +234,13 @@ func NestedVM() bool {
 			klog.Warningf("Failed to check for nested VM: %v", err)
 			return false
 		}
-		klog.Infof("nested VM detected, %s", o)
-		return true
+		// kern.hv_vmm_present returns "1" if running in a VM, "0" on bare metal
+		value := strings.TrimSpace(string(o))
+		if value == "1" {
+			klog.Infof("nested VM detected (kern.hv_vmm_present=%s)", value)
+			return true
+		}
+		return false
 	}
 	return false
 }

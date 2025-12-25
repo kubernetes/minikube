@@ -19,5 +19,6 @@
 		"ghcr.io/devcontainers/features/go:1": {
 			"version": "latest"
 		}
-	}
+	},
+	"postCreateCommand": "cat .devcontainer/.bashrc.sh >> $HOME/.bashrc"
 }

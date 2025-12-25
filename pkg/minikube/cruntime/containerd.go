@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -283,11 +284,18 @@ func (r *Containerd) ListImages(ListImagesOptions) ([]ListImage, error) {
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(imagePath string) error {
 	klog.Infof("Loading image: %s", imagePath)
-	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "import", imagePath)
-	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "ctr images import")
-	}
-	return nil
+	// retry up to 3 times handle transient "short read" or "unexpected EOF" errors example #22309
+	return retry.Expo(func() error {
+		c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "import", imagePath)
+		if _, err := r.Runner.RunCmd(c); err != nil {
+			// Only retry on transient "short read" or "unexpected EOF" errors
+			if strings.Contains(err.Error(), "short read") || strings.Contains(err.Error(), "unexpected EOF") {
+				return errors.Wrapf(err, "ctr images import")
+			}
+			return backoff.Permanent(errors.Wrapf(err, "ctr images import"))
+		}
+		return nil
+	}, 250*time.Millisecond, 2*time.Minute, 3)
 }
 
 // PullImage pulls an image into this runtime
