@@ -32,13 +32,17 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
+	apiCorev1 "k8s.io/api/core/v1"
 	core "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	corev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	discoveryv1ac "k8s.io/client-go/applyconfigurations/discovery/v1"
 	"k8s.io/client-go/gentype"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	typed_discovery "k8s.io/client-go/kubernetes/typed/discovery/v1"
@@ -47,10 +51,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
-	apiCorev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8sfake "k8s.io/client-go/kubernetes/fake"
-	"github.com/stretchr/testify/require"
 )
 
 // MockClientGetter is a mock Kubernetes client getter - NOT THREAD SAFE

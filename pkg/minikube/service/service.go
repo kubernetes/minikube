@@ -197,7 +197,7 @@ func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace st
 			portNames = append(portNames, m[port.TargetPort.IntVal])
 		}
 	}
-	return SvcURL{Namespace: svc.Namespace, Name: svc.Name, URLs: urls, PortNames: portNames, UseHTTPS:  useHTTPS}, nil
+	return SvcURL{Namespace: svc.Namespace, Name: svc.Name, URLs: urls, PortNames: portNames, UseHTTPS: useHTTPS}, nil
 }
 
 // CheckService checks if a service is listening on a port.
