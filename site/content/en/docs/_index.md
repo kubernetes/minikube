@@ -18,7 +18,7 @@ minikube quickly sets up a local Kubernetes cluster on macOS, Linux, and Windows
 * Supports the latest Kubernetes release (+6 previous minor versions)
 * Supports GPUs for AI development ([nvidia]({{< ref "/docs/tutorials/nvidia.md" >}}), [amd]({{< ref "/docs/tutorials/amd.md" >}}), [apple]({{< ref "/docs/tutorials/ai-playground.md" >}}))
 * Cross-platform (Linux, macOS, Windows)
-* Deploy as a VM, a container, or on bare-metal
+* Deploy as a VM, a container, or on bare-metal or [try in your browser](https://codespaces.new/kubernetes/minikube?quickstart=1).
 * Multiple container runtimes (CRI-O, containerd, docker)
 * Direct API endpoint for blazing fast [image load and build]({{< ref "/docs/handbook/pushing.md" >}})
 * Advanced features such as [LoadBalancer]({{< ref "/docs/handbook/accessing.md#loadbalancer-access" >}}), filesystem mounts, FeatureGates, and [network policy]({{< ref "docs/handbook/network_policy.md" >}})
