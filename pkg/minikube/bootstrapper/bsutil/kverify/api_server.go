@@ -174,9 +174,19 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 	// Get the freezer cgroup entry for this pid
 	rr, err := cr.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", fmt.Sprintf("/proc/%d/cgroup", pid)))
 	if err != nil {
+		// Try cgroup v2 before giving up
+		if paused, err2 := isCgroupV2Paused(cr, pid); err2 == nil {
+			if paused {
+				return state.Paused, nil
+			}
+			return apiServerHealthz(hostname, port)
+		} else {
+			// Log cgroup v2 check failure at debug level for troubleshooting
+			klog.V(1).Infof("cgroup v2 apiserver status check for pid %d failed: %v", pid, err2)
+		}
+
 		klog.Warningf("unable to find freezer cgroup: %v", err)
 		return nonFreezerServerStatus(cr, hostname, port)
-
 	}
 	freezer := strings.TrimSpace(rr.Stdout.String())
 	klog.Infof("apiserver freezer: %q", freezer)
@@ -206,6 +216,42 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 		return state.Paused, nil
 	}
 	return apiServerHealthz(hostname, port)
+}
+
+// isCgroupV2Paused checks if the process is paused using cgroup v2
+// ref: https://docs.kernel.org/admin-guide/cgroup-v2.html#freezer
+func isCgroupV2Paused(cr command.Runner, pid int) (bool, error) {
+	// 0::/path/to/cgroup
+	rr, err := cr.RunCmd(exec.Command("sudo", "grep", "^0::", fmt.Sprintf("/proc/%d/cgroup", pid)))
+	if err != nil {
+		return false, err
+	}
+	line := strings.TrimSpace(rr.Stdout.String())
+	parts := strings.SplitN(line, ":", 3)
+	if len(parts) < 3 {
+		return false, fmt.Errorf("invalid cgroup v2 format: expected at least 3 colon-separated parts, got %d from line %q", len(parts), line)
+	}
+	cgroupPath := parts[2]
+
+	// Check cgroup.freeze
+	rr, err = cr.RunCmd(exec.Command("sudo", "cat", path.Join("/sys/fs/cgroup", cgroupPath, "cgroup.freeze")))
+	if err != nil {
+		return false, err
+	}
+
+	freezeVal := strings.TrimSpace(rr.Stdout.String())
+	switch freezeVal {
+	case "1":
+		// 1 means the cgroup is frozen
+		return true, nil
+	case "0":
+		// 0 means the cgroup is not frozen
+		return false, nil
+	default:
+		// Any other value is unexpected and may indicate corruption or an unsupported state
+		klog.Warningf("unexpected cgroup.freeze value %q for pid %d in cgroup path %q", freezeVal, pid, cgroupPath)
+		return false, fmt.Errorf("unexpected cgroup.freeze value %q", freezeVal)
+	}
 }
 
 // nonFreezerServerStatus is the alternative flow if the guest does not have the freezer cgroup so different methods to detect the apiserver status are used

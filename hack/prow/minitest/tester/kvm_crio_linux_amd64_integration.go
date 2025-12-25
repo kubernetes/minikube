@@ -24,5 +24,5 @@ type KVMCRIOLinuxAmd64IntegrationTester struct {
 
 // Run implements MiniTestTester.
 func (k *KVMCRIOLinuxAmd64IntegrationTester) Run(runner MiniTestRunner) error {
-	return kvmGeneralTester(runner, "./hack/prow/integration_kvm_crio_linux_x86-64.sh")
+	return kvmGeneralTester(runner, "./hack/prow/integration_kvm_crio_linux_x86.sh")
 }

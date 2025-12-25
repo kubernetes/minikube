@@ -56,12 +56,18 @@ func SetAliyunMirror() {
 
 // CreateDstDownloadMock is the default mock implementation of download.
 func CreateDstDownloadMock(_, dst string) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return errors.Wrap(err, "mkdir")
 	}
 
-	_, err := os.Create(dst)
-	return err
+	f, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // download is a well-configured atomic download function

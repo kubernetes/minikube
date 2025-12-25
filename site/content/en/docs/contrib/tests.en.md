@@ -736,7 +736,9 @@ makes sure no left over left after deleting a profile such as containers or volu
 makes sure paused clusters show up in minikube status correctly
 
 ## TestPreload
-verifies that disabling the initial preload, pulling a specific image, and restarting the cluster preserves the image across restarts.
+verifies that disabling the initial preload, pulling a specific image,
+and restarting the cluster preserves the image across restarts.
+also tests --preload-source should work for both github and gcs
 
 ## TestScheduledStopWindows
 tests the schedule stop functionality on Windows

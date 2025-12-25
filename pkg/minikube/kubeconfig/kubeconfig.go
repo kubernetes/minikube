@@ -157,8 +157,8 @@ func configIssues(cfg *api.Config, contextName string, address string) []error {
 
 // populateCerts retains certs already defined in kubeconfig or sets default ones for those missing.
 func populateCerts(kcs *Settings, cfg api.Config, contextName string) {
-	lp := localpath.Profile(contextName)
-	gp := localpath.MiniPath()
+	gp := filepath.ToSlash(localpath.MiniPath())
+	lp := filepath.ToSlash(localpath.Profile(contextName))
 
 	kcs.CertificateAuthority = path.Join(gp, "ca.crt")
 	if cluster, ok := cfg.Clusters[contextName]; ok {

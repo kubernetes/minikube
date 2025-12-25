@@ -17,6 +17,7 @@ limitations under the License.
 package none
 
 import (
+	"encoding/json"
 	"fmt"
 	"os/exec"
 
@@ -47,9 +48,10 @@ var cleanupPaths = []string{
 type Driver struct {
 	*drivers.BaseDriver
 	*common.CommonDriver
-	URL     string
-	runtime cruntime.Manager
-	exec    command.Runner
+	URL              string
+	ContainerRuntime string
+	runtime          cruntime.Manager
+	exec             command.Runner
 }
 
 // Config is configuration for the None driver
@@ -72,8 +74,9 @@ func NewDriver(c Config) *Driver {
 			MachineName: c.MachineName,
 			StorePath:   c.StorePath,
 		},
-		runtime: runtime,
-		exec:    runner,
+		ContainerRuntime: c.ContainerRuntime,
+		runtime:          runtime,
+		exec:             runner,
 	}
 }
 
@@ -217,16 +220,66 @@ func (d *Driver) Stop() error {
 			klog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
 	}
-	containers, err := d.runtime.ListContainers(cruntime.ListContainersOptions{})
+	// Stop running containers
+	running, err := d.runtime.ListContainers(cruntime.ListContainersOptions{State: cruntime.Running})
 	if err != nil {
-		return errors.Wrap(err, "containers")
+		return errors.Wrap(err, "list running containers")
 	}
-	if len(containers) > 0 {
-		if err := d.runtime.StopContainers(containers); err != nil {
-			return errors.Wrap(err, "stop containers")
+	if len(running) > 0 {
+		if err := d.runtime.StopContainers(running); err != nil {
+			return errors.Wrap(err, "stop running containers")
+		}
+	}
+
+	// Stop paused containers
+	paused, err := d.runtime.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused})
+	if err != nil {
+		return errors.Wrap(err, "list paused containers")
+	}
+	if len(paused) > 0 {
+		if err := d.runtime.StopContainers(paused); err != nil {
+			return errors.Wrap(err, "stop paused containers")
 		}
 	}
 	klog.Infof("none driver is stopped!")
+	return nil
+}
+
+func (d *Driver) ensureRuntime() {
+	if d.ContainerRuntime == "" {
+		return
+	}
+	if d.runtime != nil && d.runtime.Name() == d.ContainerRuntime {
+		return
+	}
+	var current string
+	if d.runtime != nil {
+		current = d.runtime.Name()
+	}
+	klog.Infof("Updating runtime from %q to %q", current, d.ContainerRuntime)
+	r, err := cruntime.New(cruntime.Config{Type: d.ContainerRuntime, Runner: d.exec})
+	if err != nil {
+		klog.Warningf("unable to re-create container runtime: %v", err)
+		return
+	}
+	d.runtime = r
+}
+
+// for sake of Encapsulation implementing an interface that encoding/json package looks for.
+// will be called Load & NewHost funcs in pkg/minikube/machine/client.go
+// Other drivers dont need this special handling
+// because their "stop" only needs to know about VM and not runtime.
+func (d *Driver) UnmarshalJSON(data []byte) error {
+	type Alias Driver
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(d),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	d.ensureRuntime()
 	return nil
 }
 

@@ -35,39 +35,42 @@ concurrency:
   cancel-in-progress: true
 jobs:
   minikube-vm-boot:
-    name: Boot
+    name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - driver: qemu
+          - name: qemu-docker-macos-15-x86
+            driver: qemu
             os: macos-15-intel
-            network_flag: --network socket_vmnet
-          - driver: vfkit
+            start_flags: --network socket_vmnet --force
+            sudo: "sudo"
+          - name: vfkit-docker-macos-15-x86
+            driver: vfkit
             os: macos-15-intel
-            network_flag: --network vmnet-shared
-          - driver: docker
+            start_flags: --network vmnet-shared --force
+            sudo: "sudo"
+          - name: docker-docker-ubuntu-24.04-x86
+            driver: docker
             os: ubuntu-24.04
-            network_flag: ""
-          - driver: docker
+            start_flags: ""
+            sudo: ""
+          - name: docker-docker-ubuntu-24.04-arm
+            driver: docker
             os: ubuntu-24.04-arm
-            network_flag: ""
+            start_flags: ""
+            sudo: ""
     steps:
       - id: info-block
         uses: medyagh/info-block@main
-      - name: Load avg and free memory
+      - name: Disable spotlight indexing (macos)
+        if: contains(matrix.os, 'macos')
         run: |
-          echo "memory_gb=${{ steps.info-block.outputs.memory_gb }}"
-          echo "cpu_cores=${{ steps.info-block.outputs.cpu_cores }}"
-          echo "load_average=${{ steps.info-block.outputs.load_average }}"
-          echo "free_mem=${{ steps.info-block.outputs.free_mem }}"
-          load_avg=${{ steps.info-block.outputs.load_average }}
-          cores=${{ steps.info-block.outputs.cpu_cores }}
-          if (( $(echo "$load_avg / $cores > 2" | bc -l) )); then
-            echo "Load average per core is above 2; stopping job early."
-            exit 1
-          fi
+          # Disable indexing globally
+          sudo mdutil -a -i off
+          # Erase Existing Indexes
+          sudo mdutil -E /
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
         with:
@@ -93,28 +96,51 @@ jobs:
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
+      - name: Inspect host before test (macos)
+        if: contains(matrix.os, 'macos')
+        run: |
+          echo "=== Top ==="
+          top -l 2 -s 10 -n 20 -stats pid,command,cpu,time,mem
+          echo "=== Interfaces ==="
+          ifconfig -u
+          echo "=== Routing table ==="
+          netstat -rn -f inet
+          echo "=== Packet Filter ==="
+          sudo pfctl -s all || true
       - name: Start minikube (1st boot)
         run: |
-          ./out/minikube start \
+          ${{ matrix.sudo }} ./out/minikube start \
+              ${{ env.LOG_ARGS }} \
               --no-kubernetes \
-              --memory 4gb \
+              --cpus 2 \
+              --memory 3gb \
               --driver ${{ matrix.driver }} \
-              ${{ matrix.network_flag }} \
-              ${{ env.LOG_ARGS }}
+              ${{ matrix.start_flags }}
+      - name: Inspect host after test (macos)
+        if: always() && contains(matrix.os, 'macos')
+        run: |
+          echo "=== Top ==="
+          top -l 2 -s 10 -n 20 -stats pid,command,cpu,time,mem
+          echo "=== Interfaces ==="
+          ifconfig -u
+          echo "=== Routing table ==="
+          netstat -rn -f inet
+          echo "=== Packet Filter ==="
+          sudo pfctl -s all || true
       - name: Inspect minikube
         if: always()
         run: |
-          tree -h ~/.minikube
+          ${{ matrix.sudo }} tree -h ~/.minikube
           machine="$HOME/.minikube/machines/minikube"
-          machine_logs=$(find "$machine" -name "*.log")
+          machine_logs=$(${{ matrix.sudo }} find "$machine" -name "*.log")
           minikube_logs="$HOME/.minikube/logs/lastStart.txt"
           for f in $machine_logs $minikube_logs /var/db/dhcpd_leases; do
             echo "==> $f <=="
-            head -n 1000 "$f" || true
+            ${{ matrix.sudo }} head -n 1000 "$f" || true
           done
       - name: Stop minikube
-        run: ./out/minikube stop ${{ env.LOG_ARGS }}
+        run: ${{ matrix.sudo }} ./out/minikube stop ${{ env.LOG_ARGS }}
       - name: Start minikube again (2nd boot)
-        run: ./out/minikube start ${{ env.LOG_ARGS }}
+        run: ${{ matrix.sudo }} ./out/minikube start ${{ env.LOG_ARGS }} ${{ matrix.start_flags }}
       - name: Delete minikube
-        run: ./out/minikube delete ${{ env.LOG_ARGS }}
+        run: ${{ matrix.sudo }} ./out/minikube delete ${{ env.LOG_ARGS }}

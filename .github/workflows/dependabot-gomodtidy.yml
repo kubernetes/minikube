@@ -1,0 +1,38 @@
+name: "dependabot-gomodtidy"
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "go.mod"
+      - "go.sum"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  dependabot-gomodtidy:
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == 'kubernetes/minikube'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.MINIKUBE_BOT_PAT }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Run make gomodtidy
+        run: |
+          make gomodtidy
+          if [[ -n $(git status --porcelain) ]]; then
+            git config --global user.name "minikube-bot"
+            git config --global user.email "minikube-bot@google.com"
+            git add .
+            git commit -m "update go.mod and go.sum"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi

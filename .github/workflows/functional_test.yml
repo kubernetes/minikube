@@ -41,7 +41,7 @@ jobs:
             arch: amd64
             runs-on: ubuntu-24.04
             make-targets: e2e-linux-amd64
-          - name: build-test-binaries-arm64
+          - name: build-test-binaries-arm
             arch: arm64
             runs-on: ubuntu-24.04-arm
             make-targets: e2e-linux-arm64
@@ -60,7 +60,7 @@ jobs:
           make ${{ matrix.make-targets }}
           cp -r test/integration/testdata ./out
       - name: Upload Test Binaries
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: binaries-${{ matrix.arch }}
           path: out
@@ -74,57 +74,71 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: docker-docker-ubuntu24.04-x86_64
+          - name: docker-docker-ubuntu24.04-x86
             driver: docker
             cruntime: docker
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 15m 
-          - name: docker-docker-ubuntu24.04-arm64
+            test-timeout: 18m
+          - name: docker-docker-ubuntu24.04-arm
             driver: docker
             cruntime: docker
             os: ubuntu-24.04-arm
             arch: arm64
-            test-timeout: 15m 
-          - name: docker-containerd-ubuntu-24.04-x86_64
+            test-timeout: 18m 
+          - name: docker-containerd-ubuntu-24.04-x86
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 15m 
-          - name: docker-containerd-ubuntu-24.04-arm64
+            test-timeout: 18m 
+          - name: docker-containerd-ubuntu-24.04-arm
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04-arm
             arch: arm64
-            test-timeout: 15m 
-          - name: docker-containerd-rootless-ubuntu-24.04-x86_64
+            test-timeout: 18m 
+          - name: docker-containerd-rootless-ubuntu-24.04-x86
             driver: docker
             cruntime: containerd
             os: ubuntu-24.04            
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
             arch: amd64
-            test-timeout: 15m 
-          - name: podman-docker-ubuntu-24.04-x86_64
+            test-timeout: 18m 
+          - name: podman-docker-ubuntu-24.04-x86
             driver: podman
             cruntime: docker
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 15m
-          - name: baremetal-docker-ubuntu-24.04-x86_64
+            test-timeout: 22m
+          - name: baremetal-docker-ubuntu-24.04-x86
             driver: none
             cruntime: docker
             os: ubuntu-24.04
             arch: amd64
             test-timeout: 10m
-          - name: baremetal-docker-ubuntu-24.04-arm64
+          - name: baremetal-docker-ubuntu-24.04-arm
             driver: none
             cruntime: docker
             os: ubuntu-24.04-arm
             arch: arm64
+            test-timeout: 10m
+          - name: baremetal-containerd-ubuntu-24.04-x86
+            driver: none
+            cruntime: containerd
+            os: ubuntu-24.04
+            arch: amd64
+            extra-start-args: --container-runtime=containerd
+            test-timeout: 10m
+          - name: baremetal-containerd-ubuntu-24.04-arm
+            driver: none
+            cruntime: containerd
+            os: ubuntu-24.04-arm
+            arch: arm64
+            extra-start-args: --container-runtime=containerd
             test-timeout: 10m
     steps:
       - id: info-block
@@ -170,7 +184,7 @@ jobs:
         run: sudo apt-get update -qq
       - name: Install cri_dockerd (baremetal only)
         shell: bash
-        if: matrix.driver == 'none'
+        if: matrix.driver == 'none' && matrix.cruntime == 'docker'
         run: |
           CRI_DOCKERD_VERSION="v0.4.1"
           CRI_DOCKERD_COMMIT="55d6e1a1d6f2ee58949e13a0c66afe7d779ac942"
@@ -265,7 +279,7 @@ jobs:
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
       - name: Download Test Binaries
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: binaries-${{ matrix.arch }}
       - name: Disable AppArmor for MySQL
@@ -273,6 +287,15 @@ jobs:
         run: |
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+      - name: Install containerd (baremetal only)
+        if: matrix.driver == 'none' && matrix.cruntime == 'containerd'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y containerd
+          # Configure containerd
+          sudo mkdir -p /etc/containerd
+          containerd config default | sudo tee /etc/containerd/config.toml
+          sudo systemctl restart containerd
       - name: Run Functional Test
         id: run_test
         continue-on-error: true
@@ -341,7 +364,7 @@ jobs:
             echo "RUN_ID_SHORT=${RUN_ID_SHORT}" >> $GITHUB_OUTPUT
       - name: Upload Gopogh report
         id: upload_gopogh
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
             name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}-run-${{ steps.vars.outputs.RUN_ID_SHORT}}
             path: ./report
