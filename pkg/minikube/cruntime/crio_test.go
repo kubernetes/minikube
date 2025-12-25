@@ -272,7 +272,7 @@ runtime_root="/run/crio/runc"
 		t.Run(tc.name, func(t *testing.T) {
 			fake := NewFakeRunner(t)
 			runner := &MockRunner{FakeRunner: fake, Output: tc.configOutput}
-			
+
 			r := &CRIO{
 				Runner:            runner,
 				KubernetesVersion: semver.MustParse("1.25.0"),
