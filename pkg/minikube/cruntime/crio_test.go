@@ -246,6 +246,26 @@ runtime_root = ""
 `,
 			expectedRoot: "/run/runc",
 		},
+		{
+			name: "runtime_root with comments",
+			configOutput: `[crio.runtime.runtimes.runc]
+# This is a comment
+runtime_path = "/usr/bin/runc"
+runtime_type = "oci"
+# runtime_root = "/commented/path"
+runtime_root = "/run/runc"
+`,
+			expectedRoot: "/run/runc",
+		},
+		{
+			name: "runtime_root without spaces around equals",
+			configOutput: `[crio.runtime.runtimes.runc]
+runtime_path="/usr/bin/runc"
+runtime_type="oci"
+runtime_root="/run/crio/runc"
+`,
+			expectedRoot: "/run/crio/runc",
+		},
 	}
 
 	for _, tc := range tests {
