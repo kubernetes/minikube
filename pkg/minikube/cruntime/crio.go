@@ -389,6 +389,10 @@ func (r *CRIO) getRuntimeRoot() string {
 	inRuncSection := false
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
+		// Skip empty lines and comments
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
 		// Check if we entered the runc runtime section
 		if strings.HasPrefix(trimmed, "[crio.runtime.runtimes.runc]") {
 			inRuncSection = true
@@ -398,8 +402,8 @@ func (r *CRIO) getRuntimeRoot() string {
 		if inRuncSection && strings.HasPrefix(trimmed, "[") {
 			break
 		}
-		// Look for runtime_root in the runc section
-		if inRuncSection && strings.HasPrefix(trimmed, "runtime_root") {
+		// Look for runtime_root in the runc section (exact match with = or space after)
+		if inRuncSection && (strings.HasPrefix(trimmed, "runtime_root=") || strings.HasPrefix(trimmed, "runtime_root =")) {
 			// runtime_root = "/run/runc"
 			parts := strings.SplitN(trimmed, "=", 2)
 			if len(parts) == 2 {
