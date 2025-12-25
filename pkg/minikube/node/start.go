@@ -642,12 +642,19 @@ func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, cluste
 		if hostIP, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, h.DriverName); err != nil {
 			exit.Message(reason.DrvCPEndpoint, fmt.Sprintf("failed to construct cluster server address: %v", err), out.V{"profileArg": fmt.Sprintf("--profile=%s", clusterName)})
 		}
-	}
-	addr := fmt.Sprintf("https://%s", net.JoinHostPort(hostIP, strconv.Itoa(port)))
 
-	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.ReplaceAll(addr, hostIP, cc.KubernetesConfig.APIServerName)
+		if hostIP == "" {
+			hostIP = "localhost"
+		}
+
 	}
+
+	// Build address *after* picking the final host (don’t string-replace inside a bracketed IPv6 literal).
+	hostForAddr := hostIP
+	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
+		hostForAddr = cc.KubernetesConfig.APIServerName
+	}
+	addr := "https://" + net.JoinHostPort(hostForAddr, strconv.Itoa(port))
 
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
@@ -682,6 +689,50 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	ip, err := validateNetwork(hostInfo, runner, cfg.KubernetesConfig.ImageRepository)
 	if err != nil {
 		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to validate network")
+	}
+
+	if driver.IsKIC(cfg.Driver) {
+		containerName := config.MachineName(*cfg, *node)
+		// cfg.Driver is the oci binary name for KIC ("docker" or "podman")
+		ociBin := cfg.Driver
+
+		ipv4, ipv6, cipErr := oci.ContainerIPs(oci.Docker, containerName)
+		if cipErr != nil {
+			klog.Warningf("failed to get container IPs for %q via %s, falling back to host IP %q: %v",
+				containerName, ociBin, ip, cipErr)
+		} else {
+			fam := strings.ToLower(cfg.KubernetesConfig.IPFamily)
+			switch fam {
+			case "ipv6":
+				// For ipv6-only clusters, prefer the container IPv6 for node.IP
+				if ipv6 != "" {
+					node.IP = ipv6
+				} else if ipv4 != "" {
+					node.IP = ipv4
+				} else {
+					node.IP = ip
+				}
+			default:
+				// Default/dual keeps backward compat: prefer IPv4 for node.IP
+				if ipv4 != "" {
+					node.IP = ipv4
+				} else {
+					node.IP = ip
+				}
+			}
+			node.IPv6 = ipv6
+
+			// …and also update the copy inside cfg.Nodes, in case 'node'
+			// is a separate copy taken by the caller.
+			for i := range cfg.Nodes {
+				if cfg.Nodes[i].Name == node.Name {
+					cfg.Nodes[i].IPv6 = ipv6
+					break
+				}
+			}
+
+			klog.Infof("updated node %q IPv6 from container: ipv6=%q", node.Name, ipv6)
+		}
 	}
 
 	if driver.IsQEMU(hostInfo.Driver.DriverName()) && network.IsBuiltinQEMU(cfg.Network) {

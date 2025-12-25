@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -82,8 +83,13 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 		}
 	}
 
+	// Pick node-ip based on requested IP family
 	if _, ok := extraOpts["node-ip"]; !ok {
-		extraOpts["node-ip"] = nc.IP
+		family := strings.ToLower(k8s.IPFamily)
+		_, nodeIP := advertiseAddressAndNodeIP(family, nc)
+		if nodeIP != "" {
+			extraOpts["node-ip"] = nodeIP
+		}
 	}
 
 	if _, ok := extraOpts["hostname-override"]; !ok {
