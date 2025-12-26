@@ -376,12 +376,13 @@ func (r *CRIO) CGroupDriver() (string, error) {
 }
 
 // getRuntimeRoot returns the runtime_root path for runc from CRI-O configuration
+// Returns empty string if runtime_root is not set, which means runc will use its default
 func (r *CRIO) getRuntimeRoot() string {
 	c := exec.Command("crio", "config")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		klog.Warningf("failed to get crio config: %v", err)
-		return "/run/runc" // fallback to default
+		return "" // return empty to let runc use its default
 	}
 
 	// Parse the config output to find runtime_root under [crio.runtime.runtimes.runc]
@@ -417,9 +418,9 @@ func (r *CRIO) getRuntimeRoot() string {
 		}
 	}
 
-	// Default fallback if not found
-	klog.Infof("runtime_root not found in crio config, using default: /run/runc")
-	return "/run/runc"
+	// Return empty string if not found - runc will use its default behavior
+	klog.Infof("runtime_root not explicitly set in crio config, not passing --root to runc")
+	return ""
 }
 
 // KubeletOptions returns kubelet options for a runtime.
