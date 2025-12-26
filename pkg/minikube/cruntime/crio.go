@@ -297,7 +297,7 @@ func (r *CRIO) SaveImage(name string, destPath string) error {
 
 // RemoveImage removes a image
 func (r *CRIO) RemoveImage(name string) error {
-	return removeCRIImage(r.Runner, name)
+	return removeCRIImage(r.Runner, name, true)
 }
 
 // TagImage tags an image in this runtime
@@ -434,6 +434,40 @@ func (r *CRIO) Preload(cc config.ClusterConfig) error {
 		return nil
 	}
 
+	// Double check if there are any images in the runtime to avoid data loss on restart
+	// The crio preload tarball is a filesystem dump that overwrites /var
+	// we backup and restore any existing images
+	// simmilar to  docker runtime implemented in pkg/minikube/cruntime/docker.go.
+	// It uses a special helper (pkg/minikube/docker/store.go) to explicitly save and merge the repositories.json file (Docker's image index)
+	// before and after the tarball extraction.
+	allImages, err := r.ListImages(ListImagesOptions{})
+	if err != nil {
+		klog.Warningf("failed to list images: %v", err)
+	}
+
+	var backupDir string
+	if len(allImages) > 0 {
+		klog.Infof("Found %d existing images, backing up...", len(allImages))
+		if rr, err := r.Runner.RunCmd(exec.Command("mktemp", "-d")); err == nil {
+			backupDir = strings.TrimSpace(rr.Stdout.String())
+		} else {
+			klog.Errorf("failed to create backup dir: %v. Skipping preload.", err)
+			return nil
+		}
+
+		for _, img := range allImages {
+			name := img.ID
+			if len(img.RepoTags) > 0 {
+				name = img.RepoTags[0]
+			}
+			// Use ID as filename to avoid slash issues in tag names
+			dst := path.Join(backupDir, strings.ReplaceAll(img.ID, ":", "-")+".tar")
+			if err := r.SaveImage(name, dst); err != nil {
+				klog.Warningf("failed to save image %s: %v", name, err)
+			}
+		}
+	}
+
 	tarballPath := download.TarballPath(k8sVersion, cRuntime)
 	targetDir := "/"
 	targetName := "preloaded.tar.lz4"
@@ -471,6 +505,19 @@ func (r *CRIO) Preload(cc config.ClusterConfig) error {
 	//  remove the tarball in the VM
 	if err := r.Runner.Remove(fa); err != nil {
 		klog.Infof("error removing tarball: %v", err)
+	}
+
+	if backupDir != "" {
+		klog.Info("Restoring backed up images...")
+		for _, img := range allImages {
+			dst := path.Join(backupDir, strings.ReplaceAll(img.ID, ":", "-")+".tar")
+			if err := r.LoadImage(dst); err != nil {
+				klog.Warningf("failed to restore image %s: %v", img.ID, err)
+			}
+		}
+		if _, err := r.Runner.RunCmd(exec.Command("rm", "-rf", backupDir)); err != nil {
+			klog.Warningf("failed to remove backup dir: %v", err)
+		}
 	}
 
 	return nil

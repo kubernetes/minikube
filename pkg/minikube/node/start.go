@@ -508,8 +508,18 @@ func cgroupDriver(cc config.ClusterConfig) string {
 		return constants.SystemdCgroupDriver
 	}
 
-	// vm driver uses iso that boots with cgroupfs cgroup driver by default atm (keep in sync!)
+	// VM driver supports both cgroup v1 and v2.
+	// On systemd-based systems (like Minikube ISO), systemd manages the single unified cgroup v2 hierarchy.
+	// Using cgroupfs with v2 would cause conflicts as two entities (systemd and runtime) try to manage the same hierarchy.
+	// Therefore, we default to the systemd driver for v2 to ensure stability and avoid conflicts.
 	if driver.IsVM(cc.Driver) {
+		// TODO, if system doesnt support cgroup v2, then use cgroupfs #22321
+		if ver, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion); err == nil {
+			if ver.GTE(semver.MustParse("1.22.0")) {
+				klog.Infof("Kubernetes %s+ detected, using %q cgroup driver", ver.String(), constants.SystemdCgroupDriver)
+				return constants.SystemdCgroupDriver
+			}
+		}
 		return constants.CgroupfsCgroupDriver
 	}
 

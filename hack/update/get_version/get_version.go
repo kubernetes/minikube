@@ -73,11 +73,12 @@ var dependencies = map[string]dependency{
 	"nerdctld":                {"deploy/kicbase/Dockerfile", `NERDCTLD_VERSION="(.*)"`},
 	"node":                    {"netlify.toml", `NODE_VERSION = "(.*)"`},
 	"nvidia-device-plugin":    {addonsFile, `nvidia/k8s-device-plugin:(.*)@`},
+	"portainer":               {addonsFile, `portainer/portainer-ce:(.*)@`},
 	"registry":                {addonsFile, `registry:(.*)@`},
 	"runc":                    {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
 	"debian":                  {dockerfile, `debian:bookworm-(.*)-slim`},
 	"volcano":                 {addonsFile, `volcanosh/vc-webhook-manager:(.*)@`},
-	"yakd":                    {addonsFile, `marcnuri/yakd:(.*)@`},
+	"yakd":                    {addonsFile, `manusa/yakd:(.*)@`},
 }
 
 func main() {
@@ -136,7 +137,7 @@ func main() {
 		log.Fatalf("failed to read file: %v", err)
 	}
 
-  // this handles cases where multiple versions exist (e.g., old and new versions in go.mod)
+	// this handles cases where multiple versions exist (e.g., old and new versions in go.mod)
 	allMatches := re.FindAllSubmatch(data, -1)
 	if len(allMatches) == 0 {
 		log.Fatalf("no matches found")

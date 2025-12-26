@@ -30,7 +30,7 @@ import (
 var schema = map[string]update.Item{
 	"pkg/minikube/assets/addons.go": {
 		Replace: map[string]string{
-			`marcnuri/yakd:.*`: `marcnuri/yakd:{{.Version}}@{{.SHA}}",`,
+			`manusa/yakd:.*`: `manusa/yakd:{{.Version}}@{{.SHA}}",`,
 		},
 	},
 }
@@ -49,7 +49,7 @@ func main() {
 		klog.Fatalf("Unable to get stable version: %v", err)
 	}
 	version := strings.TrimPrefix(stable.Tag, "v")
-	sha, err := update.GetImageSHA(fmt.Sprintf("docker.io/marcnuri/yakd:%s", version))
+	sha, err := update.GetImageSHA(fmt.Sprintf("ghcr.io/manusa/yakd:%s", version))
 	if err != nil {
 		klog.Fatalf("failed to get image SHA: %v", err)
 	}

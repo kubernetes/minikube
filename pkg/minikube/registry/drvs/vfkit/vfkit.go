@@ -112,6 +112,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		Network:        cfg.Network,
 		MACAddress:     mac,
 		VmnetHelper:    helper,
+		Rosetta:        cfg.Rosetta,
 	}, nil
 }
 
