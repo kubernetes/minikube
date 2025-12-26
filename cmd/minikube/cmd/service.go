@@ -126,13 +126,25 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 		var noNodePortServices service.URLs
 
 		for _, svc := range services {
-			openUrls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc.Name, serviceURLTemplate, serviceURLMode, https, wait, interval)
+			// Check if port is 443
+			isHTTPSIntent := false
+			for _, portName := range svc.PortNames {
+				lowered := strings.ToLower(portName)
+				if strings.Contains(lowered, "https") || strings.Contains(lowered, "443") {
+					isHTTPSIntent = true
+					break
+				}
+			}
+
+			shouldUseHTTPS := https || isHTTPSIntent
+
+			openUrls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc.Name, serviceURLTemplate, serviceURLMode, shouldUseHTTPS, wait, interval)
 
 			if err != nil {
 				var s *service.SVCNotFoundError
 				if errors.As(err, &s) {
 					exit.Message(reason.SvcNotFound, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
-You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": svc, "namespace": namespace})
+You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": svc.Name, "namespace": namespace})
 				}
 				exit.Error(reason.SvcTimeout, "Error opening service", err)
 			}
@@ -218,8 +230,8 @@ func startKicServiceTunnel(services service.URLs, configName, driverName string)
 		if err != nil {
 			exit.Error(reason.SvcTunnelStart, "error starting tunnel", err)
 		}
-		// mutate response urls to HTTPS if needed
-		urls, err = mutateURLs(svc.Name, urls)
+		// Passing name and port names explicitly to detect HTTPS intent
+		urls, err = mutateURLs(svc.Name, svc.PortNames, urls)
 
 		if err != nil {
 			exit.Error(reason.SvcTunnelStart, "error creating urls", err)
@@ -249,8 +261,18 @@ func startKicServiceTunnel(services service.URLs, configName, driverName string)
 	<-ctrlC
 }
 
-func mutateURLs(serviceName string, urls []string) ([]string, error) {
+func mutateURLs(name string, portNames []string, urls []string) ([]string, error) {
 	formattedUrls := make([]string, 0)
+
+	isHTTPSIntent := false
+	for _, pn := range portNames {
+		lowered := strings.ToLower(pn)
+		if strings.Contains(lowered, "https") || strings.Contains(lowered, "443") {
+			isHTTPSIntent = true
+			break
+		}
+	}
+
 	for _, rawURL := range urls {
 		var doc bytes.Buffer
 		parsedURL, err := url.Parse(rawURL)
@@ -268,14 +290,16 @@ func mutateURLs(serviceName string, urls []string) ([]string, error) {
 		}{
 			parsedURL.Hostname(),
 			int32(port),
-			serviceName,
+			name,
 		})
 
 		if err != nil {
 			return nil, err
 		}
 
-		httpsURL, _ := service.OptionallyHTTPSFormattedURLString(doc.String(), https)
+		// if port is 443 then should use https
+		shouldUseHTTPS := https || isHTTPSIntent || port == 443
+		httpsURL, _ := service.OptionallyHTTPSFormattedURLString(doc.String(), shouldUseHTTPS)
 		formattedUrls = append(formattedUrls, httpsURL)
 	}
 
@@ -284,24 +308,20 @@ func mutateURLs(serviceName string, urls []string) ([]string, error) {
 
 func openURLs(urls [][]string) {
 	for _, u := range urls {
-
 		if len(u) < 4 {
 			klog.Warning("No URL found")
 			continue
 		}
-
 		_, err := url.Parse(u[3])
 		if err != nil {
 			klog.Warningf("failed to parse url %q: %v (will not open)", u[3], err)
 			out.Stringf("%s\n", u)
 			continue
 		}
-
 		if serviceURLMode {
 			out.Stringf("%s\n", u)
 			continue
 		}
-
 		out.Styled(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": u[1]})
 		if err := browser.OpenURL(u[3]); err != nil {
 			exit.Error(reason.HostBrowser, fmt.Sprintf("open url failed: %s", u), err)
