@@ -4,11 +4,10 @@
 #
 ################################################################################
 
-CRI_DOCKERD_AARCH64_VER = 0.4.1
-CRI_DOCKERD_AARCH64_REV = 55d6e1a
-CRI_DOCKERD_AARCH64_VERSION = 55d6e1a1d6f2ee58949e13a0c66afe7d779ac942
+CRI_DOCKERD_AARCH64_VERSION = 0.4.1
+CRI_DOCKERD_AARCH64_COMMIT = 55d6e1a1d6f2ee58949e13a0c66afe7d779ac942
 CRI_DOCKERD_AARCH64_SITE = https://github.com/Mirantis/cri-dockerd/archive
-CRI_DOCKERD_AARCH64_SOURCE = $(CRI_DOCKERD_AARCH64_VERSION).tar.gz
+CRI_DOCKERD_AARCH64_SOURCE = $(CRI_DOCKERD_AARCH64_COMMIT).tar.gz
 
 CRI_DOCKERD_AARCH64_DEPENDENCIES = host-go
 CRI_DOCKERD_AARCH64_GOPATH = $(@D)/_output
@@ -24,26 +23,23 @@ CRI_DOCKERD_AARCH64_ENV = \
 	GOOS=linux
 
 CRI_DOCKERD_AARCH64_COMPILE_SRC = $(CRI_DOCKERD_AARCH64_GOPATH)/src/github.com/Mirantis/cri-dockerd
-CRI_DOCKERD_AARCH64_BUILDFLAGS = "-ldflags '-X github.com/Mirantis/cri-dockerd/version.Version=$(CRI_DOCKERD_AARCH64_VER) -X github.com/Mirantis/cri-dockerd/version.GitCommit=$(CRI_DOCKERD_AARCH64_REV)'"
 
 define CRI_DOCKERD_AARCH64_POST_EXTRACT_WORKAROUNDS
 	# Set -buildvcs=false to disable VCS stamping (fails in buildroot)
-	sed -i 's|go build |go build -buildvcs=false |' -i $(@D)/packaging/static/Makefile
+	sed -i 's|go build |go build -buildvcs=false |' -i $(@D)/Makefile
 	# Use the GOARCH environment variable that we set
-	sed -i 's|GOARCH=$(ARCH) go build|GOARCH=$(GOARCH) go build|' -i $(@D)/packaging/static/Makefile
+	sed -i 's|GOARCH=$$(ARCH) go build|GOARCH=$$(GOARCH) go build|' -i $(@D)/Makefile
 endef
 
 CRI_DOCKERD_AARCH64_POST_EXTRACT_HOOKS += CRI_DOCKERD_AARCH64_POST_EXTRACT_WORKAROUNDS
 
-# If https://github.com/Mirantis/cri-dockerd/blob/master/packaging/Makefile changes, then this will almost certainly need to change
-# This uses the static make target at the top level Makefile, since that builds everything, then picks out the arm64 binary
 define CRI_DOCKERD_AARCH64_BUILD_CMDS
-	$(CRI_DOCKERD_AARCH64_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) LDFLAGS=$(CRI_DOCKERD_AARCH64_BUILDFLAGS) GO_VERSION=$(GO_VERSION) -C $(@D) VERSION=$(CRI_DOCKERD_AARCH64_VER) REVISION=$(CRI_DOCKERD_AARCH64_REV) static
+	$(CRI_DOCKERD_AARCH64_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) VERSION=$(CRI_DOCKERD_AARCH64_VERSION) REVISION=$(CRI_DOCKERD_AARCH64_COMMIT) cri-dockerd
 endef
 
 define CRI_DOCKERD_AARCH64_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 \
-		$(@D)/packaging/static/build/arm/cri-dockerd/cri-dockerd \
+		$(@D)/cri-dockerd \
 		$(TARGET_DIR)/usr/bin/cri-dockerd
 endef
 
