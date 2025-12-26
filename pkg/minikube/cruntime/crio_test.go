@@ -230,21 +230,21 @@ runtime_root = "/run/crio/runc"
 			expectedRoot: "/run/crio/runc",
 		},
 		{
-			name: "runtime_root not found",
+			name: "runtime_root not found - return empty",
 			configOutput: `[crio.runtime.runtimes.runc]
 runtime_path = "/usr/bin/runc"
 runtime_type = "oci"
 `,
-			expectedRoot: "/run/runc",
+			expectedRoot: "",
 		},
 		{
-			name: "runtime_root empty",
+			name: "runtime_root empty - return empty",
 			configOutput: `[crio.runtime.runtimes.runc]
 runtime_path = "/usr/bin/runc"
 runtime_type = "oci"
 runtime_root = ""
 `,
-			expectedRoot: "/run/runc",
+			expectedRoot: "",
 		},
 		{
 			name: "runtime_root with comments",
