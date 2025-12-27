@@ -375,6 +375,54 @@ func (r *CRIO) CGroupDriver() (string, error) {
 	return cgroupManager, nil
 }
 
+// getRuntimeRoot returns the runtime_root path for runc from CRI-O configuration
+// Returns empty string if runtime_root is not set, which means runc will use its default
+func (r *CRIO) getRuntimeRoot() string {
+	c := exec.Command("crio", "config")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		klog.Warningf("failed to get crio config: %v", err)
+		return "" // return empty to let runc use its default
+	}
+
+	// Parse the config output to find runtime_root under [crio.runtime.runtimes.runc]
+	lines := strings.Split(rr.Stdout.String(), "\n")
+	inRuncSection := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		// Skip empty lines and comments
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		// Check if we entered the runc runtime section
+		if strings.HasPrefix(trimmed, "[crio.runtime.runtimes.runc]") {
+			inRuncSection = true
+			continue
+		}
+		// Check if we left the runc section (entered another section)
+		if inRuncSection && strings.HasPrefix(trimmed, "[") {
+			break
+		}
+		// Look for runtime_root in the runc section (exact match with = or space after)
+		if inRuncSection && (strings.HasPrefix(trimmed, "runtime_root=") || strings.HasPrefix(trimmed, "runtime_root =")) {
+			// runtime_root = "/run/runc"
+			parts := strings.SplitN(trimmed, "=", 2)
+			if len(parts) == 2 {
+				runtimeRoot := strings.TrimSpace(parts[1])
+				runtimeRoot = strings.Trim(runtimeRoot, "\"")
+				if runtimeRoot != "" {
+					klog.Infof("using CRI-O runtime_root: %s", runtimeRoot)
+					return runtimeRoot
+				}
+			}
+		}
+	}
+
+	// Return empty string if not found - runc will use its default behavior
+	klog.Infof("runtime_root not explicitly set in crio config, not passing --root to runc")
+	return ""
+}
+
 // KubeletOptions returns kubelet options for a runtime.
 func (r *CRIO) KubeletOptions() map[string]string {
 	return kubeletCRIOptions(r, r.KubernetesVersion)
@@ -382,17 +430,17 @@ func (r *CRIO) KubeletOptions() map[string]string {
 
 // ListContainers returns a list of managed by this container runtime
 func (r *CRIO) ListContainers(o ListContainersOptions) ([]string, error) {
-	return listCRIContainers(r.Runner, "", o)
+	return listCRIContainers(r.Runner, r.getRuntimeRoot(), o)
 }
 
 // PauseContainers pauses a running container based on ID
 func (r *CRIO) PauseContainers(ids []string) error {
-	return pauseCRIContainers(r.Runner, "", ids)
+	return pauseCRIContainers(r.Runner, r.getRuntimeRoot(), ids)
 }
 
 // UnpauseContainers unpauses a running container based on ID
 func (r *CRIO) UnpauseContainers(ids []string) error {
-	return unpauseCRIContainers(r.Runner, "", ids)
+	return unpauseCRIContainers(r.Runner, r.getRuntimeRoot(), ids)
 }
 
 // KillContainers removes containers based on ID
