@@ -142,7 +142,7 @@ apiserver: Running
 kubeconfig: Configured
 ```
 
-- For a HA cluster, kubeconfig points to the Virual Kubernetes API Server IP
+- For a HA cluster, kubeconfig points to the Virtual Kubernetes API Server IP
 
 ```shell
 kubectl config view --context ha-demo
