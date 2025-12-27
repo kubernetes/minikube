@@ -291,8 +291,15 @@ out/e2e-%: out/minikube-%
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
 
-minikube-iso-%: # build minikube iso
-	$(MAKE) iso-prepare-$* deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause
+out/minikube-amd64.iso:
+	$(MAKE) minikube-iso-x86_64
+out/minikube-arm64.iso:
+	$(MAKE) minikube-iso-aarch64
+
+# iso-build runs in the builder, it runs "make world" and copies out the iso
+
+.PHONY: iso-build-x86_64 iso-build-aarch64
+iso-build-%: iso-config-%
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
 	# x86_64 ISO is still BIOS rather than EFI because of AppArmor issues for KVM, and Gen 2 issues for Hyper-V
 	if [ "$*" = "aarch64" ]; then \
@@ -301,11 +308,18 @@ minikube-iso-%: # build minikube iso
                 mv $(BUILD_DIR)/buildroot/output-x86_64/images/rootfs.iso9660 $(BUILD_DIR)/minikube-amd64.iso; \
         fi;
 
-.PHONY: iso-prepare-%
+# iso-prepare runs on the host, it sets up the buildroot rootfs-overlay content
+
+.PHONY: iso-prepare-x86_64 iso-prepare-aarch64
 iso-prepare-%: buildroot
 	echo $(VERSION_JSON) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/version.json
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
 	cp deploy/iso/minikube-iso/arch/$*/Config.in.tmpl deploy/iso/minikube-iso/Config.in
+
+# iso-config runs in the builder, it creates the buildroot .config file to use
+
+.PHONY: iso-config-x86_64 iso-config-aarch64
+iso-config-%:
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
 
 .PHONY: buildroot
@@ -328,13 +342,15 @@ linux-menuconfig-%: iso-prepare-% ## Configure Linux kernel configuration
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-savedefconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-update-defconfig
 
-out/minikube-%.iso: $(shell find "deploy/iso/minikube-iso" -type f)
+minikube-iso-%: $(shell find "deploy/iso/minikube-iso" -type f) # build minikube iso
+	@if [ "$*" != "x86_64" ] && [ "$*" != "aarch64" ]; then echo "Please enter a valid architecture. Choices are x86_64 and aarch64."; exit 1; fi
+	$(MAKE) iso-prepare-$* deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/usr/bin/auto-pause
 ifeq ($(IN_DOCKER),1)
-	$(MAKE) minikube-iso-$*
+	$(MAKE) iso-build-$*
 else
 	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt:Z $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
-		$(ISO_BUILD_IMAGE) /bin/bash -lc '/usr/bin/make minikube-iso-$*'
+		$(ISO_BUILD_IMAGE) /bin/bash -lc '/usr/bin/make iso-build-$*'
 endif
 
 iso_in_docker:
