@@ -311,7 +311,7 @@ iso-build-%: iso-config-%
 # iso-prepare runs on the host, it sets up the buildroot rootfs-overlay content
 
 .PHONY: iso-prepare-x86_64 iso-prepare-aarch64
-iso-prepare-%: buildroot
+iso-prepare-%: buildroot deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause
 	echo $(VERSION_JSON) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/version.json
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
 	cp deploy/iso/minikube-iso/arch/$*/Config.in.tmpl deploy/iso/minikube-iso/Config.in
@@ -344,7 +344,7 @@ linux-menuconfig-%: iso-prepare-% ## Configure Linux kernel configuration
 
 minikube-iso-%: $(shell find "deploy/iso/minikube-iso" -type f) # build minikube iso
 	@if [ "$*" != "x86_64" ] && [ "$*" != "aarch64" ]; then echo "Please enter a valid architecture. Choices are x86_64 and aarch64."; exit 1; fi
-	$(MAKE) iso-prepare-$* deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/usr/bin/auto-pause
+	$(MAKE) iso-prepare-$*
 ifeq ($(IN_DOCKER),1)
 	$(MAKE) iso-build-$*
 else
@@ -830,7 +830,11 @@ out/mkcmp:
 
 
 # auto pause binary to be used for ISO
-deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
+deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause: out/auto-pause-%
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
+out/auto-pause-%: $(SOURCE_FILES) $(ASSET_FILES)
 	@if [ "$*" != "x86_64" ] && [ "$*" != "aarch64" ]; then echo "Please enter a valid architecture. Choices are x86_64 and aarch64."; exit 1; fi
 	GOOS=linux GOARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*)) go build -o $@ cmd/auto-pause/auto-pause.go
 
