@@ -684,6 +684,45 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to validate network")
 	}
 
+	if driver.IsKIC(cfg.Driver) {
+		containerName := config.MachineName(*cfg, *node)
+
+		// Pick the right OCI binary for the KIC driver
+		ociBin := "docker"
+		if cfg.Driver == "podman" {
+			ociBin = "podman"
+		}
+
+		ipv4, ipv6, cipErr := oci.ContainerIPs(ociBin, containerName)
+		if cipErr != nil {
+			klog.Warningf("failed to get container IPs for %q via %s, falling back to host IP %q: %v",
+				containerName, ociBin, ip, cipErr)
+		} else {
+			fam := strings.ToLower(cfg.KubernetesConfig.IPFamily)
+			switch fam {
+			case "ipv6":
+				// For ipv6-only clusters, prefer the container IPv6 for node.IP
+				if ipv6 != "" {
+					node.IP = ipv6
+				} else if ipv4 != "" {
+					node.IP = ipv4
+				} else {
+					node.IP = ip
+				}
+			default:
+				// Default/dual keeps backward compat: prefer IPv4 for node.IP
+				if ipv4 != "" {
+					node.IP = ipv4
+				} else {
+					node.IP = ip
+				}
+			}
+			node.IPv6 = ipv6
+			klog.Infof("updated node %q IPs from container: ipv4=%q ipv6=%q",
+				node.Name, node.IP, node.IPv6)
+		}
+	}
+
 	if driver.IsQEMU(hostInfo.Driver.DriverName()) && network.IsBuiltinQEMU(cfg.Network) {
 		apiServerPort, err := getPort()
 		if err != nil {
