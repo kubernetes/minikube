@@ -32,13 +32,17 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
+	apiCorev1 "k8s.io/api/core/v1"
 	core "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	corev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	discoveryv1ac "k8s.io/client-go/applyconfigurations/discovery/v1"
 	"k8s.io/client-go/gentype"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	typed_discovery "k8s.io/client-go/kubernetes/typed/discovery/v1"
@@ -1145,4 +1149,44 @@ func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
 			}
 		})
 	}
+}
+func TestServiceUsesHTTPSForPort443(t *testing.T) {
+	svc := &apiCorev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-service",
+			Namespace: "default",
+		},
+		Spec: apiCorev1.ServiceSpec{
+			// Type: corev1.ServiceTypeNodePort,
+			Ports: []apiCorev1.ServicePort{
+				{
+					Name:       "https",
+					Port:       443,
+					TargetPort: intstr.FromInt(443),
+					NodePort:   30443,
+				},
+			},
+		},
+	}
+
+	client := k8sfake.NewSimpleClientset(svc)
+
+	tmpl, err := template.New("url").Parse("http://{{.IP}}:{{.Port}}")
+	require.NoError(t, err)
+	svcURL, err := printURLsForService(
+		client.CoreV1(),
+		"127.0.0.1",
+		"test-service",
+		"default",
+		tmpl,
+	)
+	require.NoError(t, err)
+	require.True(t, svcURL.UseHTTPS, "expected HTTPS to be enabled for port 443")
+
+	require.Len(t, svcURL.URLs, 1)
+	require.True(
+		t,
+		strings.HasPrefix(svcURL.URLs[0], "http://"),
+		"raw URL should still be http before formatting",
+	)
 }
