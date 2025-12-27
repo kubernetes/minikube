@@ -72,7 +72,7 @@ else
 	export ISO_BUCKET
 fi
 
-if ! make release-iso 2>&1 | tee iso-logs.txt; then
+if ! IN_DOCKER=1 make release-iso 2>&1 | tee iso-logs.txt; then
     # Exit of `make` (PIPESTATUS[0]); fallback to 1 if unavailable
     ec=${PIPESTATUS[0]:-1}
 
