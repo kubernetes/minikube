@@ -261,7 +261,7 @@ minikube-windows-amd64.exe: out/minikube-windows-amd64.exe ## Build Minikube for
 
 eq = $(and $(findstring x$(1),x$(2)),$(findstring x$(2),x$(1)))
 
-out/minikube-%: $(SOURCE_FILES) $(ASSET_FILES)
+out/minikube-%: $(SOURCE_FILES) $(ASSET_FILES) | dummy-%
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
@@ -269,6 +269,10 @@ else
 	$(Q)GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" $(if $(call eq,$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*))),arm),GOARM=$(GOARM)) \
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
+
+# make this pattern rule a lower priority than the iso rule
+dummy-%:
+	@:
 
 out/minikube-linux-armv6: $(SOURCE_FILES) $(ASSET_FILES)
 	$(Q)GOOS=linux GOARCH=arm GOARM=6 \
@@ -287,10 +291,8 @@ out/e2e-%: out/minikube-%
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
 
-minikube-iso-amd64: minikube-iso-x86_64
-minikube-iso-arm64: minikube-iso-aarch64
-
-minikube-iso-%: iso-prepare-% deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
+minikube-iso-%: # build minikube iso
+	$(MAKE) iso-prepare-$* deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
 	# x86_64 ISO is still BIOS rather than EFI because of AppArmor issues for KVM, and Gen 2 issues for Hyper-V
 	if [ "$*" = "aarch64" ]; then \
