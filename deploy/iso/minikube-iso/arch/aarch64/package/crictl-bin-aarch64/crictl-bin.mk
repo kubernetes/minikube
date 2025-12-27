@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CRICTL_BIN_AARCH64_VERSION = v1.34.0
+CRICTL_BIN_AARCH64_VERSION = v1.35.0
 CRICTL_BIN_AARCH64_SITE = https://github.com/kubernetes-sigs/cri-tools/releases/download/$(CRICTL_BIN_AARCH64_VERSION)
 CRICTL_BIN_AARCH64_SOURCE = crictl-$(CRICTL_BIN_AARCH64_VERSION)-linux-arm64.tar.gz
 CRICTL_BIN_AARCH64_STRIP_COMPONENTS = 0
