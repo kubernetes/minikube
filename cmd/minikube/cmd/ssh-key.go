@@ -28,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/util/sshkeys"
 )
 
 // sshKeyCmd represents the sshKey command
@@ -43,7 +44,10 @@ var sshKeyCmd = &cobra.Command{
 			exit.Error(reason.GuestNodeRetrieve, "retrieving node", err)
 		}
 
-		out.Ln(filepath.Join(localpath.MiniPath(), "machines", config.MachineName(*cc, *n), "id_rsa"))
+		machineDir := filepath.Join(localpath.MiniPath(), "machines", config.MachineName(*cc, *n))
+		primary := filepath.Join(machineDir, sshkeys.Ed25519KeyName)
+		fallback := filepath.Join(machineDir, sshkeys.RSAKeyName)
+		out.Ln(sshkeys.ResolveKeyPath(primary, fallback))
 	},
 }
 

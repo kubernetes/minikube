@@ -139,12 +139,8 @@ RUN clean-install \
     openssh-server \
     dnsutils
 
-# Add support for rsa1 in sshd
-# modern debian-based OSs dont support rsa1 by default, so we need to enable it to support older ssh clients
-# TODO: remove after https://github.com/kubernetes/minikube/issues/21543 is solved
+# Ensure key-based SSH auth is enabled and password auth disabled
 RUN cat <<EOF >> /etc/ssh/sshd_config
-PubkeyAcceptedAlgorithms +ssh-rsa
-HostkeyAlgorithms +ssh-rsa
 PubkeyAuthentication yes
 PasswordAuthentication no
 EOF

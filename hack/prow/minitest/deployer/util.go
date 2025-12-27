@@ -27,7 +27,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const ssh = "ssh"
+const sshBinary = "ssh"
 const rsync = "rsync"
 
 func executeLocalCommand(ctx context.Context, name string, args ...string) error {
@@ -66,7 +66,7 @@ func sshConnectionCheck(ctx context.Context, user string, addr string, sshArgume
 }
 
 func executeRsyncSSHCommand(ctx context.Context, sshArguments []string, src string, dst string, rsyncArgs []string) error {
-	sshArgs := []string{ssh, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"}
+	sshArgs := []string{sshBinary, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"}
 	sshArgs = append(sshArgs, sshArguments...)
 
 	allArgs := []string{"-e", strings.Join(sshArgs, " "), "-avz"}
