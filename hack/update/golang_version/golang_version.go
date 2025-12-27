@@ -138,7 +138,7 @@ func goVersions() (stable, k8sVersion string, err error) {
 }
 
 func updateGoHashFile(version string) error {
-	hashFilePath := "../deploy/iso/minikube-iso/go.hash"
+	hashFilePath := "../deploy/iso/minikube-iso/patches/go/go.hash"
 	b, err := os.ReadFile(hashFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)
