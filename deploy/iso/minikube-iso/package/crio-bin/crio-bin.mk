@@ -52,7 +52,6 @@ define CRIO_BIN_INSTALL_INIT_SYSTEMD
 		$(CRIO_BIN_PKGDIR)/crio.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/crio.service
 	$(call link-service,crio.service)
-	$(call link-service,crio-shutdown.service)
 endef
 
 $(eval $(generic-package))
