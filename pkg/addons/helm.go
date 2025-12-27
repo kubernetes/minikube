@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -29,7 +30,7 @@ import (
 )
 
 // runs a helm install within the minikube vm or container based on the contents of chart *assets.HelmChart
-func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
+func installHelmChart(ctx context.Context, chart *assets.HelmChart, imageRepository string) *exec.Cmd {
 	args := []string{
 		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"helm", "upgrade", "--install", chart.Name, chart.Repo, "--create-namespace",
@@ -50,6 +51,26 @@ func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 		}
 	}
 
+	if imageRepository != "" && chart.ImageSetKey != "" {
+		args = append(args, "--set", fmt.Sprintf("%s=%s", chart.ImageSetKey, imageRepository))
+	}
+
+	return exec.CommandContext(ctx, "sudo", args...)
+}
+
+// helmRepoAdd adds a helm repository before chart installation
+func helmRepoAdd(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
+	repoName := chart.Repo
+	if parts := strings.Split(chart.Repo, "/"); len(parts) > 0 {
+		repoName = parts[0]
+	}
+	if chart.RepoURL == "" {
+		return nil
+	}
+	args := []string{
+		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
+		"helm", "repo", "add", repoName, chart.RepoURL, "--force-update",
+	}
 	return exec.CommandContext(ctx, "sudo", args...)
 }
 
@@ -66,9 +87,9 @@ func uninstalllHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd
 }
 
 // based on enable will execute installHelmChart or uninstallHelmChart
-func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable bool) *exec.Cmd {
+func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable bool, imageRepository string) *exec.Cmd {
 	if enable {
-		return installHelmChart(ctx, chart)
+		return installHelmChart(ctx, chart, imageRepository)
 	}
 	return uninstalllHelmChart(ctx, chart)
 }
