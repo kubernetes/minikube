@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CONTAINERD_BIN_VERSION = 2.2.0
+CONTAINERD_BIN_VERSION = 2.2.1
 CONTAINERD_BIN_SITE = https://github.com/containerd/containerd/releases/download/v$(CONTAINERD_BIN_VERSION)
 CONTAINERD_BIN_SOURCE = containerd-$(CONTAINERD_BIN_VERSION)-linux-amd64.tar.gz
 CONTAINERD_BIN_STRIP_COMPONENTS = 0

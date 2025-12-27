@@ -1,2 +1,3 @@
 sha256 846d13bc2bf1c01ae2f20d13beb9b3a1e50b52c86e955b4ac7d658f5847f2b0e containerd-2.1.4-linux-arm64.tar.gz
 sha256 8805c2123d3b7c7ee2030e9f8fc07a1167d8a3f871d6a7d7ec5d1deb0b51a4a7 containerd-2.2.0-linux-arm64.tar.gz
+sha256 dac15a0d412a24be8bfe6a40cec8f51829062725169f1e72ac7d120a891ef5b6 containerd-2.2.1-linux-arm64.tar.gz
