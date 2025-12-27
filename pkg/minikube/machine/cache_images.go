@@ -19,6 +19,7 @@ package machine
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -32,6 +33,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-units"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
 	"github.com/pkg/errors"
@@ -47,6 +49,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
@@ -59,6 +62,14 @@ var loadImageLock sync.Mutex
 
 // saveRoot is where images should be saved from within the guest VM
 var saveRoot = path.Join(vmpath.GuestPersistentDir, "images")
+
+// function variable so tests can override
+var (
+	loadConfig        = config.Load
+	newAPIClient      = NewAPIClient
+	commandRunnerFunc = CommandRunner
+	statusFunc        = Status
+)
 
 // CacheImagesForBootstrapper will cache images for a bootstrapper
 func CacheImagesForBootstrapper(imageRepository, version string) error {
@@ -529,7 +540,7 @@ func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst st
 }
 
 // pullImages pulls images to the container run time
-func pullImages(crMgr cruntime.Manager, imgs []string) error {
+var pullImages = func(crMgr cruntime.Manager, imgs []string) error {
 	klog.Infof("pullImages start: %s", imgs)
 	start := time.Now()
 
@@ -565,7 +576,7 @@ func PullImages(images []string, profile *config.Profile, options *run.CommandOp
 
 	pName := profile.Name
 
-	c, err := config.Load(pName)
+	c, err := loadConfig(pName)
 	if err != nil {
 		klog.Errorf("Failed to load profile %q: %v", pName, err)
 		return errors.Wrapf(err, "error loading config for profile :%v", pName)
@@ -574,7 +585,7 @@ func PullImages(images []string, profile *config.Profile, options *run.CommandOp
 	for _, n := range c.Nodes {
 		m := config.MachineName(*c, n)
 
-		status, err := Status(api, m)
+		status, err := statusFunc(api, m)
 		if err != nil {
 			klog.Warningf("error getting status for %s: %v", m, err)
 			continue
@@ -586,7 +597,7 @@ func PullImages(images []string, profile *config.Profile, options *run.CommandOp
 				klog.Warningf("Failed to load machine %q: %v", m, err)
 				continue
 			}
-			runner, err := CommandRunner(h)
+			runner, err := commandRunnerFunc(h)
 			if err != nil {
 				return err
 			}
@@ -597,6 +608,13 @@ func PullImages(images []string, profile *config.Profile, options *run.CommandOp
 			err = pullImages(crMgr, images)
 			if err != nil {
 				failed = append(failed, m)
+				if terr, ok := err.(*transport.Error); ok {
+					if terr.StatusCode == http.StatusTooManyRequests {
+						// This confirms it's a 429 rate limit error
+						out.Styled(style.Notice, "Kicbase images have not been deleted. To delete images run:")
+						return terr
+					}
+				}
 				klog.Warningf("Failed to pull images for profile %s %v", pName, err.Error())
 				continue
 			}
