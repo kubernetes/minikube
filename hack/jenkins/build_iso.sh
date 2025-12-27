@@ -36,7 +36,14 @@ source ./hack/jenkins/installers/check_install_linux_crons.sh
 
 # Make sure all required packages are installed
 sudo apt-get update
-sudo apt-get -y install build-essential unzip rsync bc python3 p7zip-full
+sudo apt-get -y install build-essential unzip rsync bc python3 p7zip-full cmake
+
+# Log Cmake version
+CMAKE_VERSION=$(cmake --version | head -n1 | awk '{print $3}')
+echo "Start of ISO build: CMake version: $CMAKE_VERSION"
+if dpkg --compare-versions "$CMAKE_VERSION" lt "3.20"; then
+	echo "WARNING: CMake version $CMAKE_VERSION is less than 3.20. this will cause a slower build due to rebuidling cmake ..."
+fi
 
 # Let's make sure we have the newest ISO reference
 curl -L https://github.com/kubernetes/minikube/raw/master/Makefile --output Makefile-head
