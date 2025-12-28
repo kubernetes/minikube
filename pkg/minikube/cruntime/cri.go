@@ -71,7 +71,7 @@ func listCRIContainers(cr CommandRunner, runtime string, root string, o ListCont
 	if err != nil {
 		return nil, errors.Wrap(err, runtime)
 	}
-	
+
 	var cs []container
 	if err := json.Unmarshal(rr.Stdout.Bytes(), &cs); err != nil {
 		return nil, errors.Wrapf(err, "unmarshal %s list", runtime)
