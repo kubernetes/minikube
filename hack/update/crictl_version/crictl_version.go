@@ -58,6 +58,16 @@ var (
 				`CRICTL_VERSION=.*`: `CRICTL_VERSION="{{.Version}}"`,
 			},
 		},
+		"hack/prow/integration_none_containerd_linux_x86.sh": {
+			Replace: map[string]string{
+				`CRICTL_VERSION=.*`: `CRICTL_VERSION="{{.Version}}"`,
+			},
+		},
+		"hack/prow/integration_none_docker_linux_x86.sh": {
+			Replace: map[string]string{
+				`CRICTL_VERSION=.*`: `CRICTL_VERSION="{{.Version}}"`,
+			},
+		},
 	}
 )
 
