@@ -56,10 +56,13 @@ type crictlImages struct {
 // timeoutOverride flag overrides the default 2s timeout for crictl commands
 const timeoutOverrideFlag = "--timeout=10s"
 
+// runcBinaryName is the default binary name for runc
+const runcBinaryName = "runc"
+
 // listCRIContainers returns a list of containers
 func listCRIContainers(cr CommandRunner, runtime string, root string, o ListContainersOptions) ([]string, error) {
 	if runtime == "" {
-		runtime = "runc"
+		runtime = runcBinaryName
 	}
 	args := []string{runtime}
 	if root != "" {
@@ -119,7 +122,7 @@ func listCRIContainers(cr CommandRunner, runtime string, root string, o ListCont
 // pauseCRIContainers pauses a list of containers
 func pauseCRIContainers(cr CommandRunner, runtime string, root string, ids []string) error {
 	if runtime == "" {
-		runtime = "runc"
+		runtime = runcBinaryName
 	}
 	baseArgs := []string{runtime}
 	if root != "" {
@@ -149,7 +152,7 @@ func getCrictlPath(cr CommandRunner) string {
 // unpauseCRIContainers pauses a list of containers
 func unpauseCRIContainers(cr CommandRunner, runtime string, root string, ids []string) error {
 	if runtime == "" {
-		runtime = "runc"
+		runtime = runcBinaryName
 	}
 	args := []string{runtime}
 	if root != "" {

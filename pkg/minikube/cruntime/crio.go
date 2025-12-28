@@ -413,7 +413,7 @@ func (r *CRIO) ociRuntime() (string, string) {
 	runtime, root, err := crioOCIInfo(r.Runner)
 	if err != nil {
 		klog.Warningf("failed to get oci runtime: %v", err)
-		return "runc", ""
+		return runcBinaryName, ""
 	}
 	return runtime, root
 }
@@ -426,7 +426,7 @@ func crioOCIInfo(cr CommandRunner) (string, string, error) {
 	}
 	// simple line parser using string manipulation
 	lines := strings.Split(rr.Stdout.String(), "\n")
-	defaultRuntime := "runc"
+	defaultRuntime := runcBinaryName
 	runtimeRoot := ""
 
 	// first pass: find default_runtime
