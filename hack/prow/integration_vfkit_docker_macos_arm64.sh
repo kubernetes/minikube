@@ -17,7 +17,7 @@
 set -e
 set -x
 
-OS="macos"
+OS="darwin"
 ARCH="arm64"
 DRIVER="vfkit"
 CONTAINER_RUNTIME=""

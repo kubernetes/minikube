@@ -97,13 +97,16 @@ function install_dependencies() {
 	if ! type "jq" >/dev/null; then
 		echo ">> Installing jq"
 		if [ "${ARCH}" == "arm64" && "${OS}" == "linux" ]; then
+		# linux arm64
 			sudo apt-get install jq -y
-		elif [ "${ARCH}" == "arm64" ]; then
-			echo "Unable to install 'jq' automatically for arm64 on Darwin, please install 'jq' manually."
-			exit 5
-		elif [ "${OS}" != "darwin" ]; then
+		elif [ "${ARCH}" == "arm64" && "${OS}" == "darwin"]; then
+		# macos arm64
+			brew install jq
+		elif [ "${OS}" == "linux" ]; then
+		# linux x86
 			curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
 		else
+		# macos ax86
 			curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 && sudo install jq-osx-amd64 /usr/local/bin/jq
 		fi
 	fi

@@ -65,7 +65,7 @@ integration-vfkit-docker-macos-arm: build-mini-test
 build-mini-test: # build minitest binary
 	GOTOOLCHAIN=auto go build -C ./hack/prow/minitest -o $(PWD)/out/minitest .
 
-.PHONY: setup-prow-gcp-ssh-keys
+.PHONY: setup-prow-gcp-ssh-keys 
 setup-prow-gcp-ssh-keys: # set up ssh keys for gcloud cli. These env vars are set by test/infra
 	mkdir -p -m 0700 ~/.ssh
 	cp -f "${GCE_SSH_PRIVATE_KEY_FILE}" ~/.ssh/google_compute_engine
