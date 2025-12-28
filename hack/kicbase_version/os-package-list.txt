@@ -19,7 +19,7 @@ ii  conntrack                       1:1.4.7-1+b2                   amd64        
 ii  containerd.io                   2.2.1-1~debian.12~bookworm     amd64        An open and reliable container runtime
 ii  containernetworking-plugins     1.1.1+ds1-3+b5                 amd64        standard networking plugins - binaries
 ii  coreutils                       9.1-1                          amd64        GNU core utilities
-ii  cri-o                           1.34.3-1.1                     amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
+ii  cri-o                           1.35.0-1.1                     amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
 ii  crun                            1.8.1-1+deb12u1                amd64        lightweight OCI runtime for running containers
 ii  curl                            7.88.1-10+deb12u14             amd64        command line tool for transferring data with URL syntax
 ii  dash                            0.5.12-2                       amd64        POSIX-compliant shell
