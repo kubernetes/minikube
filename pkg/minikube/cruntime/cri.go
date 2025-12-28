@@ -32,14 +32,14 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
 // container maps to 'runc list -f json'
 type container struct {
-	ID     string
-	Status string
+	ID          string            `json:"id"`
+	Status      string            `json:"status"`
+	Annotations map[string]string `json:"annotations"`
 }
 
 type crictlImages struct {
@@ -56,100 +56,72 @@ type crictlImages struct {
 // timeoutOverride flag overrides the default 2s timeout for crictl commands
 const timeoutOverrideFlag = "--timeout=10s"
 
-// crictlList returns the output of 'crictl ps' in an efficient manner
-func crictlList(cr CommandRunner, root string, o ListContainersOptions) (*command.RunResult, error) {
-	klog.Infof("listing CRI containers in root %s: %+v", root, o)
-
-	// Use -a because otherwise paused containers are missed
-	baseCmd := []string{"crictl", timeoutOverrideFlag, "ps", "-a", "--quiet"}
-
-	if o.Name != "" {
-		baseCmd = append(baseCmd, fmt.Sprintf("--name=%s", o.Name))
-	}
-
-	// shortcut for all namespaces
-	if len(o.Namespaces) == 0 {
-		return cr.RunCmd(exec.Command("sudo", baseCmd...))
-	}
-
-	// Gather containers for all namespaces without causing extraneous shells to be launched
-	cmds := []string{}
-	for _, ns := range o.Namespaces {
-		cmd := fmt.Sprintf("%s --label io.kubernetes.pod.namespace=%s", strings.Join(baseCmd, " "), ns)
-		cmds = append(cmds, cmd)
-	}
-
-	return cr.RunCmd(exec.Command("sudo", "-s", "eval", strings.Join(cmds, "; ")))
-}
-
 // listCRIContainers returns a list of containers
-func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) ([]string, error) {
-	rr, err := crictlList(cr, root, o)
-	if err != nil {
-		return nil, errors.Wrap(err, "crictl list")
+func listCRIContainers(cr CommandRunner, runtime string, root string, o ListContainersOptions) ([]string, error) {
+	if runtime == "" {
+		runtime = "runc"
 	}
-
-	// Avoid an id named ""
-	var ids []string
-	seen := map[string]bool{}
-	for _, id := range strings.Split(rr.Stdout.String(), "\n") {
-		klog.Infof("found id: %q", id)
-		if id != "" && !seen[id] {
-			ids = append(ids, id)
-			seen[id] = true
-		}
-	}
-
-	if len(ids) == 0 {
-		return nil, nil
-	}
-	if o.State == All {
-		return ids, nil
-	}
-
-	// crictl does not understand paused pods
-	cs := []container{}
-	args := []string{"runc"}
+	args := []string{runtime}
 	if root != "" {
 		args = append(args, "--root", root)
 	}
 
 	args = append(args, "list", "-f", "json")
-	rr, err = cr.RunCmd(exec.Command("sudo", args...))
+	rr, err := cr.RunCmd(exec.Command("sudo", args...))
 	if err != nil {
-		return nil, errors.Wrap(err, "runc")
+		return nil, errors.Wrap(err, runtime)
 	}
-	content := rr.Stdout.Bytes()
-	klog.Infof("JSON = %s", content)
-	d := json.NewDecoder(bytes.NewReader(content))
-	if err := d.Decode(&cs); err != nil {
-		return nil, err
-	}
-
-	if len(cs) == 0 {
-		return nil, fmt.Errorf("list returned 0 containers, but ps returned %d", len(ids))
+	
+	var cs []container
+	if err := json.Unmarshal(rr.Stdout.Bytes(), &cs); err != nil {
+		return nil, errors.Wrapf(err, "unmarshal %s list", runtime)
 	}
 
 	klog.Infof("list returned %d containers", len(cs))
 	var fids []string
 	for _, c := range cs {
-		klog.Infof("container: %+v", c)
-		if !seen[c.ID] {
-			klog.Infof("skipping %s - not in ps", c.ID)
-			continue
-		}
+		// Filter by State
 		if o.State != All && o.State.String() != c.Status {
-			klog.Infof("skipping %s: state = %q, want %q", c, c.Status, o.State)
 			continue
 		}
+
+		// Filter by Name
+		// crictl matches partial name? minikube usage implies we look for specific components.
+		// We check io.kubernetes.container.name and io.kubernetes.pod.name
+		if o.Name != "" {
+			name := c.Annotations["io.kubernetes.container.name"]
+			podName := c.Annotations["io.kubernetes.pod.name"]
+			if !strings.Contains(name, o.Name) && !strings.Contains(podName, o.Name) {
+				continue
+			}
+		}
+
+		// Filter by Namespaces
+		if len(o.Namespaces) > 0 {
+			ns := c.Annotations["io.kubernetes.pod.namespace"]
+			found := false
+			for _, want := range o.Namespaces {
+				if ns == want {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
+
 		fids = append(fids, c.ID)
 	}
 	return fids, nil
 }
 
 // pauseCRIContainers pauses a list of containers
-func pauseCRIContainers(cr CommandRunner, root string, ids []string) error {
-	baseArgs := []string{"runc"}
+func pauseCRIContainers(cr CommandRunner, runtime string, root string, ids []string) error {
+	if runtime == "" {
+		runtime = "runc"
+	}
+	baseArgs := []string{runtime}
 	if root != "" {
 		baseArgs = append(baseArgs, "--root", root)
 	}
@@ -158,7 +130,7 @@ func pauseCRIContainers(cr CommandRunner, root string, ids []string) error {
 		args := baseArgs
 		args = append(args, id)
 		if _, err := cr.RunCmd(exec.Command("sudo", args...)); err != nil {
-			return errors.Wrap(err, "runc")
+			return errors.Wrap(err, runtime)
 		}
 	}
 	return nil
@@ -175,8 +147,11 @@ func getCrictlPath(cr CommandRunner) string {
 }
 
 // unpauseCRIContainers pauses a list of containers
-func unpauseCRIContainers(cr CommandRunner, root string, ids []string) error {
-	args := []string{"runc"}
+func unpauseCRIContainers(cr CommandRunner, runtime string, root string, ids []string) error {
+	if runtime == "" {
+		runtime = "runc"
+	}
+	args := []string{runtime}
 	if root != "" {
 		args = append(args, "--root", root)
 	}
@@ -185,7 +160,7 @@ func unpauseCRIContainers(cr CommandRunner, root string, ids []string) error {
 	for _, id := range ids {
 		cargs := append(cargs, id)
 		if _, err := cr.RunCmd(exec.Command("sudo", cargs...)); err != nil {
-			return errors.Wrap(err, "runc")
+			return errors.Wrap(err, runtime)
 		}
 	}
 	return nil
