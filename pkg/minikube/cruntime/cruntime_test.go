@@ -18,6 +18,7 @@ package cruntime
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -251,10 +252,58 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 		return buffer(f.crio(args, root))
 	case "containerd":
 		return buffer(f.containerd(args, root))
+	case "runc":
+		return buffer(f.runc(args, root))
 	default:
 		rr := &command.RunResult{}
 		return rr, nil
 	}
+}
+
+// runc is a fake implementation of runc
+func (f *FakeRunner) runc(args []string, _ bool) (string, error) {
+	// args might be: ["list", "-f", "json"] OR ["--root", "/path", "list", "-f", "json"]
+	cmdIndex := -1
+	for i, arg := range args {
+		if arg == "list" {
+			cmdIndex = i
+			break
+		}
+	}
+
+	if cmdIndex != -1 && args[cmdIndex] == "list" {
+		// Verify -f json follows
+		if len(args) > cmdIndex+2 && args[cmdIndex+1] == "-f" && args[cmdIndex+2] == "json" {
+			f.t.Logf("fake runc list: returning all containers")
+			// Map f.containers to runc json format
+			/*
+				type container struct {
+					ID          string            `json:"id"`
+					Status      string            `json:"status"`
+					Annotations map[string]string `json:"annotations"`
+				}
+			*/
+			var cs []container
+			for id, name := range f.containers {
+				annotations := map[string]string{
+					"io.kubernetes.container.name": name,
+					"io.kubernetes.pod.namespace":  "default",
+				}
+				cs = append(cs, container{
+					ID:          id,
+					Status:      "running",
+					Annotations: annotations,
+				})
+			}
+
+			b, err := json.Marshal(cs)
+			if err != nil {
+				return "", err
+			}
+			return string(b), nil
+		}
+	}
+	return "", nil
 }
 
 func (f *FakeRunner) StartCmd(_ *exec.Cmd) (*command.StartedCmd, error) {
