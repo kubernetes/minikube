@@ -79,11 +79,15 @@ function install_dependencies() {
 		ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
 		# install vmnet shared on macos in non-interactive mode
 		curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
+
+		# ensure go dirs are owned by current user so that go install can write
+		sudo chown -R $(whoami) $HOME/go
+		sudo chown -R $(whoami) $HOME/Library/Caches/go-build
 	fi
 	# do NOT change manually - only using make update-golang-version
 	GOLANG_VERSION_TO_INSTALL=1.25.5
 	# install golang if not present
-	sudo -E hack/prow/installer/check_install_golang.sh /usr/local $GOLANG_VERSION_TO_INSTALL || true
+	hack/prow/installer/check_install_golang.sh /usr/local $GOLANG_VERSION_TO_INSTALL || true
 	# install gotestsum if not present
 	hack/prow/installer/check_install_gotestsum.sh || true
 	# install gopogh
