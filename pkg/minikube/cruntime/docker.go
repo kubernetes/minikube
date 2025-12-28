@@ -427,7 +427,7 @@ func (r *Docker) KubeletOptions() map[string]string {
 // ListContainers returns a list of containers
 func (r *Docker) ListContainers(o ListContainersOptions) ([]string, error) {
 	if r.UseCRI {
-		return listCRIContainers(r.Runner, "", o)
+		return listCRIContainers(r.Runner, "runc", "", o)
 	}
 	args := []string{"ps"}
 	switch o.State {
@@ -496,7 +496,7 @@ func (r *Docker) StopContainers(ids []string) error {
 // PauseContainers pauses a running container based on ID
 func (r *Docker) PauseContainers(ids []string) error {
 	if r.UseCRI {
-		return pauseCRIContainers(r.Runner, "", ids)
+		return pauseCRIContainers(r.Runner, "runc", "", ids)
 	}
 	if len(ids) == 0 {
 		return nil
@@ -513,7 +513,7 @@ func (r *Docker) PauseContainers(ids []string) error {
 // UnpauseContainers unpauses a container based on ID
 func (r *Docker) UnpauseContainers(ids []string) error {
 	if r.UseCRI {
-		return unpauseCRIContainers(r.Runner, "", ids)
+		return unpauseCRIContainers(r.Runner, "runc", "", ids)
 	}
 	if len(ids) == 0 {
 		return nil
