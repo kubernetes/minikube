@@ -382,17 +382,20 @@ func (r *CRIO) KubeletOptions() map[string]string {
 
 // ListContainers returns a list of managed by this container runtime
 func (r *CRIO) ListContainers(o ListContainersOptions) ([]string, error) {
-	return listCRIContainers(r.Runner, "", o)
+	runtime, root := r.ociRuntime()
+	return listCRIContainers(r.Runner, runtime, root, o)
 }
 
 // PauseContainers pauses a running container based on ID
 func (r *CRIO) PauseContainers(ids []string) error {
-	return pauseCRIContainers(r.Runner, "", ids)
+	runtime, root := r.ociRuntime()
+	return pauseCRIContainers(r.Runner, runtime, root, ids)
 }
 
 // UnpauseContainers unpauses a running container based on ID
 func (r *CRIO) UnpauseContainers(ids []string) error {
-	return unpauseCRIContainers(r.Runner, "", ids)
+	runtime, root := r.ociRuntime()
+	return unpauseCRIContainers(r.Runner, runtime, root, ids)
 }
 
 // KillContainers removes containers based on ID
@@ -403,6 +406,73 @@ func (r *CRIO) KillContainers(ids []string) error {
 // StopContainers stops containers based on ID
 func (r *CRIO) StopContainers(ids []string) error {
 	return stopCRIContainers(r.Runner, ids)
+}
+
+// ociRuntime returns the runtime and root path for crio
+func (r *CRIO) ociRuntime() (string, string) {
+	runtime, root, err := crioOCIInfo(r.Runner)
+	if err != nil {
+		klog.Warningf("failed to get oci runtime: %v", err)
+		return "runc", ""
+	}
+	return runtime, root
+}
+
+// crioOCIInfo returns the runtime executable (e.g. runc) and its root path by parsing 'crio config'
+func crioOCIInfo(cr CommandRunner) (string, string, error) {
+	rr, err := cr.RunCmd(exec.Command("sudo", "crio", "config"))
+	if err != nil {
+		return "", "", err
+	}
+	// simple line parser using string manipulation
+	lines := strings.Split(rr.Stdout.String(), "\n")
+	defaultRuntime := "runc"
+	runtimeRoot := ""
+
+	// first pass: find default_runtime
+	// [crio.runtime]
+	// default_runtime = "runc"
+	for _, line := range lines {
+		trim := strings.TrimSpace(line)
+		if strings.HasPrefix(trim, "default_runtime =") {
+			parts := strings.Split(trim, "=")
+			if len(parts) == 2 {
+				defaultRuntime = strings.Trim(strings.TrimSpace(parts[1]), "\"")
+			}
+		}
+	}
+
+	// second pass: find runtime_root for defaultRuntime
+	// [crio.runtime.runtimes.runc]
+	// runtime_root = "/run/runc"
+	inSection := false
+
+	// approximate section match
+	sectionEncoded := fmt.Sprintf("crio.runtime.runtimes.%s", defaultRuntime)
+	sectionQuote := fmt.Sprintf("crio.runtime.runtimes.%q", defaultRuntime)
+
+	for _, line := range lines {
+		trim := strings.TrimSpace(line)
+		if strings.HasPrefix(trim, "[") && strings.HasSuffix(trim, "]") {
+			inSection = false
+			if strings.Contains(trim, sectionEncoded) || strings.Contains(trim, sectionQuote) {
+				inSection = true
+				continue
+			}
+		}
+
+		if inSection {
+			if strings.HasPrefix(trim, "runtime_root =") {
+				parts := strings.Split(trim, "=")
+				if len(parts) == 2 {
+					runtimeRoot = strings.Trim(strings.TrimSpace(parts[1]), "\"")
+					return defaultRuntime, runtimeRoot, nil
+				}
+			}
+		}
+	}
+
+	return defaultRuntime, runtimeRoot, nil
 }
 
 // ContainerLogCmd returns the command to retrieve the log for a container based on ID
