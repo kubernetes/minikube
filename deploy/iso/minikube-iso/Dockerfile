@@ -16,7 +16,6 @@ FROM ubuntu:22.04
 
 RUN apt-get update \
 	&& apt-get install -y apt dpkg apt-utils ca-certificates software-properties-common \
-	&& add-apt-repository -y ppa:longsleep/golang-backports \
 	&& apt-get upgrade -y \
 	&& if [ "$(uname -ms)" = "Linux x86_64" ]; then apt-get install -y gcc-multilib; fi \
 	&& apt-get install -y \
@@ -36,7 +35,6 @@ RUN apt-get update \
 		rsync \
 		cmake \
 		dumb-init \
-		golang-go \
 		libpcre3-dev \
 		mkisofs \
 	&& rm -rf /var/lib/apt/lists/*
@@ -50,6 +48,9 @@ ENV LANG=en_US.utf8
 # the default ccache dir is "$HOME/.buildroot-ccache"
 ENV BR2_CCACHE_DIR=/var/cache/buildroot/ccache
 RUN mkdir -p /var/cache/buildroot/ccache && chmod 1777 /var/cache/buildroot/ccache
+# the default gocache dir is "$HOME/.cache/go-build"
+ENV GOCACHE=/var/cache/buildroot/gocache
+RUN mkdir -p /var/cache/buildroot/gocache && chmod 1777 /var/cache/buildroot/gocache
 VOLUME ["/var/cache/buildroot"]
 
 # dumb init will allow us to interrupt the build with ^C
