@@ -41,16 +41,14 @@ var (
 		},
 		"deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/cri-dockerd.mk": {
 			Replace: map[string]string{
-				`CRI_DOCKERD_AARCH64_VER = .*`:     `CRI_DOCKERD_AARCH64_VER = {{.Version}}`,
-				`CRI_DOCKERD_AARCH64_VERSION = .*`: `CRI_DOCKERD_AARCH64_VERSION = {{.FullCommit}}`,
-				`CRI_DOCKERD_AARCH64_REV = .*`:     `CRI_DOCKERD_AARCH64_REV = {{.ShortCommit}}`,
+				`CRI_DOCKERD_AARCH64_VERSION = .*`: `CRI_DOCKERD_AARCH64_VERSION = {{.Version}}`,
+				`CRI_DOCKERD_AARCH64_COMMIT = .*`:  `CRI_DOCKERD_AARCH64_COMMIT = {{.FullCommit}}`,
 			},
 		},
 		"deploy/iso/minikube-iso/arch/x86_64/package/cri-dockerd/cri-dockerd.mk": {
 			Replace: map[string]string{
-				`CRI_DOCKERD_VER = .*`:     `CRI_DOCKERD_VER = {{.Version}}`,
-				`CRI_DOCKERD_VERSION = .*`: `CRI_DOCKERD_VERSION = {{.FullCommit}}`,
-				`CRI_DOCKERD_REV = .*`:     `CRI_DOCKERD_REV = {{.ShortCommit}}`,
+				`CRI_DOCKERD_VERSION = .*`: `CRI_DOCKERD_VERSION = {{.Version}}`,
+				`CRI_DOCKERD_COMMIT = .*`:  `CRI_DOCKERD_COMMIT = {{.FullCommit}}`,
 			},
 		},
 		"deploy/kicbase/Dockerfile": {
