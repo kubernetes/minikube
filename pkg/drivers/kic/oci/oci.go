@@ -159,6 +159,10 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 			return errors.Wrap(err, "daemon info")
 		}
 	}
+	if runtime.GOOS == "linux" {
+		WarnIfCgroupV1()
+	}
+
 
 	runArgs := []string{
 		"-d", // run the container detached

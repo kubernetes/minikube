@@ -25,3 +25,8 @@ func HasMemoryCgroup() bool {
 func hasMemorySwapCgroup() bool {
 	return true
 }
+
+// WarnIfCgroupV1 is a no-op on non-Linux systems
+func WarnIfCgroupV1() {
+	// no-op
+}
