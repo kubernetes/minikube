@@ -27,7 +27,9 @@ EXTRA_TEST_ARGS="-test.run TestFunctional -binary=out/minikube"
 JOB_NAME="KVM_Containerd_Linux_x86"
 #  marking all directories ('*') as trusted, since .git belongs to root, not minikube user
 git config --global --add safe.directory '*'
-COMMIT=$(git rev-parse HEAD)
+
+# vmnet-helper breaks when the logfile name is too long(>125 chars), so we use short commit hash here
+COMMIT=$(git rev-parse HEAD | cut -c1-8)
 MINIKUBE_LOCATION=$COMMIT
 echo "running test in $(pwd)"
 
