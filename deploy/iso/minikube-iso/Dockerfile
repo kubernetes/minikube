@@ -14,6 +14,9 @@
 
 FROM ubuntu:22.04
 
+# We need tar >= 1.35
+ARG TAR_VERSION="1.35"
+
 RUN apt-get update \
 	&& apt-get install -y apt dpkg apt-utils ca-certificates software-properties-common \
 	&& add-apt-repository -y ppa:longsleep/golang-backports \
@@ -43,6 +46,16 @@ RUN apt-get update \
 
 RUN mkdir /app
 RUN chmod 777 /app
+
+# Build host-tar
+RUN wget -nv -O - https://ftpmirror.gnu.org/tar/tar-${TAR_VERSION}.tar.xz | \
+    tar -Jx -C /tmp && \
+    cd /tmp/tar-${TAR_VERSION} && \
+    FORCE_UNSAFE_CONFIGURE=1 ./configure \
+        --disable-year2038 && \
+    make && \
+    make install && \
+    rm -rf /tmp/tar-${TAR_VERSION}
 
 RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 ENV LANG=en_US.utf8
