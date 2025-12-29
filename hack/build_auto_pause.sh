@@ -16,19 +16,20 @@
 
 set -eux -o pipefail
 
-if [ "$#" -ne 1 ]; then
-  echo "Usage: build_auto_pause.sh <archlist>" >&2
+if [ "$#" -ne 2 ]; then
+  echo "Usage: build_auto_pause.sh <archlist> <builddir>" >&2
   exit 1
 fi
 
 archlist=$1
 IFS=, read -a archarray <<< "$archlist"
+builddir=$2
 
 pushd cmd/auto-pause
 
 for (( i=0; i < ${#archarray[*]}; i++ ))
 do
 	arch=${archarray[i]#"linux/"}
-	env GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build -o auto-pause-$arch
+	env GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build -o $builddir/auto-pause-$arch
 done
 popd

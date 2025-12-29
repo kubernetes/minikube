@@ -20,23 +20,6 @@
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
 ARG KICBASE_IMAGE="debian:bookworm-20251208-slim"
-# multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.25.5 AS auto-pause
-WORKDIR /src
-# auto-pause depends on core minikube code so we need to pass the whole source code as the context
-# copy in the minimal amount of source code possible
-COPY pkg/ ./pkg
-COPY cmd/ ./cmd
-COPY deploy/addons ./deploy/addons
-COPY translations/ ./translations
-COPY third_party/ ./third_party
-COPY go.mod go.sum ./
-
-ARG TARGETARCH
-ENV GOARCH=${TARGETARCH}
-ARG PREBUILT_AUTO_PAUSE
-RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go build -o auto-pause-${TARGETARCH}; fi
-
 # start from debin 12, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${KICBASE_IMAGE} AS kicbase
@@ -62,7 +45,7 @@ COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
 COPY deploy/kicbase/CHANGELOG ./CHANGELOG
 COPY deploy/kicbase/nerdctld/nerdctld.socket  /etc/systemd/system/nerdctld.socket
 COPY deploy/kicbase/nerdctld/nerdctld.service  /etc/systemd/system/nerdctld.service
-COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
+COPY deploy/kicbase/auto-pause-${TARGETARCH} /bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
