@@ -189,6 +189,19 @@ func getDashboardToken(kubectlVersion, binaryURL, ctxName, ns string, attempts i
 }
 
 
+// checkURL checks if a URL returns 200 HTTP OK
+func checkURL(url string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return errors.Wrapf(err, "hitting URL:%q\n response: %+v", url, resp)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return &retry.RetriableError{
+			Err: fmt.Errorf("unexpected response code: %d", resp.StatusCode),
+		}
+	}
+	return nil
+}
 
 func init() {
 	dashboardCmd.Flags().BoolVar(&dashboardURLMode, "url", false, "Display dashboard URL instead of opening a browser")

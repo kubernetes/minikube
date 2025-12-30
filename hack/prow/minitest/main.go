@@ -37,7 +37,8 @@ var testers = map[string]tester.MiniTestTester{
 	"kvm-docker-linux-amd64-integration":     &tester.KVMDockerLinuxAmd64IntegrationTester{},
 	"kvm-containerd-linux-amd64-integration": &tester.KVMContainerdLinuxAmd64IntegrationTester{},
 	"kvm-crio-linux-amd64-integration":       &tester.KVMCRIOLinuxAmd64IntegrationTester{},
-	"none-docker-linux-amd64-integration":    &tester.NoneDockerLinuxAmd64IntegrationTester{},
+	"none-docker-linux-amd64-integration":      &tester.NoneDockerLinuxAmd64IntegrationTester{},
+	"none-containerd-linux-amd64-integration":  &tester.NoneContainerdLinuxAmd64IntegrationTester{},
 	"docker-linux-arm64-integration":         &tester.DockerLinuxArm64IntegrationTester{},
 }
 

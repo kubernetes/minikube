@@ -72,7 +72,7 @@ var runCorpProxy = detect.GithubActionRunner() && runtime.GOOS == "linux" && !ar
 
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
-	testFunctional(t, "")
+	testFunctionalInternal(t, "")
 }
 
 // TestFunctionalNewestKubernetes are functionality run functional tests using
@@ -83,12 +83,12 @@ func TestFunctionalNewestKubernetes(t *testing.T) {
 	}
 	k8sVersionString := constants.NewestKubernetesVersion
 	t.Run("Version"+k8sVersionString, func(t *testing.T) {
-		testFunctional(t, k8sVersionString)
+		testFunctionalInternal(t, k8sVersionString)
 	})
 
 }
 
-func testFunctional(t *testing.T, k8sVersion string) {
+func testFunctionalInternal(t *testing.T, k8sVersion string) {
 	profile := UniqueProfileName("functional")
 	ctx := context.WithValue(context.Background(), ContextKey("k8sVersion"), k8sVersion)
 	ctx, cancel := context.WithTimeout(ctx, Minutes(40))
@@ -916,7 +916,7 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	defer cancel()
 
 	// docs: Run `minikube dashboard --url` to start minikube dashboard and return the URL of it
-	args := []string{"dashboard", "--url", "--port", "36195", "-p", profile, "--alsologtostderr", "-v=1"}
+	args := []string{"dashboard", "--url", "--port", "0", "-p", profile, "--alsologtostderr", "-v=1"}
 	ss, err := Start(t, exec.CommandContext(mctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to run minikube dashboard. args %q : %v", args, err)
@@ -929,6 +929,11 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		if runtime.GOOS == "windows" {
 			t.Skip(err)
+		}
+		// check if the failure was due to rate limiting
+		rr, logErr := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs"))
+		if logErr == nil && (strings.Contains(rr.Output(), "toomanyrequests") || strings.Contains(rr.Output(), "pull rate limit")) {
+			t.Skipf("Skipping dashboard test due to Docker Hub rate limit: %v", err)
 		}
 		t.Fatal(err)
 	}

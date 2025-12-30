@@ -224,7 +224,7 @@ func TestKubernetesUpgrade(t *testing.T) {
 		t.Errorf("failed to start minikube HEAD with oldest k8s version: %s: %v", rr.Command(), err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}

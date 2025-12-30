@@ -58,7 +58,11 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 Click on the buttons that describe your target platform. For other architectures, see [the release page](https://github.com/kubernetes/minikube/releases/latest) for a complete list of minikube binaries.
 
 {{% quiz_row base="" name="Operating system" %}}
-{{% quiz_button option="Linux" %}} {{% quiz_button option="macOS" %}} {{% quiz_button option="Windows" %}}
+{{% quiz_button option="Linux" %}} {{% quiz_button option="macOS" %}} {{% quiz_button option="Windows" %}} {{% quiz_button option="Try in Browser" %}}
+{{% /quiz_row %}}
+
+{{% quiz_row base="/Try in Browser" name="Provider" %}}
+{{% quiz_button option="GitHub Codespaces" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux" name="Architecture" %}}
@@ -527,6 +531,11 @@ choco install minikube
       el.href = "https://github.com/kubernetes/minikube/releases";
     });
 </script>
+{{% /quiz_instruction %}}
+
+{{% quiz_instruction id="/Try in Browser/GitHub Codespaces" no_intro="true" %}}
+Experience the latest minikube version directly in your browser for free!
+Ensure you are logged into GitHub, then click [![Try minikube in browser](https://img.shields.io/badge/Try%20minikube-in%20browser-%23326ce5?logo=kubernetes&logoColor=white)](https://github.com/codespaces/new/kubernetes/minikube?quickstart=1)
 {{% /quiz_instruction %}}
 
 {{% /card %}}

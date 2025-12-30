@@ -44,6 +44,7 @@ var kubeletConfigParams = []string{
 	"localStorageCapacityIsolation",
 	"runtime-request-timeout",
 	"hairpin-mode",
+	"FailCgroupV1",
 }
 
 func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) (map[string]string, error) {
