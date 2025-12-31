@@ -11,3 +11,14 @@
 .module-button:hover {
   background: #164cb2;
 }
+
+a.rsvp{
+  height: 48px;
+  width: 152px;
+  margin: 0 0 2rem 2rem;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem; 
+}
