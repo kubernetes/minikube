@@ -198,7 +198,7 @@ jobs:
         shell: bash
         if: matrix.driver == 'none'
         run: |
-          CRICTL_VERSION="v1.34.0"
+          CRICTL_VERSION="v1.35.0"
           ARCH="${{ matrix.arch }}"
           CRICTL_TAR="crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz"
           curl -L "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/${CRICTL_TAR}" --output "${CRICTL_TAR}"
@@ -217,7 +217,7 @@ jobs:
         shell: bash
         if: matrix.driver == 'none'
         run: |
-          CNI_PLUGIN_VERSION="v1.7.1"
+          CNI_PLUGIN_VERSION="v1.9.0"
           ARCH="${{ matrix.arch }}"
           CNI_PLUGIN_TAR="cni-plugins-linux-${ARCH}-$CNI_PLUGIN_VERSION.tgz"
           CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"

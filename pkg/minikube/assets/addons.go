@@ -591,9 +591,9 @@ var Addons = map[string]*Addon{
 			"volcano-deployment.yaml",
 			"0640"),
 	}, false, "volcano", "third-party (volcano)", "hwdef", "", map[string]string{
-		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.13.0@sha256:03e36eb220766397b4cd9c2f42bab8666661a0112fa9033ae9bd80d2a9611001",
-		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.13.0@sha256:8dd7ce0cef2df19afb14ba26bec90e2999a3c0397ebe5c9d75a5f68d1c80d242",
-		"vc_scheduler":          "volcanosh/vc-scheduler:v1.13.0@sha256:b05b30b3c25eff5af77e1859f47fc6acfc3520d62dc2838f0623aa4309c40b34",
+		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.13.1@sha256:1572d6bd3e4616caa80dbd224d86a879a5c4eb1bdb07699f45eccdc56439ce42",
+		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.13.1@sha256:c5ce04dc9959fa7af979e92f6d85a664b07c7103a06f133b5631d951412cd918",
+		"vc_scheduler":          "volcanosh/vc-scheduler:v1.13.1@sha256:53c0d84598fdd9ba10f3ccf214219bf5058dc2bddb22a740a7ddf4fef8f79853",
 	}, map[string]string{
 		"vc_webhook_manager":    "docker.io",
 		"vc_controller_manager": "docker.io",
@@ -774,7 +774,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.YakdAssets, "yakd/yakd-dp.yaml.tmpl", vmpath.GuestAddonsDir, "yakd-dp.yaml", "0640"),
 	}, false, "yakd", "3rd party (marcnuri.com)", "manusa", "https://minikube.sigs.k8s.io/docs/handbook/addons/yakd-kubernetes-dashboard/",
 		map[string]string{
-			"Yakd": "manusa/yakd:0.0.6@sha256:29c201915027beafbdc53861fd0b302a00b0fb4d9cef9172cde2abd81e410e3c",
+			"Yakd": "manusa/yakd:0.0.7@sha256:3666ffa8a87fcdbaa6b28ee69a8b090c72d88f05b7a32a14599ce67945dc3453",
 		},
 		map[string]string{
 			"Yakd": "ghcr.io",
