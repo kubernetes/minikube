@@ -475,8 +475,8 @@ github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5
 github.com/miekg/dns v1.1.29/go.mod h1:KNUDUusw/aVsxyTYZM1oqvCicbwhgbNgztCETuNZ7xM=
 github.com/miekg/dns v1.1.48 h1:Ucfr7IIVyMBz4lRE8qmGUuZ4Wt3/ZGu9hmcMT3Uu4tQ=
 github.com/miekg/dns v1.1.48/go.mod h1:e3IlAVfNqAllflbibAZEWOXOQ+Ynzk/dDozDxY7XnME=
-github.com/minikube-machine/machine v0.0.0-20251212115451-c0ae03d5e398 h1:bodrIL8yvzOdub8HGIJDeuii3Zk6HDb8ajXSQbKqLk0=
-github.com/minikube-machine/machine v0.0.0-20251212115451-c0ae03d5e398/go.mod h1:MYgWEfgEAiKo43eq0VNF2tywdxHE77+LBcRfVzuScus=
+github.com/minikube-machine/machine v0.0.0-20260102125217-0c3490c1962a h1:1AdfSQPZdLfRrJ70j/U1RtKVQ7YWaERxpDCNRnAewCg=
+github.com/minikube-machine/machine v0.0.0-20260102125217-0c3490c1962a/go.mod h1:mzuzjgO1AWRdOhHkD92MxKaiL/6wEOP02Me95cRwz6E=
 github.com/minikube-machine/machine-driver-parallels/v2 v2.0.2-0.20240730142131-ada9375ea417 h1:f+neTRGCtvmW3Tm1V72vWpoTPuNOnXSQsHZdYOryfGM=
 github.com/minikube-machine/machine-driver-parallels/v2 v2.0.2-0.20240730142131-ada9375ea417/go.mod h1:NKwI5KryEmEHMZVj80t9JQcfXWZp4/ZYNBuw4C5sQ9E=
 github.com/minikube-machine/machine-driver-vmware v0.1.6-0.20230701123042-a391c48b14d5 h1:1z7xOzfMO4aBR9+2nYjlhRXX1773fX60HTS0QGpGRPU=
