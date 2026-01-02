@@ -25,10 +25,10 @@ complete -o default -F __start_kubectl k
 source <(minikube completion bash)
 
 # Display welcome message on first terminal entry
-if [ ! -f "$HOME/.minikube-welcome-shown" ]; then
+if [ ! -f "$HOME/.devcontainer-welcome-shown" ]; then
     echo ""
     echo "╔══════════════════════════════════════════════════════════════════════╗"
-    echo "║  Welcome to minikube in browser offered by Codespaces               ║"
+    echo "║  Welcome to minikube in GitHub Codespaces                           ║"
     echo "╚══════════════════════════════════════════════════════════════════════╝"
     echo ""
     echo "To start minikube simply type:"
@@ -40,5 +40,5 @@ if [ ! -f "$HOME/.minikube-welcome-shown" ]; then
     echo "  k          - kubectl"
     echo "  reset-view - Show how to reset VS Code layout"
     echo ""
-    touch "$HOME/.minikube-welcome-shown"
+    touch "$HOME/.devcontainer-welcome-shown"
 fi
