@@ -259,6 +259,6 @@ require (
 
 replace (
 	github.com/Parallels/docker-machine-parallels/v2 => github.com/minikube-machine/machine-driver-parallels/v2 v2.0.2-0.20240730142131-ada9375ea417
-	github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20251109100456-3b479dcea7a3
+	github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20260102125217-0c3490c1962a
 	github.com/machine-drivers/docker-machine-driver-vmware => github.com/minikube-machine/machine-driver-vmware v0.1.6-0.20230701123042-a391c48b14d5
 )

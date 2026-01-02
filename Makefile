@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.37.0-1766979747-22353
+ISO_VERSION ?= v1.37.0-1767060032-22354
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -290,7 +290,8 @@ out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 minikube-iso-amd64: minikube-iso-x86_64
 minikube-iso-arm64: minikube-iso-aarch64
 
-minikube-iso-%: iso-prepare-% deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
+minikube-iso-%: iso-prepare-% out/auto-pause-% # build minikube iso
+	cp out/auto-pause-$* deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/usr/bin/auto-pause
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-go
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
 	# x86_64 ISO is still BIOS rather than EFI because of AppArmor issues for KVM, and Gen 2 issues for Hyper-V
@@ -678,7 +679,8 @@ build-and-upload-cri-dockerd-binaries:
 .PHONY: local-kicbase
 local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 	touch deploy/kicbase/CHANGELOG
-	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --cache-from $(KICBASE_IMAGE_GCR) .
+	./hack/build_auto_pause.sh linux/$(GOARCH) $(CURDIR)/deploy/kicbase
+	docker build -t local/kicbase:$(KIC_VERSION) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --cache-from $(KICBASE_IMAGE_GCR) ./deploy/kicbase
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 
@@ -689,7 +691,8 @@ local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches 
 
 .PHONY: build-kic-base-image
 build-kic-base-image: docker-multi-arch-build ## Build multi-arch local/kicbase:latest
-	docker buildx build -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) .
+	./hack/build_auto_pause.sh $(KICBASE_ARCH) $(CURDIR)/deploy/kicbase
+	docker buildx build --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) ./deploy/kicbase
 
 .PHONY: push-kic-base-image
 push-kic-base-image: docker-multi-arch-build ## Push multi-arch local/kicbase:latest to all remote registries
@@ -703,8 +706,8 @@ endif
 ifndef CIBUILD
 	$(call user_confirm, 'Are you sure you want to push $(KICBASE_IMAGE_REGISTRIES) ?')
 endif
-	./deploy/kicbase/build_auto_pause.sh $(KICBASE_ARCH)
-	docker buildx build -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --build-arg PREBUILT_AUTO_PAUSE=true .
+	./hack/build_auto_pause.sh $(KICBASE_ARCH) $(CURDIR)/deploy/kicbase
+	docker buildx build --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) ./deploy/kicbase
 
 # preload scripts been moved to https://github.com/kubernetes-sigs/minikube-preloads/tree/main/cmd/preload-generator 
 # in order to be able to publish them as github assets 
@@ -811,10 +814,17 @@ out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
 
 
+out/auto-pause-x86_64: out/auto-pause-amd64
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
+out/auto-pause-aarch64: out/auto-pause-arm64
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
 # auto pause binary to be used for ISO
-deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
-	@if [ "$*" != "x86_64" ] && [ "$*" != "aarch64" ]; then echo "Please enter a valid architecture. Choices are x86_64 and aarch64."; exit 1; fi
-	GOOS=linux GOARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*)) go build -o $@ cmd/auto-pause/auto-pause.go
+out/auto-pause-%: $(SOURCE_FILES) $(ASSET_FILES)
+	GOOS=linux GOARCH=$* go build -o $@ cmd/auto-pause/auto-pause.go
 
 
 .PHONY: deploy/addons/auto-pause/auto-pause-hook

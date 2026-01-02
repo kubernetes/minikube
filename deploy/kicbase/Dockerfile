@@ -20,23 +20,6 @@
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
 ARG KICBASE_IMAGE="debian:bookworm-20251208-slim"
-# multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.25.5 AS auto-pause
-WORKDIR /src
-# auto-pause depends on core minikube code so we need to pass the whole source code as the context
-# copy in the minimal amount of source code possible
-COPY pkg/ ./pkg
-COPY cmd/ ./cmd
-COPY deploy/addons ./deploy/addons
-COPY translations/ ./translations
-COPY third_party/ ./third_party
-COPY go.mod go.sum ./
-
-ARG TARGETARCH
-ENV GOARCH=${TARGETARCH}
-ARG PREBUILT_AUTO_PAUSE
-RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go build -o auto-pause-${TARGETARCH}; fi
-
 # start from debin 12, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${KICBASE_IMAGE} AS kicbase
@@ -52,17 +35,17 @@ ARG NERDCTL_VERSION="2.2.0"
 ARG NERDCTLD_VERSION="0.7.0"
 
 # copy in static files (configs, scripts)
-COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
-COPY deploy/kicbase/11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
-COPY deploy/kicbase/02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
-COPY deploy/kicbase/containerd.toml /etc/containerd/config.toml
-COPY deploy/kicbase/containerd_docker_io_hosts.toml /etc/containerd/certs.d/docker.io/hosts.toml
-COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
-COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
-COPY deploy/kicbase/CHANGELOG ./CHANGELOG
-COPY deploy/kicbase/nerdctld/nerdctld.socket  /etc/systemd/system/nerdctld.socket
-COPY deploy/kicbase/nerdctld/nerdctld.service  /etc/systemd/system/nerdctld.service
-COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
+COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
+COPY 11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
+COPY 02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
+COPY containerd.toml /etc/containerd/config.toml
+COPY containerd_docker_io_hosts.toml /etc/containerd/certs.d/docker.io/hosts.toml
+COPY clean-install /usr/local/bin/clean-install
+COPY entrypoint /usr/local/bin/entrypoint
+COPY CHANGELOG ./CHANGELOG
+COPY nerdctld/nerdctld.socket  /etc/systemd/system/nerdctld.socket
+COPY nerdctld/nerdctld.service  /etc/systemd/system/nerdctld.service
+COPY auto-pause-${TARGETARCH} /bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -260,14 +243,14 @@ ARG VERSION_JSON
 RUN echo "${VERSION_JSON}" > /version.json
 
 # automount service
-COPY deploy/kicbase/automount/minikube-automount /usr/sbin/minikube-automount
-COPY deploy/kicbase/automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
+COPY automount/minikube-automount /usr/sbin/minikube-automount
+COPY automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
 RUN ln -fs /usr/lib/systemd/system/minikube-automount.service \
     /etc/systemd/system/multi-user.target.wants/minikube-automount.service
 
 # scheduled stop service
-COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
-COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
+COPY scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
+COPY scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
 RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
 # disable non-docker runtimes by default (since cri-dockerd is default in minikube)

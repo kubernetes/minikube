@@ -1,3 +1,4 @@
+//go:build integration
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -131,4 +132,3 @@ func TestISOImage(t *testing.T) {
 		}
 	})
 }
-
