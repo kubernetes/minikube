@@ -288,7 +288,7 @@ func parseDHCPdLeasesFile(file io.Reader) ([]DHCPEntry, error) {
 }
 
 // parseMAC parse both standard fixed size MAC address "%02x:..." and the
-// variable size MAC address on drawin "%x:...".
+// variable size MAC address on Darwin "%x:...".
 func parseMAC(mac string) (net.HardwareAddr, error) {
 	hw := make(net.HardwareAddr, 6)
 	n, err := fmt.Sscanf(mac, "%x:%x:%x:%x:%x:%x",

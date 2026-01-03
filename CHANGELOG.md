@@ -29,7 +29,7 @@ Run AI workloads on Macbook's GPU in Kubernetes using the new `krunkit driver`. 
 * Don't call startKicServiceTunnel for non-kic drivers (#20863)
 * krunkit: Disable offloading for faster networking (#21341)
 
-## Deprication
+## Deprecation
 
 * Deprecate HyperKit driver with warning (#21024)
 
@@ -379,7 +379,7 @@ Improvements:
 * Improved error message when enabling KVM addons on non-KVM cluster [#19195](https://github.com/kubernetes/minikube/pull/19195)
 * Added warning when loading image with wrong arch [#19229](https://github.com/kubernetes/minikube/pull/19229)
 * `profile list --output json` handle empty config folder  [#16900](https://github.com/kubernetes/minikube/pull/16900)
-* Check connectivity outside minikube when connectivity issuse [#18859](https://github.com/kubernetes/minikube/pull/18859)
+* Check connectivity outside minikube when connectivity issues [#18859](https://github.com/kubernetes/minikube/pull/18859)
 
 Bugs:
 
