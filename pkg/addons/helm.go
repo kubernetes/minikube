@@ -34,6 +34,11 @@ func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"helm", "upgrade", "--install", chart.Name, chart.Repo, "--create-namespace",
 	}
+
+	if chart.RepositoryURL != "" {
+		args = append(args, "--repo", chart.RepositoryURL)
+	}
+
 	if chart.Namespace != "" {
 		args = append(args, "--namespace", chart.Namespace)
 	}
@@ -74,26 +79,23 @@ func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable
 }
 
 func helmInstallBinary(addon *assets.Addon, runner command.Runner) error {
-	_, err := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
-	if err != nil {
-		_, err = runner.RunCmd(exec.Command("test", "-d", "/usr/local/bin"))
-		if err != nil {
-			_, err = runner.RunCmd(exec.Command("sudo", "mkdir", "-p", "/usr/local/bin"))
-			if err != nil {
-				return errors.Wrap(err, "creating /usr/local/bin")
-			}
-		}
-
-		installCmd := "curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh"
-		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd))
-		if err != nil {
-			return errors.Wrap(err, "downloading helm")
-		}
-		// we copy the binary from /usr/local/bin to /usr/bin because /usr/local/bin is not in PATH in both iso and kicbase
-		_, err = runner.RunCmd(exec.Command("sudo", "mv", "/usr/local/bin/helm", "/usr/bin/helm"))
-		if err != nil {
-			return errors.Wrap(err, "installing helm")
-		}
+	// check if helm is already installed in /usr/bin
+	if _, err := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm")); err == nil {
+		return nil
 	}
-	return err
+
+	// check if helm is in /usr/local/bin and move it if found
+	if _, err := runner.RunCmd(exec.Command("test", "-f", "/usr/local/bin/helm")); err == nil {
+		if _, err := runner.RunCmd(exec.Command("sudo", "mv", "/usr/local/bin/helm", "/usr/bin/helm")); err != nil {
+			return errors.Wrap(err, "moving helm from /usr/local/bin")
+		}
+		return nil
+	}
+
+	installCmd := "curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && HELM_INSTALL_DIR=/usr/bin ./get_helm.sh"
+	if _, err := runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd)); err != nil {
+		return errors.Wrap(err, "downloading helm")
+	}
+
+	return nil
 }

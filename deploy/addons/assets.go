@@ -23,10 +23,6 @@ var (
 	//go:embed auto-pause/*.tmpl auto-pause/*.yaml auto-pause/unpause.lua
 	AutoPauseAssets embed.FS
 
-	// DashboardAssets assets for dashboard addon
-	//go:embed dashboard/*.yaml dashboard/*.tmpl
-	DashboardAssets embed.FS
-
 	// DefaultStorageClassAssets assets for default-storageclass addon
 	//go:embed storageclass/storageclass.yaml
 	DefaultStorageClassAssets embed.FS
@@ -42,6 +38,10 @@ var (
 	// StorageProvisionerRancherAssets assets for storage-provisioner-rancher addon
 	//go:embed storage-provisioner-rancher/*.tmpl
 	StorageProvisionerRancherAssets embed.FS
+
+	// DashboardAssets assets for dashboard addon
+	//go:embed dashboard/*.yaml
+	DashboardAssets embed.FS
 
 	// EfkAssets assets for efk addon
 	//go:embed efk/*.tmpl efk/*.yaml
