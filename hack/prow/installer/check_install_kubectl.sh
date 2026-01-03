@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2016 The Kubernetes Authors All rights reserved.
+# Copyright 2025 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,11 +19,6 @@ set -eux -o pipefail
 ARCH=${ARCH:=amd64}
 
 
-echo "Installing latest docker"
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-rm get-docker.sh
-
-sudo usermod -aG docker minitest || true
-
-./hack/prow/installer/check_install_kubectl.sh
+echo "Installing latest kubectl"
+curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/${ARCH}/kubectl"
+sudo install ./kubectl /usr/local/bin/kubectl

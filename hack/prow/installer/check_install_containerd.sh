@@ -48,6 +48,4 @@ sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/conf
 
 sudo systemctl restart containerd
 
-echo "Installing latest kubectl"
-curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/${ARCH}/kubectl"
-sudo install ./kubectl /usr/local/bin/kubectl
+./hack/prow/installer/check_install_kubectl.sh

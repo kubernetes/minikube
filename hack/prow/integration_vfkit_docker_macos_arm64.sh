@@ -28,6 +28,9 @@ JOB_NAME="KVM_Containerd_Linux_x86"
 #  marking all directories ('*') as trusted, since .git belongs to root, not minikube user
 git config --global --add safe.directory '*'
 
+# aws macos instance doesn't have kubectl pre-installed
+./hack/prow/installer/check_install_kubectl.sh
+
 # vmnet-helper breaks when the logfile name is too long(>125 chars), so we use short commit hash here
 COMMIT=$(git rev-parse HEAD | cut -c1-8)
 MINIKUBE_LOCATION=$COMMIT
