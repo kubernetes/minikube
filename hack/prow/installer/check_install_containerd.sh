@@ -16,7 +16,8 @@
 
 set -eux -o pipefail
 
-ARCH=${ARCH:=amd64}
+OS=$1
+ARCH=$2
 
 echo "Installing containerd"
 # Install docker's internal containerd if we can, or just install containerd from apt if available, 
@@ -48,4 +49,4 @@ sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/conf
 
 sudo systemctl restart containerd
 
-./hack/prow/installer/check_install_kubectl.sh
+./hack/prow/installer/check_install_kubectl.sh ${OS} ${ARCH}

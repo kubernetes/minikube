@@ -16,7 +16,8 @@
 
 set -eux -o pipefail
 
-ARCH=${ARCH:=amd64}
+OS=$1
+ARCH=$2
 
 
 echo "Installing latest docker"
@@ -26,4 +27,4 @@ rm get-docker.sh
 
 sudo usermod -aG docker minitest || true
 
-./hack/prow/installer/check_install_kubectl.sh
+./hack/prow/installer/check_install_kubectl.sh ${OS} ${ARCH}

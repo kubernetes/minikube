@@ -29,7 +29,7 @@ JOB_NAME="KVM_Containerd_Linux_x86"
 git config --global --add safe.directory '*'
 
 # aws macos instance doesn't have kubectl pre-installed
-./hack/prow/installer/check_install_kubectl.sh
+./hack/prow/installer/check_install_kubectl.sh ${OS} ${ARCH}
 
 # vmnet-helper breaks when the logfile name is too long(>125 chars), so we use short commit hash here
 COMMIT=$(git rev-parse HEAD | cut -c1-8)
