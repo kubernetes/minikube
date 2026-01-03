@@ -37,7 +37,7 @@ const vboxConfig = `
         "MachineName": "minikube",
         "SSHUser": "docker",
         "SSHPort": 33627,
-        "SSHKeyPath": "/home/sundarp/.minikube/machines/minikube/id_rsa",
+        "SSHKeyPath": "/home/sundarp/.minikube/machines/minikube/id_ed25519",
         "StorePath": "/home/sundarp/.minikube",
         "SwarmMaster": false,
         "SwarmHost": "",

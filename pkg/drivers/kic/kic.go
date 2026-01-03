@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -47,6 +46,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
+	"k8s.io/minikube/pkg/util/sshkeys"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -223,7 +223,7 @@ func (d *Driver) Create() error {
 func (d *Driver) prepareSSH() error {
 	keyPath := d.GetSSHKeyPath()
 	klog.Infof("Creating ssh key for kic: %s...", keyPath)
-	if err := ssh.GenerateSSHKey(keyPath); err != nil {
+	if err := sshkeys.GenerateSSHKey(keyPath); err != nil {
 		return errors.Wrap(err, "generate ssh key")
 	}
 
@@ -324,7 +324,9 @@ func (d *Driver) GetSSHUsername() string {
 // GetSSHKeyPath returns the ssh key path
 func (d *Driver) GetSSHKeyPath() string {
 	if d.SSHKeyPath == "" {
-		d.SSHKeyPath = d.ResolveStorePath("id_rsa")
+		primary := d.ResolveStorePath(sshkeys.Ed25519KeyName)
+		fallback := d.ResolveStorePath(sshkeys.RSAKeyName)
+		d.SSHKeyPath = sshkeys.ResolveKeyPath(primary, fallback)
 	}
 	return d.SSHKeyPath
 }

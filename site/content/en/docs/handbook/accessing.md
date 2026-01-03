@@ -81,7 +81,7 @@ Services of type `NodePort` can be exposed via the `minikube service <service-na
 
     ```shell
     $ ps -ef | grep docker@127.0.0.1
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -N docker@127.0.0.1 -p 55972 -i /Users/FOO/.minikube/machines/minikube/id_rsa -L TUNNEL_PORT:CLUSTER_IP:TARGET_PORT
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -N docker@127.0.0.1 -p 55972 -i /Users/FOO/.minikube/machines/minikube/id_ed25519 -L TUNNEL_PORT:CLUSTER_IP:TARGET_PORT
     ```
 
 5. Try in your browser
