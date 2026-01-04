@@ -31,7 +31,8 @@ git config --global --add safe.directory '*'
 # aws macos instance doesn't have kubectl pre-installed
 ./hack/prow/installer/check_install_kubectl.sh ${OS} ${ARCH}
 # install docker
-brew install --cask docker
+brew install --cask docker-desktop
+open /Applications/Docker.app
 # vmnet-helper breaks when the logfile name is too long(>125 chars), so we use short commit hash here
 COMMIT=$(git rev-parse HEAD | cut -c1-8)
 MINIKUBE_LOCATION=$COMMIT
