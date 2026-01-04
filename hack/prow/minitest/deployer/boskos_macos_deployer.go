@@ -106,6 +106,7 @@ func (m *MiniTestBosKosMacOSDeployer) Down() error {
 	)
 	if err != nil {
 		fmt.Printf("Error releasing boskos macos instance: %v\n", err)
+		
 		//return fmt.Errorf("down failed to release boskos macos instance: %v", err)
 	}
 	m.isUp = false
