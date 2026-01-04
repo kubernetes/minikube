@@ -20,7 +20,7 @@ set -x
 OS="darwin"
 ARCH="arm64"
 DRIVER="vfkit"
-CONTAINER_RUNTIME=""
+CONTAINER_RUNTIME="docker"
 # in prow, if you want libvirtd to be run, you have to start a privileged container as root
 EXTRA_START_ARGS="--network=vmnet-shared" 
 EXTRA_TEST_ARGS="-test.run TestFunctional -binary=out/minikube"
