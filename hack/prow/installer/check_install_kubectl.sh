@@ -22,4 +22,4 @@ ARCH=$2
 
 echo "Installing latest kubectl for ${ARCH}"
 curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/${OS}/${ARCH}/kubectl"
-#sudo install ./kubectl /usr/local/bin/kubectl
+sudo install ./kubectl /usr/local/bin/kubectl
