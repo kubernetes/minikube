@@ -72,9 +72,9 @@ function install_dependencies() {
 			echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> /Users/ec2-user/.zprofile
 			eval "$(/opt/homebrew/bin/brew shellenv)"
 		fi
-		# install docker
-		brew install --cask docker-desktop
-		open /Applications/Docker.app
+		# install docker cli
+		brew install docker
+
 		
 		# install vfkit
 		brew update
