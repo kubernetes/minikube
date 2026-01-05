@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>昆仑F5 | 摄影作品分享平台 - kunlunF5.com</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 统一的 Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2d3748',      // 深灰色
+                        secondary: '#4a5568',    // 中灰色
+                        accent: '#1a202c',       // 近黑色
+                        light: '#f7fafc',        // 浅灰色
+                        highlight: '#667eea',    // 蓝紫色
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['Playfair Display', 'serif'],
+                    },
+                    boxShadow: {
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-in-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                    },
+                }
+            },
+            darkMode: 'class',
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .text-shadow-lg {
+                text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+            .backdrop-blur {
+                backdrop-filter: blur(8px);
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .hover-scale {
+                @apply transition-transform duration-300 hover:scale-105;
+            }
+            .card-overlay {
+                background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 60%);
+            }
+            .video-indicator {
+                @apply absolute top-3 right-3 bg-red-500 rounded-full w-3 h-3 animate-pulse;
+            }
+        }
+    </style>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="昆仑F5 - 专业摄影作品分享平台，邀请制高质量摄影社区">
+    <meta name="keywords" content="摄影,摄影作品,摄影社区,邀请制,照片分享,视频分享,kunlunF5,昆仑F5">
+    <meta name="author" content="昆仑F5团队">
+    <meta name="robots" content="index, follow">
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="昆仑F5 | 摄影作品分享平台">
+    <meta property="og:description" content="昆仑F5 - 专业摄影作品分享平台，邀请制高质量摄影社区">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://kunlunF5.com">
+    <meta property="og:image" content="https://p11-doubao-search-sign.byteimg.com/labis/7f1d85ddbf475fd67afce61368dfb04d~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=LqIB%2FqX%2BPeSuhFXjRhcxDOx6Eus%3D">
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="昆仑F5 | 摄影作品分享平台">
+    <meta name="twitter:description" content="昆仑F5 - 专业摄影作品分享平台，邀请制高质量摄影社区">
+    <meta name="twitter:image" content="https://p11-doubao-search-sign.byteimg.com/labis/7f1d85ddbf475fd67afce61368dfb04d~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=LqIB%2FqX%2BPeSuhFXjRhcxDOx6Eus%3D">
+    <!-- Favicon -->
+    <link rel="icon" href="https://p11-doubao-search-sign.byteimg.com/labis/7f1d85ddbf475fd67afce61368dfb04d~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=LqIB%2FqX%2BPeSuhFXjRhcxDOx6Eus%3D" type="image/jpeg">
+    <link rel="apple-touch-icon" href="https://p11-doubao-search-sign.byteimg.com/labis/7f1d85ddbf475fd67afce61368dfb04d~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=LqIB%2FqX%2BPeSuhFXjRhcxDOx6Eus%3D">
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white bg-opacity-90 dark:bg-gray-800 dark:bg-opacity-90 backdrop-blur shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <a href="#" class="text-2xl font-display font-bold text-primary dark:text-white">昆仑F5</a>
+                <span class="hidden sm:inline-block text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full">邀请制</span>
+            </div>
+            
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#discover" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-white transition-colors">发现</a>
+                <a href="#categories" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-white transition-colors">分类</a>
+                <a href="#featured" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-white transition-colors">精选</a>
+                <a href="#photographers" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-white transition-colors">摄影师</a>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <button id="searchBtn" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-white transition-colors">
+                    <i class="fa fa-search text-lg"></i>
+                </button>
+                <button id="themeToggleBtn" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-white transition-colors">
+                    <i class="fa fa-moon-o dark:hidden text-lg"></i>
+                    <i class="fa fa-sun-o hidden dark:block text-lg"></i>
+                </button>
+                <div class="relative">
+                    <button id="userMenuBtn" class="flex items-center space-x-1 focus:outline-none">
+                        <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                            <i class="fa fa-user text-gray-500 dark:text-gray-400"></i>
+                        </div>
+                        <span class="hidden sm:block text-sm font-medium">登录</span>
+                    </button>
+                    <div id="userMenu" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 z-10 hidden animate-fade-in">
+                        <a href="#" id="loginBtn" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <i class="fa fa-sign-in mr-2"></i>登录
+                        </a>
+                        <a href="#" id="registerBtn" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <i class="fa fa-user-plus mr-2"></i>注册
+                        </a>
+                        <hr class="my-1 border-gray-200 dark:border-gray-700">
+                        <a href="#" id="adminLoginBtn" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <i class="fa fa-lock mr-2"></i>管理员登录
+                        </a>
+                        <a href="#" id="userProfileBtn" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hidden">
+                            <i class="fa fa-user mr-2"></i>个人中心
+                        </a>
+                        <a href="#" id="uploadBtn" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hidden">
+                            <i class="fa fa-upload mr-2"></i>上传作品
+                        </a>
+                        <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hidden">
+                            <i class="fa fa-sign-out mr-2"></i>退出登录
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main class="flex-1 pt-16">
+        <!-- 英雄区域 -->
+        <section class="relative h-[80vh] min-h-[500px] flex items-center justify-center overflow-hidden">
+            <div class="absolute inset-0 z-0">
+                <img src="https://p11-doubao-search-sign.byteimg.com/labis/7f1d85ddbf475fd67afce61368dfb04d~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=LqIB%2FqX%2BPeSuhFXjRhcxDOx6Eus%3D" alt="风景摄影" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black bg-opacity-40"></div>
+            </div>
+            <div class="container mx-auto px-4 z-10 text-center">
+                <h1 class="text-4xl md:text-6xl font-display font-bold text-white text-shadow-lg mb-4 animate-fade-in">
+                    捕捉瞬间，<br class="md:hidden">定格永恒
+                </h1>
+                <p class="text-xl md:text-2xl text-gray-100 text-shadow mb-8 max-w-2xl mx-auto animate-slide-up">
+                    加入我们的邀请制摄影社区，与全球摄影师分享你的视觉故事
+                </p>
+                <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 animate-slide-up" style="animation-delay: 0.2s;">
+                    <button id="getInviteBtn" class="px-8 py-3 bg-white text-gray-900 rounded-full font-medium hover:bg-gray-100 transition-colors shadow-lg">
+                        获取邀请码
+                    </button>
+                    <button id="exploreBtn" class="px-8 py-3 bg-transparent border-2 border-white text-white rounded-full font-medium hover:bg-white hover:text-gray-900 transition-colors">
+                        探索作品
+                    </button>
+                </div>
+            </div>
+            <div class="absolute bottom-8 left-0 right-0 flex justify-center animate-bounce">
+                <a href="#discover" class="text-white">
+                    <i class="fa fa-chevron-down text-2xl"></i>
+                </a>
+            </div>
+        </section>
+
+        <!-- 发现区域 -->
+        <section id="discover" class="py-16 bg-white dark:bg-gray-800">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-3xl font-display font-bold mb-2">发现精彩</h2>
+                        <p class="text-gray-600 dark:text-gray-400">探索最新上传的摄影作品和视频</p>
+                    </div>
+                    <div class="flex items-center space-x-2 mt-4 md:mt-0">
+                        <button class="filter-btn active px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" data-filter="all">
+                            全部
+                        </button>
+                        <button class="filter-btn px-4 py-2 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" data-filter="photos">
+                            照片
+                        </button>
+                        <button class="filter-btn px-4 py-2 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" data-filter="videos">
+                            视频
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 作品网格 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- 照片项目 1 -->
+                    <div class="work-item photos group" data-category="landscape">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p11-doubao-search-sign.byteimg.com/labis/7ad7772a72899c6d80dc75aa2406f158~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=mLpsmMLUdfUY0dPrMMVW5weK2Kg%3D" alt="山水风景" class="w-full h-80 object-cover hover-scale">
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">山间倒影</h3>
+                                <p class="text-gray-200 text-sm">美国怀俄明州</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">Alex Morgan</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 照片项目 2 -->
+                    <div class="work-item photos group" data-category="portrait">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/479287ac6bee78eaed2e3bc77b429759~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=C5sJnYQXK7Qyper4yjbju%2F29t%2FI%3D" alt="人像摄影" class="w-full h-80 object-cover hover-scale">
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">东方韵味</h3>
+                                <p class="text-gray-200 text-sm">传统建筑人像</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">Li Wei</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 视频项目 1 -->
+                    <div class="work-item videos group" data-category="landscape">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p11-doubao-search-sign.byteimg.com/labis/488900cb87c286be047c6cdf951a88ee~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144738&x-signature=VOvzcIUTfx%2BIxoHLC6PP34RXb4Q%3D" alt="延时摄影" class="w-full h-80 object-cover hover-scale">
+                            <div class="video-indicator"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="w-16 h-16 rounded-full bg-white bg-opacity-70 flex items-center justify-center hover:bg-opacity-90 transition-all duration-300 hover:scale-110 cursor-pointer">
+                                    <i class="fa fa-play text-gray-900 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">日落时分</h3>
+                                <p class="text-gray-200 text-sm">延时摄影短片</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">David Chen</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 照片项目 3 -->
+                    <div class="work-item photos group" data-category="blackwhite">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/7ff49ae9b6c41ed1e201f1060c771c22~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=8kKRHWhMlZ%2Bs7MCqfg4tkWz8CM8%3D" alt="黑白摄影" class="w-full h-80 object-cover hover-scale">
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">思绪</h3>
+                                <p class="text-gray-200 text-sm">黑白人像摄影</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">Emma Zhang</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 照片项目 4 -->
+                    <div class="work-item photos group" data-category="landscape">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-qvj2lq49k0/831a61a79a284fca8b64002eff733b33~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=5ft%2F0rjD8W3XMAjvv3DGH2uUTXU%3D" alt="山水风景" class="w-full h-80 object-cover hover-scale">
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">湖光山色</h3>
+                                <p class="text-gray-200 text-sm">自然风光摄影</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">Michael Wang</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 视频项目 2 -->
+                    <div class="work-item videos group" data-category="city">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/ee906c8382cfd9fcbf9a1eeb88d52095~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144738&x-signature=R84LRafNbizQuvqckMeG9l%2FAGCU%3D" alt="城市延时" class="w-full h-80 object-cover hover-scale">
+                            <div class="video-indicator"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="w-16 h-16 rounded-full bg-white bg-opacity-70 flex items-center justify-center hover:bg-opacity-90 transition-all duration-300 hover:scale-110 cursor-pointer">
+                                    <i class="fa fa-play text-gray-900 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">城市脉搏</h3>
+                                <p class="text-gray-200 text-sm">城市交通延时摄影</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">Jason Liu</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 照片项目 5 -->
+                    <div class="work-item photos group" data-category="portrait">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p26-doubao-search-sign.byteimg.com/labis/0288e218a523b66496dd97dab4e02654~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=x%2FfBQbt2SbiznyE1xl2oEMr6P6w%3D" alt="人像摄影" class="w-full h-80 object-cover hover-scale">
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">岁月沧桑</h3>
+                                <p class="text-gray-200 text-sm">人物肖像摄影</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">Sarah Kim</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 照片项目 6 -->
+                    <div class="work-item photos group" data-category="blackwhite">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/ea9a87ef945144b6c8264a91261a11e4~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=RcAFX8q8RTVt2lDjbwh3Yhiso88%3D" alt="黑白摄影" class="w-full h-80 object-cover hover-scale">
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">荷韵</h3>
+                                <p class="text-gray-200 text-sm">黑白花卉摄影</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">Chen Hua</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-12 text-center">
+                    <button id="loadMoreBtn" class="px-8 py-3 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        加载更多
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 分类区域 -->
+        <section id="categories" class="py-16 bg-gray-50 dark:bg-gray-900">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-display font-bold mb-2">浏览分类</h2>
+                    <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">探索不同类型的摄影作品，发现你感兴趣的内容</p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <a href="#" class="category-item group">
+                        <div class="relative rounded-xl overflow-hidden h-40">
+                            <img src="https://p11-doubao-search-sign.byteimg.com/labis/7f1d85ddbf475fd67afce61368dfb04d~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=LqIB%2FqX%2BPeSuhFXjRhcxDOx6Eus%3D" alt="风景摄影" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                            <div class="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-40 transition-colors duration-300"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <h3 class="text-white font-medium text-lg text-shadow">风景</h3>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="#" class="category-item group">
+                        <div class="relative rounded-xl overflow-hidden h-40">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/479287ac6bee78eaed2e3bc77b429759~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=C5sJnYQXK7Qyper4yjbju%2F29t%2FI%3D" alt="人像摄影" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                            <div class="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-40 transition-colors duration-300"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <h3 class="text-white font-medium text-lg text-shadow">人像</h3>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="#" class="category-item group">
+                        <div class="relative rounded-xl overflow-hidden h-40">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/7ff49ae9b6c41ed1e201f1060c771c22~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=8kKRHWhMlZ%2Bs7MCqfg4tkWz8CM8%3D" alt="黑白摄影" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                            <div class="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-40 transition-colors duration-300"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <h3 class="text-white font-medium text-lg text-shadow">黑白</h3>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="#" class="category-item group">
+                        <div class="relative rounded-xl overflow-hidden h-40">
+                            <img src="https://p11-doubao-search-sign.byteimg.com/labis/884fd48424e5f5562ed9ff4ac10798ac~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144738&x-signature=sq0C7klxQ22pladWmb159vIGyHI%3D" alt="城市摄影" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                            <div class="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-40 transition-colors duration-300"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <h3 class="text-white font-medium text-lg text-shadow">城市</h3>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="#" class="category-item group">
+                        <div class="relative rounded-xl overflow-hidden h-40">
+                            <img src="https://p11-doubao-search-sign.byteimg.com/labis/488900cb87c286be047c6cdf951a88ee~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144738&x-signature=VOvzcIUTfx%2BIxoHLC6PP34RXb4Q%3D" alt="延时摄影" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                            <div class="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-40 transition-colors duration-300"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <h3 class="text-white font-medium text-lg text-shadow">延时</h3>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="#" class="category-item group">
+                        <div class="relative rounded-xl overflow-hidden h-40">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/ea9a87ef945144b6c8264a91261a11e4~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=RcAFX8q8RTVt2lDjbwh3Yhiso88%3D" alt="花卉摄影" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                            <div class="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-40 transition-colors duration-300"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <h3 class="text-white font-medium text-lg text-shadow">花卉</h3>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 精选区域 -->
+        <section id="featured" class="py-16 bg-white dark:bg-gray-800">
+            <div class="container mx-auto px-4">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-3xl font-display font-bold mb-2">精选作品</h2>
+                        <p class="text-gray-600 dark:text-gray-400">我们精心挑选的优秀摄影作品</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="prevFeaturedBtn" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            <i class="fa fa-chevron-left"></i>
+                        </button>
+                        <button id="nextFeaturedBtn" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            <i class="fa fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="featuredSlider" class="flex space-x-6 overflow-x-auto scrollbar-hide pb-4">
+                    <div class="flex-shrink-0 w-80 group">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p11-doubao-search-sign.byteimg.com/labis/7f1d85ddbf475fd67afce61368dfb04d~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=LqIB%2FqX%2BPeSuhFXjRhcxDOx6Eus%3D" alt="精选作品" class="w-full h-96 object-cover hover-scale">
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">山谷晨光</h3>
+                                <p class="text-gray-200 text-sm">美国大峡谷</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">Alex Morgan</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 w-80 group">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/479287ac6bee78eaed2e3bc77b429759~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=C5sJnYQXK7Qyper4yjbju%2F29t%2FI%3D" alt="精选作品" class="w-full h-96 object-cover hover-scale">
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">东方韵味</h3>
+                                <p class="text-gray-200 text-sm">传统建筑人像</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">Li Wei</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 w-80 group">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/7ff49ae9b6c41ed1e201f1060c771c22~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=8kKRHWhMlZ%2Bs7MCqfg4tkWz8CM8%3D" alt="精选作品" class="w-full h-96 object-cover hover-scale">
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">思绪</h3>
+                                <p class="text-gray-200 text-sm">黑白人像摄影</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">Emma Zhang</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 w-80 group">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-qvj2lq49k0/831a61a79a284fca8b64002eff733b33~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=5ft%2F0rjD8W3XMAjvv3DGH2uUTXU%3D" alt="精选作品" class="w-full h-96 object-cover hover-scale">
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">湖光山色</h3>
+                                <p class="text-gray-200 text-sm">自然风光摄影</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">Michael Wang</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 w-80 group">
+                        <div class="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/ea9a87ef945144b6c8264a91261a11e4~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=RcAFX8q8RTVt2lDjbwh3Yhiso88%3D" alt="精选作品" class="w-full h-96 object-cover hover-scale">
+                            <div class="absolute inset-0 card-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                <h3 class="text-white font-medium text-lg">荷韵</h3>
+                                <p class="text-gray-200 text-sm">黑白花卉摄影</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fa fa-user text-xs text-gray-600"></i>
+                                        </div>
+                                        <span class="text-white text-xs">Chen Hua</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-white hover:text-red-400 transition-colors">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+                                        <button class="text-white hover:text-blue-400 transition-colors">
+                                            <i class="fa fa-bookmark-o"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 摄影师区域 -->
+        <section id="photographers" class="py-16 bg-gray-50 dark:bg-gray-900">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-display font-bold mb-2">优秀摄影师</h2>
+                    <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">关注这些才华横溢的摄影师，发现更多精彩作品</p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                    <div class="text-center">
+                        <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
+                            <img src="https://p11-doubao-search-sign.byteimg.com/labis/7ad7772a72899c6d80dc75aa2406f158~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=mLpsmMLUdfUY0dPrMMVW5weK2Kg%3D" alt="摄影师" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="font-medium text-gray-900 dark:text-white">Alex Morgan</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">风景摄影师</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/479287ac6bee78eaed2e3bc77b429759~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=C5sJnYQXK7Qyper4yjbju%2F29t%2FI%3D" alt="摄影师" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="font-medium text-gray-900 dark:text-white">Li Wei</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">人像摄影师</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/7ff49ae9b6c41ed1e201f1060c771c22~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=8kKRHWhMlZ%2Bs7MCqfg4tkWz8CM8%3D" alt="摄影师" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="font-medium text-gray-900 dark:text-white">Emma Zhang</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">黑白摄影师</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
+                            <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-qvj2lq49k0/831a61a79a284fca8b64002eff733b33~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=5ft%2F0rjD8W3XMAjvv3DGH2uUTXU%3D" alt="摄影师" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="font-medium text-gray-900 dark:text-white">Michael Wang</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">自然摄影师</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/ee906c8382cfd9fcbf9a1eeb88d52095~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144738&x-signature=R84LRafNbizQuvqckMeG9l%2FAGCU%3D" alt="摄影师" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="font-medium text-gray-900 dark:text-white">Jason Liu</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">城市摄影师</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
+                            <img src="https://p3-doubao-search-sign.byteimg.com/labis/ea9a87ef945144b6c8264a91261a11e4~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1783144722&x-signature=RcAFX8q8RTVt2lDjbwh3Yhiso88%3D" alt="摄影师" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="font-medium text-gray-900 dark:text-white">Chen Hua</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">花卉摄影师</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 关于我们 -->
+        <section class="py-16 bg-white dark:bg-gray-800">
+            <div class="container mx-auto px-4">
+                <div class="max-w-3xl mx-auto text-center">
+                    <h2 class="text-3xl font-display font-bold mb-6">关于昆仑F5</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                        昆仑F5是一个邀请制的高质量摄影社区，致力于为摄影爱好者提供一个展示作品、交流技巧、分享经验的平台。我们相信，每一张照片都有其独特的故事，每一位摄影师都有其独特的视角。
+                    </p>
+                    <p class="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                        通过邀请制，我们确保社区的专业性和作品的高质量。无论你是专业摄影师还是摄影爱好者，只要你热爱摄影，愿意分享你的作品和故事，都欢迎加入我们的社区。
+                    </p>
+                    <button id="learnMoreBtn" class="px-8 py-3 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        了解更多
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 订阅区域 -->
+        <section class="py-16 bg-gray-900 text-white">
+            <div class="container mx-auto px-4">
+                <div class="max-w-2xl mx-auto text-center">
+                    <h2 class="text-3xl font-display font-bold mb-4">订阅我们的通讯</h2>
+                    <p class="text-gray-300 mb-8">获取最新的摄影技巧、社区动态和精选作品推荐</p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <input type="email" placeholder="输入你的邮箱地址" class="flex-1 px-4 py-3 rounded-full text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button class="px-6 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition-colors">
+                            订阅
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 dark:bg-gray-900 text-gray-300 py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold text-white mb-4">昆仑F5</h3>
+                    <p class="mb-4">专业的摄影作品分享平台，邀请制高质量摄影社区。</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-weibo"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-wechat"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-instagram"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-youtube-play"></i>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">快速链接</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="hover:text-white transition-colors">首页</a></li>
+                        <li><a href="#discover" class="hover:text-white transition-colors">发现</a></li>
+                        <li><a href="#categories" class="hover:text-white transition-colors">分类</a></li>
+                        <li><a href="#featured" class="hover:text-white transition-colors">精选</a></li>
+                        <li><a href="#photographers" class="hover:text-white transition-colors">摄影师</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">支持</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="hover:text-white transition-colors">帮助中心</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">联系我们</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">隐私政策</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">服务条款</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">下载我们的应用</h3>
+                    <p class="mb-4">随时随地浏览和分享摄影作品。</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-apple text-2xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-android text-2xl"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+                <p>&copy; 2024 昆仑F5摄影社区. All rights reserved. | <a href="https://kunlunF5.com" class="hover:text-white transition-colors">kunlunF5.com</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 搜索模态框 -->
+    <div id="searchModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-20 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-2xl w-full animate-scale-in">
+            <div class="flex items-center border-b border-gray-200 dark:border-gray-700 pb-4">
+                <i class="fa fa-search text-gray-400 mr-4"></i>
+                <input type="text" placeholder="搜索作品、摄影师或标签..." class="flex-1 bg-transparent border-none focus:outline-none text-gray-900 dark:text-white text-lg">
+                <button id="searchModalCloseBtn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 视频播放模态框 -->
+    <div id="videoModal" class="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center hidden">
+        <div class="max-w-4xl w-full px-4">
+            <div class="relative">
+                <button id="videoModalCloseBtn" class="absolute -top-12 right-0 text-white hover:text-gray-300">
+                    <i class="fa fa-times text-2xl"></i>
+                </button>
+                <div class="bg-black rounded-lg overflow-hidden">
+                    <video id="videoPlayer" class="w-full h-auto" controls></video>
+                </div>
+                <h3 id="videoTitle" class="text-white text-xl font-medium mt-4"></h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理员登录模态框 -->
+    <div id="adminLoginModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-md w-full animate-scale-in">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">管理员登录</h3>
+                <button id="closeAdminLoginModal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div>
+                <div class="mb-4">
+                    <label for="adminUsername" class="block text-sm font-medium text-gray-700 dark:text-gray-300">管理员账号</label>
+                    <input type="text" id="adminUsername" class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="mb-6">
+                    <label for="adminPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">管理员密码</label>
+                    <input type="password" id="adminPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <button id="submitAdminLogin" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    管理员登录
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户登录/注册模态框 -->
+    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-md w-full animate-scale-in">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white" id="authModalTitle">登录</h3>
+                <button id="closeAuthModal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div id="loginForm">
+                <div class="mb-4">
+                    <label for="loginUsername" class="block text-sm font-medium text-gray-700 dark:text-gray-300">用户名</label>
+                    <input type="text" id="loginUsername" class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="mb-6">
+                    <label for="loginPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">密码</label>
+                    <input type="password" id="loginPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <button id="submitLogin" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    登录
+                </button>
+            </div>
+            <div id="registerForm" class="hidden">
+                <div class="mb-4">
+                    <label for="registerUsername" class="block text-sm font-medium text-gray-700 dark:text-gray-300">用户名</label>
+                    <input type="text" id="registerUsername" class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="mb-4">
+                    <label for="registerEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300">邮箱</label>
+                    <input type="email" id="registerEmail" class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="mb-4">
+                    <label for="registerInviteCode" class="block text-sm font-medium text-gray-700 dark:text-gray-300">邀请码</label>
+                    <input type="text" id="registerInviteCode" class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="mb-6">
+                    <label for="registerPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">密码</label>
+                    <input type="password" id="registerPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <button id="submitRegister" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    注册
+                </button>
+            </div>
+            <div class="mt-6 text-center">
+                <span id="toggleAuthText" class="text-sm text-gray-600 dark:text-gray-400">
+                    还没有账号？ <a href="#" id="toggleAuthForm" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">立即注册</a>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 上传作品模态框 -->
+    <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-2xl w-full animate-scale-in">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">上传作品</h3>
+                <button id="closeUploadModal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div>
+                <div class="mb-4">
+                    <label for="uploadTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300">作品标题</label>
+                    <input type="text" id="uploadTitle" class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="mb-4">
+                    <label for="uploadCategory" class="block text-sm font-medium text-gray-700 dark:text-gray-300">作品分类</label>
+                    <select id="uploadCategory" class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                        <option value="风光">风光</option>
+                        <option value="人像">人像</option>
+                        <option value="黑白">黑白</option>
+                        <option value="街拍">街拍</option>
+                        <option value="建筑">建筑</option>
+                        <option value="自然">自然</option>
+                        <option value="动物">动物</option>
+                        <option value="创意">创意</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="uploadDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300">作品描述</label>
+                    <textarea id="uploadDescription" rows="4" class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"></textarea>
+                </div>
+                <div class="mb-6">
+                    <label for="uploadFile" class="block text-sm font-medium text-gray-700 dark:text-gray-300">选择文件</label>
+                    <input type="file" id="uploadFile" accept="image/*,video/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700">
+                </div>
+                <button id="submitUpload" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    上传作品
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理员面板模态框 -->
+    <div id="adminPanelModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-4xl w-full animate-scale-in">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">管理员面板</h3>
+                <button id="closeAdminPanelModal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div>
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">生成邀请码</h4>
+                    <div class="flex items-end space-x-4">
+                        <div class="flex-1">
+                            <label for="inviteCodeCount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">生成数量</label>
+                            <input type="number" id="inviteCodeCount" value="1" min="1" max="10" class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <button id="generateInviteCodes" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                            生成邀请码
+                        </button>
+                    </div>
+                </div>
+                <div id="inviteCodesList" class="mb-6 hidden">
+                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">邀请码列表</h4>
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md max-h-60 overflow-y-auto">
+                        <ul id="inviteCodesListItems" class="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
+                        </ul>
+                    </div>
+                    <button id="copyAllInviteCodes" class="mt-4 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        复制所有邀请码
+                    </button>
+                </div>
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">用户管理</h4>
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
+                        <p class="text-gray-700 dark:text-gray-300">功能开发中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM 加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 用户状态管理
+            let currentUser = null;
+            let isAdmin = false;
+            let inviteCodes = ['KUNLUN2024', 'F5PHOTO', 'PHOTOMASTER'];
+            
+            // 深色模式切换
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const htmlElement = document.documentElement;
+            
+            // 检查本地存储中的主题偏好
+            if (localStorage.getItem('theme') === 'dark' || 
+                (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                htmlElement.classList.add('dark');
+            } else {
+                htmlElement.classList.remove('dark');
+            }
+            
+            themeToggleBtn.addEventListener('click', function() {
+                htmlElement.classList.toggle('dark');
+                
+                // 保存主题偏好到本地存储
+                if (htmlElement.classList.contains('dark')) {
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+            
+            // 用户菜单切换
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userMenu = document.getElementById('userMenu');
+            
+            userMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userMenu.classList.toggle('hidden');
+            });
+            
+            // 点击其他区域关闭用户菜单
+            document.addEventListener('click', function(e) {
+                if (!userMenuBtn.contains(e.target) && !userMenu.contains(e.target)) {
+                    userMenu.classList.add('hidden');
+                }
+            });
+            
+            // 作品筛选功能
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            const workItems = document.querySelectorAll('.work-item');
+            
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 移除所有按钮的活动状态
+                    filterBtns.forEach(item => {
+                        item.classList.remove('active', 'bg-gray-100', 'dark:bg-gray-700', 'text-gray-800', 'dark:text-gray-200');
+                        item.classList.add('text-gray-600', 'dark:text-gray-400');
+                    });
+                    
+                    // 添加当前按钮的活动状态
+                    this.classList.add('active', 'bg-gray-100', 'dark:bg-gray-700', 'text-gray-800', 'dark:text-gray-200');
+                    this.classList.remove('text-gray-600', 'dark:text-gray-400');
+                    
+                    const filter = this.getAttribute('data-filter');
+                    
+                    // 筛选作品
+                    workItems.forEach(item => {
+                        if (filter === 'all' || item.classList.contains(filter)) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            });
+            
+            // 精选作品滑块
+            const prevFeaturedBtn = document.getElementById('prevFeaturedBtn');
+            const nextFeaturedBtn = document.getElementById('nextFeaturedBtn');
+            const featuredSlider = document.getElementById('featuredSlider');
+            
+            prevFeaturedBtn.addEventListener('click', function() {
+                featuredSlider.scrollBy({ left: -400, behavior: 'smooth' });
+            });
+            
+            nextFeaturedBtn.addEventListener('click', function() {
+                featuredSlider.scrollBy({ left: 400, behavior: 'smooth' });
+            });
+            
+            // 加载更多按钮
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            
+            loadMoreBtn.addEventListener('click', function() {
+                // 模拟加载更多内容
+                this.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>加载中...';
+                
+                setTimeout(() => {
+                    this.innerHTML = '加载更多';
+                    alert('已加载全部内容');
+                }, 1500);
+            });
+            
+            // 模态框相关
+            const authModal = document.getElementById('authModal');
+            const authModalTitle = document.getElementById('authModalTitle');
+            const closeAuthModal = document.getElementById('closeAuthModal');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const toggleAuthForm = document.getElementById('toggleAuthForm');
+            const toggleAuthText = document.getElementById('toggleAuthText');
+
+            const adminLoginModal = document.getElementById('adminLoginModal');
+            const closeAdminLoginModal = document.getElementById('closeAdminLoginModal');
+            const adminPanelModal = document.getElementById('adminPanelModal');
+            const closeAdminPanelModal = document.getElementById('closeAdminPanelModal');
+
+            const uploadModal = document.getElementById('uploadModal');
+            const closeUploadModal = document.getElementById('closeUploadModal');
+            
+            // 登录按钮
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const adminLoginBtn = document.getElementById('adminLoginBtn');
+            const userProfileBtn = document.getElementById('userProfileBtn');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            loginBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                authModalTitle.textContent = '登录';
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                toggleAuthText.innerHTML = '还没有账号？ <a href="#" id="toggleAuthForm" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">立即注册</a>';
+                authModal.classList.remove('hidden');
+            });
+            
+            registerBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                authModalTitle.textContent = '注册';
+                registerForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                toggleAuthText.innerHTML = '已有账号？ <a href="#" id="toggleAuthForm" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">立即登录</a>';
+                authModal.classList.remove('hidden');
+            });
+            
+            // 切换登录/注册表单
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.id === 'toggleAuthForm') {
+                    e.preventDefault();
+                    if (loginForm.classList.contains('hidden')) {
+                        authModalTitle.textContent = '登录';
+                        loginForm.classList.remove('hidden');
+                        registerForm.classList.add('hidden');
+                        toggleAuthText.innerHTML = '还没有账号？ <a href="#" id="toggleAuthForm" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">立即注册</a>';
+                    } else {
+                        authModalTitle.textContent = '注册';
+                        registerForm.classList.remove('hidden');
+                        loginForm.classList.add('hidden');
+                        toggleAuthText.innerHTML = '已有账号？ <a href="#" id="toggleAuthForm" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">立即登录</a>';
+                    }
+                }
+            });
+            
+            // 管理员登录
+            adminLoginBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                adminLoginModal.classList.remove('hidden');
+            });
+            
+            // 获取邀请码按钮
+            const getInviteBtn = document.getElementById('getInviteBtn');
+            
+            getInviteBtn.addEventListener('click', function() {
+                alert('请联系管理员获取邀请码。');
+            });
+            
+            // 登录提交按钮
+            const submitLogin = document.getElementById('submitLogin');
+            
+            submitLogin.addEventListener('click', function() {
+                const username = document.getElementById('loginUsername').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                if (!username || !password) {
+                    alert('请填写所有字段');
+                    return;
+                }
+                
+                // 模拟登录（演示用）
+                currentUser = { username: username, email: username + '@example.com' };
+                authModal.classList.add('hidden');
+                updateUserMenu();
+                alert('登录成功，欢迎回来！');
+            });
+            
+            // 注册提交按钮
+            const submitRegister = document.getElementById('submitRegister');
+            
+            submitRegister.addEventListener('click', function() {
+                const username = document.getElementById('registerUsername').value;
+                const email = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                const inviteCode = document.getElementById('registerInviteCode').value;
+                
+                if (!username || !email || !password || !inviteCode) {
+                    alert('请填写所有字段');
+                    return;
+                }
+                
+                // 验证邀请码
+                if (!inviteCodes.includes(inviteCode)) {
+                    alert('无效的邀请码，请联系管理员获取。');
+                    return;
+                }
+                
+                // 模拟注册
+                currentUser = { username: username, email: email };
+                authModal.classList.add('hidden');
+                updateUserMenu();
+                alert('注册成功，欢迎加入昆仑F5！');
+            });
+            
+            // 管理员登录提交
+            const submitAdminLogin = document.getElementById('submitAdminLogin');
+            
+            submitAdminLogin.addEventListener('click', function() {
+                const adminUsername = document.getElementById('adminUsername').value;
+                const adminPassword = document.getElementById('adminPassword').value;
+                
+                // 演示用管理员账号密码
+                if (adminUsername === 'admin' && adminPassword === 'admin123') {
+                    isAdmin = true;
+                    adminLoginModal.classList.add('hidden');
+                    adminPanelModal.classList.remove('hidden');
+                } else {
+                    alert('管理员账号或密码错误！');
+                }
+            });
+            
+            // 上传作品
+            uploadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                uploadModal.classList.remove('hidden');
+            });
+            
+            const submitUpload = document.getElementById('submitUpload');
+            
+            submitUpload.addEventListener('click', function() {
+                const title = document.getElementById('uploadTitle').value;
+                const category = document.getElementById('uploadCategory').value;
+                const description = document.getElementById('uploadDescription').value;
+                const file = document.getElementById('uploadFile').files[0];
+                
+                if (!title || !category || !description || !file) {
+                    alert('请填写所有字段并选择文件');
+                    return;
+                }
+                
+                // 模拟上传
+                uploadModal.classList.add('hidden');
+                alert('作品上传成功！');
+            });
+            
+            // 退出登录
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentUser = null;
+                isAdmin = false;
+                updateUserMenu();
+                alert('已退出登录');
+            });
+            
+            // 关闭模态框
+            closeAuthModal.addEventListener('click', function() {
+                authModal.classList.add('hidden');
+            });
+            
+            authModal.addEventListener('click', function(e) {
+                if (e.target === authModal) {
+                    authModal.classList.add('hidden');
+                }
+            });
+            
+            closeAdminLoginModal.addEventListener('click', function() {
+                adminLoginModal.classList.add('hidden');
+            });
+            
+            adminLoginModal.addEventListener('click', function(e) {
+                if (e.target === adminLoginModal) {
+                    adminLoginModal.classList.add('hidden');
+                }
+            });
+            
+            closeAdminPanelModal.addEventListener('click', function() {
+                adminPanelModal.classList.add('hidden');
+            });
+            
+            adminPanelModal.addEventListener('click', function(e) {
+                if (e.target === adminPanelModal) {
+                    adminPanelModal.classList.add('hidden');
+                }
+            });
+            
+            closeUploadModal.addEventListener('click', function() {
+                uploadModal.classList.add('hidden');
+            });
+            
+            uploadModal.addEventListener('click', function(e) {
+                if (e.target === uploadModal) {
+                    uploadModal.classList.add('hidden');
+                }
+            });
+            
+            // 搜索模态框
+            const searchBtn = document.getElementById('searchBtn');
+            const searchModal = document.getElementById('searchModal');
+            const searchModalCloseBtn = document.getElementById('searchModalCloseBtn');
+            
+            searchBtn.addEventListener('click', function() {
+                searchModal.classList.remove('hidden');
+                setTimeout(() => {
+                    searchModal.querySelector('input').focus();
+                }, 100);
+            });
+            
+            searchModalCloseBtn.addEventListener('click', function() {
+                searchModal.classList.add('hidden');
+            });
+            
+            searchModal.addEventListener('click', function(e) {
+                if (e.target === searchModal) {
+                    searchModal.classList.add('hidden');
+                }
+            });
+            
+            // 视频播放模态框
+            const videoModal = document.getElementById('videoModal');
+            const videoModalCloseBtn = document.getElementById('videoModalCloseBtn');
+            const videoPlayer = document.getElementById('videoPlayer');
+            const videoTitle = document.getElementById('videoTitle');
+            const videoPlayButtons = document.querySelectorAll('.work-item.videos .fa-play');
+            
+            videoPlayButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const parentItem = this.closest('.work-item');
+                    const title = parentItem.querySelector('h3').textContent;
+                    const description = parentItem.querySelector('p').textContent;
+                    
+                    videoTitle.textContent = title;
+                    // 这里应该设置实际的视频源
+                    // videoPlayer.src = 'path/to/video.mp4';
+                    // 由于没有实际视频，我们使用一个占位符
+                    videoPlayer.src = '';
+                    
+                    videoModal.classList.remove('hidden');
+                    // videoPlayer.play();
+                });
+            });
+            
+            videoModalCloseBtn.addEventListener('click', function() {
+                videoModal.classList.add('hidden');
+                videoPlayer.pause();
+                videoPlayer.src = '';
+            });
+            
+            videoModal.addEventListener('click', function(e) {
+                if (e.target === videoModal) {
+                    videoModal.classList.add('hidden');
+                    videoPlayer.pause();
+                    videoPlayer.src = '';
+                }
+            });
+            
+            // 探索按钮
+            const exploreBtn = document.getElementById('exploreBtn');
+            
+            exploreBtn.addEventListener('click', function() {
+                document.getElementById('discover').scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // 了解更多按钮
+            const learnMoreBtn = document.getElementById('learnMoreBtn');
+            
+            learnMoreBtn.addEventListener('click', function() {
+                document.getElementById('categories').scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // 导航链接平滑滚动
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+                    
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+            
+            // 初始化时检查URL哈希值
+            if (window.location.hash) {
+                const targetElement = document.querySelector(window.location.hash);
+                if (targetElement) {
+                    setTimeout(() => {
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                }
+            }
+            
+            // 管理员生成邀请码功能
+            const generateInviteCodes = document.getElementById('generateInviteCodes');
+            const inviteCodesList = document.getElementById('inviteCodesList');
+            const inviteCodesListItems = document.getElementById('inviteCodesListItems');
+            const copyAllInviteCodes = document.getElementById('copyAllInviteCodes');
+            
+            generateInviteCodes.addEventListener('click', function() {
+                const count = parseInt(document.getElementById('inviteCodeCount').value);
+                const newCodes = [];
+                
+                for (let i = 0; i < count; i++) {
+                    const code = 'KUNLUN' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                    newCodes.push(code);
+                    inviteCodes.push(code);
+                }
+                
+                // 显示生成的邀请码
+                inviteCodesListItems.innerHTML = '';
+                newCodes.forEach(code => {
+                    const li = document.createElement('li');
+                    li.textContent = code;
+                    inviteCodesListItems.appendChild(li);
+                });
+                
+                inviteCodesList.classList.remove('hidden');
+            });
+            
+            copyAllInviteCodes.addEventListener('click', function() {
+                const codes = inviteCodesListItems.textContent;
+                navigator.clipboard.writeText(codes).then(() => {
+                    alert('所有邀请码已复制到剪贴板！');
+                });
+            });
+            
+            // 更新用户菜单
+            function updateUserMenu() {
+                const userMenuBtn = document.getElementById('userMenuBtn');
+                const userMenuText = userMenuBtn.querySelector('span');
+                
+                if (currentUser) {
+                    userMenuText.textContent = currentUser.username;
+                    loginBtn.classList.add('hidden');
+                    registerBtn.classList.add('hidden');
+                    adminLoginBtn.classList.add('hidden');
+                    userProfileBtn.classList.remove('hidden');
+                    uploadBtn.classList.remove('hidden');
+                    logoutBtn.classList.remove('hidden');
+                } else {
+                    userMenuText.textContent = '登录';
+                    loginBtn.classList.remove('hidden');
+                    registerBtn.classList.remove('hidden');
+                    adminLoginBtn.classList.remove('hidden');
+                    userProfileBtn.classList.add('hidden');
+                    uploadBtn.classList.add('hidden');
+                    logoutBtn.classList.add('hidden');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
