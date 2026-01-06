@@ -60,7 +60,7 @@ integration-prow-kvm-crio-linux-x86: setup-prow-gcp-ssh-keys build-mini-test
 #integration-vfkit-docker-macos-arm: build-mini-test
 integration-vfkit-docker-macos-arm:
 	echo ${JOB_NAME}
-	curl -X POST "http://boskos.test-pods.svc.cluster.local/release?name=28zmx-sibu3-yy3oc-zmvxf-smpwu-058cv95.us-east-2.ip.aws&dest=dirty&owner=./out/minitest%20%20--deployer%20boskos-macos%20--tester%20vfkit-docker-macos-arm64-integration%20--config%20hack/prow/boskos-cfg-macos.json"
+	curl -X POST "http://boskos.test-pods.svc.cluster.local/release?name=28zmx-sibu3-yy3oc-zmvxf-smpwu-058cv95.us-east-2.ip.aws&dest=dirty&owner=%0A./out/minitest%20%20--deployer%20boskos-macos%20--tester%20vfkit-docker-macos-arm64-integration%20--config%20hack/prow/boskos-cfg-macos.json"
 
 	./out/minitest  --deployer boskos-macos --tester vfkit-docker-macos-arm64-integration --config hack/prow/boskos-cfg-macos.json
 
