@@ -111,6 +111,11 @@ func GithubActionRunner() bool {
 	return os.Getenv("GITHUB_ACTIONS") == "true"
 }
 
+func ProwCIEnvironment() bool {
+	_, ok := os.LookupEnv("PULL_NUMBER")
+	return ok
+}
+
 // ImageCacheDir returns the path in the minikube home directory to the container image cache for the current architecture
 func ImageCacheDir() string {
 	return filepath.Join(localpath.MakeMiniPath("cache", "images"), runtime.GOARCH)
