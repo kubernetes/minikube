@@ -20,52 +20,52 @@ limitations under the License.
 package main
 
 import (
-    "encoding/json"
-    "fmt"
-    "os"
-    "path/filepath"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
 )
 
 func main() {
-    // Read valid keys from strings.txt
-    data, err := os.ReadFile("translations/strings.txt")
-    if err != nil {
-        panic("Run from minikube root directory. strings.txt not found.")
-    }
+	// Read valid keys from strings.txt
+	data, err := os.ReadFile("translations/strings.txt")
+	if err != nil {
+		panic("Run from minikube root directory. strings.txt not found.")
+	}
 
-    var validKeys map[string]interface{}
-    if err := json.Unmarshal(data, &validKeys); err != nil {
-        panic(err)
-    }
-    fmt.Printf("Found %d valid keys in strings.txt\n\n", len(validKeys))
+	var validKeys map[string]interface{}
+	if err := json.Unmarshal(data, &validKeys); err != nil {
+		panic(err)
+	}
+	fmt.Printf("Found %d valid keys in strings.txt\n\n", len(validKeys))
 
-    // Process each JSON file
-    files, _ := filepath.Glob("translations/*.json")
-    for _, path := range files {
-        data, err := os.ReadFile(path)
-        if err != nil {
-            panic(err)
-        }
+	// Process each JSON file
+	files, _ := filepath.Glob("translations/*.json")
+	for _, path := range files {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
 
-        var translations map[string]interface{}
-        if err := json.Unmarshal(data, &translations); err != nil {
-            panic(err)
-        }
+		var translations map[string]interface{}
+		if err := json.Unmarshal(data, &translations); err != nil {
+			panic(err)
+		}
 
-        original := len(translations)
-        for key := range translations {
-            if _, ok := validKeys[key]; !ok {
-                delete(translations, key)
-            }
-        }
+		original := len(translations)
+		for key := range translations {
+			if _, ok := validKeys[key]; !ok {
+				delete(translations, key)
+			}
+		}
 
-        removed := original - len(translations)
-        if removed > 0 {
-            output, _ := json.MarshalIndent(translations, "", "\t")
-            os.WriteFile(path, append(output, '\n'), 0644)
-        }
-        fmt.Printf("  %s: %d removed, %d keys (strings.txt: %d)\n",
-            filepath.Base(path), removed, len(translations), len(validKeys))
-    }
-    fmt.Println("\nDone!")
+		removed := original - len(translations)
+		if removed > 0 {
+			output, _ := json.MarshalIndent(translations, "", "\t")
+			os.WriteFile(path, append(output, '\n'), 0644)
+		}
+		fmt.Printf("  %s: %d removed, %d keys (strings.txt: %d)\n",
+			filepath.Base(path), removed, len(translations), len(validKeys))
+	}
+	fmt.Println("\nDone!")
 }
