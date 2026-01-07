@@ -402,6 +402,13 @@ out/coverage.html: out/coverage.out
 extract: ## extract internationalization words for translations
 	go run cmd/extract/extract.go
 
+.PHONY: prune-translations
+prune-translations: ## remove stale translations that no longer exist in strings.txt
+	go run cmd/prune-translations/prune-translations.go
+
+.PHONY: update-translations
+update-translations: extract prune-translations ## extract strings and remove stale translations
+
 .PHONY: cross
 cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform
 
