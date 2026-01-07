@@ -38,7 +38,7 @@ func init() {
 		Config:   configure,
 		Status:   status,
 		Default:  true,
-		Priority: registry.Default,
+		Priority: registry.Deprecated,
 		Init:     func(_ *run.CommandOptions) drivers.Driver { return parallels.NewDriver("", "") },
 	})
 	if err != nil {
