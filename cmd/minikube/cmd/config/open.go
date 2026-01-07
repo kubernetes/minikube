@@ -46,7 +46,7 @@ const defaultAddonsFormatTemplate = "http://{{.IP}}:{{.Port}}"
 var addonsOpenCmd = &cobra.Command{
 	Use:   "open ADDON_NAME",
 	Short: "Opens the addon w/ADDON_NAME within minikube (example: minikube addons open dashboard). For a list of available addons use: minikube addons list ",
-	Long:  "Opens the addon w/ADDON_NAME within minikube (example: minikube addons open dashboard). For a list of available addons use: minikube addons list ",
+	Long:  "Opens the addon w/ADDON_NAME within minikube (example: minikube addons open dashboard). For a detailed example see https://minikube.sigs.k8s.io/docs/commands/addons/#minikube-addons-open",
 	PreRun: func(_ *cobra.Command, _ []string) {
 		t, err := template.New("addonsURL").Parse(addonsURLFormat)
 		if err != nil {
