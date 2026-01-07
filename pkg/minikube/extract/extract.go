@@ -462,7 +462,7 @@ func writeStringsToFiles(e *state, output string) error {
 		if err != nil {
 			return errors.Wrap(err, "reading translation file")
 		}
-		// Unmarhsal nonempty files
+		// Unmarshal nonempty files
 		if len(f) > 0 {
 			err = json.Unmarshal(f, &currentTranslations)
 			if err != nil {
