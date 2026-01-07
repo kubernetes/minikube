@@ -18,14 +18,14 @@ package deployer
 
 import (
 	"context"
+	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/docker/go-connections/nat"
@@ -33,7 +33,7 @@ import (
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/client"
 	"github.com/phayes/freeport"
-	gossh "golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh"
 	"k8s.io/klog/v2"
 )
 
@@ -252,54 +252,20 @@ func (m *MiniTestDockerDeployer) sshSetUp() error {
 	m.sshTempDir = sshTempDir
 	klog.Info("Created temp dir for ssh keys: ", sshTempDir)
 
-	// create private key file
-	sshPrivateKeyFile, err := os.CreateTemp(sshTempDir, "id_rsa")
-	if err != nil {
-		return fmt.Errorf("failed to create temp file for private key: %v", err)
+	keyPath := filepath.Join(sshTempDir, "id_ed25519")
+	pubKeyPath := keyPath + ".pub"
+	if err := generateEd25519KeyPair(keyPath, pubKeyPath); err != nil {
+		return fmt.Errorf("failed to generate ssh key pair: %v", err)
 	}
-	if sshPrivateKeyFile.Chmod(0600) != nil {
-		return fmt.Errorf("failed to chmod private key file: %v", err)
-	}
-	m.sshPrivateKeyFile = sshPrivateKeyFile.Name()
+	m.sshPrivateKeyFile = keyPath
+	m.sshPublicKeyFile = pubKeyPath
 	klog.Info("Created temp file for private key: ", m.sshPrivateKeyFile)
-
-	// create public key file
-	sshPublicKeyFile, err := os.CreateTemp(sshTempDir, "id_rsa.pub")
-	if err != nil {
-		return fmt.Errorf("failed to create temp file for public key: %v", err)
-	}
-	if sshPublicKeyFile.Chmod(0644) != nil {
-		return fmt.Errorf("failed to chmod public key file: %v", err)
-	}
-	m.sshPublicKeyFile = sshPublicKeyFile.Name()
 	klog.Info("Created temp file for public key: ", m.sshPublicKeyFile)
 
-	// generate private key and convert to PEM format
-	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	pubBytes, err := os.ReadFile(m.sshPublicKeyFile)
 	if err != nil {
-		return fmt.Errorf("failed to generate private key: %v", err)
+		return fmt.Errorf("failed to read public key file: %v", err)
 	}
-	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
-	privBlock := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: privDER,
-	}
-
-	if err := pem.Encode(sshPrivateKeyFile, privBlock); err != nil {
-		sshPrivateKeyFile.Close()
-		return fmt.Errorf("failed to write private key to file: %v", err)
-	}
-
-	pub, err := gossh.NewPublicKey(&privateKey.PublicKey)
-	if err != nil {
-		return fmt.Errorf("failed to generate public key: %v", err)
-	}
-	pubBytes := gossh.MarshalAuthorizedKey(pub)
-
-	if _, err := sshPublicKeyFile.Write(pubBytes); err != nil {
-		return fmt.Errorf("failed to write public key to file: %v", err)
-	}
-	sshPublicKeyFile.Close()
 	m.sshPublicKeyContent = string(pubBytes)
 	klog.Infof("Generated ssh public key:%s ", m.sshPublicKeyContent)
 	return nil
@@ -311,4 +277,44 @@ func (m *MiniTestDockerDeployer) sshAdditionalArgs() []string {
 
 func (m *MiniTestDockerDeployer) scpAdditionalArgs() []string {
 	return []string{"-i", m.sshPrivateKeyFile, "-P", m.sshPort}
+}
+
+func generateEd25519KeyPair(privateKeyPath, publicKeyPath string) error {
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return fmt.Errorf("generate ed25519 key: %w", err)
+	}
+
+	block, err := ssh.MarshalPrivateKey(privateKey, "")
+	if err != nil {
+		return fmt.Errorf("marshal private key: %w", err)
+	}
+	if err := writeKeyFile(privateKeyPath, pem.EncodeToMemory(block), 0600); err != nil {
+		return fmt.Errorf("write private key: %w", err)
+	}
+
+	sshPublicKey, err := ssh.NewPublicKey(publicKey)
+	if err != nil {
+		return fmt.Errorf("convert public key: %w", err)
+	}
+	if err := writeKeyFile(publicKeyPath, ssh.MarshalAuthorizedKey(sshPublicKey), 0644); err != nil {
+		return fmt.Errorf("write public key: %w", err)
+	}
+
+	return nil
+}
+
+func writeKeyFile(path string, data []byte, mode os.FileMode) error {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return os.Chmod(path, mode)
 }

@@ -46,6 +46,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/tunnel/kic"
 	pkgnetwork "k8s.io/minikube/pkg/network"
+	"k8s.io/minikube/pkg/util/sshkeys"
 )
 
 const defaultServiceFormatTemplate = "http://{{.IP}}:{{.Port}}"
@@ -210,7 +211,10 @@ func startKicServiceTunnel(services service.URLs, configName, driverName string)
 			exit.Error(reason.DrvPortForward, "error getting ssh port", err)
 		}
 		sshPort := strconv.Itoa(port)
-		sshKey := filepath.Join(localpath.MiniPath(), "machines", configName, "id_rsa")
+		machineDir := filepath.Join(localpath.MiniPath(), "machines", configName)
+		primary := filepath.Join(machineDir, sshkeys.Ed25519KeyName)
+		fallback := filepath.Join(machineDir, sshkeys.RSAKeyName)
+		sshKey := sshkeys.ResolveKeyPath(primary, fallback)
 
 		serviceTunnel := kic.NewServiceTunnel(sshPort, sshKey, clientset.CoreV1(), serviceURLMode)
 		urls, err := serviceTunnel.Start(svc.Name, namespace)

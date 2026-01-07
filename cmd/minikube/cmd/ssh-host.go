@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/homedir"
@@ -69,9 +70,13 @@ func appendKnownHelper(nodeName string, appendKnown bool) {
 		}
 	}
 
-	scanArgs := []string{"-t", "rsa"}
+	scanArgs := []string{"-t", "ed25519"}
 
 	keys, err := machine.RunSSHHostCommand(co.API, *co.Config, *n, "ssh-keyscan", scanArgs)
+	if err != nil || strings.TrimSpace(keys) == "" {
+		scanArgs = []string{"-t", "rsa"}
+		keys, err = machine.RunSSHHostCommand(co.API, *co.Config, *n, "ssh-keyscan", scanArgs)
+	}
 	if err != nil {
 		// This is typically due to a non-zero exit code, so no need for flourish.
 		out.ErrLn("ssh-keyscan: %v", err)

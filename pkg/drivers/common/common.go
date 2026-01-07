@@ -31,12 +31,12 @@ import (
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/sshkeys"
 )
 
 // LeasesPath is the path to dhcpd leases
@@ -157,7 +157,7 @@ func MakeDiskImage(d *drivers.BaseDriver, boot2dockerURL string, diskSize int) e
 
 	keyPath := d.GetSSHKeyPath()
 	klog.Infof("Creating ssh key: %s...", keyPath)
-	if err := ssh.GenerateSSHKey(keyPath); err != nil {
+	if err := sshkeys.GenerateSSHKey(keyPath); err != nil {
 		return errors.Wrap(err, "generate ssh key")
 	}
 
