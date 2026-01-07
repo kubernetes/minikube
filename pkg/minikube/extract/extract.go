@@ -477,13 +477,6 @@ func writeStringsToFiles(e *state, output string) error {
 			}
 		}
 
-		// Remove translations from the file that are empty and were not extracted
-		for k, v := range currentTranslations {
-			if _, ok := e.translations[k]; !ok && len(v.(string)) == 0 {
-				delete(currentTranslations, k)
-			}
-		}
-
 		t := 0 // translated
 		u := 0 // untranslated
 		for k := range e.translations {
