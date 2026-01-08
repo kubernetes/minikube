@@ -75,7 +75,7 @@ push-kubernetes-bootcamp-image-prow:
 	docker buildx rm multiarch
 
 
-.PHONY: push-gvisor-prow
+.PHONY: push-gvisor-image-prow
 push-gvisor-image-prow:
 	docker run --rm --privileged tonistiigi/binfmt:latest --install all
 	docker buildx create --name multiarch --bootstrap
