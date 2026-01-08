@@ -111,10 +111,6 @@ else
 	SED = sed -i
 endif
 
-# gvisor tag to automatically push changes to
-# to update minikubes default, update deploy/addons/gvisor
-GVISOR_TAG ?= v0.0.2
-
 # auto-pause-hook tag to push changes to
 AUTOPAUSE_HOOK_TAG ?= v0.0.5
 
@@ -752,20 +748,14 @@ endif
 	docker push $(IMAGE)
 
 .PHONY: out/gvisor-addon
-out/gvisor-addon: ## Build gvisor addon
+out/gvisor-addon: ## Build gvisor binary
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
 .PHONY: gvisor-addon-image
-gvisor-addon-image:
-	docker build -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -f deploy/gvisor/Dockerfile .
+gvisor-addon-image: ## Build gvisor addon image locally (for testing)
+	docker build -t $(REGISTRY)/gvisor-addon:local -f deploy/image/gvisor/Dockerfile .
 
-.PHONY: push-gvisor-addon-image
-push-gvisor-addon-image: docker-multi-arch-build
-	docker login gcr.io/k8s-minikube
-	docker buildx create --name multiarch --bootstrap
-	docker buildx build --push --builder multiarch --platform linux/amd64,linux/arm64 -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -t $(REGISTRY)/gvisor-addon:latest -f deploy/gvisor/Dockerfile .
-	docker buildx rm multiarch
 
 .PHONY: release-iso
 release-iso: minikube-iso-aarch64 minikube-iso-x86_64 checksum  ## Build and release .iso files

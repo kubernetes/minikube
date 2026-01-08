@@ -9,7 +9,7 @@ steps:
       - _GIT_TAG=$_GIT_TAG
       - _PULL_BASE_REF=$_PULL_BASE_REF
     args:
-      - push-kubernetes-bootcamp
+      - push-kubernetes-bootcamp-image-prow
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
   # can be used as a substitution
