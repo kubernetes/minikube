@@ -754,7 +754,7 @@ out/gvisor-addon: ## Build gvisor binary
 
 .PHONY: gvisor-addon-image
 gvisor-addon-image: ## Build gvisor addon image locally (for testing)
-	docker build -t $(REGISTRY)/gvisor-addon:local -f deploy/image/gvisor/Dockerfile .
+	docker build -t $(REGISTRY)/gvisor-addon:local -f deploy/images/gvisor/Dockerfile .
 
 
 .PHONY: release-iso
