@@ -28,11 +28,11 @@ import (
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
 	"k8s.io/minikube/pkg/minikube/run"
 
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/provision"
 	"k8s.io/minikube/pkg/libmachine/state"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/registry"

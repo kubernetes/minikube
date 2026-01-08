@@ -24,13 +24,13 @@ import (
 	"strconv"
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/drivers"
-	machinessh "k8s.io/minikube/pkg/libmachine/ssh"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	machinessh "k8s.io/minikube/pkg/libmachine/ssh"
 
 	"k8s.io/minikube/pkg/util/retry"
 )

@@ -28,14 +28,14 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/state"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/sysinit"

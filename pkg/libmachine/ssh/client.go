@@ -11,11 +11,11 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/minikube/pkg/libmachine/log"
-	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"github.com/moby/term"
 	"golang.org/x/crypto/ssh"
 	terminal "golang.org/x/term"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
 )
 
 type Client interface {

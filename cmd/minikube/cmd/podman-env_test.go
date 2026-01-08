@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"testing"
 
-	"k8s.io/minikube/pkg/libmachine/ssh"
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/libmachine/ssh"
 )
 
 func newFakeClient() *ssh.ExternalClient {

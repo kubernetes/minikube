@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/drivers/fakedriver"
 	"k8s.io/minikube/pkg/libmachine/engine"
@@ -13,7 +14,6 @@ import (
 	"k8s.io/minikube/pkg/libmachine/provision/provisiontest"
 	"k8s.io/minikube/pkg/libmachine/provision/serviceaction"
 	"k8s.io/minikube/pkg/libmachine/swarm"
-	"github.com/stretchr/testify/assert"
 )
 
 var (

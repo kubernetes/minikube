@@ -19,13 +19,13 @@ package machine
 import (
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/mcnerror"
 	"k8s.io/minikube/pkg/libmachine/state"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"

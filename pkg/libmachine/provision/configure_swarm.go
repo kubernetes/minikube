@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sayboras/dockerclient"
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcndockerclient"
 	"k8s.io/minikube/pkg/libmachine/swarm"
-	"github.com/sayboras/dockerclient"
 )
 
 func configureSwarm(p Provisioner, swarmOptions swarm.Options, authOptions auth.Options) error {

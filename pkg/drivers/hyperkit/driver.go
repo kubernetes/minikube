@@ -30,14 +30,14 @@ import (
 	"syscall"
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
-	"k8s.io/minikube/pkg/libmachine/state"
 	"github.com/johanneswuerbach/nfsexports"
 	ps "github.com/mitchellh/go-ps"
 	hyperkit "github.com/moby/hyperkit/go"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/detect"
 )
 
