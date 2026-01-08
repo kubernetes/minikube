@@ -160,7 +160,7 @@ RUN install -m 0755 -d /etc/apt/keyrings \
 RUN sed -i '/^\[Service\]/a LimitNOFILE=1048576' /lib/systemd/system/containerd.service
 
 # install buildkit
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
  && echo "Installing buildkit ..." \
     && addgroup --system buildkit \
     && export BUILDKIT_BASE_URL="https://github.com/moby/buildkit/releases/download/${BUILDKIT_VERSION}" \
@@ -193,30 +193,25 @@ RUN export ARCH=$(dpkg --print-architecture) && \
     case "$ARCH" in \
       amd64) CRICTL_ARCH="amd64" ;; \
       arm64) CRICTL_ARCH="arm64" ;; \
-      armhf) CRICTL_ARCH="armhf" ;; \
       ppc64el) CRICTL_ARCH="ppc64le" ;; \
       s390x) CRICTL_ARCH="s390x" ;; \
       *) echo "Unsupported architecture for crictl: $ARCH" && exit 1 ;; \
     esac && \
-    if [ "$CRICTL_ARCH" != "armhf" ]; then \
-      curl -fsSL --retry 5 --output /tmp/crictl.tgz "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${CRICTL_ARCH}.tar.gz" && \
-      tar -C /usr/local/bin -xzvf /tmp/crictl.tgz && \
-      rm -f /tmp/crictl.tgz && \
-      chmod +x /usr/local/bin/crictl && \
-      if [ -f /usr/local/bin/critest ]; then chmod +x /usr/local/bin/critest; fi; \
-    else \
-      echo "Skipping crictl install for armhf: No asset available in v1.34.0"; \
-    fi   
+    curl -fsSL --retry 5 --output /tmp/crictl.tgz "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${CRICTL_ARCH}.tar.gz" && \
+    tar -C /usr/local/bin -xzvf /tmp/crictl.tgz && \
+    rm -f /tmp/crictl.tgz && \
+    chmod +x /usr/local/bin/crictl && \
+    if [ -f /usr/local/bin/critest ]; then chmod +x /usr/local/bin/critest; fi
 # install containernetworking-plugins
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') && \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     curl -LO "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" && \
     mkdir -p /opt/cni/bin && \
     tar -xf "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" -C /opt/cni/bin && \
     rm "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz"
 
 # install cri-o from the OBS repositories
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    if [ "$ARCH" != "ppc64le" ]; then \
         mkdir -p /etc/apt/sources.list.d /etc/apt/trusted.gpg.d && \
         echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/ /' \
             > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list && \
@@ -256,8 +251,8 @@ RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 # disable non-docker runtimes by default (since cri-dockerd is default in minikube)
 RUN systemctl disable containerd
 # disable crio for archs that support it
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then systemctl disable crio && rm -f /etc/crictl.yaml; fi
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    if [ "$ARCH" != "ppc64le" ]; then systemctl disable crio && rm -f /etc/crictl.yaml; fi
 # enable podman socket on archs that support it
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then systemctl enable podman.socket; fi
 # enable docker which is default
