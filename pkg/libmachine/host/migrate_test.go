@@ -3,9 +3,9 @@ package host
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/drivers/nodriver"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMigrateHost(t *testing.T) {

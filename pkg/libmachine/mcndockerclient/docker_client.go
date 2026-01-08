@@ -3,8 +3,8 @@ package mcndockerclient
 import (
 	"fmt"
 
-	"k8s.io/minikube/pkg/libmachine/cert"
 	"github.com/sayboras/dockerclient"
+	"k8s.io/minikube/pkg/libmachine/cert"
 )
 
 // DockerClient creates a docker client for a given host.

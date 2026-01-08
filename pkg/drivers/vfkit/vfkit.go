@@ -34,12 +34,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/ssh"
 	"k8s.io/minikube/pkg/libmachine/state"
-	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"

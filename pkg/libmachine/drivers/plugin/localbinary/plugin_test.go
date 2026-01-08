@@ -9,8 +9,8 @@ import (
 
 	"os"
 
-	"k8s.io/minikube/pkg/libmachine/log"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/minikube/pkg/libmachine/log"
 )
 
 type FakeExecutor struct {

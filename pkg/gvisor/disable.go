@@ -21,8 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
 )
 
 // Disable reverts containerd config files and restarts containerd

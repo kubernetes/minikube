@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"k8s.io/minikube/pkg/libmachine/drivers/fakedriver"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/minikube/pkg/libmachine/drivers/fakedriver"
 )
 
 type panicDriver struct {

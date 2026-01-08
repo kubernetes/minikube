@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"k8s.io/minikube/pkg/libmachine/mcnflag"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/minikube/pkg/libmachine/mcnflag"
 )
 
 func TestIP(t *testing.T) {

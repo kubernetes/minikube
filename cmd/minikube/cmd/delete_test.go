@@ -24,10 +24,10 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine"
 	"github.com/google/go-cmp/cmp"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/libmachine"
 
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"

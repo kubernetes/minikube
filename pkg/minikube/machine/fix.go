@@ -24,11 +24,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/state"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"

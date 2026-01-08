@@ -23,11 +23,11 @@ import (
 	"os/exec"
 	"strings"
 
-	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/ssh"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/ssh"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"

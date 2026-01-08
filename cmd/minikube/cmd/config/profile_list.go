@@ -35,10 +35,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 
-	"k8s.io/minikube/pkg/libmachine"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/libmachine"
 
 	"k8s.io/klog/v2"
 )

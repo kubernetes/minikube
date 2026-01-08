@@ -28,6 +28,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/cert"
 	"k8s.io/minikube/pkg/libmachine/drivers"
@@ -35,8 +37,6 @@ import (
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/provision"
 	"k8s.io/minikube/pkg/libmachine/swarm"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"

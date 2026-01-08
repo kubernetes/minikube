@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/state"
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util"

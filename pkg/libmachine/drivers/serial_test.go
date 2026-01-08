@@ -3,9 +3,9 @@ package drivers
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/minikube/pkg/libmachine/mcnflag"
 	"k8s.io/minikube/pkg/libmachine/state"
-	"github.com/stretchr/testify/assert"
 )
 
 type CallRecorder struct {

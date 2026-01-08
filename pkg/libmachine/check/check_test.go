@@ -6,9 +6,9 @@ import (
 
 	"crypto/tls"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/cert"
-	"github.com/stretchr/testify/assert"
 )
 
 type FakeValidateCertificate struct {
