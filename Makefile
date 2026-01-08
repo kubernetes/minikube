@@ -90,7 +90,6 @@ export GO111MODULE := on
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
-GOARM ?= 7 # the default is 5
 GOPATH ?= $(shell go env GOPATH)
 BUILD_DIR ?= $(PWD)/out
 $(shell mkdir -p $(BUILD_DIR))
@@ -214,7 +213,7 @@ endif
 
 out/minikube$(IS_EXE): $(SOURCE_FILES) $(ASSET_FILES) go.mod
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	$(call DOCKER,$(BUILD_IMAGE),GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) /usr/bin/make $@)
+	$(call DOCKER,$(BUILD_IMAGE),GOOS=$(GOOS) GOARCH=$(GOARCH) /usr/bin/make $@)
 else
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)go build $(MINIKUBE_GOFLAGS) -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ k8s.io/minikube/cmd/minikube
@@ -225,14 +224,6 @@ out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	$(Q)cp $< $@
 
 out/minikube-linux-x86_64: out/minikube-linux-amd64
-	$(if $(quiet),@echo "  CP       $@")
-	$(Q)cp $< $@
-
-out/minikube-linux-armhf: out/minikube-linux-arm
-	$(if $(quiet),@echo "  CP       $@")
-	$(Q)cp $< $@
-
-out/minikube-linux-armv7hl: out/minikube-linux-arm
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
@@ -262,7 +253,7 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
 	$(if $(quiet),@echo "  GO       $@")
-	$(Q)GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" $(if $(call eq,$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*))),arm),GOARM=$(GOARM)) \
+	$(Q)GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" \
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
@@ -417,7 +408,7 @@ extract: ## extract internationalization words for translations
 cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform
 
 .PHONY: exotic
-exotic: out/minikube-linux-arm out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x ## Build minikube for non-amd64 linux
+exotic: out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x ## Build minikube for non-amd64 linux
 
 .PHONY: windows
 windows: minikube-windows-amd64.exe ## Build minikube for Windows 64bit
@@ -655,7 +646,7 @@ docker-multi-arch-build:
 	# installs QEMU static binaries to allow docker multi-arch build, see: https://github.com/docker/setup-qemu-action
 	docker run --rm --privileged tonistiigi/binfmt:latest --install all
 
-KICBASE_ARCH ?= linux/amd64,linux/arm64,linux/s390x,linux/arm,linux/ppc64le
+KICBASE_ARCH ?= linux/amd64,linux/arm64,linux/s390x,linux/ppc64le
 KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
