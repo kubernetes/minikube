@@ -31,7 +31,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/machine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/log"
 )
 
 type diskType int

@@ -3,9 +3,9 @@ package drivers
 import (
 	"fmt"
 
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/docker/machine/libmachine/ssh"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
+	"k8s.io/minikube/pkg/libmachine/ssh"
 )
 
 func GetSSHClientFromDriver(d Driver) (ssh.Client, error) {

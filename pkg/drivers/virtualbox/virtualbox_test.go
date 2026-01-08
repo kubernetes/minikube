@@ -26,8 +26,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"github.com/stretchr/testify/assert"
 )
 

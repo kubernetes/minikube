@@ -3,8 +3,8 @@ package drivers
 import (
 	"fmt"
 
-	"github.com/docker/machine/libmachine/mcnflag"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/mcnflag"
+	"k8s.io/minikube/pkg/libmachine/state"
 )
 
 type DriverNotSupported struct {

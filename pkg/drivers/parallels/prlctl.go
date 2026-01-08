@@ -47,7 +47,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/docker/machine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/log"
 )
 
 func detectCmdInPath(cmd string) string {

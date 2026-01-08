@@ -3,7 +3,7 @@ package mcndockerclient
 import (
 	"fmt"
 
-	"github.com/docker/machine/libmachine/cert"
+	"k8s.io/minikube/pkg/libmachine/cert"
 	"github.com/sayboras/dockerclient"
 )
 

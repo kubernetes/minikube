@@ -1,7 +1,7 @@
 package persist
 
 import (
-	"github.com/docker/machine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/host"
 )
 
 type Store interface {

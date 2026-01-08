@@ -1,6 +1,6 @@
 package host
 
-import "github.com/docker/machine/libmachine/drivers"
+import "k8s.io/minikube/pkg/libmachine/drivers"
 
 type V0 struct {
 	Name          string `json:"-"`

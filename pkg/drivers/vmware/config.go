@@ -21,8 +21,8 @@ limitations under the License.
 package vmware
 
 import (
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/mcnflag"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/mcnflag"
 )
 
 const (

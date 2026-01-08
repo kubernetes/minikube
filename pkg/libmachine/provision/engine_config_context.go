@@ -1,8 +1,8 @@
 package provision
 
 import (
-	"github.com/docker/machine/libmachine/auth"
-	"github.com/docker/machine/libmachine/engine"
+	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/engine"
 )
 
 type EngineConfigContext struct {

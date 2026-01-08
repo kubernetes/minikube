@@ -24,8 +24,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
-	machinessh "github.com/docker/machine/libmachine/ssh"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	machinessh "k8s.io/minikube/pkg/libmachine/ssh"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"

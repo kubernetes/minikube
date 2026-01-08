@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/drivers/vmware"
 	"k8s.io/minikube/pkg/minikube/config"

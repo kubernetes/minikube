@@ -1,6 +1,6 @@
 package drivers
 
-import "github.com/docker/machine/libmachine/mcnflag"
+import "k8s.io/minikube/pkg/libmachine/mcnflag"
 
 // CheckDriverOptions implements DriverOptions and is used to validate flag parsing
 type CheckDriverOptions struct {

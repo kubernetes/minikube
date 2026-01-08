@@ -1,6 +1,6 @@
 package persisttest
 
-import "github.com/docker/machine/libmachine/host"
+import "k8s.io/minikube/pkg/libmachine/host"
 
 type FakeStore struct {
 	Hosts                                           []*host.Host

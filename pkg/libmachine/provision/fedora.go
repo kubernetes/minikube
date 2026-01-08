@@ -1,7 +1,7 @@
 package provision
 
 import (
-	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 )
 
 func init() {

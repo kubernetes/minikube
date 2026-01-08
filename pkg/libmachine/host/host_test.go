@@ -3,10 +3,10 @@ package host
 import (
 	"testing"
 
-	"github.com/docker/machine/libmachine/drivers/fakedriver"
-	_ "github.com/docker/machine/libmachine/drivers/nodriver"
-	"github.com/docker/machine/libmachine/provision"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/drivers/fakedriver"
+	_ "k8s.io/minikube/pkg/libmachine/drivers/nodriver"
+	"k8s.io/minikube/pkg/libmachine/provision"
+	"k8s.io/minikube/pkg/libmachine/state"
 )
 
 func TestValidateHostnameValid(t *testing.T) {
