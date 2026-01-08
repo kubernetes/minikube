@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"path"
+	"path/filepath"
 	"text/template"
 	"time"
 
-	"github.com/docker/machine/commands/mcndirs"
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/engine"
@@ -50,11 +51,19 @@ func (provisioner *Boot2DockerProvisioner) Service(name string, action serviceac
 	return err
 }
 
+var (
+	BaseDir = os.Getenv("MACHINE_STORAGE_PATH")
+)
+
+func GetBaseDir() string {
+	if BaseDir == "" {
+		BaseDir = filepath.Join(mcnutils.GetHomeDir(), ".docker", "machine")
+	}
+	return BaseDir
+}
+
 func (provisioner *Boot2DockerProvisioner) upgradeIso() error {
-	// TODO: Ideally, we should not read from mcndirs directory at all.
-	// The driver should be able to communicate how and where to place the
-	// relevant files.
-	b2dutils := mcnutils.NewB2dUtils(mcndirs.GetBaseDir())
+	b2dutils := mcnutils.NewB2dUtils(GetBaseDir())
 
 	// Check if the driver has specified a custom b2d url
 	jsonDriver, err := json.Marshal(provisioner.GetDriver())

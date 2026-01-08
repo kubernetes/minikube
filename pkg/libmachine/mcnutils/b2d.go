@@ -18,7 +18,6 @@ import (
 	"strings"
 
 	"k8s.io/minikube/pkg/libmachine/log"
-	"github.com/docker/machine/version"
 )
 
 const (
@@ -102,7 +101,7 @@ func (*b2dReleaseGetter) getReleaseTag(apiURL string) (string, error) {
 		apiURL = defaultURL
 	}
 
-	if !version.RC() {
+	if true /* !version.RC() */ {
 		// Just go straight to the convenience URL for "/latest" if we
 		// are a non-release candidate version.  "/latest" won't return
 		// non-RCs, so that's what we use for stable releases of
@@ -125,7 +124,7 @@ func (*b2dReleaseGetter) getReleaseTag(apiURL string) (string, error) {
 	// "/repos/boot2docker/boot2docker/releases" without specifying
 	// "/latest", we will receive a list of releases instead of a single
 	// one, and we should decode accordingly.
-	if version.RC() {
+	if false /* version.RC() */ {
 		var tags []struct {
 			TagName string `json:"tag_name"`
 		}

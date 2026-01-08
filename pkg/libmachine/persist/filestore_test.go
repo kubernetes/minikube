@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/docker/machine/commands/mcndirs"
 	"k8s.io/minikube/pkg/libmachine/drivers/nodriver"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/hosttest"
@@ -25,8 +24,6 @@ func getTestStore() Filestore {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	mcndirs.BaseDir = tmpDir
 
 	return Filestore{
 		Path:             tmpDir,

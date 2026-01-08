@@ -4,14 +4,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/docker/machine/commands/mcndirs"
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/swarm"
 )
 
 func TestMigrateHostV0ToV1(t *testing.T) {
-	mcndirs.BaseDir = "/tmp/migration"
 	originalHost := &V0{
 		HostOptions:    nil,
 		SwarmDiscovery: "token://foobar",
