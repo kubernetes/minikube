@@ -576,6 +576,11 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 				return errors.Wrap(err, "waiting for apps_running")
 			}
 		}
+		if cfg.VerifyComponents[kverify.ExtraKey] {
+			if err := kverify.WaitExtra(cfg.Name, kverify.CorePodsLabels, timeout); err != nil {
+				return errors.Wrap(err, "waiting for extra components")
+			}
+		}
 	}
 
 	if cfg.VerifyComponents[kverify.KubeletKey] {
