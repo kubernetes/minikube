@@ -1,12 +1,12 @@
 package hosttest
 
 import (
-	"github.com/docker/machine/libmachine/auth"
-	"github.com/docker/machine/libmachine/drivers/nodriver"
-	"github.com/docker/machine/libmachine/engine"
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/swarm"
-	"github.com/docker/machine/libmachine/version"
+	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/drivers/nodriver"
+	"k8s.io/minikube/pkg/libmachine/engine"
+	"k8s.io/minikube/pkg/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/swarm"
+	"k8s.io/minikube/pkg/libmachine/version"
 )
 
 const (

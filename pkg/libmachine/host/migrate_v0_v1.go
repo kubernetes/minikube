@@ -1,9 +1,9 @@
 package host
 
 import (
-	"github.com/docker/machine/libmachine/auth"
-	"github.com/docker/machine/libmachine/engine"
-	"github.com/docker/machine/libmachine/swarm"
+	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/engine"
+	"k8s.io/minikube/pkg/libmachine/swarm"
 )
 
 // In the 0.1.0 => 0.2.0 transition, the JSON representation of

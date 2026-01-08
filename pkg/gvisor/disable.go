@@ -21,7 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker/machine/libmachine/mcnutils"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"github.com/pkg/errors"
 )
 

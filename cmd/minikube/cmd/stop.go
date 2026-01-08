@@ -21,8 +21,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/mcnerror"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/mcnerror"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

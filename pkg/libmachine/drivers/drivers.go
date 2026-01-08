@@ -3,9 +3,9 @@ package drivers
 import (
 	"errors"
 
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnflag"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/mcnflag"
+	"k8s.io/minikube/pkg/libmachine/state"
 )
 
 // Driver defines how a host is created and controlled. Different types of

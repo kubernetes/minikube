@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/docker/machine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/log"
 )
 
 // The /etc/os-release file contains operating system identification data

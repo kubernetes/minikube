@@ -9,7 +9,7 @@ import (
 
 	"os"
 
-	"github.com/docker/machine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/log"
 	"github.com/stretchr/testify/assert"
 )
 

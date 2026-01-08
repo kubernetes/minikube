@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/docker/machine/libmachine/ssh"
+	"k8s.io/minikube/pkg/libmachine/ssh"
 	"github.com/google/go-cmp/cmp"
 )
 

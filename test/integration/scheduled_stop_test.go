@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/retry"

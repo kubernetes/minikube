@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnutils"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"github.com/moby/term"
 	"golang.org/x/crypto/ssh"
 	terminal "golang.org/x/term"

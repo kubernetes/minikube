@@ -8,12 +8,12 @@ import (
 
 	"io"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnflag"
-	"github.com/docker/machine/libmachine/state"
-	"github.com/docker/machine/libmachine/version"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/drivers/plugin/localbinary"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/mcnflag"
+	"k8s.io/minikube/pkg/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/version"
 )
 
 var (

@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/docker/machine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/log"
 	"github.com/docker/machine/version"
 	"github.com/stretchr/testify/assert"
 )

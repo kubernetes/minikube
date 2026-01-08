@@ -25,8 +25,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"

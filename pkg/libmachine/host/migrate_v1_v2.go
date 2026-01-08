@@ -3,7 +3,7 @@ package host
 import (
 	"path/filepath"
 
-	"github.com/docker/machine/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/auth"
 )
 
 func MigrateHostV1ToHostV2(hostV1 *V1) *V2 {

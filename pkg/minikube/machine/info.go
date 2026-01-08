@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/machine/libmachine/provision"
+	"k8s.io/minikube/pkg/libmachine/provision"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/mem"

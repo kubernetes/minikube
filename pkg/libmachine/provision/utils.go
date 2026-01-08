@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/machine/libmachine/auth"
-	"github.com/docker/machine/libmachine/cert"
-	"github.com/docker/machine/libmachine/engine"
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/docker/machine/libmachine/provision/serviceaction"
+	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/cert"
+	"k8s.io/minikube/pkg/libmachine/engine"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
+	"k8s.io/minikube/pkg/libmachine/provision/serviceaction"
 )
 
 type DockerOptions struct {

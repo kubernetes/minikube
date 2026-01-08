@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/docker/machine/libmachine/auth"
-	"github.com/docker/machine/libmachine/cert"
-	"github.com/docker/machine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/cert"
+	"k8s.io/minikube/pkg/libmachine/host"
 )
 
 var (

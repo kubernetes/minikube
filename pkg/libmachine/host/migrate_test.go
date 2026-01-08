@@ -3,8 +3,8 @@ package host
 import (
 	"testing"
 
-	"github.com/docker/machine/libmachine/auth"
-	"github.com/docker/machine/libmachine/drivers/nodriver"
+	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/drivers/nodriver"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -30,8 +30,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"

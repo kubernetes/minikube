@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/docker/machine/commands/mcndirs"
-	"github.com/docker/machine/libmachine/drivers/nodriver"
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/hosttest"
+	"k8s.io/minikube/pkg/libmachine/drivers/nodriver"
+	"k8s.io/minikube/pkg/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/hosttest"
 )
 
 func cleanup() {

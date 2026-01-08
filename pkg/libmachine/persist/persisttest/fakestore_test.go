@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/docker/machine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/host"
 )
 
 func TestExists(t *testing.T) {

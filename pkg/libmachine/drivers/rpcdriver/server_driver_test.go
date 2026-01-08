@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/docker/machine/libmachine/drivers/fakedriver"
+	"k8s.io/minikube/pkg/libmachine/drivers/fakedriver"
 	"github.com/stretchr/testify/assert"
 )
 

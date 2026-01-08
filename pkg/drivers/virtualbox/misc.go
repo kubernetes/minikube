@@ -23,8 +23,8 @@ import (
 
 	"time"
 
-	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/docker/machine/libmachine/ssh"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
+	"k8s.io/minikube/pkg/libmachine/ssh"
 )
 
 // B2DUpdater describes the interactions with b2d.
