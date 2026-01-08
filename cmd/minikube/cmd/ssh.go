@@ -38,7 +38,7 @@ var nativeSSHClient bool
 var sshCmd = &cobra.Command{
 	Use:   "ssh",
 	Short: "Log into the minikube environment (for debugging)",
-	Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.",
+	Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/ssh",
 	Run: func(_ *cobra.Command, args []string) {
 		options := flags.CommandOptions()
 		cname := ClusterFlagValue()

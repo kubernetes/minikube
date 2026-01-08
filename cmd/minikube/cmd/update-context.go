@@ -31,8 +31,7 @@ import (
 var updateContextCmd = &cobra.Command{
 	Use:   "update-context",
 	Short: "Update kubeconfig in case of an IP or port change",
-	Long: `Retrieves the IP address of the running cluster, checks it
-			with IP in kubeconfig, and corrects kubeconfig if incorrect.`,
+	Long:  `Retrieves the IP address of the running cluster, checks it with IP in kubeconfig, and corrects kubeconfig if incorrect. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/update-context`,
 	Run: func(_ *cobra.Command, _ []string) {
 		options := flags.CommandOptions()
 		cname := ClusterFlagValue()

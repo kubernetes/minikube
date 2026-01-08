@@ -34,7 +34,7 @@ import (
 var nodeStopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stops a node in a cluster.",
-	Long:  "Stops a node in a cluster.",
+	Long:  "Stops a node in a cluster. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/node/#minikube-node-stop",
 	Run: func(_ *cobra.Command, args []string) {
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Usage: minikube node stop [name]")

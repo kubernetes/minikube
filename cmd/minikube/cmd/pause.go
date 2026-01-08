@@ -46,7 +46,7 @@ var (
 // pauseCmd represents the docker-pause command
 var pauseCmd = &cobra.Command{
 	Use:   "pause",
-	Short: "pause Kubernetes",
+	Short: "pause Kubernetes. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/pause",
 	Run:   runPause,
 }
 

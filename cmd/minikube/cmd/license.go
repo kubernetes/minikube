@@ -29,7 +29,7 @@ var dir string
 var licenseCmd = &cobra.Command{
 	Use:   "license",
 	Short: "Outputs the licenses of dependencies to a directory",
-	Long:  "Outputs the licenses of dependencies to a directory",
+	Long:  "Outputs the licenses of dependencies to a directory. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/license",
 	Run: func(_ *cobra.Command, _ []string) {
 		if err := download.Licenses(dir); err != nil {
 			exit.Error(reason.InetLicenses, "Failed to download licenses", err)
