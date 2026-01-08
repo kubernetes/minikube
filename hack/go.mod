@@ -2,8 +2,6 @@ module k8s.io/minikube/hack
 
 go 1.25.0
 
-replace github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20240815173309-ffb6b643c381
-
 require (
 	cloud.google.com/go/storage v1.58.0
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.7
@@ -97,7 +95,6 @@ require (
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/docker/machine v0.16.2 // indirect
 	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.35.0 // indirect
