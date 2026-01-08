@@ -90,7 +90,6 @@ if echo "$COMMIT" | grep -q dirty; then
 fi
 # Don't upload temporary copies, avoid unused duplicate files in the release storage
 rm -f out/minikube-linux-x86_64
-rm -f out/minikube-linux-i686
 rm -f out/minikube-linux-aarch64
 rm -f out/minikube-linux-armhf
 rm -f out/minikube-linux-armv7hl
