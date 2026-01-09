@@ -62,14 +62,6 @@ updates:
   # Bellow are images used for tooling/locally
   # ---
   - package-ecosystem: "docker"
-    directory: "/site/themes/docsy"
-    schedule:
-      interval: "weekly"
-    groups:
-      bump-dockerfiles-build:
-        patterns:
-          - "*"
-  - package-ecosystem: "docker"
     directory: "/deploy/iso/minikube-iso"
     schedule:
       interval: "weekly"
