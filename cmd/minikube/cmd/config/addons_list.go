@@ -143,10 +143,8 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 
 		// Apply green color if enabled
 		if enabled {
-			green := "\033[32m"
-			reset := "\033[0m"
 			for i, val := range row {
-				row[i] = green + val + reset
+				row[i] = style.Green + val + style.Reset
 			}
 		}
 
