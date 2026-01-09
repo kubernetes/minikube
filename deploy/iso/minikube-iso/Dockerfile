@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # We need tar >= 1.35
 ARG TAR_VERSION="1.35"
