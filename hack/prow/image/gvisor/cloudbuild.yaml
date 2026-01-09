@@ -2,7 +2,7 @@
 options:
   substitution_option: ALLOW_LOOSE
 steps:
-  - name: gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20250513-9264efb079
+  - name: gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:latest          
     entrypoint: make
     env:
       - DOCKER_CLI_EXPERIMENTAL=enabled
