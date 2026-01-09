@@ -20,7 +20,7 @@ updates:
     ignore:
       - dependency-name: "vedantmgoyal2009/winget-releaser"
   - package-ecosystem: "docker"
-    directory: "/deploy/"
+    directory: "/deploy/kicbase"
     schedule:
       interval: "weekly"
   - package-ecosystem: "docker"
