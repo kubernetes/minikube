@@ -191,23 +191,20 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 				cpIP, k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k}
 		}
 
+
 		// Colorize row based on status
 		switch p.Status {
 		case "Running", "OK", "Configured":
 			// Green
-			green := "\033[32m"
-			reset := "\033[0m"
 			for i, val := range row {
-				row[i] = green + val + reset
+				row[i] = style.Green + val + style.Reset
 			}
 		case "Stopped", "Paused":
 			// No color (default/white)
 		default:
 			// Red for everything else (Error, Misconfigured, Warning, etc)
-			red := "\033[31m"
-			reset := "\033[0m"
 			for i, val := range row {
-				row[i] = red + val + reset
+				row[i] = style.Red + val + style.Reset
 			}
 		}
 
