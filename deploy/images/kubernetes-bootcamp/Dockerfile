@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # Last update Jan 8, 2026 5:17 PM
-FROM node:24-slim
+FROM node:25-slim
 RUN apt-get update && apt-get install curl -y
 EXPOSE 8080
 COPY server.js .
