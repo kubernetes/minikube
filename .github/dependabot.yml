@@ -19,6 +19,9 @@ updates:
           - "actions/*"
     ignore:
       - dependency-name: "vedantmgoyal2009/winget-releaser"
+  # ---
+  # Docker images 
+  # ---
   - package-ecosystem: "docker"
     directory: "/deploy/kicbase"
     schedule:
@@ -55,6 +58,9 @@ updates:
       bump-dockerfiles:
         patterns:
           - "*"
+  # ---
+  # Bellow are images used for tooling/locally
+  # ---
   - package-ecosystem: "docker"
     directory: "/site/themes/docsy"
     schedule:
