@@ -20,7 +20,7 @@ COPY ./ ./
 RUN GOOS=linux CGO_ENABLED=0 go build -o gvisor-addon cmd/gvisor/gvisor.go
 
 # Need an image with chroot
-FROM alpine:3
+FROM alpine:3.23
 RUN apk -U add ca-certificates
 COPY --from=builder /app/gvisor-addon /gvisor-addon
 CMD ["/gvisor-addon"]

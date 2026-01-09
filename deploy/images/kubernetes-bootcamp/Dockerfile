@@ -1,4 +1,4 @@
-FROM node:slim
+FROM node:24-slim
 RUN apt-get update && apt-get install curl -y
 EXPOSE 8080
 COPY server.js .
