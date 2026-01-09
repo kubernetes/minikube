@@ -181,13 +181,37 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 		if p.ActiveKubeContext {
 			k = "*"
 		}
+
+		var row []string
 		if isDetailed {
-			data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
-				cpIP, strconv.Itoa(cpPort), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k})
+			row = []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
+				cpIP, strconv.Itoa(cpPort), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k}
 		} else {
-			data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
-				cpIP, k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k})
+			row = []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
+				cpIP, k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k}
 		}
+
+		// Colorize row based on status
+		switch p.Status {
+		case "Running", "OK", "Configured":
+			// Green
+			green := "\033[32m"
+			reset := "\033[0m"
+			for i, val := range row {
+				row[i] = green + val + reset
+			}
+		case "Stopped", "Paused":
+			// No color (default/white)
+		default:
+			// Red for everything else (Error, Misconfigured, Warning, etc)
+			red := "\033[31m"
+			reset := "\033[0m"
+			for i, val := range row {
+				row[i] = red + val + reset
+			}
+		}
+
+		data = append(data, row)
 	}
 	return data
 }
