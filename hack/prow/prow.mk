@@ -68,12 +68,12 @@ setup-prow-gcp-ssh-keys: # set up ssh keys for gcloud cli. These env vars are se
 	
 .PHONY: push-kubernetes-bootcamp-image-prow
 push-kubernetes-bootcamp-image-prow:
-	docker buildx build --builder multiarch --push --platform  linux/amd64,linux/arm64 \
+	docker build --push --platform  linux/amd64,linux/arm64 \
 		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kubernetes-bootcamp:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kubernetes-bootcamp:latest deploy/images/kubernetes-bootcamp
 
 
 .PHONY: push-gvisor-image-prow
 push-gvisor-image-prow:
-	docker buildx build --builder multiarch --push --platform  linux/amd64,linux/arm64 \
+	docker build --push --platform  linux/amd64,linux/arm64 \
 		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/gvisor:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/gvisor:latest -f deploy/images/gvisor/Dockerfile .
 
