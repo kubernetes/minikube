@@ -198,7 +198,7 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 			for i, val := range row {
 				row[i] = style.Green + val + style.Reset
 			}
-		case "Stopped", "Paused":
+		case "Stopped", "Paused", "Skipped":
 			// No color (default/white)
 		default:
 			// Red for everything else (Error, Misconfigured, Warning, etc)
