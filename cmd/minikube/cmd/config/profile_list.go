@@ -191,7 +191,6 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 				cpIP, k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k}
 		}
 
-
 		// Colorize row based on status
 		switch p.Status {
 		case "Running", "OK", "Configured":
