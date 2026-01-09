@@ -39,7 +39,7 @@ func enableOrDisableAutoPause(cc *config.ClusterConfig, name, val string, option
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
 	out.Infof("auto-pause addon is an alpha feature and still in early development. Please file issues to help us make it better.")
-	out.Infof("https://github.com/kubernetes/minikube/labels/co/auto-pause")
+	out.Infof("https://github.com/kubernetes/minikube/issues?q=state%3Aopen%20label%3Aco%2Fauto-pause")
 
 	co := mustload.Running(cc.Name, options)
 	if enable {
