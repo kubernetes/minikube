@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v80/github"
+	"github.com/google/go-github/v81/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 
