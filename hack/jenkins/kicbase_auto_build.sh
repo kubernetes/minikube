@@ -106,7 +106,12 @@ git config user.email "minikube-bot@google.com"
 if [ "$release" = false ]; then
 	# Update the user's PR with the newly built kicbase image.
 
-	git remote add ${ghprbPullAuthorLogin} git@github.com:${ghprbPullAuthorLogin}/minikube.git
+	# Dynamically determine the fork repository name from the PR URL or git remote
+	FORK_REPO_NAME=$(gh pr view ${ghprbPullId} --json headRepository --jq '.headRepository.name' 2>/dev/null || echo "minikube")
+	
+	# Try SSH first, fallback to HTTPS if SSH fails
+	git remote add ${ghprbPullAuthorLogin} git@github.com:${ghprbPullAuthorLogin}/${FORK_REPO_NAME}.git || \
+	git remote add ${ghprbPullAuthorLogin} https://github.com/${ghprbPullAuthorLogin}/${FORK_REPO_NAME}.git
 	git fetch ${ghprbPullAuthorLogin}
 	git checkout -b ${ghprbPullAuthorLogin}-${ghprbSourceBranch} ${ghprbPullAuthorLogin}/${ghprbSourceBranch}
 
