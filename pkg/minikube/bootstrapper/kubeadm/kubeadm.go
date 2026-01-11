@@ -716,7 +716,7 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		return err
 	}
 	if err = retry.Expo(addonPhase, 100*time.Microsecond, 30*time.Second); err != nil {
-		klog.Warningf("addon install failed, wil retry: %v", err)
+		klog.Warningf("addon install failed, will retry: %v", err)
 		return errors.Wrap(err, "addons")
 	}
 

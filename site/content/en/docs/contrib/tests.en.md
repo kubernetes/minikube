@@ -245,7 +245,7 @@ asserts that all Kubernetes components are healthy
 NOTE: It expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag
 
 Steps:
-- Run `kubectl get po po -l tier=control-plane -n kube-system -o=json` to get all the Kubernetes conponents
+- Run `kubectl get po po -l tier=control-plane -n kube-system -o=json` to get all the Kubernetes components
 - For each component, make sure the pod status is `Running`
 
 #### validateStatusCmd
@@ -441,7 +441,7 @@ for the platforms that support it, we're testing:
 #### validatePersistentVolumeClaim
 makes sure PVCs work properly
 verifies at least one StorageClass exists
-Applies a PVC manifest (pvc.yaml) and verfies PVC named myclaim reaches phase Bound.
+Applies a PVC manifest (pvc.yaml) and verifies PVC named myclaim reaches phase Bound.
 Creates a test pod (sp-pod) that mounts the claim (via createPVTestPod).
 Writes a file foo to the mounted volume at /tmp/mount/foo.
 Deletes the pod, recreates it, and verifies the file foo still exists by listing /tmp/mount, proving data persists across pod restarts.

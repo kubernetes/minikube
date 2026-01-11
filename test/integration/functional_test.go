@@ -821,7 +821,7 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 		"kube-scheduler":          false,
 	}
 
-	// docs: Run `kubectl get po po -l tier=control-plane -n kube-system -o=json` to get all the Kubernetes conponents
+	// docs: Run `kubectl get po po -l tier=control-plane -n kube-system -o=json` to get all the Kubernetes components
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-l", "tier=control-plane", "-n", "kube-system", "-o=json"))
 	if err != nil {
 		t.Fatalf("failed to get components. args %q: %v", rr.Command(), err)

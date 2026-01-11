@@ -408,7 +408,7 @@ func (d *Driver) stopKrunkit() error {
 			// No pidfile.
 			return nil
 		}
-		log.Debugf("Terminte krunkit (pid=%d)", pid)
+		log.Debugf("Terminate krunkit (pid=%d)", pid)
 		if err := process.Terminate(pid, driverName); err != nil {
 			if err != os.ErrProcessDone {
 				return err

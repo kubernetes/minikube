@@ -113,7 +113,7 @@ func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, 
 	}
 
 	for src, dst := range caCerts {
-		// note: these are all public certs, so should be world-readeable
+		// note: these are all public certs, so should be world-readable
 		// note: src is user os' path, dst is kic/iso (linux) path
 		certFile, err := assets.NewFileAsset(src, path.Dir(dst), path.Base(dst), "0644")
 		if err != nil {
