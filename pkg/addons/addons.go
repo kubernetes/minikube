@@ -458,7 +458,30 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
-		cmd := helmUninstallOrInstall(ctx, addon.HelmChart, enable)
+
+		if enable {
+			repoAddCmd := helmRepoAdd(ctx, addon.HelmChart)
+			if repoAddCmd != nil {
+				if _, err := runner.RunCmd(repoAddCmd); err != nil {
+					return errors.Wrap(err, "adding helm repo")
+				}
+			}
+		}
+
+		// Use --image-repository flag if provided, otherwise use cluster config
+		imageRepo := cc.KubernetesConfig.ImageRepository
+		if viper.IsSet(config.AddonImageRepository) {
+			imageRepo = viper.GetString(config.AddonImageRepository)
+		}
+
+		// Validate image repository format if ImageNameKeys is defined
+		if imageRepo != "" && addon.HelmChart.ImageNameKeys != nil {
+			if _, err := parseImageRepository(imageRepo); err != nil {
+				return err
+			}
+		}
+
+		cmd := helmUninstallOrInstall(ctx, addon.HelmChart, enable, imageRepo)
 		_, err = runner.RunCmd(cmd)
 		return err
 	}
