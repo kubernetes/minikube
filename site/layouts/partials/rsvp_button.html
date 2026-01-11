@@ -1,0 +1,11 @@
+{{ $rsvp := .Site.Params.rsvp }}
+
+<a
+  href="{{ $rsvp.url }}"
+  class="rsvp module-button {{ $rsvp.icon }}"
+  title="{{ $rsvp.desc }}"
+  target="_blank"
+  rel="noopener"
+>
+ {{ $rsvp.name }}
+</a>
