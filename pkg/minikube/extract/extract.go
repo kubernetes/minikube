@@ -462,7 +462,7 @@ func writeStringsToFiles(e *state, output string) error {
 		if err != nil {
 			return errors.Wrap(err, "reading translation file")
 		}
-		// Unmarhsal nonempty files
+		// Unmarshal nonempty files
 		if len(f) > 0 {
 			err = json.Unmarshal(f, &currentTranslations)
 			if err != nil {
@@ -474,13 +474,6 @@ func writeStringsToFiles(e *state, output string) error {
 		for k := range e.translations {
 			if _, ok := currentTranslations[k]; !ok {
 				currentTranslations[k] = ""
-			}
-		}
-
-		// Remove translations from the file that are empty and were not extracted
-		for k, v := range currentTranslations {
-			if _, ok := e.translations[k]; !ok && len(v.(string)) == 0 {
-				delete(currentTranslations, k)
 			}
 		}
 
