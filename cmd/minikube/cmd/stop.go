@@ -54,7 +54,7 @@ var (
 var stopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stops a running local Kubernetes cluster",
-	Long:  `Stops a local Kubernetes cluster. This command stops the underlying VM or container, but keeps user data intact. The cluster can be started again with the "start" command.`,
+	Long:  `Stops a local Kubernetes cluster. This command stops the underlying VM or container, but keeps user data intact. The cluster can be started again with the "start" command. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/stop`,
 	Run:   runStop,
 }
 

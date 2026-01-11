@@ -263,7 +263,7 @@ func waitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Du
 var dockerEnvCmd = &cobra.Command{
 	Use:   "docker-env",
 	Short: "Provides instructions to point your terminal's docker-cli to the Docker Engine inside minikube. (Useful for building docker images directly inside minikube)",
-	Long: `Provides instructions to point your terminal's docker-cli to the Docker Engine inside minikube. (Useful for building docker images directly inside minikube)
+	Long: `Provides instructions to point your terminal's docker-cli to the Docker Engine inside minikube. (Useful for building docker images directly inside minikube). For a detailed example see https://minikube.sigs.k8s.io/docs/commands/docker-env
 
 For example, you can do all docker operations such as docker build, docker run, and docker ps directly on the docker inside minikube.
 

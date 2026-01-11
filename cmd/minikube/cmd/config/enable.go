@@ -36,7 +36,7 @@ import (
 var addonsEnableCmd = &cobra.Command{
 	Use:     "enable ADDON_NAME",
 	Short:   "Enables the addon w/ADDON_NAME within minikube. For a list of available addons use: minikube addons list ",
-	Long:    "Enables the addon w/ADDON_NAME within minikube. For a list of available addons use: minikube addons list ",
+	Long:    "Enables the addon w/ADDON_NAME within minikube. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/addons/#minikube-addons-enable",
 	Example: "minikube addons enable dashboard",
 	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 1 {
