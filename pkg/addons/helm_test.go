@@ -56,6 +56,17 @@ func TestHelmCommand(t *testing.T) {
 			expected: "sudo KUBECONFIG=/var/lib/minikube/kubeconfig helm upgrade --install addon-name addon-repo/addon-chart --create-namespace --set key=value --values /etc/kubernetes/addons/values.yaml",
 		},
 		{
+			description: "enable an addon with repository url",
+			chart: &assets.HelmChart{
+				Name:          "addon-name",
+				Repo:          "addon-chart",
+				RepositoryURL: "https://charts.example.com",
+				Namespace:     "addon-namespace",
+			},
+			enable:   true,
+			expected: "sudo KUBECONFIG=/var/lib/minikube/kubeconfig helm upgrade --install addon-name addon-chart --create-namespace --repo https://charts.example.com --namespace addon-namespace",
+		},
+		{
 			description: "disable an addon",
 			chart: &assets.HelmChart{
 				Name:      "addon-name",
