@@ -136,6 +136,12 @@ EOF
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
     echo "Installing nerdctl and nerdctld ..." &&\
     addgroup --system nerdctl &&\
+    mkdir -p /etc/systemd/system/nerdctl.socket.d && \
+    printf "[Socket]\nSocketMode=0660\nSocketGroup=nerdctl\n" \
+           > /etc/systemd/system/nerdctl.socket.d/override.conf && \
+    mkdir -p /etc/systemd/system/nerdctl.service.d && \
+    printf "[Service]\nEnvironment=CONTAINERD_NAMESPACE=k8s.io\n" \
+           > /etc/systemd/system/nerdctl.service.d/override.conf && \
     curl -L --retry 5 --output /tmp/nerdctl.tgz "https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VERSION}/nerdctl-${NERDCTL_VERSION}-linux-$ARCH.tar.gz" &&\
     tar -C /usr/local/bin -xzvf /tmp/nerdctl.tgz &&\
     curl -L --retry 5 --output /tmp/nerdctld.tgz "https://github.com/afbjorklund/nerdctld/releases/download/v${NERDCTLD_VERSION}/nerdctld-${NERDCTLD_VERSION}-linux-$ARCH.tar.gz" &&\

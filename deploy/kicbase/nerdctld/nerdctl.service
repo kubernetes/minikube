@@ -6,7 +6,7 @@ Documentation=https://github.com/containerd/nerdctl
 
 [Service]
 Type=notify
-Environment=CONTAINERD_NAMESPACE=k8s.io
+Environment=CONTAINERD_NAMESPACE=default
 ExecStart=nerdctld --addr fd://
 
 [Install]

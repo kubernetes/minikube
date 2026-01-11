@@ -5,7 +5,6 @@ Documentation=https://github.com/containerd/nerdctl
 [Socket]
 ListenStream=%t/nerdctl.sock
 SocketMode=0660
-SocketGroup=nerdctl
 
 [Install]
 WantedBy=sockets.target
