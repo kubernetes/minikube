@@ -16,7 +16,8 @@
 
 set -eux -o pipefail
 
-ARCH=${ARCH:=amd64}
+OS=$1
+ARCH=$2
 
 echo "Installing containerd"
 # Install docker's internal containerd if we can, or just install containerd from apt if available, 
@@ -48,6 +49,4 @@ sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/conf
 
 sudo systemctl restart containerd
 
-echo "Installing latest kubectl"
-curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/${ARCH}/kubectl"
-sudo install ./kubectl /usr/local/bin/kubectl
+./hack/prow/installer/check_install_kubectl.sh ${OS} ${ARCH}

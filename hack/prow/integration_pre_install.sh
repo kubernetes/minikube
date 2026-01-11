@@ -28,11 +28,11 @@ EXTRA_TEST_ARGS=""
 
 # install runtime if not present
 if [ "${CONTAINER_RUNTIME}" == "containerd" ]; then
-    ARCH="$ARCH" hack/prow/installer/check_install_containerd.sh || true
+    ARCH="$ARCH" hack/prow/installer/check_install_containerd.sh ${OS} ${ARCH} || true
 fi
 
 # instsll docker for all of them
-ARCH="$ARCH" hack/prow/installer/check_install_docker.sh || true
+ARCH="$ARCH" hack/prow/installer/check_install_docker.sh ${OS} ${ARCH} || true
 sudo adduser $(whoami) docker || true
 
 
