@@ -30,8 +30,8 @@ import (
 	"testing"
 
 	"github.com/blang/semver/v4"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"

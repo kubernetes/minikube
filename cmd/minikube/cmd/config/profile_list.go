@@ -35,10 +35,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/libmachine"
 
 	"k8s.io/klog/v2"
 )
@@ -181,13 +181,33 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 		if p.ActiveKubeContext {
 			k = "*"
 		}
+
+		var row []string
 		if isDetailed {
-			data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
-				cpIP, strconv.Itoa(cpPort), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k})
+			row = []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
+				cpIP, strconv.Itoa(cpPort), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k}
 		} else {
-			data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
-				cpIP, k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k})
+			row = []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
+				cpIP, k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k}
 		}
+
+		// Colorize row based on status
+		switch p.Status {
+		case "Running", "OK", "Configured":
+			// Green
+			for i, val := range row {
+				row[i] = style.Green + val + style.Reset
+			}
+		case "Stopped", "Paused", "Skipped":
+			// No color (default/white)
+		default:
+			// Red for everything else (Error, Misconfigured, Warning, etc)
+			for i, val := range row {
+				row[i] = style.Red + val + style.Reset
+			}
+		}
+
+		data = append(data, row)
 	}
 	return data
 }

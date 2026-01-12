@@ -30,8 +30,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util/retry"
 
-	"github.com/docker/machine/libmachine/state"
 	"github.com/hashicorp/go-getter"
+	"k8s.io/minikube/pkg/libmachine/state"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 

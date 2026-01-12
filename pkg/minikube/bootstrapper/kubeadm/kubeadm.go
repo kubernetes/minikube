@@ -34,8 +34,6 @@ import (
 	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
 
 	"github.com/blang/semver/v4"
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,6 +42,8 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"

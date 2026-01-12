@@ -22,8 +22,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnutils"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
 )
 
 type VirtualDisk struct {

@@ -37,13 +37,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/machine/libmachine/state"
 	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/v4/process"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/detect"
 )
 

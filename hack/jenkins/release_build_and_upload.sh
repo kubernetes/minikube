@@ -61,7 +61,6 @@ env BUILD_IN_DOCKER=y \
   out/minikube-installer.exe \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_amd64.deb" \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_arm64.deb" \
-  "out/minikube_${DEB_VERSION}-${DEB_REVISION}_armhf.deb" \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_ppc64el.deb" \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_s390x.deb" \
 
@@ -69,7 +68,6 @@ env BUILD_IN_DOCKER=y \
   make \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.x86_64.rpm" \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.aarch64.rpm" \
-  "out/minikube-${RPM_VERSION}-${RPM_REVISION}.armv7hl.rpm" \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.ppc64le.rpm" \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.s390x.rpm" \
 
@@ -90,10 +88,7 @@ if echo "$COMMIT" | grep -q dirty; then
 fi
 # Don't upload temporary copies, avoid unused duplicate files in the release storage
 rm -f out/minikube-linux-x86_64
-rm -f out/minikube-linux-i686
 rm -f out/minikube-linux-aarch64
-rm -f out/minikube-linux-armhf
-rm -f out/minikube-linux-armv7hl
 rm -f out/minikube-linux-ppc64el
 rm -f out/minikube-windows-amd64
 
@@ -102,13 +97,11 @@ make checksum
 # unversioned names to avoid updating upstream Kubernetes documentation each release
 cp "out/minikube_${DEB_VERSION}-0_amd64.deb" out/minikube_latest_amd64.deb
 cp "out/minikube_${DEB_VERSION}-0_arm64.deb" out/minikube_latest_arm64.deb
-cp "out/minikube_${DEB_VERSION}-0_armhf.deb" out/minikube_latest_armhf.deb
 cp "out/minikube_${DEB_VERSION}-0_ppc64el.deb" out/minikube_latest_ppc64el.deb
 cp "out/minikube_${DEB_VERSION}-0_s390x.deb" out/minikube_latest_s390x.deb
 
 cp "out/minikube-${RPM_VERSION}-0.x86_64.rpm" out/minikube-latest.x86_64.rpm
 cp "out/minikube-${RPM_VERSION}-0.aarch64.rpm" out/minikube-latest.aarch64.rpm
-cp "out/minikube-${RPM_VERSION}-0.armv7hl.rpm" out/minikube-latest.armv7hl.rpm
 cp "out/minikube-${RPM_VERSION}-0.ppc64le.rpm" out/minikube-latest.ppc64le.rpm
 cp "out/minikube-${RPM_VERSION}-0.s390x.rpm" out/minikube-latest.s390x.rpm
 

@@ -257,7 +257,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ingress-deploy.yaml",
 			"0640"),
-	}, false, "ingress", "Kubernetes", "", "https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/", map[string]string{
+	}, false, "ingress", "Kubernetes", "", "https://github.com/kubernetes/ingress-nginx", map[string]string{
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L445
 		"IngressController": "ingress-nginx/controller:v1.14.1@sha256:f95a79b85fb93ac3de752c71a5c27d5ceae10a18b61904dec224c1c6a4581e47",
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L552
@@ -291,7 +291,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.InspektorGadgetAssets, "inspektor-gadget/ig-deployment.yaml.tmpl", vmpath.GuestAddonsDir, "ig-deployment.yaml", "0640"),
 	}, false, "inspektor-gadget", "3rd party (inspektor-gadget.io)", "https://github.com/orgs/inspektor-gadget/people", "https://minikube.sigs.k8s.io/docs/handbook/addons/inspektor-gadget/",
 		map[string]string{
-			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.47.0@sha256:54fbd593a98d63f7065a4c828a5c0dd5046e2c7bc210b9076999b8016e14ec5a",
+			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.48.0@sha256:ae5e6d03d42d3a3dde67af28a275b9f2050b7b80ab1adfe349ae027f7169c006",
 		}, map[string]string{
 			"InspektorGadget": "ghcr.io",
 		}, nil),

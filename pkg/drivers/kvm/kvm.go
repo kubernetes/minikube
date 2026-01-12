@@ -25,11 +25,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/util/retry"
 	"libvirt.org/go/libvirt"
 )

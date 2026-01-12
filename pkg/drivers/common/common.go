@@ -27,12 +27,12 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnflag"
-	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/mcnflag"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
+	"k8s.io/minikube/pkg/libmachine/ssh"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/run"

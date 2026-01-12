@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.37.0-1766979747-22353
+ISO_VERSION ?= v1.37.0-1768032387-22425
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -71,7 +71,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v2.7.2
+GOLINT_VERSION ?= v2.8.0
 # see https://golangci-lint.run/docs/configuration/file/ for config details
 GOLINT_CONFIG ?= .golangci.min.yaml
 # Set this to --verbose to see details about the linters and formatters used
@@ -90,7 +90,6 @@ export GO111MODULE := on
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
-GOARM ?= 7 # the default is 5
 GOPATH ?= $(shell go env GOPATH)
 BUILD_DIR ?= $(PWD)/out
 $(shell mkdir -p $(BUILD_DIR))
@@ -110,10 +109,6 @@ ifeq ($(SED_VERSION),)
 else
 	SED = sed -i
 endif
-
-# gvisor tag to automatically push changes to
-# to update minikubes default, update deploy/addons/gvisor
-GVISOR_TAG ?= v0.0.2
 
 # auto-pause-hook tag to push changes to
 AUTOPAUSE_HOOK_TAG ?= v0.0.5
@@ -214,7 +209,7 @@ endif
 
 out/minikube$(IS_EXE): $(SOURCE_FILES) $(ASSET_FILES) go.mod
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	$(call DOCKER,$(BUILD_IMAGE),GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) /usr/bin/make $@)
+	$(call DOCKER,$(BUILD_IMAGE),GOOS=$(GOOS) GOARCH=$(GOARCH) /usr/bin/make $@)
 else
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)go build $(MINIKUBE_GOFLAGS) -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ k8s.io/minikube/cmd/minikube
@@ -224,19 +219,7 @@ out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
-out/minikube-linux-i686: out/minikube-linux-386
-	$(if $(quiet),@echo "  CP       $@")
-	$(Q)cp $< $@
-
 out/minikube-linux-x86_64: out/minikube-linux-amd64
-	$(if $(quiet),@echo "  CP       $@")
-	$(Q)cp $< $@
-
-out/minikube-linux-armhf: out/minikube-linux-arm
-	$(if $(quiet),@echo "  CP       $@")
-	$(Q)cp $< $@
-
-out/minikube-linux-armv7hl: out/minikube-linux-arm
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
@@ -266,13 +249,9 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
 	$(if $(quiet),@echo "  GO       $@")
-	$(Q)GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" $(if $(call eq,$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*))),arm),GOARM=$(GOARM)) \
+	$(Q)GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" \
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
-
-out/minikube-linux-armv6: $(SOURCE_FILES) $(ASSET_FILES)
-	$(Q)GOOS=linux GOARCH=arm GOARM=6 \
-	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 
 .PHONY: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-darwin-arm64 e2e-windows-amd64.exe
 e2e-linux-amd64: out/e2e-linux-amd64 ## build end2end binary for Linux x86 64bit
@@ -290,7 +269,8 @@ out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 minikube-iso-amd64: minikube-iso-x86_64
 minikube-iso-arm64: minikube-iso-aarch64
 
-minikube-iso-%: iso-prepare-% deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
+minikube-iso-%: iso-prepare-% out/auto-pause-% # build minikube iso
+	cp out/auto-pause-$* deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/usr/bin/auto-pause
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-go
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
 	# x86_64 ISO is still BIOS rather than EFI because of AppArmor issues for KVM, and Gen 2 issues for Hyper-V
@@ -345,7 +325,7 @@ test-pkg/%: ## Trigger packaging test
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross e2e-cross cross-tars exotic retro out/gvisor-addon ## Build all different minikube components
+all: cross e2e-cross cross-tars exotic out/gvisor-addon ## Build all different minikube components
 
 .PHONY: integration
 integration: out/minikube$(IS_EXE) ## Trigger minikube integration test, logs to ./out/testout_COMMIT.txt
@@ -424,10 +404,7 @@ extract: ## extract internationalization words for translations
 cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform
 
 .PHONY: exotic
-exotic: out/minikube-linux-arm out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x ## Build minikube for non-amd64 linux
-
-.PHONY: retro
-retro: out/minikube-linux-386 out/minikube-linux-armv6 ## Build minikube for legacy 32-bit linux
+exotic: out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x ## Build minikube for non-amd64 linux
 
 .PHONY: windows
 windows: minikube-windows-amd64.exe ## Build minikube for Windows 64bit
@@ -665,7 +642,7 @@ docker-multi-arch-build:
 	# installs QEMU static binaries to allow docker multi-arch build, see: https://github.com/docker/setup-qemu-action
 	docker run --rm --privileged tonistiigi/binfmt:latest --install all
 
-KICBASE_ARCH ?= linux/amd64,linux/arm64,linux/s390x,linux/arm,linux/ppc64le
+KICBASE_ARCH ?= linux/amd64,linux/arm64,linux/s390x,linux/ppc64le
 KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
@@ -678,7 +655,8 @@ build-and-upload-cri-dockerd-binaries:
 .PHONY: local-kicbase
 local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 	touch deploy/kicbase/CHANGELOG
-	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --cache-from $(KICBASE_IMAGE_GCR) .
+	./hack/build_auto_pause.sh linux/$(GOARCH) $(CURDIR)/deploy/kicbase
+	docker build -t local/kicbase:$(KIC_VERSION) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --cache-from $(KICBASE_IMAGE_GCR) ./deploy/kicbase
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 
@@ -689,7 +667,8 @@ local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches 
 
 .PHONY: build-kic-base-image
 build-kic-base-image: docker-multi-arch-build ## Build multi-arch local/kicbase:latest
-	docker buildx build -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) .
+	./hack/build_auto_pause.sh $(KICBASE_ARCH) $(CURDIR)/deploy/kicbase
+	docker buildx build --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) ./deploy/kicbase
 
 .PHONY: push-kic-base-image
 push-kic-base-image: docker-multi-arch-build ## Push multi-arch local/kicbase:latest to all remote registries
@@ -703,8 +682,8 @@ endif
 ifndef CIBUILD
 	$(call user_confirm, 'Are you sure you want to push $(KICBASE_IMAGE_REGISTRIES) ?')
 endif
-	./deploy/kicbase/build_auto_pause.sh $(KICBASE_ARCH)
-	docker buildx build -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --build-arg PREBUILT_AUTO_PAUSE=true .
+	./hack/build_auto_pause.sh $(KICBASE_ARCH) $(CURDIR)/deploy/kicbase
+	docker buildx build --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) ./deploy/kicbase
 
 # preload scripts been moved to https://github.com/kubernetes-sigs/minikube-preloads/tree/main/cmd/preload-generator 
 # in order to be able to publish them as github assets 
@@ -749,20 +728,14 @@ endif
 	docker push $(IMAGE)
 
 .PHONY: out/gvisor-addon
-out/gvisor-addon: ## Build gvisor addon
+out/gvisor-addon: ## Build gvisor binary
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
 .PHONY: gvisor-addon-image
-gvisor-addon-image:
-	docker build -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -f deploy/gvisor/Dockerfile .
+gvisor-addon-image: ## Build gvisor addon image locally (for testing)
+	docker build -t $(REGISTRY)/gvisor-addon:local -f deploy/images/gvisor/Dockerfile .
 
-.PHONY: push-gvisor-addon-image
-push-gvisor-addon-image: docker-multi-arch-build
-	docker login gcr.io/k8s-minikube
-	docker buildx create --name multiarch --bootstrap
-	docker buildx build --push --builder multiarch --platform linux/amd64,linux/arm64 -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -t $(REGISTRY)/gvisor-addon:latest -f deploy/gvisor/Dockerfile .
-	docker buildx rm multiarch
 
 .PHONY: release-iso
 release-iso: minikube-iso-aarch64 minikube-iso-x86_64 checksum  ## Build and release .iso files
@@ -811,10 +784,17 @@ out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
 
 
+out/auto-pause-x86_64: out/auto-pause-amd64
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
+out/auto-pause-aarch64: out/auto-pause-arm64
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
 # auto pause binary to be used for ISO
-deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
-	@if [ "$*" != "x86_64" ] && [ "$*" != "aarch64" ]; then echo "Please enter a valid architecture. Choices are x86_64 and aarch64."; exit 1; fi
-	GOOS=linux GOARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*)) go build -o $@ cmd/auto-pause/auto-pause.go
+out/auto-pause-%: $(SOURCE_FILES) $(ASSET_FILES)
+	GOOS=linux GOARCH=$* go build -o $@ cmd/auto-pause/auto-pause.go
 
 
 .PHONY: deploy/addons/auto-pause/auto-pause-hook

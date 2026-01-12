@@ -28,8 +28,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	core "k8s.io/api/core/v1"
@@ -44,6 +42,8 @@ import (
 	typed_discovery "k8s.io/client-go/kubernetes/typed/discovery/v1"
 	"k8s.io/client-go/rest"
 	testing_fake "k8s.io/client-go/testing"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"

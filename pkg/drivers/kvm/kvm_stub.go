@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/mcnflag"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/mcnflag"
+	"k8s.io/minikube/pkg/libmachine/state"
 )
 
 // This is a stub driver for unsupported architectures. All function fail with

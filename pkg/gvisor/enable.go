@@ -28,8 +28,8 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
 )
 
 const (

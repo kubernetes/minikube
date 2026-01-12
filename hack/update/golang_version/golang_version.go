@@ -63,17 +63,12 @@ var (
 				`GoVersion = ".*"`: `GoVersion = "{{.StableVersion}}"`,
 			},
 		},
-		"deploy/kicbase/Dockerfile": {
-			Replace: map[string]string{
-				`golang:[0-9.]+`: `golang:{{.StableVersion}}`,
-			},
-		},
 		"deploy/addons/auto-pause/Dockerfile": {
 			Replace: map[string]string{
 				`golang:.* AS`: `golang:{{.StableVersion}} AS`,
 			},
 		},
-		"deploy/gvisor/Dockerfile": {
+		"deploy/images/gvisor/Dockerfile": {
 			Replace: map[string]string{
 				`golang:.* AS`: `golang:{{.StableVersion}} AS`,
 			},

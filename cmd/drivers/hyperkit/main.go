@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/docker/machine/libmachine/drivers/plugin"
 	"k8s.io/minikube/pkg/drivers/hyperkit"
+	"k8s.io/minikube/pkg/libmachine/drivers/plugin"
 )
 
 func main() {

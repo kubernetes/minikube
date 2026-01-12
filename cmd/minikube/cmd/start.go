@@ -37,7 +37,6 @@ import (
 	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/blang/semver/v4"
 	"github.com/docker/go-connections/nat"
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -50,6 +49,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/ssh"
 
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
@@ -1530,7 +1530,7 @@ func validateRuntime(rtime string) error {
 
 	}
 
-	if (rtime == "crio" || rtime == "cri-o") && (strings.HasPrefix(runtime.GOARCH, "ppc64") || detect.RuntimeArch() == "arm" || strings.HasPrefix(detect.RuntimeArch(), "arm/")) {
+	if (rtime == "crio" || rtime == "cri-o") && strings.HasPrefix(runtime.GOARCH, "ppc64") {
 		return errors.Errorf("The %s runtime is not compatible with the %s architecture. See https://github.com/cri-o/cri-o/issues/2467 for more details", rtime, runtime.GOARCH)
 	}
 

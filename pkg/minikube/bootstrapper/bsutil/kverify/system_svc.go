@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/docker/machine/libmachine/state"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"

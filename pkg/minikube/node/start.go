@@ -30,8 +30,6 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -41,6 +39,8 @@ import (
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"

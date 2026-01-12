@@ -29,7 +29,7 @@ import (
 
 	"time"
 
-	"github.com/docker/machine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/log"
 )
 
 const (

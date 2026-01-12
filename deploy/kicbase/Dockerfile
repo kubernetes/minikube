@@ -20,23 +20,6 @@
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
 ARG KICBASE_IMAGE="debian:bookworm-20251208-slim"
-# multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.25.5 AS auto-pause
-WORKDIR /src
-# auto-pause depends on core minikube code so we need to pass the whole source code as the context
-# copy in the minimal amount of source code possible
-COPY pkg/ ./pkg
-COPY cmd/ ./cmd
-COPY deploy/addons ./deploy/addons
-COPY translations/ ./translations
-COPY third_party/ ./third_party
-COPY go.mod go.sum ./
-
-ARG TARGETARCH
-ENV GOARCH=${TARGETARCH}
-ARG PREBUILT_AUTO_PAUSE
-RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go build -o auto-pause-${TARGETARCH}; fi
-
 # start from debin 12, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${KICBASE_IMAGE} AS kicbase
@@ -48,21 +31,21 @@ ARG CRI_DOCKERD_VERSION="v0.4.1"
 ARG CRI_DOCKERD_COMMIT="55d6e1a1d6f2ee58949e13a0c66afe7d779ac942"
 ARG CNI_PLUGINS_VERSION="v1.9.0"
 ARG TARGETARCH
-ARG NERDCTL_VERSION="2.2.0"
+ARG NERDCTL_VERSION="2.2.1"
 ARG NERDCTLD_VERSION="0.7.0"
 
 # copy in static files (configs, scripts)
-COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
-COPY deploy/kicbase/11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
-COPY deploy/kicbase/02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
-COPY deploy/kicbase/containerd.toml /etc/containerd/config.toml
-COPY deploy/kicbase/containerd_docker_io_hosts.toml /etc/containerd/certs.d/docker.io/hosts.toml
-COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
-COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
-COPY deploy/kicbase/CHANGELOG ./CHANGELOG
-COPY deploy/kicbase/nerdctld/nerdctld.socket  /etc/systemd/system/nerdctld.socket
-COPY deploy/kicbase/nerdctld/nerdctld.service  /etc/systemd/system/nerdctld.service
-COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
+COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
+COPY 11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
+COPY 02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
+COPY containerd.toml /etc/containerd/config.toml
+COPY containerd_docker_io_hosts.toml /etc/containerd/certs.d/docker.io/hosts.toml
+COPY clean-install /usr/local/bin/clean-install
+COPY entrypoint /usr/local/bin/entrypoint
+COPY CHANGELOG ./CHANGELOG
+COPY nerdctld/nerdctld.socket  /etc/systemd/system/nerdctld.socket
+COPY nerdctld/nerdctld.service  /etc/systemd/system/nerdctld.service
+COPY auto-pause-${TARGETARCH} /bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -177,7 +160,7 @@ RUN install -m 0755 -d /etc/apt/keyrings \
 RUN sed -i '/^\[Service\]/a LimitNOFILE=1048576' /lib/systemd/system/containerd.service
 
 # install buildkit
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
  && echo "Installing buildkit ..." \
     && addgroup --system buildkit \
     && export BUILDKIT_BASE_URL="https://github.com/moby/buildkit/releases/download/${BUILDKIT_VERSION}" \
@@ -210,30 +193,25 @@ RUN export ARCH=$(dpkg --print-architecture) && \
     case "$ARCH" in \
       amd64) CRICTL_ARCH="amd64" ;; \
       arm64) CRICTL_ARCH="arm64" ;; \
-      armhf) CRICTL_ARCH="armhf" ;; \
       ppc64el) CRICTL_ARCH="ppc64le" ;; \
       s390x) CRICTL_ARCH="s390x" ;; \
       *) echo "Unsupported architecture for crictl: $ARCH" && exit 1 ;; \
     esac && \
-    if [ "$CRICTL_ARCH" != "armhf" ]; then \
-      curl -fsSL --retry 5 --output /tmp/crictl.tgz "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${CRICTL_ARCH}.tar.gz" && \
-      tar -C /usr/local/bin -xzvf /tmp/crictl.tgz && \
-      rm -f /tmp/crictl.tgz && \
-      chmod +x /usr/local/bin/crictl && \
-      if [ -f /usr/local/bin/critest ]; then chmod +x /usr/local/bin/critest; fi; \
-    else \
-      echo "Skipping crictl install for armhf: No asset available in v1.34.0"; \
-    fi   
+    curl -fsSL --retry 5 --output /tmp/crictl.tgz "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${CRICTL_ARCH}.tar.gz" && \
+    tar -C /usr/local/bin -xzvf /tmp/crictl.tgz && \
+    rm -f /tmp/crictl.tgz && \
+    chmod +x /usr/local/bin/crictl && \
+    if [ -f /usr/local/bin/critest ]; then chmod +x /usr/local/bin/critest; fi
 # install containernetworking-plugins
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') && \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     curl -LO "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" && \
     mkdir -p /opt/cni/bin && \
     tar -xf "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" -C /opt/cni/bin && \
     rm "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz"
 
 # install cri-o from the OBS repositories
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    if [ "$ARCH" != "ppc64le" ]; then \
         mkdir -p /etc/apt/sources.list.d /etc/apt/trusted.gpg.d && \
         echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/ /' \
             > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list && \
@@ -260,21 +238,21 @@ ARG VERSION_JSON
 RUN echo "${VERSION_JSON}" > /version.json
 
 # automount service
-COPY deploy/kicbase/automount/minikube-automount /usr/sbin/minikube-automount
-COPY deploy/kicbase/automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
+COPY automount/minikube-automount /usr/sbin/minikube-automount
+COPY automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
 RUN ln -fs /usr/lib/systemd/system/minikube-automount.service \
     /etc/systemd/system/multi-user.target.wants/minikube-automount.service
 
 # scheduled stop service
-COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
-COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
+COPY scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
+COPY scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
 RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
 # disable non-docker runtimes by default (since cri-dockerd is default in minikube)
 RUN systemctl disable containerd
 # disable crio for archs that support it
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then systemctl disable crio && rm -f /etc/crictl.yaml; fi
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    if [ "$ARCH" != "ppc64le" ]; then systemctl disable crio && rm -f /etc/crictl.yaml; fi
 # enable podman socket on archs that support it
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then systemctl enable podman.socket; fi
 # enable docker which is default

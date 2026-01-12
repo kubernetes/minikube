@@ -19,12 +19,12 @@ package cmd
 import (
 	"os"
 
-	"github.com/docker/machine/libmachine/state"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"

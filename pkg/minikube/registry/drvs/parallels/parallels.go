@@ -22,8 +22,9 @@ import (
 	"fmt"
 	"os/exec"
 
-	parallels "github.com/Parallels/docker-machine-parallels/v2"
-	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+
+	"k8s.io/minikube/pkg/drivers/parallels"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -38,7 +39,7 @@ func init() {
 		Config:   configure,
 		Status:   status,
 		Default:  true,
-		Priority: registry.Default,
+		Priority: registry.Deprecated,
 		Init:     func(_ *run.CommandOptions) drivers.Driver { return parallels.NewDriver("", "") },
 	})
 	if err != nil {

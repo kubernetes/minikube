@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/drivers/ssh"
 	"k8s.io/minikube/pkg/minikube/config"

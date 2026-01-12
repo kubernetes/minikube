@@ -28,12 +28,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util/retry"

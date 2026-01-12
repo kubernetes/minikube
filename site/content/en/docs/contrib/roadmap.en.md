@@ -22,7 +22,7 @@ Please send a PR to suggest any improvements to it.
 
 ## (#3) Docker
 
-- [ ] Remove the "docker" container runtime
+- [ ] Change the default container runtime from "docker" to "containerd"
 
 ## (#4) Podman
 

@@ -26,9 +26,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/state"
 )
 
 type VBoxManagerMock struct {

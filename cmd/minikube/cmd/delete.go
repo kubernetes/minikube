@@ -26,11 +26,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/libmachine/mcnerror"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
@@ -38,6 +37,7 @@ import (
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"

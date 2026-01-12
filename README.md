@@ -23,7 +23,6 @@ minikube runs the latest stable release of Kubernetes, with support for standard
 * Multi-cluster - using `minikube start -p <name>`
 * [NodePorts](https://minikube.sigs.k8s.io/docs/handbook/accessing/#nodeport-access) - using `minikube service`
 * [Persistent Volumes](https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/)
-* [Ingress](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/)
 * [Dashboard](https://minikube.sigs.k8s.io/docs/handbook/dashboard/) - `minikube dashboard`
 * [Container runtimes](https://minikube.sigs.k8s.io/docs/handbook/config/#runtime-configuration) - `minikube start --container-runtime`
 * [Configure apiserver and kubelet options](https://minikube.sigs.k8s.io/docs/handbook/config/#modifying-kubernetes-defaults) via command-line flags

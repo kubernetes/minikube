@@ -26,7 +26,6 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
     "Linux/ARM64",
     "Linux/ppc64",
     "Linux/S390x",
-    "Linux/ARMv7",
     "macOS/x86-64",
     "macOS/ARM64",
     "Windows/x86-64"
@@ -66,7 +65,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux" name="Architecture" %}}
-{{% quiz_button option="x86-64" %}} {{% quiz_button option="ARM64" %}} {{% quiz_button option="ARMv7" %}} {{% quiz_button option="ppc64" %}} {{% quiz_button option="S390x" %}}
+{{% quiz_button option="x86-64" %}} {{% quiz_button option="ARM64" %}} {{% quiz_button option="ppc64" %}} {{% quiz_button option="S390x" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/x86-64" name="Release type" %}}
@@ -114,18 +113,6 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/S390x/Beta" name="Installer type" %}}
-{{% quiz_button option="Binary download" %}} {{% quiz_button option="Debian package" %}} {{% quiz_button option="RPM package" %}}
-{{% /quiz_row %}}
-
-{{% quiz_row base="/Linux/ARMv7" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
-{{% /quiz_row %}}
-
-{{% quiz_row base="/Linux/ARMv7/Stable" name="Installer type" %}}
-{{% quiz_button option="Binary download" %}} {{% quiz_button option="Debian package" %}} {{% quiz_button option="RPM package" %}}
-{{% /quiz_row %}}
-
-{{% quiz_row base="/Linux/ARMv7/Beta" name="Installer type" %}}
 {{% quiz_button option="Binary download" %}} {{% quiz_button option="Debian package" %}} {{% quiz_button option="RPM package" %}}
 {{% /quiz_row %}}
 
@@ -350,51 +337,6 @@ sudo rpm -Uvh minikube-latest.s390x.rpm
 r=https://api.github.com/repos/kubernetes/minikube/releases
 u=$(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-.*.s390x.rpm' | head -n1)
 curl -L $u > minikube-beta.s390x.rpm && sudo rpm -Uvh minikube-beta.s390x.rpm
-```
-{{% /quiz_instruction %}}
-
-{{% quiz_instruction id="/Linux/ARMv7/Stable/Binary download" %}}
-```shell
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-arm
-sudo install minikube-linux-arm /usr/local/bin/minikube && rm minikube-linux-arm
-```
-{{% /quiz_instruction %}}
-
-{{% quiz_instruction id="/Linux/ARMv7/Beta/Binary download" %}}
-```shell
-r=https://api.github.com/repos/kubernetes/minikube/releases
-curl -LO $(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-linux-arm' | head -n1)
-sudo install minikube-linux-arm /usr/local/bin/minikube && rm minikube-linux-arm
-```
-{{% /quiz_instruction %}}
-
-{{% quiz_instruction id="/Linux/ARMv7/Stable/Debian package" %}}
-```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_armhf.deb
-sudo dpkg -i minikube_latest_armhf.deb
-```
-{{% /quiz_instruction %}}
-
-{{% quiz_instruction id="/Linux/ARMv7/Beta/Debian package" %}}
-```shell
-r=https://api.github.com/repos/kubernetes/minikube/releases
-u=$(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube_.*_armhf.deb' | head -n1)
-curl -L $u > minikube_beta_armhf.deb && sudo dpkg -i minikube_beta_armhf.deb
-```
-{{% /quiz_instruction %}}
-
-{{% quiz_instruction id="/Linux/ARMv7/Stable/RPM package" %}}
-```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.armv7hl.rpm
-sudo rpm -Uvh minikube-latest.armv7hl.rpm
-```
-{{% /quiz_instruction %}}
-
-{{% quiz_instruction id="/Linux/ARMv7/Beta/RPM package" %}}
-```shell
-r=https://api.github.com/repos/kubernetes/minikube/releases
-u=$(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-.*.armv7hl.rpm' | head -n1)
-curl -L $u > minikube-beta.armv7hl.rpm && sudo rpm -Uvh minikube-beta.armv7hl.rpm
 ```
 {{% /quiz_instruction %}}
 

@@ -2,14 +2,13 @@
 options:
   substitution_option: ALLOW_LOOSE
 steps:
-  - name: gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20250513-9264efb079
-    entrypoint: make
+  - name: gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:latest
     env:
-      - DOCKER_CLI_EXPERIMENTAL=enabled
       - _GIT_TAG=$_GIT_TAG
       - _PULL_BASE_REF=$_PULL_BASE_REF
     args:
-      - push-kubernetes-bootcamp
+      - make
+      - push-kubernetes-bootcamp-image-prow
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
   # can be used as a substitution

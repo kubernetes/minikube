@@ -19,9 +19,9 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/ssh"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"

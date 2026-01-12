@@ -26,12 +26,12 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"

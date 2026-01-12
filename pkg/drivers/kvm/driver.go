@@ -19,8 +19,8 @@ limitations under the License.
 package kvm
 
 import (
-	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 )
 
 const (

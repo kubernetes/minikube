@@ -234,9 +234,6 @@ func GHKicbaseTarballToCache(kicBaseVersion string) (string, error) {
 	fileLock := f + ".lock"
 
 	kicbaseArch := runtime.GOARCH
-	if kicbaseArch == "arm" {
-		kicbaseArch = "armv7"
-	}
 
 	releaser, err := lockDownload(fileLock)
 	if err != nil {

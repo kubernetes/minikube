@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-github/v80/github"
+	"github.com/google/go-github/v81/github"
 
 	"k8s.io/klog/v2"
 )

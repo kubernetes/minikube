@@ -23,11 +23,11 @@ import (
 	"os/exec"
 	"regexp"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 )

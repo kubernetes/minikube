@@ -27,9 +27,9 @@ import (
 
 	dockerref "github.com/distribution/reference"
 
-	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
