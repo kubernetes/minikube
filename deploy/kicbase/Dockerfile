@@ -133,16 +133,14 @@ PasswordAuthentication no
 EOF
 
 # Install nerdctl and nerdctld
-RUN export ARCH=$(dpkg --print-architecture) \
-    && if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ]; then \
-        echo "Installing nerdctl and nerdctld ..." && \
-        curl -L --retry 5 --output /tmp/nerdctl.tgz "https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VERSION}/nerdctl-${NERDCTL_VERSION}-linux-$ARCH.tar.gz" &&\
-        tar -C /usr/local/bin -xzvf /tmp/nerdctl.tgz &&\
-        curl -L --retry 5 --output /tmp/nerdctld.tgz "https://github.com/afbjorklund/nerdctld/releases/download/v${NERDCTLD_VERSION}/nerdctld-${NERDCTLD_VERSION}-linux-$ARCH.tar.gz" &&\
-        tar -C /usr/local/bin -xzvf /tmp/nerdctld.tgz &&\
-        chmod 755 /usr/local/bin/nerdctl &&\
-        chmod 755 /usr/local/bin/nerdctld; \
-    fi
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
+    echo "Installing nerdctl and nerdctld ..." &&\
+    curl -L --retry 5 --output /tmp/nerdctl.tgz "https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VERSION}/nerdctl-${NERDCTL_VERSION}-linux-$ARCH.tar.gz" &&\
+    tar -C /usr/local/bin -xzvf /tmp/nerdctl.tgz &&\
+    curl -L --retry 5 --output /tmp/nerdctld.tgz "https://github.com/afbjorklund/nerdctld/releases/download/v${NERDCTLD_VERSION}/nerdctld-${NERDCTLD_VERSION}-linux-$ARCH.tar.gz" &&\
+    tar -C /usr/local/bin -xzvf /tmp/nerdctld.tgz &&\
+    chmod 755 /usr/local/bin/nerdctl &&\
+    chmod 755 /usr/local/bin/nerdctld
 
 # install docker
 ## ref: https://docs.docker.com/engine/install/debian/#install-using-the-repository
