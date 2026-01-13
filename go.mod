@@ -3,7 +3,7 @@ module k8s.io/minikube
 go 1.25.0
 
 require (
-	cloud.google.com/go/storage v1.58.0
+	cloud.google.com/go/storage v1.59.0
 	github.com/Delta456/box-cli-maker/v2 v2.3.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.30.0
 	github.com/VividCortex/godaemon v1.0.0
@@ -69,11 +69,11 @@ require (
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.46.0
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
-	golang.org/x/mod v0.31.0
+	golang.org/x/mod v0.32.0
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/sys v0.40.0
-	golang.org/x/term v0.38.0
+	golang.org/x/term v0.39.0
 	golang.org/x/text v0.33.0
 	google.golang.org/api v0.259.0
 	gopkg.in/yaml.v2 v2.4.0
