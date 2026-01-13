@@ -9,6 +9,10 @@ updates:
       k8s-dependencies:
         patterns:
           - "k8s.io/*"
+      golang-org:
+        patterns:
+          - "golang.org/*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
