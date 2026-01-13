@@ -65,7 +65,10 @@ setup-prow-gcp-ssh-keys: # set up ssh keys for gcloud cli. These env vars are se
 	mkdir -p -m 0700 ~/.ssh
 	cp -f "${GCE_SSH_PRIVATE_KEY_FILE}" ~/.ssh/google_compute_engine
 	cp -f "${GCE_SSH_PUBLIC_KEY_FILE}" ~/.ssh/google_compute_engine.pub
-	
+
+# ----------------------------------------------------------------
+# Bellow are the image push targets for prow
+# ----------------------------------------------------------------	
 .PHONY: push-kubernetes-bootcamp-image-prow
 push-kubernetes-bootcamp-image-prow:
 	docker buildx build --push --platform  linux/amd64,linux/arm64 \
@@ -76,4 +79,9 @@ push-kubernetes-bootcamp-image-prow:
 push-gvisor-image-prow:
 	docker buildx build --push --platform  linux/amd64,linux/arm64 \
 		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/gvisor:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/gvisor:latest -f deploy/images/gvisor/Dockerfile .
+
+.PHONY: push-kube-registry-proxy-image-prow
+push-kube-registry-proxy-image-prow:
+	docker buildx build --push --platform  linux/amd64,linux/arm64 \
+		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kube-registry-proxy:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kube-registry-proxy:latest -f deploy/images/kube-registry-proxy/Dockerfile .
 
