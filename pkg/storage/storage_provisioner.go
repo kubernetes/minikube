@@ -18,7 +18,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path"
 
@@ -31,7 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/sig-storage-lib-external-provisioner/v6/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/v13/controller"
 )
 
 const provisionerName = "k8s.io/minikube-hostpath"
@@ -123,20 +122,13 @@ func StartStorageProvisioner(pvDir string) error {
 		klog.Fatalf("Failed to create client: %v", err)
 	}
 
-	// The controller needs to know what the server version is because out-of-tree
-	// provisioners aren't officially supported until 1.5
-	serverVersion, err := clientset.Discovery().ServerVersion()
-	if err != nil {
-		return fmt.Errorf("error getting server version: %v", err)
-	}
-
 	// Create the provisioner: it implements the Provisioner interface expected by
 	// the controller
 	hostPathProvisioner := NewHostPathProvisioner(pvDir)
 
 	// Start the provision controller which will dynamically provision hostPath
 	// PVs
-	pc := controller.NewProvisionController(clientset, provisionerName, hostPathProvisioner, serverVersion.GitVersion)
+	pc := controller.NewProvisionController(context.Background(), clientset, provisionerName, hostPathProvisioner)
 
 	klog.Info("Storage provisioner initialized, now starting service!")
 	pc.Run(context.Background())
