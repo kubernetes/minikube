@@ -98,8 +98,8 @@ metadata:
   labels:
     addonmanager.kubernetes.io/mode: Reconcile
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: DaemonSet
 metadata:
   name: storage-provisioner
   namespace: kube-system
@@ -107,23 +107,33 @@ metadata:
     integration-test: storage-provisioner
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
-  serviceAccountName: storage-provisioner
-  hostNetwork: true
-  containers:
-  - name: storage-provisioner
-    image: {{.CustomRegistries.StorageProvisioner  | default .ImageRepository | default .Registries.StorageProvisioner }}{{.Images.StorageProvisioner}}
-    env:
-    - name: NODE_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: spec.nodeName
-    command: ["/storage-provisioner"]
-    imagePullPolicy: IfNotPresent
-    volumeMounts:
-    - mountPath: /tmp
-      name: tmp
-  volumes:
-  - name: tmp
-    hostPath:
-      path: /tmp
-      type: Directory
+  selector:
+    matchLabels:
+      integration-test: storage-provisioner
+      addonmanager.kubernetes.io/mode: Reconcile
+  template:
+    metadata:
+      labels:
+        integration-test: storage-provisioner
+        addonmanager.kubernetes.io/mode: Reconcile
+    spec:
+      serviceAccountName: storage-provisioner
+      hostNetwork: true
+      containers:
+      - name: storage-provisioner
+        image: {{.CustomRegistries.StorageProvisioner  | default .ImageRepository | default .Registries.StorageProvisioner }}{{.Images.StorageProvisioner}}
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        command: ["/storage-provisioner"]
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+      volumes:
+      - name: tmp
+        hostPath:
+          path: /tmp
+          type: Directory

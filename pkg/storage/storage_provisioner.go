@@ -64,6 +64,11 @@ var _ controller.Provisioner = &hostPathProvisioner{}
 
 // Provision creates a storage asset and returns a PV object representing it.
 func (p *hostPathProvisioner) Provision(_ context.Context, options controller.ProvisionOptions) (*core.PersistentVolume, controller.ProvisioningState, error) {
+	selectedNode := options.PVC.Annotations["volume.kubernetes.io/selected-node"]
+	if selectedNode != "" && selectedNode != p.nodeName {
+		return nil, controller.ProvisioningFinished, &controller.IgnoredError{Reason: "pvc selected node does not match"}
+	}
+
 	hostPath := path.Join(p.pvDir, options.PVC.Namespace, options.PVC.Name)
 	klog.Infof("Provisioning volume %v to %s", options.PVC.Name, hostPath)
 	if err := os.MkdirAll(hostPath, 0777); err != nil {
@@ -154,7 +159,8 @@ func StartStorageProvisioner(pvDir string) error {
 
 	// Start the provision controller which will dynamically provision hostPath
 	// PVs
-	pc := controller.NewProvisionController(context.Background(), clientset, provisionerName, hostPathProvisioner)
+	// LeaderElection is disabled because we are running as a DaemonSet
+	pc := controller.NewProvisionController(context.Background(), clientset, provisionerName, hostPathProvisioner, controller.LeaderElection(false))
 
 	klog.Info("Storage provisioner initialized, now starting service!")
 	pc.Run(context.Background())
