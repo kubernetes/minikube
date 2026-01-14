@@ -115,7 +115,7 @@ AUTOPAUSE_HOOK_TAG ?= v0.0.5
 
 # storage provisioner tag to push changes to
 # NOTE: you will need to bump the PreloadVersion if you change this
-STORAGE_PROVISIONER_TAG ?= v5
+STORAGE_PROVISIONER_TAG ?= v6.0.0
 
 STORAGE_PROVISIONER_MANIFEST ?= $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
 STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
@@ -711,15 +711,14 @@ ALL_ARCH = amd64 arm arm64 ppc64le s390x
 IMAGE = $(REGISTRY)/storage-provisioner
 TAG = $(STORAGE_PROVISIONER_TAG)
 
+storage-provisioner-cross: $(addprefix out/storage-provisioner-,$(ALL_ARCH))
+
 .PHONY: push-storage-provisioner-manifest
-push-storage-provisioner-manifest: $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~storage\-provisioner\-image\-&~g") ## Push multi-arch storage-provisioner image
+push-storage-provisioner-manifest: docker-multi-arch-build storage-provisioner-cross ## Push multi-arch storage-provisioner image
 ifndef CIBUILD
 	docker login gcr.io/k8s-minikube
 endif
-	set -x; for arch in $(ALL_ARCH); do docker push ${IMAGE}-$${arch}:${TAG}; done
-	docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	set -x; for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
-	docker manifest push $(STORAGE_PROVISIONER_MANIFEST)
+	docker buildx build --platform linux/amd64,linux/arm,linux/arm64,linux/ppc64le,linux/s390x -t $(IMAGE):$(TAG) --push -f deploy/storage-provisioner/Dockerfile .
 
 .PHONY: push-docker
 push-docker: # Push docker image base on to IMAGE variable (used internally by other targets)
