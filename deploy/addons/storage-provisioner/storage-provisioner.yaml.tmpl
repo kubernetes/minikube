@@ -101,6 +101,11 @@ spec:
   containers:
   - name: storage-provisioner
     image: {{.CustomRegistries.StorageProvisioner  | default .ImageRepository | default .Registries.StorageProvisioner }}{{.Images.StorageProvisioner}}
+    env:
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
     command: ["/storage-provisioner"]
     imagePullPolicy: IfNotPresent
     volumeMounts:

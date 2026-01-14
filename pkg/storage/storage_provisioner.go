@@ -42,13 +42,21 @@ type hostPathProvisioner struct {
 	// Identity of this hostPathProvisioner, generated. Used to identify "this"
 	// provisioner's PVs.
 	identity types.UID
+
+	// The node where the provisioner is running
+	nodeName string
 }
 
 // NewHostPathProvisioner creates a new Provisioner using host paths
 func NewHostPathProvisioner(pvDir string) controller.Provisioner {
+	nodeName := os.Getenv("NODE_NAME")
+	if nodeName == "" {
+		klog.Warningf("NODE_NAME environment variable not set, node affinity for PVs will not be set")
+	}
 	return &hostPathProvisioner{
 		pvDir:    pvDir,
 		identity: uuid.NewUUID(),
+		nodeName: nodeName,
 	}
 }
 
@@ -57,7 +65,7 @@ var _ controller.Provisioner = &hostPathProvisioner{}
 // Provision creates a storage asset and returns a PV object representing it.
 func (p *hostPathProvisioner) Provision(_ context.Context, options controller.ProvisionOptions) (*core.PersistentVolume, controller.ProvisioningState, error) {
 	hostPath := path.Join(p.pvDir, options.PVC.Namespace, options.PVC.Name)
-	klog.Infof("Provisioning volume %v to %s", options, hostPath)
+	klog.Infof("Provisioning volume %v to %s", options.PVC.Name, hostPath)
 	if err := os.MkdirAll(hostPath, 0777); err != nil {
 		return nil, controller.ProvisioningFinished, err
 	}
@@ -86,6 +94,24 @@ func (p *hostPathProvisioner) Provision(_ context.Context, options controller.Pr
 				},
 			},
 		},
+	}
+
+	if p.nodeName != "" {
+		pv.Spec.NodeAffinity = &core.VolumeNodeAffinity{
+			Required: &core.NodeSelector{
+				NodeSelectorTerms: []core.NodeSelectorTerm{
+					{
+						MatchExpressions: []core.NodeSelectorRequirement{
+							{
+								Key:      "kubernetes.io/hostname",
+								Operator: core.NodeSelectorOpIn,
+								Values:   []string{p.nodeName},
+							},
+						},
+					},
+				},
+			},
+		}
 	}
 
 	return pv, controller.ProvisioningFinished, nil
