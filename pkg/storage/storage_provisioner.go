@@ -53,9 +53,17 @@ func NewHostPathProvisioner(pvDir string) controller.Provisioner {
 	if nodeName == "" {
 		klog.Warningf("NODE_NAME environment variable not set, node affinity for PVs will not be set")
 	}
+	// We use a deterministic identity (based on node name) instead of a random UUID.
+	// This is critical for DaemonSet deployments: if the provisioner restarts (e.g. update, crash),
+	// it must still recognize the PVs it created previously on this node to be able to delete them.
+	// A random UUID would cause "orphaned" PVs that the new instance refuses to delete.
+	identity := types.UID(uuid.NewUUID())
+	if nodeName != "" {
+		identity = types.UID(provisionerName + "-" + nodeName)
+	}
 	return &hostPathProvisioner{
 		pvDir:    pvDir,
-		identity: uuid.NewUUID(),
+		identity: identity,
 		nodeName: nodeName,
 	}
 }
