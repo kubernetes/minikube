@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -601,7 +602,7 @@ func validatePodsPingHost(ctx context.Context, t *testing.T, profile string) {
 func validateStorageProvisionerNodeAffinity(ctx context.Context, t *testing.T, profile string) {
 	// 1. Create a PVC
 	pvcName := "node-affinity-pvc"
-	
+
 	// Read PVC manifest from file
 	pvcBytes, err := os.ReadFile("testdata/node-affinity-pvc.yaml")
 	if err != nil {
@@ -700,4 +701,3 @@ func validateStorageProvisionerNodeAffinity(ctx context.Context, t *testing.T, p
 
 	t.Logf("Found correct NodeAffinity: %s", val)
 }
-```
