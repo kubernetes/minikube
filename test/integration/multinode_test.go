@@ -604,7 +604,9 @@ spec:
       storage: 1Ki
 `, pvcName)
 
-	if _, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "-"), strings.NewReader(pvcYaml)); err != nil {
+	cmd := exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "-")
+	cmd.Stdin = strings.NewReader(pvcYaml)
+	if _, err := Run(t, cmd); err != nil {
 		t.Fatalf("failed to create PVC: %v", err)
 	}
 	defer func() {
