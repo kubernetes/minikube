@@ -62,6 +62,7 @@ func TestMultiNode(t *testing.T) {
 			validator validatorFunc
 		}{
 			{"FreshStart2Nodes", validateMultiNodeStart},
+			{"StorageProvisionerNodeAffinity", validateStorageProvisionerNodeAffinity},
 			{"DeployApp2Nodes", validateDeployAppToMultiNode},
 			{"PingHostFrom2Pods", validatePodsPingHost},
 			{"AddNode", validateAddNodeToMultiNode},
@@ -584,4 +585,75 @@ func validatePodsPingHost(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("Failed to ping host (%s) from pod (%s): %v", hostIP, name, err)
 		}
 	}
+}
+
+// validateStorageProvisionerNodeAffinity verifies that the storage provisioner sets NodeAffinity on PVs
+func validateStorageProvisionerNodeAffinity(ctx context.Context, t *testing.T, profile string) {
+	// 1. Create a PVC
+	pvcName := "node-affinity-pvc"
+	pvcYaml := fmt.Sprintf(`
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: %s
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Ki
+`, pvcName)
+
+	if _, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "-"), strings.NewReader(pvcYaml)); err != nil {
+		t.Fatalf("failed to create PVC: %v", err)
+	}
+	defer func() {
+		// Cleanup
+		Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "delete", "pvc", pvcName))
+	}()
+
+	// 2. We need to wait for the PV to be created.
+	// Since we are using standard storage class (minikube-hostpath), it might be immediate or wait for first consumer.
+	// minikube-hostpath is usually 'Immediate'.
+	var pvName string
+	getPVName := func() error {
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pvc", pvcName, "-o", "jsonpath={.spec.volumeName}"))
+		if err != nil {
+			return err
+		}
+		if rr.Stdout.String() == "" {
+			return fmt.Errorf("pvc %s is not bound yet", pvcName)
+		}
+		pvName = rr.Stdout.String()
+		return nil
+	}
+
+	if err := retry.Expo(getPVName, 1*time.Second, 60*time.Second); err != nil {
+		t.Fatalf("failed to get PV name for PVC %s: %v", pvcName, err)
+	}
+
+	// 3. Get the PV and check NodeAffinity
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pv", pvName, "-o", "json"))
+	if err != nil {
+		t.Fatalf("failed to get PV %s: %v", pvName, err)
+	}
+
+	var pv map[string]interface{}
+	if err := json.Unmarshal(rr.Stdout.Bytes(), &pv); err != nil {
+		t.Fatalf("failed to unmarshal PV json: %v", err)
+	}
+
+	// Navigate to spec.nodeAffinity
+	spec, ok := pv["spec"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("pv spec is not a map")
+	}
+
+	nodeAffinity, ok := spec["nodeAffinity"]
+	if !ok || nodeAffinity == nil {
+		// THIS IS THE FAILURE CONDITION BEFORE FIX
+		t.Fatalf("PV %s does not have nodeAffinity set. This causes split-brain issues in multi-node clusters.", pvName)
+	}
+
+	t.Logf("Found NodeAffinity: %v", nodeAffinity)
 }
