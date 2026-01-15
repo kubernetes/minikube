@@ -63,7 +63,7 @@ func Exists(pid int, executable string) (bool, error) {
 	}
 
 	// Slow path if pid exist, depending on the platform. On windows and darwin
-	// this fetch all processes from the krenel and find a process with pid. On
+	// this fetch all processes from the kernel and find a process with pid. On
 	// linux this reads /proc/pid/stat
 	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
