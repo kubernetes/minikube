@@ -29,7 +29,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang-collections/collections/stack"
 	"github.com/pkg/errors"
 )
 
@@ -65,7 +64,7 @@ type state struct {
 	funcs map[funcType]struct{}
 
 	// A stack representation of funcs for easy iteration
-	fs *stack.Stack
+	fs []funcType
 
 	// The list of translatable strings, in map form for easy json marhsalling
 	translations map[string]interface{}
@@ -91,7 +90,7 @@ type funcType struct {
 // newExtractor initializes state for extraction
 func newExtractor(functionsToCheck []string) (*state, error) {
 	funcs := make(map[funcType]struct{})
-	fs := stack.New()
+	fs := []funcType{}
 
 	for _, t := range functionsToCheck {
 		// Functions must be of the form "package.function"
@@ -104,7 +103,7 @@ func newExtractor(functionsToCheck []string) (*state, error) {
 			name: t2[1],
 		}
 		funcs[f] = struct{}{}
-		fs.Push(f)
+		fs = append(fs, f)
 	}
 
 	return &state{
@@ -131,8 +130,11 @@ func TranslatableStrings(paths []string, functions []string, output string) erro
 	}
 
 	fmt.Println("Compiling translation strings...")
-	for e.fs.Len() > 0 {
-		f := e.fs.Pop().(funcType)
+	for len(e.fs) > 0 {
+		// Pop
+		f := e.fs[len(e.fs)-1]
+		e.fs = e.fs[:len(e.fs)-1]
+
 		e.currentFunc = f
 		for _, root := range paths {
 			err := filepath.Walk(root, func(path string, _ os.FileInfo, _ error) error {
@@ -522,7 +524,7 @@ func writeStringsToFiles(e *state, output string) error {
 func addParentFuncToList(e *state) {
 	if _, ok := e.funcs[e.parentFunc]; !ok {
 		e.funcs[e.parentFunc] = struct{}{}
-		e.fs.Push(e.parentFunc)
+		e.fs = append(e.fs, e.parentFunc)
 	}
 }
 
