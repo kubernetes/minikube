@@ -93,7 +93,11 @@ func pruneFile(path string, validKeys map[string]interface{}) (PruneResult, erro
 		if err != nil {
 			return PruneResult{}, err
 		}
-		if err := os.WriteFile(path, append(output, '\n'), 0644); err != nil {
+		info, err := os.Stat(path)
+		if err != nil {
+			return PruneResult{}, err
+		}
+		if err := os.WriteFile(path, append(output, '\n'), info.Mode()); err != nil {
 			return PruneResult{}, err
 		}
 	}
