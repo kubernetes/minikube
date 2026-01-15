@@ -67,7 +67,7 @@ type state struct {
 	// A stack representation of funcs for easy iteration
 	fs []funcType
 
-	// The list of translatable strings, in map form for easy json marhsalling
+	// The list of translatable strings, in map form for easy json marshalling
 	translations map[string]interface{}
 
 	// The function call we're currently checking for
