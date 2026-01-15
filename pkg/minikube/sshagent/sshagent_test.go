@@ -17,7 +17,14 @@ limitations under the License.
 package sshagent
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"testing"
+	"time"
+
+	"k8s.io/minikube/pkg/minikube/config"
 )
 
 // TestParseOutput verifies that the ssh-agent output parsing logic correctly extracts
@@ -69,6 +76,101 @@ func TestParseOutput(t *testing.T) {
 				if got.agentPID != tt.wantPID {
 					t.Errorf("parseOutput() gotPID = %v, want %v", got.agentPID, tt.wantPID)
 				}
+			}
+		})
+	}
+}
+
+
+// TestIsRunning verifies that isRunning correctly identifies the ssh-agent process
+// using the gopsutil library. It checks both positive (process running and named correctly)
+// and negative (wrong process, non-existent PID) cases.
+func TestIsRunning(t *testing.T) {
+	// 1. Prepare a fake binary that waits for a signal
+	var waitForSig = []byte(`
+package main
+
+import (
+	"os"
+	"os/signal"
+	"syscall"
+)
+
+func main() {
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGTERM)
+	<-ch
+}
+`)
+	td := t.TempDir()
+	srcFile := filepath.Join(td, "main.go")
+	if err := os.WriteFile(srcFile, waitForSig, 0o600); err != nil {
+		t.Fatalf("failed to write source: %v", err)
+	}
+
+	// 2. Helper to build binaries
+	buildBinary := func(name string) string {
+		out := filepath.Join(td, name)
+		if runtime.GOOS == "windows" {
+			out += ".exe"
+		}
+		cmd := exec.Command("go", "build", "-o", out, srcFile)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("failed to build %s: %v\nOutput: %s", name, err, string(out))
+		}
+		return out
+	}
+
+	// 3. Build "fake-ssh-agent" and "other-process"
+	sshAgentBin := buildBinary("fake-ssh-agent")
+	otherBin := buildBinary("other-process")
+
+	// 4. Start processes
+	startProc := func(bin string) *exec.Cmd {
+		cmd := exec.Command(bin)
+		if err := cmd.Start(); err != nil {
+			t.Fatalf("failed to start %s: %v", bin, err)
+		}
+		return cmd
+	}
+
+	agentCmd := startProc(sshAgentBin)
+	otherCmd := startProc(otherBin)
+
+	defer func() {
+		_ = agentCmd.Process.Kill()
+		_ = otherCmd.Process.Kill()
+		_ = agentCmd.Wait()
+		_ = otherCmd.Wait()
+	}()
+
+	// Give them time to start
+	time.Sleep(100 * time.Millisecond)
+
+	tests := []struct {
+		name      string
+		pid       int
+		want      bool
+		wantError bool
+	}{
+		{"ssh-agent running", agentCmd.Process.Pid, true, false},
+		{"wrong process", otherCmd.Process.Pid, false, false},
+		{"pid 0", 0, false, false},
+		{"non-existent pid", 999999999, false, false}, // Assuming this PID doesn't exist
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cc := &config.ClusterConfig{
+				SSHAgentPID: tc.pid,
+			}
+			got, err := isRunning(cc)
+			if (err != nil) != tc.wantError {
+				t.Errorf("isRunning() error = %v, wantError %v", err, tc.wantError)
+				return
+			}
+			if got != tc.want {
+				t.Errorf("isRunning() = %v, want %v", got, tc.want)
 			}
 		})
 	}
