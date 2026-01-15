@@ -25,11 +25,11 @@ import (
 // variables to connect to the ssh-agent for key management.
 func TestParseOutput(t *testing.T) {
 	tests := []struct {
-		name      string
-		output    string
-		wantSock  string
-		wantPID   int
-		wantErr   bool
+		name     string
+		output   string
+		wantSock string
+		wantPID  int
+		wantErr  bool
 	}{
 		{
 			name:     "standard output",
