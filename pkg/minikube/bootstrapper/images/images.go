@@ -27,13 +27,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 
 	"k8s.io/minikube/pkg/version"
 )
 
 // Pause returns the image name to pull for a given Kubernetes version
-func Pause(v semver.Version, mirror string) string {
+func Pause(v *semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `PauseVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
@@ -45,7 +45,7 @@ func Pause(v semver.Version, mirror string) string {
 }
 
 // essentials returns images needed too bootstrap a Kubernetes
-func essentials(mirror string, v semver.Version) []string {
+func essentials(mirror string, v *semver.Version) []string {
 	imgs := []string{
 		// use the same order as: `kubeadm config images list`
 		componentImage("kube-apiserver", v, mirror),
@@ -60,7 +60,7 @@ func essentials(mirror string, v semver.Version) []string {
 }
 
 // componentImage returns a Kubernetes component image to pull
-func componentImage(name string, v semver.Version, mirror string) string {
+func componentImage(name string, v *semver.Version, mirror string) string {
 	return fmt.Sprintf("%s:v%s", path.Join(kubernetesRepo(mirror), name), v)
 }
 
@@ -93,8 +93,8 @@ func tagFromKubeadm(v, name string) (string, error) {
 }
 
 // tagFromLastMinor finds the last matching minor version in the kubeadm images map and uses its image version
-func tagFromLastMinor(v semver.Version, name, lastKnownGood string) string {
-	majorMinor := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
+func tagFromLastMinor(v *semver.Version, name, lastKnownGood string) string {
+	majorMinor := fmt.Sprintf("v%d.%d", v.Major(), v.Minor())
 	var latestMinorVer string
 	for _, existingVer := range constants.ValidKubernetesVersions {
 		if !strings.HasPrefix(existingVer, majorMinor) {
@@ -111,13 +111,13 @@ func tagFromLastMinor(v semver.Version, name, lastKnownGood string) string {
 }
 
 // coreDNS returns the images used for CoreDNS
-func coreDNS(v semver.Version, mirror string) string {
+func coreDNS(v *semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `CoreDNSImageName` and `CoreDNSVersion` in
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 
 	imageName := "coredns/coredns"
-	if semver.MustParseRange("<1.21.0-alpha.1")(v) {
+	if v.LessThan(semver.MustParse("1.21.0-alpha.1")) {
 		imageName = "coredns"
 	}
 	cv := imageVersion(v, imageName, "v1.10.1")
@@ -130,7 +130,7 @@ func coreDNS(v semver.Version, mirror string) string {
 }
 
 // etcd returns the image used for etcd
-func etcd(v semver.Version, mirror string) string {
+func etcd(v *semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `DefaultEtcdVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
@@ -140,7 +140,7 @@ func etcd(v semver.Version, mirror string) string {
 	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), ev)
 }
 
-func imageVersion(v semver.Version, imageName, defaultVersion string) string {
+func imageVersion(v *semver.Version, imageName, defaultVersion string) string {
 	versionString := fmt.Sprintf("v%s", v.String())
 	if ver, ok := constants.KubeadmImages[versionString][imageName]; ok {
 		return ver

@@ -29,7 +29,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -62,7 +62,7 @@ type Containerd struct {
 	Socket            string
 	Runner            CommandRunner
 	ImageRepository   string
-	KubernetesVersion semver.Version
+	KubernetesVersion *semver.Version
 	Init              sysinit.Manager
 	InsecureRegistry  []string
 }
@@ -84,7 +84,7 @@ func parseContainerdVersion(line string) (string, error) {
 	if len(words) >= 4 && words[0] == "containerd" {
 		version := strings.Replace(words[2], "v", "", 1)
 		version = strings.SplitN(version, "~", 2)[0]
-		if _, err := semver.Parse(version); err != nil {
+		if _, err := semver.NewVersion(version); err != nil {
 			parts := strings.SplitN(version, "-", 2)
 			return parts[0], nil
 		}
@@ -130,7 +130,7 @@ func (r *Containerd) Available() error {
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml & /etc/containerd/containerd.conf.d/02-containerd.conf
-func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, cgroupDriver string, insecureRegistry []string, inUserNamespace bool) error {
+func generateContainerdConfig(cr CommandRunner, imageRepository string, kv *semver.Version, cgroupDriver string, insecureRegistry []string, inUserNamespace bool) error {
 	pauseImage := images.Pause(kv, imageRepository)
 	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)sandbox_image = .*$|\1sandbox_image = %q|' %s`, pauseImage, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update sandbox_image")
@@ -182,7 +182,7 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	// note: 'net.ipv4.ip_unprivileged_port_start' sysctl was marked as safe since kubernetes v1.22 (Aug 4, 2021) (ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#feature-9)
 	// note: containerd supports 'enable_unprivileged_ports' option since v1.6.0-beta.3 (Nov 19, 2021) (ref: https://github.com/containerd/containerd/releases/tag/v1.6.0-beta.3; https://github.com/containerd/containerd/pull/6170)
 	// note: minikube bumped containerd version to greater than v1.6.0 on May 19, 2022 (ref: https://github.com/kubernetes/minikube/pull/14152)
-	if kv.GTE(semver.Version{Major: 1, Minor: 22}) {
+	if !kv.LessThan(semver.MustParse("1.22.0")) {
 		// remove any existing 'enable_unprivileged_ports' settings
 		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/^ *enable_unprivileged_ports = .*/d' %s`, containerdConfigFile))); err != nil {
 			return errors.Wrap(err, "removing enable_unprivileged_ports")

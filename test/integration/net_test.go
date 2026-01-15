@@ -28,7 +28,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -222,7 +222,7 @@ func usingCNI() bool {
 	if err != nil {
 		return false
 	}
-	if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
+	if version.GreaterThanEqual(semver.MustParse("1.24.0-alpha.2")) {
 		return true
 	}
 	return false
@@ -280,7 +280,7 @@ func verifyKubeletFlagsOutput(t *testing.T, k8sVersion, kubeletPlugin, out strin
 	if err != nil {
 		t.Errorf("failed to parse kubernetes version %s: %v", k8sVersion, err)
 	}
-	if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
+	if version.GreaterThanEqual(semver.MustParse("1.24.0-alpha.2")) {
 		return
 	}
 	if kubeletPlugin == "" {

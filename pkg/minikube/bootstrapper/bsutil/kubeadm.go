@@ -23,7 +23,7 @@ import (
 	"path"
 	"slices"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
@@ -89,7 +89,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	// container-runtime-endpoint kubelet flag was deprecated but corresponding containerRuntimeEndpoint kubelet config field is "required" but supported only from k8s v1.27
 	// ref: https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/#options
 	// ref: https://github.com/kubernetes/kubernetes/issues/118787
-	if version.GTE(semver.MustParse("1.27.0")) {
+	if !version.LessThan(semver.MustParse("1.27.0")) {
 		runtimeEndpoint := k8s.ExtraOptions.Get("container-runtime-endpoint", Kubelet)
 		if runtimeEndpoint == "" {
 			runtimeEndpoint = r.KubeletOptions()["container-runtime-endpoint"]
@@ -110,7 +110,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 
 	// Disable cgroup v2 requirement for k8s 1.35+ if using cgroupfs
 	// TODO: remove this when minikube supports cgroup v2 for containerd and cri-o #22318
-	if version.GTE(semver.MustParse("1.35.0-alpha.0")) && cgroupDriver != constants.SystemdCgroupDriver {
+	if !version.LessThan(semver.MustParse("1.35.0-alpha.0")) && cgroupDriver != constants.SystemdCgroupDriver {
 		// https://github.com/kubernetes/kubernetes/blob/15673d04e30c711a7bb0f0efe6abf4baead1463b/staging/src/k8s.io/kubelet/config/v1beta1/types.go#L923
 		kubeletConfigOpts["failCgroupV1"] = "false"
 	}
@@ -173,15 +173,15 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 
 	configTmpl := ktmpl.V1Beta1
 	// v1beta2 isn't required until v1.17.
-	if version.GTE(semver.MustParse("1.17.0")) {
+	if !version.LessThan(semver.MustParse("1.17.0")) {
 		configTmpl = ktmpl.V1Beta2
 	}
 	// v1beta3 isn't required until v1.23.
-	if version.GTE(semver.MustParse("1.23.0")) {
+	if !version.LessThan(semver.MustParse("1.23.0")) {
 		configTmpl = ktmpl.V1Beta3
 	}
 	// v1beta4 isn't required until v1.31.
-	if version.GTE(semver.MustParse("1.31.0")) {
+	if !version.LessThan(semver.MustParse("1.31.0")) {
 		// Support v1beta4 kubeadm config
 		// refs:
 		// - https://kubernetes.io/blog/2024/08/23/kubernetes-1-31-kubeadm-v1beta4/
@@ -190,7 +190,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		configTmpl = ktmpl.V1Beta4
 	}
 
-	if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
+	if !version.LessThan(semver.MustParse("1.24.0-alpha.2")) {
 		opts.PrependCriSocketUnix = true
 	}
 
@@ -259,7 +259,7 @@ func HasResolvConfSearchRegression(k8sVersion string) bool {
 		klog.Warningf("was unable to parse Kubernetes version %q: %v", k8sVersion, err)
 		return false
 	}
-	return versionSemver.EQ(semver.Version{Major: 1, Minor: 25})
+	return versionSemver.Equal(semver.MustParse("1.25.0"))
 }
 
 // kubeletConfigOpts extracts only those kubelet extra options allowed by kubeletConfigParams.

@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
@@ -78,7 +78,7 @@ func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string, last
 }
 
 // maybePrintBetaUpdateText returns true if update text is printed
-func maybePrintBetaUpdateText(betaReleasesURL string, localVersion semver.Version, latestFullVersion semver.Version, lastUpdatePath string, options *run.CommandOptions) bool {
+func maybePrintBetaUpdateText(betaReleasesURL string, localVersion *semver.Version, latestFullVersion *semver.Version, lastUpdatePath string, options *run.CommandOptions) bool {
 	if !shouldCheckURLBetaVersion(lastUpdatePath, options) {
 		return false
 	}
@@ -97,7 +97,7 @@ func maybePrintBetaUpdateText(betaReleasesURL string, localVersion semver.Versio
 	return true
 }
 
-func printUpdateTextCommon(ver semver.Version) {
+func printUpdateTextCommon(ver *semver.Version) {
 	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
 		klog.Errorf("write time failed: %v", err)
 	}
@@ -105,12 +105,12 @@ func printUpdateTextCommon(ver semver.Version) {
 	out.Styled(style.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": ver, "url": url})
 }
 
-func printUpdateText(ver semver.Version) {
+func printUpdateText(ver *semver.Version) {
 	printUpdateTextCommon(ver)
 	out.Styled(style.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'\n")
 }
 
-func printBetaUpdateText(ver semver.Version) {
+func printBetaUpdateText(ver *semver.Version) {
 	printUpdateTextCommon(ver)
 	out.Styled(style.Tip, "To disable beta notices, run: 'minikube config set WantBetaUpdateNotification false'")
 	out.Styled(style.Tip, "To disable update notices in general, run: 'minikube config set WantUpdateNotification false'\n")
@@ -207,12 +207,12 @@ func cloud() string {
 	return "none"
 }
 
-var latestVersionFromURL = func(url string) (semver.Version, error) {
+var latestVersionFromURL = func(url string) (*semver.Version, error) {
 	r, err := AllVersionsFromURL(url)
 	if err != nil {
-		return semver.Version{}, err
+		return nil, err
 	}
-	return semver.Make(strings.TrimPrefix(r.Releases[0].Name, version.VersionPrefix))
+	return semver.NewVersion(strings.TrimPrefix(r.Releases[0].Name, version.VersionPrefix))
 }
 
 // AllVersionsFromURL get all versions from a JSON URL

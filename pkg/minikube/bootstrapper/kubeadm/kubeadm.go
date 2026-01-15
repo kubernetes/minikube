@@ -33,7 +33,7 @@ import (
 
 	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -196,7 +196,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig, options *run.CommandOption
 		"Swap",       // For "none" users who have swap configured
 		"NumCPU",     // For "none" users who have too few CPUs
 	}
-	if ver.GE(semver.MustParse("1.20.0")) {
+	if !ver.LessThan(semver.MustParse("1.20.0")) {
 		ignore = append(ignore,
 			"Mem", // For "none" users who have too little memory
 		)
@@ -861,7 +861,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 	ka := bsutil.KubeadmCmdWithPath(k8s.KubernetesVersion)
 	sp := cr.SocketPath()
 	cmd := fmt.Sprintf("%s reset --cri-socket %s --force", ka, sp)
-	if ver.LT(semver.MustParse("1.11.0")) {
+	if ver.LessThan(semver.MustParse("1.11.0")) {
 		cmd = fmt.Sprintf("%s reset --cri-socket %s", ka, sp)
 	}
 
@@ -967,11 +967,11 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 			// workaround for kube-vip
 			// only applicable for k8s v1.29+ during primary control-plane node's kubeadm init (ie, first boot)
 			// TODO (prezha): remove when fixed upstream - ref: https://github.com/kube-vip/kube-vip/issues/684#issuecomment-1864855405
-			kv, err := semver.ParseTolerant(cfg.KubernetesConfig.KubernetesVersion)
+			kv, err := semver.NewVersion(cfg.KubernetesConfig.KubernetesVersion)
 			if err != nil {
 				return errors.Wrapf(err, "parsing kubernetes version %q", cfg.KubernetesConfig.KubernetesVersion)
 			}
-			workaround := kv.GTE(semver.Version{Major: 1, Minor: 29}) && config.IsPrimaryControlPlane(cfg, n) && len(config.ControlPlanes(cfg)) == 1
+			workaround := kv.GreaterThanEqual(semver.MustParse("1.29.0")) && config.IsPrimaryControlPlane(cfg, n) && len(config.ControlPlanes(cfg)) == 1
 			kubevipCfg, err := kubevip.Configure(cfg, k.c, kubeadmCfg, workaround)
 			if err != nil {
 				klog.Errorf("couldn't generate kube-vip config, this might cause issues (will continue): %v", err)

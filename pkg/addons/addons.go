@@ -28,7 +28,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/libmachine/state"
@@ -140,7 +140,7 @@ kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} |
 		if err != nil {
 			tokenGenerationTip = fmt.Sprintf("%s\nIf Kubernetes Version is <1.24:\n%s\n\nIf Kubernetes Version is >=1.24:\n%s\n", tokenGenerationTip, createSvcAccountToken, getSvcAccountToken)
 		} else {
-			if parsedClusterVersion.GTE(semver.Version{Major: 1, Minor: 24}) {
+			if parsedClusterVersion.GreaterThanEqual(semver.MustParse("1.24.0")) {
 				tokenGenerationTip = fmt.Sprintf("%s\n\n        %s", tokenGenerationTip, createSvcAccountToken)
 			} else {
 				tokenGenerationTip = fmt.Sprintf("%s\n\n        %s", tokenGenerationTip, getSvcAccountToken)
@@ -388,7 +388,7 @@ func supportLegacyIngress(addon *assets.Addon, cc config.ClusterConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
 	}
-	if semver.MustParseRange("<1.19.0")(v) {
+	if v.LessThan(semver.MustParse("1.19.0")) {
 		if addon.Name() == "ingress" {
 			addon.Images = map[string]string{
 				// https://github.com/kubernetes/ingress-nginx/blob/0a2ec01eb4ec0e1b29c4b96eb838a2e7bfe0e9f6/deploy/static/provider/kind/deploy.yaml#L328

@@ -20,7 +20,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 )
 
 // Profile represents a minikube profile
@@ -168,12 +168,12 @@ type VersionedExtraOption struct {
 	// This flag will only be applied to versions before or equal to this version
 	// If it is the default value, it will have no upper bound on versions the
 	// flag is applied to
-	LessThanOrEqual semver.Version
+	LessThanOrEqual *semver.Version
 
 	// The flag will only be applied to versions after or equal to this version
 	// If it is the default value, it will have no lower bound on versions the
 	// flag is applied to
-	GreaterThanOrEqual semver.Version
+	GreaterThanOrEqual *semver.Version
 }
 
 // ScheduledStopConfig contains information around scheduled stop

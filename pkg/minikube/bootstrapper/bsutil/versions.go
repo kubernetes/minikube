@@ -19,17 +19,17 @@ package bsutil
 import (
 	"strings"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/util"
 )
 
 // versionIsBetween checks if a version is between (or including) two given versions
-func versionIsBetween(version, gte, lte semver.Version) bool {
-	if gte.NE(semver.Version{}) && !version.GTE(gte) {
+func versionIsBetween(version, gte, lte *semver.Version) bool {
+	if gte != nil && version.LessThan(gte) {
 		return false
 	}
-	if lte.NE(semver.Version{}) && !version.LTE(lte) {
+	if lte != nil && version.GreaterThan(lte) {
 		return false
 	}
 

@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/juju/mutex/v2"
 	"github.com/pkg/errors"
 
@@ -60,7 +60,7 @@ func InstallOrUpdate(name string, directory string, interactive bool, autoUpdate
 	}
 	// v1.37.0 was the last release that we built hyperkit driver https://github.com/kubernetes/minikube/issues/21940
 	// this will be used till we completely remove hyperkit driver support
-	v, err := semver.Make("1.37.0")
+	v, err := semver.NewVersion("1.37.0")
 	out.WarningT("Hyperkit driver will be removed in the next minikube release, we have other drivers that work on macOS such as docker or qemu, vfkit. Please consider switching to one of them. For more information, please visit: https://minikube.sigs.k8s.io/docs/drivers/hyperkit/")
 	if err != nil {
 		return errors.Wrap(err, "can't parse version")
@@ -142,7 +142,7 @@ func fixDriverPermissions(name string, path string, interactive bool) error {
 }
 
 // validateDriver validates if a driver appears to be up-to-date and installed properly
-func validateDriver(executable string, v semver.Version) (string, error) {
+func validateDriver(executable string, v *semver.Version) (string, error) {
 	klog.Infof("Validating %s, PATH=%s", executable, os.Getenv("PATH"))
 	path, err := exec.LookPath(executable)
 	if err != nil {
@@ -164,13 +164,13 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 		return path, fmt.Errorf("%s: unable to extract version from %q", executable, output)
 	}
 
-	driverVersion, err := semver.Make(ev)
+	driverVersion, err := semver.NewVersion(ev)
 	if err != nil {
 		return path, errors.Wrap(err, "can't parse driver version")
 	}
 	klog.Infof("%s version is %s", path, driverVersion)
 
-	if driverVersion.LT(v) {
+	if driverVersion.LessThan(v) {
 		return path, fmt.Errorf("%s is version %s, want %s", executable, driverVersion, v)
 	}
 	return path, nil

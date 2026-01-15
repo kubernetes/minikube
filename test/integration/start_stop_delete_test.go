@@ -29,7 +29,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -114,7 +114,7 @@ func TestStartStop(t *testing.T) {
 				if err != nil {
 					t.Errorf("failed to parse %s: %v", tc.version, err)
 				}
-				if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
+				if version.GreaterThanEqual(semver.MustParse("1.24.0-alpha.2")) {
 					args := []string{}
 					for _, arg := range startArgs {
 						if arg == "--extra-config=kubelet.network-plugin=cni" {
@@ -382,7 +382,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile, version string
 
 	mirror := ""
 	// Kubernetes versions prior to v1.25 will contain the old registry due to the preload
-	if v, _ := util.ParseKubernetesVersion(version); v.LT(semver.MustParse("1.25.0-alpha.1")) {
+	if v, _ := util.ParseKubernetesVersion(version); v.LessThan(semver.MustParse("1.25.0-alpha.1")) {
 		mirror = "k8s.gcr.io"
 	}
 	wantRaw, err := images.Kubeadm(mirror, version)

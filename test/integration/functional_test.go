@@ -49,7 +49,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util/retry"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/elazarl/goproxy"
 	"github.com/hashicorp/go-retryablehttp"
 	cp "github.com/otiai10/copy"
@@ -2268,7 +2268,7 @@ func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("failed to get version --short: %v", err)
 		}
 
-		_, err = semver.Make(strings.TrimSpace(strings.Trim(rr.Stdout.String(), "v")))
+		_, err = semver.NewVersion(strings.TrimSpace(strings.Trim(rr.Stdout.String(), "v")))
 		if err != nil {
 			t.Errorf("failed to get a valid semver for minikube version --short:%s %v", rr.Output(), err)
 		}

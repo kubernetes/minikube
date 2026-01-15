@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/version"
 )
@@ -78,7 +78,7 @@ registry.k8s.io/coredns/coredns:v1.8.4
 	}
 	for _, tc := range testCases {
 		t.Run(tc.version, func(t *testing.T) {
-			v, err := semver.Make(strings.TrimPrefix(tc.version, "v"))
+			v, err := semver.NewVersion(strings.TrimPrefix(tc.version, "v"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -118,7 +118,7 @@ registry.cn-hangzhou.aliyuncs.com/google_containers/coredns:v1.8.4
 	}
 	for _, tc := range testCases {
 		t.Run(tc.version, func(t *testing.T) {
-			v, err := semver.Make(strings.TrimPrefix(tc.version, "v"))
+			v, err := semver.NewVersion(strings.TrimPrefix(tc.version, "v"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -194,7 +194,7 @@ func TestTagFromLastMinor(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		v, err := semver.Parse(tc.verString)
+		v, err := semver.NewVersion(tc.verString)
 		if err != nil {
 			t.Errorf("failed to parse version to semver: %v", err)
 			continue

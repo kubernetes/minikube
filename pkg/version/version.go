@@ -19,7 +19,7 @@ package version
 import (
 	"strings"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 )
 
 // VersionPrefix is the prefix of the git tag for a version
@@ -53,8 +53,8 @@ func GetISOVersion() string {
 }
 
 // GetSemverVersion returns the current minikube semantic version (semver)
-func GetSemverVersion() (semver.Version, error) {
-	return semver.Make(strings.TrimPrefix(GetVersion(), VersionPrefix))
+func GetSemverVersion() (*semver.Version, error) {
+	return semver.NewVersion(strings.TrimPrefix(GetVersion(), VersionPrefix))
 }
 
 // GetStorageProvisionerVersion returns the storage provisioner version

@@ -24,7 +24,7 @@ import (
 	_ "embed"
 	"text/template"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -70,7 +70,7 @@ func (c Calico) manifest() (assets.CopyableFile, error) {
 		DeploymentImageName:       images.CalicoDeployment(c.cc.KubernetesConfig.ImageRepository),
 		DaemonSetImageName:        images.CalicoDaemonSet(c.cc.KubernetesConfig.ImageRepository),
 		BinaryImageName:           images.CalicoBin(c.cc.KubernetesConfig.ImageRepository),
-		LegacyPodDisruptionBudget: k8sVersion.LT(semver.Version{Major: 1, Minor: 25}),
+		LegacyPodDisruptionBudget: k8sVersion.LessThan(semver.MustParse("1.25.0")),
 	}
 
 	b := bytes.Buffer{}

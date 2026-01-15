@@ -19,15 +19,15 @@ package bsutil
 import (
 	"testing"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 )
 
 func TestVersionIsBetween(t *testing.T) {
 	tests := []struct {
 		description string
-		ver         semver.Version
-		gte         semver.Version
-		lte         semver.Version
+		ver         *semver.Version
+		gte         *semver.Version
+		lte         *semver.Version
 		expected    bool
 	}{
 		{

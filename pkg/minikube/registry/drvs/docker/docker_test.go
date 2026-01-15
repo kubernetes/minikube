@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -60,11 +60,11 @@ func appendVersionVariations(tc []testCase, v []int, reason string) []testCase {
 }
 
 func stringToIntSlice(t *testing.T, s string) []int {
-	sem, err := semver.ParseTolerant(s)
+	sem, err := semver.NewVersion(s)
 	if err != nil {
 		t.Fatalf("failed to parse %s to semver: %v", s, err)
 	}
-	return []int{int(sem.Major), int(sem.Minor), int(sem.Patch)}
+	return []int{int(sem.Major()), int(sem.Minor()), int(sem.Patch())}
 }
 
 func TestCheckDockerEngineVersion(t *testing.T) {

@@ -27,7 +27,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	units "github.com/docker/go-units"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -72,7 +72,7 @@ type Docker struct {
 	Runner            CommandRunner
 	NetworkPlugin     string
 	ImageRepository   string
-	KubernetesVersion semver.Version
+	KubernetesVersion *semver.Version
 	Init              sysinit.Manager
 	UseCRI            bool
 	CRIService        string
@@ -111,7 +111,7 @@ func (r *Docker) SocketPath() string {
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Docker) Available() error {
 	// If Kubernetes version >= 1.24, require both cri-dockerd and dockerd.
-	if r.KubernetesVersion.GTE(semver.Version{Major: 1, Minor: 24}) {
+	if !r.KubernetesVersion.LessThan(semver.MustParse("1.24.0")) {
 		if _, err := exec.LookPath("cri-dockerd"); err != nil {
 			return err
 		}
@@ -768,7 +768,7 @@ func getCriDockerdPath(cr CommandRunner) string {
 	return strings.TrimSuffix(rr.Stdout.String(), "\n")
 }
 
-func generateCRIDockerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, networkPlugin string) error {
+func generateCRIDockerdConfig(cr CommandRunner, imageRepository string, kv *semver.Version, networkPlugin string) error {
 
 	pauseImage := images.Pause(kv, imageRepository)
 	// $ cri-dockerd --version

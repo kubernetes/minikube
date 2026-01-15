@@ -27,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -124,7 +124,7 @@ func TestLatestVersionFromURLCorrect(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	expectedVersion, _ := semver.Make(versionFromURL)
+	expectedVersion, _ := semver.NewVersion(versionFromURL)
 	if latestVersion.Compare(expectedVersion) != 0 {
 		t.Fatalf("Expected latest version from URL to be %s, it was instead %s", expectedVersion, latestVersion)
 	}
@@ -164,7 +164,7 @@ func TestLatestVersionFromURLMalformed(t *testing.T) {
 	}
 }
 
-var mockLatestVersionFromURL = semver.Make
+var mockLatestVersionFromURL = semver.NewVersion
 
 func TestMaybePrintUpdateText(t *testing.T) {
 	latestVersionFromURL = mockLatestVersionFromURL

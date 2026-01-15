@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	units "github.com/docker/go-units"
 	"github.com/pkg/errors"
 )
@@ -106,8 +106,8 @@ func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
 }
 
 // ParseKubernetesVersion parses the Kubernetes version
-func ParseKubernetesVersion(version string) (semver.Version, error) {
-	return semver.Make(version[1:])
+func ParseKubernetesVersion(version string) (*semver.Version, error) {
+	return semver.NewVersion(version)
 }
 
 // RemoveDuplicateStrings takes a string slice and returns a slice without duplicates
