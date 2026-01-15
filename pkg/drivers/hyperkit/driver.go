@@ -31,9 +31,9 @@ import (
 	"time"
 
 	"github.com/johanneswuerbach/nfsexports"
-	ps "github.com/mitchellh/go-ps"
 	hyperkit "github.com/moby/hyperkit/go"
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/v4/process"
 	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/log"
@@ -141,17 +141,19 @@ func pidState(pid int) (state.State, error) {
 	if pid == 0 {
 		return state.Stopped, nil
 	}
-	p, err := ps.FindProcess(pid)
+	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
 		return state.Error, err
 	}
-	if p == nil {
+	name, err := proc.Name()
+	if err != nil {
+		// Process might be gone
 		log.Debugf("hyperkit pid %d missing from process table", pid)
 		return state.Stopped, nil
 	}
 	// hyperkit or com.docker.hyper
-	if !strings.Contains(p.Executable(), "hyper") {
-		log.Debugf("pid %d is stale, and is being used by %s", pid, p.Executable())
+	if !strings.Contains(name, "hyper") {
+		log.Debugf("pid %d is stale, and is being used by %s", pid, name)
 		return state.Stopped, nil
 	}
 	return state.Running, nil
