@@ -81,7 +81,6 @@ func TestParseOutput(t *testing.T) {
 	}
 }
 
-
 // TestIsRunning verifies that isRunning correctly identifies the ssh-agent process
 // using the gopsutil library. It checks both positive (process running and named correctly)
 // and negative (wrong process, non-existent PID) cases.
