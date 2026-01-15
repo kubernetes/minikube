@@ -73,7 +73,7 @@ func NewAPIClient(options *run.CommandOptions, miniHome ...string) (libmachine.A
 		storePath:      storePath,
 		Filestore:      persist.NewFilestore(storePath, certsDir, certsDir),
 		legacyClient:   NewRPCClient(storePath, certsDir),
-		flock:          flock.New(localpath.MakeMiniPath("machine_client.lock")),
+		flock:          flock.New(filepath.Join(storePath, "machine_client.lock")),
 		commandOptions: options,
 	}, nil
 }
@@ -192,39 +192,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"bootstrapping certificates",
 			func() error {
-				// Lock is needed to avoid race condition in parallel Docker-Env test because issue #10107.
-				// CA cert and client cert should be generated atomically, otherwise might cause bad certificate error.
-				timeout := time.Second * 5
-				start := time.Now()
-				var lockErr error
-				// gofrs/flock does not support LockWithTimeout, so we implement it manually with a retry loop.
-				for {
-					var locked bool
-					locked, lockErr = api.flock.TryLock()
-					if lockErr != nil {
-						break
-					}
-					if locked {
-						break
-					}
-					if time.Since(start) > timeout {
-						lockErr = fmt.Errorf("timeout acquiring lock")
-						break
-					}
-					time.Sleep(100 * time.Millisecond) // check 10 times a second
-				}
-
-				if lockErr != nil {
-					return fmt.Errorf("failed to acquire bootstrap client lock: %v", lockErr)
-				}
-				defer func() {
-					lockErr = api.flock.Unlock()
-					if lockErr != nil {
-						klog.Errorf("failed to release bootstrap cert client lock: %v", lockErr.Error())
-					}
-				}()
-				certErr := cert.BootstrapCertificates(h.AuthOptions())
-				return certErr
+				return api.bootstrapCertificatesWithLock(h)
 			},
 		},
 		{
@@ -269,6 +237,42 @@ func (api *LocalClient) Create(h *host.Host) error {
 	}
 
 	return nil
+}
+
+func (api *LocalClient) bootstrapCertificatesWithLock(h *host.Host) error {
+	// Lock is needed to avoid race condition in parallel Docker-Env test because issue #10107.
+	// CA cert and client cert should be generated atomically, otherwise might cause bad certificate error.
+	timeout := time.Second * 5
+	start := time.Now()
+	var lockErr error
+	// gofrs/flock does not support LockWithTimeout, so we implement it manually with a retry loop.
+	for {
+		var locked bool
+		locked, lockErr = api.flock.TryLock()
+		if lockErr != nil {
+			break
+		}
+		if locked {
+			break
+		}
+		if time.Since(start) > timeout {
+			lockErr = fmt.Errorf("timeout acquiring lock")
+			break
+		}
+		time.Sleep(100 * time.Millisecond) // check 10 times a second
+	}
+
+	if lockErr != nil {
+		return fmt.Errorf("failed to acquire bootstrap client lock: %v", lockErr)
+	}
+	defer func() {
+		lockErr = api.flock.Unlock()
+		if lockErr != nil {
+			klog.Errorf("failed to release bootstrap cert client lock: %v", lockErr.Error())
+		}
+	}()
+	certErr := cert.BootstrapCertificates(h.AuthOptions())
+	return certErr
 }
 
 // StartDriver starts the driver
