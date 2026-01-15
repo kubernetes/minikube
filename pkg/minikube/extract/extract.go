@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package extract provides functionality to extract translatable strings from the minikube codebase.
 package extract
 
 import (
@@ -82,6 +83,7 @@ type state struct {
 	currentPackage string
 }
 
+// funcType represents a function by its package and name
 type funcType struct {
 	pack string // The package the function is in
 	name string // The name of the function
@@ -113,7 +115,7 @@ func newExtractor(functionsToCheck []string) (*state, error) {
 	}, nil
 }
 
-// SetParentFunc Sets the current parent function, along with package information
+// setParentFunc sets the current parent function, along with package information
 func setParentFunc(e *state, f string) {
 	e.parentFunc = funcType{
 		pack: e.currentPackage,
@@ -161,6 +163,7 @@ func TranslatableStrings(paths []string, functions []string, output string) erro
 	return nil
 }
 
+// shouldCheckFile checks if the file at path should be inspected for translatable strings
 func shouldCheckFile(path string) bool {
 	return strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go")
 }
