@@ -40,6 +40,8 @@ func errorGenerator(n int, retryable bool) func() error {
 	}
 }
 
+// TestErrorGenerator verifies that the errorGenerator helper correctly generates the specified number of errors.
+// It is needed to ensure that our test helpers are reliable for testing retry logic.
 func TestErrorGenerator(t *testing.T) {
 	errors := 3
 	f := errorGenerator(errors, false)
@@ -53,6 +55,8 @@ func TestErrorGenerator(t *testing.T) {
 	}
 }
 
+// TestNotify verifies that the notify function correctly dedupes and logs errors.
+// It is needed to ensure that we don't spam logs with duplicate transient errors while still reporting new or persistent issues.
 func TestNotify(t *testing.T) {
 	// Mock time
 	mockTime := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -159,5 +163,93 @@ func TestNotify(t *testing.T) {
 			t.Errorf("expected lastLogErr 'err2', got '%s'", lastLogErr)
 		}
 		logMu.Unlock()
+	})
+}
+
+// TestLocal verifies that the Local retry function correctly retries transient errors until success or timeout.
+// It is needed to ensure that local operations are robust against temporary failures and do not hang indefinitely.
+func TestLocal(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		// Mock time to speed up tests
+		mockTime := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
+		timeNow = func() time.Time { return mockTime }
+		defer func() { timeNow = time.Now }()
+
+		attempts := 0
+		err := Local(func() error {
+			attempts++
+			if attempts < 2 {
+				return errors.New("transient error")
+			}
+			return nil
+		}, 1*time.Second)
+
+		if err != nil {
+			t.Errorf("Local() unexpected error: %v", err)
+		}
+		if attempts != 2 {
+			t.Errorf("expected 2 attempts, got %d", attempts)
+		}
+	})
+
+	t.Run("Timeout", func(t *testing.T) {
+		// We can't easily mock time inside backoff.Retry for the timeout check itself
+		// without mocking the Timer or BackOff, which are internal to our wrapper or the library.
+		// However, Local uses real time for limits if we don't mock it deep down.
+		// But we can set a very short timeout.
+		err := Local(func() error {
+			return errors.New("persistent error")
+		}, 10*time.Millisecond)
+
+		if err == nil {
+			t.Error("Local() expected error, got nil")
+		}
+	})
+}
+
+// TestExpo verifies that the Expo retry function correctly retries with exponential backoff, respecting max retries and timeout.
+// It is needed to ensure that operations are retried efficiently without overloading resources and fail gracefully when limits are reached.
+func TestExpo(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		attempts := 0
+		err := Expo(func() error {
+			attempts++
+			if attempts < 3 {
+				return errors.New("transient error")
+			}
+			return nil
+		}, 1*time.Millisecond, 1*time.Minute)
+
+		if err != nil {
+			t.Errorf("Expo() unexpected error: %v", err)
+		}
+		if attempts != 3 {
+			t.Errorf("expected 3 attempts, got %d", attempts)
+		}
+	})
+
+	t.Run("MaxRetries", func(t *testing.T) {
+		attempts := 0
+		err := Expo(func() error {
+			attempts++
+			return errors.New("persistent error")
+		}, 1*time.Millisecond, 1*time.Minute, 3)
+
+		if err == nil {
+			t.Error("Expo() expected error, got nil")
+		}
+		if attempts < 3 {
+			t.Errorf("expected at least 3 attempts, got %d", attempts)
+		}
+	})
+
+	t.Run("Timeout", func(t *testing.T) {
+		err := Expo(func() error {
+			return errors.New("persistent error")
+		}, 1*time.Millisecond, 10*time.Millisecond)
+
+		if err == nil {
+			t.Error("Expo() expected error, got nil")
+		}
 	})
 }

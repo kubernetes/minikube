@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.59.0
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.7
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.54.0
-	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cenkalti/backoff/v5 v5.0.0
 	github.com/google/go-github/v74 v74.0.0
 	github.com/google/go-github/v81 v81.0.0
 	github.com/jmoiron/sqlx v1.4.0
