@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/juju/mutex/v2"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
@@ -343,7 +343,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 }
 
 // acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
-func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
+func acquireMachinesLock(name string, drv string) (lock.Releaser, error) {
 	lockPath := filepath.Join(localpath.MiniPath(), "machines", drv)
 	// With KIC, it's safe to provision multiple hosts simultaneously
 	if driver.IsKIC(drv) {
@@ -359,7 +359,7 @@ func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 
 	klog.Infof("acquireMachinesLock for %s: %+v", name, spec)
 	start := time.Now()
-	r, err := mutex.Acquire(spec)
+	r, err := lock.Acquire(spec)
 	if err == nil {
 		klog.Infof("duration metric: took %s to acquireMachinesLock for %q", time.Since(start), name)
 	}

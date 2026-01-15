@@ -26,7 +26,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/juju/mutex/v2"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -123,7 +122,7 @@ func downloadISO(isoURL string, skipChecksum bool) error {
 	spec := lock.PathMutexSpec(dst)
 	spec.Timeout = 10 * time.Minute
 	klog.Infof("acquiring lock: %+v", spec)
-	releaser, err := mutex.Acquire(spec)
+	releaser, err := lock.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
 	}

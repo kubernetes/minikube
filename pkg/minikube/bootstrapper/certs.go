@@ -32,7 +32,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/juju/mutex/v2"
 	"github.com/otiai10/copy"
 	"github.com/pkg/errors"
 
@@ -225,7 +224,7 @@ func generateSharedCACerts() (sharedCACerts, bool, error) {
 	spec := lock.PathMutexSpec(hold)
 	spec.Timeout = 1 * time.Minute
 	klog.Infof("acquiring lock for ca certs: %+v", spec)
-	releaser, err := mutex.Acquire(spec)
+	releaser, err := lock.Acquire(spec)
 	if err != nil {
 		return cc, false, errors.Wrapf(err, "acquire lock for ca certs %+v", spec)
 	}
