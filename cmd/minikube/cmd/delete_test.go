@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -269,6 +270,8 @@ func main() {
 	}
 	pid := processToKill.Process.Pid
 
+	originalIsMinikubeProcess := isMinikubeProcess
+	defer func() { isMinikubeProcess = originalIsMinikubeProcess }()
 	isMinikubeProcess = func(int) (bool, error) {
 		return true, nil
 	}
@@ -289,4 +292,93 @@ func main() {
 		t.Fatalf("timed out waiting for process %d to exit", pid)
 	}
 
+}
+
+// TestIsMinikubeProcess validates the process name matching logic using real OS processes.
+// It ensures that `isMinikubeProcess` correctly identifies Minikube-related processes
+// based on their binary name, which is critical for safe cleanup during `minikube delete`
+// and avoids accidentally killing unrelated user processes.
+func TestIsMinikubeProcess(t *testing.T) {
+	// 1. Write a simple Go program that waits for a signal (mimicking a long-running process)
+	var waitForSig = []byte(`
+package main
+
+import (
+	"os"
+	"os/signal"
+	"syscall"
+)
+
+func main() {
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGTERM)
+	<-ch
+}
+`)
+	td := t.TempDir()
+	srcFile := filepath.Join(td, "main.go")
+	if err := os.WriteFile(srcFile, waitForSig, 0o600); err != nil {
+		t.Fatalf("failed to write source: %v", err)
+	}
+
+	// 2. Build binaries with different names
+	// Case A: Name contains "minikube"
+	mkBin := filepath.Join(td, "fake-minikube")
+	if runtime.GOOS == "windows" {
+		mkBin += ".exe"
+	}
+	buildBinary(t, srcFile, mkBin)
+
+	// Case B: Name does NOT contain "minikube"
+	otherBin := filepath.Join(td, "other-process")
+	if runtime.GOOS == "windows" {
+		otherBin += ".exe"
+	}
+	buildBinary(t, srcFile, otherBin)
+
+	// 3. Run and verify
+	tests := []struct {
+		name       string
+		binaryPath string
+		want       bool
+	}{
+		{"minikube-process", mkBin, true},
+		{"other-process", otherBin, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := exec.Command(tc.binaryPath)
+			if err := cmd.Start(); err != nil {
+				t.Fatalf("failed to start %s: %v", tc.name, err)
+			}
+			pid := cmd.Process.Pid
+			t.Logf("Started %s with pid %d", tc.name, pid)
+
+			defer func() {
+				_ = cmd.Process.Kill()
+				_ = cmd.Wait()
+			}()
+
+			// Give it a moment to start and register in OS
+			// (On some CI systems, checking too fast might fail or return partial info)
+			time.Sleep(100 * time.Millisecond)
+
+			got, err := isMinikubeProcess(pid)
+			if err != nil {
+				t.Errorf("isMinikubeProcess(%d) returned unexpected error: %v", pid, err)
+			}
+			if got != tc.want {
+				t.Errorf("isMinikubeProcess(%d) [%s] = %v; want %v", pid, tc.binaryPath, got, tc.want)
+			}
+		})
+	}
+}
+
+func buildBinary(t *testing.T, src, out string) {
+	t.Helper()
+	cmd := exec.Command("go", "build", "-o", out, src)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("failed to build %s: %v\nOutput: %s", out, err, string(output))
+	}
 }

@@ -26,8 +26,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/v4/process"
 	"k8s.io/minikube/pkg/libmachine/mcnerror"
 
 	"github.com/spf13/cobra"
@@ -689,17 +689,22 @@ func trySigKillProcess(pid int) error {
 // doesPIDBelongToMinikube tries to find the process with that PID
 // and checks if the executable name contains the string "minikube"
 var isMinikubeProcess = func(pid int) (bool, error) {
-	entry, err := ps.FindProcess(pid)
+	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
-		return false, errors.Wrapf(err, "ps.FindProcess for %d", pid)
+		if errors.Is(err, process.ErrorProcessNotRunning) {
+			return false, nil
+		}
+		// If it's real error, return it
+		return false, err
 	}
-	if entry == nil {
-		klog.Infof("Process not found. pid %d", pid)
+
+	name, err := proc.Name()
+	if err != nil {
 		return false, nil
 	}
 
 	klog.Infof("Found process %d", pid)
-	if !strings.Contains(entry.Executable(), "minikube") {
+	if !strings.Contains(name, "minikube") {
 		klog.Infof("process %d was not started by minikube", pid)
 		return false, nil
 	}

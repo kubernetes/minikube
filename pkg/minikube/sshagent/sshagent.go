@@ -18,6 +18,7 @@ package sshagent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/go-ps"
+	"github.com/shirou/gopsutil/v4/process"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 )
@@ -92,14 +93,19 @@ func isRunning(cc *config.ClusterConfig) (bool, error) {
 	if cc.SSHAgentPID == 0 {
 		return false, nil
 	}
-	entry, err := ps.FindProcess(cc.SSHAgentPID)
+	proc, err := process.NewProcess(int32(cc.SSHAgentPID))
 	if err != nil {
+		if errors.Is(err, process.ErrorProcessNotRunning) {
+			return false, nil
+		}
 		return false, fmt.Errorf("failed finding process: %v", err)
 	}
-	if entry == nil {
+	name, err := proc.Name()
+	if err != nil {
+		// Process might have exited
 		return false, nil
 	}
-	return strings.Contains(entry.Executable(), "ssh-agent"), nil
+	return strings.Contains(name, "ssh-agent"), nil
 }
 
 // Stop an ssh-agent process
