@@ -378,7 +378,7 @@ func main() {
 func buildBinary(t *testing.T, src, out string) {
 	t.Helper()
 	cmd := exec.Command("go", "build", "-o", out, src)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("failed to build %s: %v\nOutput: %s", out, err, string(out))
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("failed to build %s: %v\nOutput: %s", out, err, string(output))
 	}
 }
