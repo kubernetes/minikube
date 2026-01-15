@@ -136,9 +136,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/juju/clock v1.1.1 // indirect
-	github.com/juju/errors v0.0.0-20220203013757-bd733f3c86b9 // indirect
-	github.com/juju/mutex/v2 v2.0.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.18.2 // indirect
 	github.com/klauspost/cpuid v1.2.0 // indirect
