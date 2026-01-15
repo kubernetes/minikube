@@ -44,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/libmachine/swarm"
 	"k8s.io/minikube/pkg/libmachine/version"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -259,7 +260,7 @@ func (api *LocalClient) bootstrapCertificatesWithLock(h *host.Host) error {
 			lockErr = fmt.Errorf("timeout acquiring lock")
 			break
 		}
-		time.Sleep(100 * time.Millisecond) // check 10 times a second
+		time.Sleep(constants.LockRetryInterval)
 	}
 
 	if lockErr != nil {
