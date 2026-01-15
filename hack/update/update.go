@@ -146,7 +146,6 @@ func runWithRetryNotify(ctx context.Context, cmd *exec.Cmd, stdin io.Reader, max
 		var stderr bytes.Buffer
 		cmd.Stderr = &stderr
 		if err := cmd.Run(); err != nil {
-			time.Sleep(be.NextBackOff().Round(1 * time.Second))
 			return struct{}{}, fmt.Errorf("%w: %s", err, stderr.String())
 		}
 		return struct{}{}, nil
