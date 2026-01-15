@@ -691,8 +691,11 @@ func trySigKillProcess(pid int) error {
 var isMinikubeProcess = func(pid int) (bool, error) {
 	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
-		// If we can't find the process, it's not a minikube process
-		return false, nil
+		if errors.Is(err, process.ErrorProcessNotRunning) {
+			return false, nil
+		}
+		// If it's real error, return it
+		return false, err
 	}
 
 	name, err := proc.Name()
