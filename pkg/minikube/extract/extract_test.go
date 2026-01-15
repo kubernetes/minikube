@@ -163,8 +163,9 @@ var knownIssues = map[string]KnownIssue{
 		t.Fatalf("Failed to parse test source: %v", err)
 	}
 
-	e := &state{
-		translations: make(map[string]interface{}),
+	e, err := newExtractor([]string{})
+	if err != nil {
+		t.Fatalf("newExtractor failed: %v", err)
 	}
 
 	err = extractAdvice(f, e)
@@ -201,8 +202,9 @@ func init() {
 		t.Fatalf("Failed to parse test source: %v", err)
 	}
 
-	e := &state{
-		translations: make(map[string]interface{}),
+	e, err := newExtractor([]string{})
+	if err != nil {
+		t.Fatalf("newExtractor failed: %v", err)
 	}
 
 	ast.Inspect(f, func(x ast.Node) bool {
