@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -62,6 +63,7 @@ func TestMultiNode(t *testing.T) {
 			validator validatorFunc
 		}{
 			{"FreshStart2Nodes", validateMultiNodeStart},
+			{"StorageProvisionerNodeAffinity", validateStorageProvisionerNodeAffinity},
 			{"DeployApp2Nodes", validateDeployAppToMultiNode},
 			{"PingHostFrom2Pods", validatePodsPingHost},
 			{"AddNode", validateAddNodeToMultiNode},
@@ -584,4 +586,118 @@ func validatePodsPingHost(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("Failed to ping host (%s) from pod (%s): %v", hostIP, name, err)
 		}
 	}
+}
+
+// validateStorageProvisionerNodeAffinity verifies that the storage provisioner sets NodeAffinity on PVs.
+// This is critical for "hostPath" storage in multi-node clusters:
+// 1. Storage created on Node B (local directory) is physically inaccessible to Node A.
+// 2. Therefore, the PV *must* have NodeAffinity set to Node B.
+// 3. This forces the Kubernetes Scheduler to only schedule Pods using this PVC to Node B.
+//
+// This test verifies the entire flow:
+// - A Pod is requested on 'minikube-m02'.
+// - The Provisioner (DaemonSet on m02) detects this and creates a local PV on m02.
+// - The PV has NodeAffinity for m02 (verified at the end).
+// - If this was missing, a Pod could be scheduled to m01, find no data, and crash (Split-Brain).
+func validateStorageProvisionerNodeAffinity(ctx context.Context, t *testing.T, profile string) {
+	// 1. Create a PVC
+	pvcName := "node-affinity-pvc"
+
+	// Read PVC manifest from file
+	pvcBytes, err := os.ReadFile("testdata/node-affinity-pvc.yaml")
+	if err != nil {
+		t.Fatalf("failed to read node-affinity-pvc.yaml: %v", err)
+	}
+	pvcYaml := string(pvcBytes)
+
+	cmd := exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "-")
+	cmd.Stdin = strings.NewReader(pvcYaml)
+	if _, err := Run(t, cmd); err != nil {
+		t.Fatalf("failed to create PVC: %v", err)
+	}
+	defer func() {
+		// Cleanup
+		Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "delete", "pvc", pvcName))
+		Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "delete", "pod", "affinity-pod"))
+	}()
+
+	// 2. Create a Pod to trigger WaitForFirstConsumer binding
+	// We schedule it to the SECOND node to ensure multi-node provisioning works.
+	nodes := fmt.Sprintf("%s-m02", profile)
+	// (In a real test we might want to discover the node name dynamically,
+	// but FreshStart2Nodes guarantees minikube and minikube-m02 exist)
+
+	// Read Pod manifest from file
+	podBytes, err := os.ReadFile("testdata/node-affinity-pod.yaml")
+	if err != nil {
+		t.Fatalf("failed to read node-affinity-pod.yaml: %v", err)
+	}
+	// The Pod manifest is a template with one %s placeholder:
+	// 1. Node Name (where to schedule)
+	podYaml := fmt.Sprintf(string(podBytes), nodes)
+
+	cmd = exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "-")
+	cmd.Stdin = strings.NewReader(podYaml)
+	if _, err := Run(t, cmd); err != nil {
+		t.Fatalf("failed to create Pod: %v", err)
+	}
+
+	// 3. Wait for Pod to be Running (this implies PV was provisioned and bound)
+	if err := retry.Expo(func() error {
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pod", "affinity-pod", "-o", "jsonpath={.status.phase}"))
+		if err != nil {
+			return err
+		}
+		if rr.Stdout.String() != "Running" {
+			return fmt.Errorf("pod is not Running yet: %s", rr.Stdout.String())
+		}
+		return nil
+	}, 2*time.Second, 120*time.Second); err != nil {
+		t.Fatalf("Pod failed to start: %v", err)
+	}
+
+	// 4. Get the PV and check NodeAffinity
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pvc", pvcName, "-o", "jsonpath={.spec.volumeName}"))
+	if err != nil {
+		t.Fatalf("failed to get PV name: %v", err)
+	}
+	pvName := rr.Stdout.String()
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pv", pvName, "-o", "json"))
+	if err != nil {
+		t.Fatalf("failed to get PV %s: %v", pvName, err)
+	}
+
+	var pv map[string]interface{}
+	if err := json.Unmarshal(rr.Stdout.Bytes(), &pv); err != nil {
+		t.Fatalf("failed to unmarshal PV json: %v", err)
+	}
+
+	// Navigate to spec.nodeAffinity
+	spec, ok := pv["spec"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("pv spec is not a map")
+	}
+
+	nodeAffinity, ok := spec["nodeAffinity"].(map[string]interface{})
+	if !ok || nodeAffinity == nil {
+		t.Fatalf("PV %s does not have nodeAffinity set.", pvName)
+	}
+
+	// Verify it matches the requested node (minikube-m02)
+	// We dig deep: required.nodeSelectorTerms[0].matchExpressions[0].values[0]
+	// This makes assumptions about the structure created by our provisioner, which is fine for this test.
+	required := nodeAffinity["required"].(map[string]interface{})
+	terms := required["nodeSelectorTerms"].([]interface{})
+	term := terms[0].(map[string]interface{})
+	expressions := term["matchExpressions"].([]interface{})
+	expr := expressions[0].(map[string]interface{})
+	values := expr["values"].([]interface{})
+	val := values[0].(string)
+
+	if val != nodes {
+		t.Fatalf("PV Affinity mismatch! Expected %s, got %s", nodes, val)
+	}
+
+	t.Logf("Found correct NodeAffinity: %s", val)
 }

@@ -18,7 +18,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path"
 
@@ -31,7 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/sig-storage-lib-external-provisioner/v6/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/v13/controller"
 )
 
 const provisionerName = "k8s.io/minikube-hostpath"
@@ -43,13 +42,29 @@ type hostPathProvisioner struct {
 	// Identity of this hostPathProvisioner, generated. Used to identify "this"
 	// provisioner's PVs.
 	identity types.UID
+
+	// The node where the provisioner is running
+	nodeName string
 }
 
 // NewHostPathProvisioner creates a new Provisioner using host paths
 func NewHostPathProvisioner(pvDir string) controller.Provisioner {
+	nodeName := os.Getenv("NODE_NAME")
+	if nodeName == "" {
+		klog.Warningf("NODE_NAME environment variable not set, node affinity for PVs will not be set")
+	}
+	// We use a deterministic identity (based on node name) instead of a random UUID.
+	// This is critical for DaemonSet deployments: if the provisioner restarts (e.g. update, crash),
+	// it must still recognize the PVs it created previously on this node to be able to delete them.
+	// A random UUID would cause "orphaned" PVs that the new instance refuses to delete.
+	identity := types.UID(uuid.NewUUID())
+	if nodeName != "" {
+		identity = types.UID(provisionerName + "-" + nodeName)
+	}
 	return &hostPathProvisioner{
 		pvDir:    pvDir,
-		identity: uuid.NewUUID(),
+		identity: identity,
+		nodeName: nodeName,
 	}
 }
 
@@ -57,8 +72,13 @@ var _ controller.Provisioner = &hostPathProvisioner{}
 
 // Provision creates a storage asset and returns a PV object representing it.
 func (p *hostPathProvisioner) Provision(_ context.Context, options controller.ProvisionOptions) (*core.PersistentVolume, controller.ProvisioningState, error) {
+	selectedNode := options.PVC.Annotations["volume.kubernetes.io/selected-node"]
+	if selectedNode != "" && selectedNode != p.nodeName {
+		return nil, controller.ProvisioningFinished, &controller.IgnoredError{Reason: "pvc selected node does not match"}
+	}
+
 	hostPath := path.Join(p.pvDir, options.PVC.Namespace, options.PVC.Name)
-	klog.Infof("Provisioning volume %v to %s", options, hostPath)
+	klog.Infof("Provisioning volume %v to %s", options.PVC.Name, hostPath)
 	if err := os.MkdirAll(hostPath, 0777); err != nil {
 		return nil, controller.ProvisioningFinished, err
 	}
@@ -87,6 +107,24 @@ func (p *hostPathProvisioner) Provision(_ context.Context, options controller.Pr
 				},
 			},
 		},
+	}
+
+	if p.nodeName != "" {
+		pv.Spec.NodeAffinity = &core.VolumeNodeAffinity{
+			Required: &core.NodeSelector{
+				NodeSelectorTerms: []core.NodeSelectorTerm{
+					{
+						MatchExpressions: []core.NodeSelectorRequirement{
+							{
+								Key:      "kubernetes.io/hostname",
+								Operator: core.NodeSelectorOpIn,
+								Values:   []string{p.nodeName},
+							},
+						},
+					},
+				},
+			},
+		}
 	}
 
 	return pv, controller.ProvisioningFinished, nil
@@ -123,20 +161,14 @@ func StartStorageProvisioner(pvDir string) error {
 		klog.Fatalf("Failed to create client: %v", err)
 	}
 
-	// The controller needs to know what the server version is because out-of-tree
-	// provisioners aren't officially supported until 1.5
-	serverVersion, err := clientset.Discovery().ServerVersion()
-	if err != nil {
-		return fmt.Errorf("error getting server version: %v", err)
-	}
-
 	// Create the provisioner: it implements the Provisioner interface expected by
 	// the controller
 	hostPathProvisioner := NewHostPathProvisioner(pvDir)
 
 	// Start the provision controller which will dynamically provision hostPath
 	// PVs
-	pc := controller.NewProvisionController(clientset, provisionerName, hostPathProvisioner, serverVersion.GitVersion)
+	// LeaderElection is disabled because we are running as a DaemonSet
+	pc := controller.NewProvisionController(context.Background(), clientset, provisionerName, hostPathProvisioner, controller.LeaderElection(false))
 
 	klog.Info("Storage provisioner initialized, now starting service!")
 	pc.Run(context.Background())

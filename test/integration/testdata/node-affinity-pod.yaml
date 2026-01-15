@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: affinity-pod
+spec:
+  nodeSelector:
+    # %s is replaced by the Node Name (e.g. "minikube-m02")
+    kubernetes.io/hostname: %s
+  containers:
+  - name: busybox
+    image: busybox
+    command: ["sh", "-c", "echo hello > /data/hello && sleep 3600"]
+    volumeMounts:
+    - mountPath: "/data"
+      name: vol
+  volumes:
+  - name: vol
+    persistentVolumeClaim:
+      claimName: node-affinity-pvc

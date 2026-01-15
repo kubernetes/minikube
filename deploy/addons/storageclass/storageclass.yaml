@@ -9,3 +9,4 @@ metadata:
     addonmanager.kubernetes.io/mode: EnsureExists
 
 provisioner: k8s.io/minikube-hostpath
+volumeBindingMode: WaitForFirstConsumer
