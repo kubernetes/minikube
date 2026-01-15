@@ -18,6 +18,7 @@ package sshagent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -94,6 +95,9 @@ func isRunning(cc *config.ClusterConfig) (bool, error) {
 	}
 	proc, err := process.NewProcess(int32(cc.SSHAgentPID))
 	if err != nil {
+		if errors.Is(err, process.ErrorProcessNotRunning) {
+			return false, nil
+		}
 		return false, fmt.Errorf("failed finding process: %v", err)
 	}
 	name, err := proc.Name()
