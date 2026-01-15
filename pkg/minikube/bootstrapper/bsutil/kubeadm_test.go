@@ -332,3 +332,26 @@ func TestKubeletConfig(t *testing.T) {
 		t.Errorf("machines mismatch (-want +got):\n%s", diff)
 	}
 }
+
+// TestHasResolvConfSearchRegression checks that the regression check for resolv.conf search path
+// correctly identifies affected Kubernetes versions (specifically v1.25.0).
+// This is important to ensure the workaround is applied only when necessary, preventing potential DNS issues.
+func TestHasResolvConfSearchRegression(t *testing.T) {
+	tests := []struct {
+		version string
+		want    bool
+	}{
+		{"v1.25.0", true},
+		{"v1.25.3", false},
+		{"v1.24.0", false},
+		{"v1.26.0", false},
+		{"invalid", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.version, func(t *testing.T) {
+			if got := HasResolvConfSearchRegression(tt.version); got != tt.want {
+				t.Errorf("HasResolvConfSearchRegression(%q) = %v, want %v", tt.version, got, tt.want)
+			}
+		})
+	}
+}
