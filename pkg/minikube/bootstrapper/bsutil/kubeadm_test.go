@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/pmezard/go-difflib/difflib"
 	"golang.org/x/mod/semver"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -193,18 +192,8 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unable to read testdata: %v", err)
 				}
-				diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-					A:        difflib.SplitLines(string(expected)),
-					B:        difflib.SplitLines(string(got)),
-					FromFile: "Expected",
-					ToFile:   "Got",
-					Context:  1,
-				})
-				if err != nil {
-					t.Fatalf("diff error: %v", err)
-				}
-				if diff != "" {
-					t.Errorf("unexpected diff:\n%s\n===== [RAW OUTPUT] =====\n%s", diff, got)
+				if diff := cmp.Diff(string(expected), string(got)); diff != "" {
+					t.Errorf("GenerateKubeadmYAMLDNS mismatch (-want +got):\n%s", diff)
 				}
 			})
 		}
@@ -297,18 +286,8 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unable to read testdata: %v", err)
 				}
-				diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-					A:        difflib.SplitLines(string(expected)),
-					B:        difflib.SplitLines(string(got)),
-					FromFile: "Expected",
-					ToFile:   "Got",
-					Context:  1,
-				})
-				if err != nil {
-					t.Fatalf("diff error: %v", err)
-				}
-				if diff != "" {
-					t.Errorf("unexpected diff:\n%s\n", diff)
+				if diff := cmp.Diff(string(expected), string(got)); diff != "" {
+					t.Errorf("GenerateKubeadmYAML mismatch (-want +got):\n%s", diff)
 				}
 			})
 		}
