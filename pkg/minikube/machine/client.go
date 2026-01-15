@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/juju/fslock"
+	"github.com/gofrs/flock"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine"
@@ -73,7 +73,7 @@ func NewAPIClient(options *run.CommandOptions, miniHome ...string) (libmachine.A
 		storePath:      storePath,
 		Filestore:      persist.NewFilestore(storePath, certsDir, certsDir),
 		legacyClient:   NewRPCClient(storePath, certsDir),
-		flock:          fslock.New(localpath.MakeMiniPath("machine_client.lock")),
+		flock:          flock.New(localpath.MakeMiniPath("machine_client.lock")),
 		commandOptions: options,
 	}, nil
 }
@@ -85,7 +85,7 @@ type LocalClient struct {
 	storePath string
 	*persist.Filestore
 	legacyClient libmachine.API
-	flock        *fslock.Lock
+	flock        *flock.Flock
 	// TODO: Consider removing when libmachine API is part of minikube:
 	// https://github.com/kubernetes/minikube/issues/21789
 	commandOptions *run.CommandOptions
@@ -194,7 +194,26 @@ func (api *LocalClient) Create(h *host.Host) error {
 			func() error {
 				// Lock is needed to avoid race condition in parallel Docker-Env test because issue #10107.
 				// CA cert and client cert should be generated atomically, otherwise might cause bad certificate error.
-				lockErr := api.flock.LockWithTimeout(time.Second * 5)
+				timeout := time.Second * 5
+				start := time.Now()
+				var lockErr error
+				// gofrs/flock does not support LockWithTimeout, so we implement it manually with a retry loop.
+				for {
+					var locked bool
+					locked, lockErr = api.flock.TryLock()
+					if lockErr != nil {
+						break
+					}
+					if locked {
+						break
+					}
+					if time.Since(start) > timeout {
+						lockErr = fmt.Errorf("timeout acquiring lock")
+						break
+					}
+					time.Sleep(100 * time.Millisecond) // check 10 times a second
+				}
+
 				if lockErr != nil {
 					return fmt.Errorf("failed to acquire bootstrap client lock: %v", lockErr)
 				}
