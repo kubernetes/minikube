@@ -23,7 +23,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
@@ -72,7 +72,7 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 
 	if k8s.NetworkPlugin != "" {
 		// Only CNI is supported in 1.24+, and it is the default
-		if version.LT(semver.MustParse("1.24.0-alpha.2")) {
+		if version.LessThan(semver.MustParse("1.24.0-alpha.2")) {
 			extraOpts["network-plugin"] = k8s.NetworkPlugin
 		} else if k8s.NetworkPlugin != "cni" && mc.KubernetesConfig.ContainerRuntime != constants.Docker {
 			return nil, fmt.Errorf("invalid network plugin: %s", k8s.NetworkPlugin)
@@ -93,7 +93,7 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	}
 
 	// Handled by CRI in 1.24+, and not by kubelet
-	if version.LT(semver.MustParse("1.24.0-alpha.2")) {
+	if version.LessThan(semver.MustParse("1.24.0-alpha.2")) {
 		pauseImage := images.Pause(version, k8s.ImageRepository)
 		if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
 			extraOpts["pod-infra-container-image"] = pauseImage
@@ -103,7 +103,7 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	// container-runtime-endpoint kubelet flag was deprecated but corresponding containerRuntimeEndpoint kubelet config field is "required" and supported from k8s v1.27
 	// ref: https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/#options
 	// ref: https://github.com/kubernetes/kubernetes/issues/118787
-	if version.GTE(semver.MustParse("1.27.0")) {
+	if !version.LessThan(semver.MustParse("1.27.0")) {
 		kubeletConfigParams = append(kubeletConfigParams, "container-runtime-endpoint")
 	}
 

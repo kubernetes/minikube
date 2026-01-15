@@ -21,24 +21,24 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
-func driverWithChecksumURL(name string, v semver.Version) string {
+func driverWithChecksumURL(name string, v *semver.Version) string {
 	base := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/v%s/%s", v, name)
 	return fmt.Sprintf("%s?checksum=file:%s.sha256", base, base)
 }
-func driverWithArchAndChecksumURL(name string, v semver.Version) string {
+func driverWithArchAndChecksumURL(name string, v *semver.Version) string {
 	base := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/v%s/%s-%s", v, name, runtime.GOARCH)
 	return fmt.Sprintf("%s?checksum=file:%s.sha256", base, base)
 }
 
 // Driver downloads an arbitrary driver
-func Driver(name string, destination string, v semver.Version) error {
+func Driver(name string, destination string, v *semver.Version) error {
 	out.Step(style.FileDownload, "Downloading driver {{.driver}}:", out.V{"driver": name})
 
 	archURL := driverWithArchAndChecksumURL(name, v)

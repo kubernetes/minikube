@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -42,7 +42,7 @@ import (
 var docURL = "https://minikube.sigs.k8s.io/docs/drivers/podman/"
 
 // minReqPodmanVer is required the minimum version of podman to be installed for podman driver.
-var minReqPodmanVer = semver.Version{Major: 4, Minor: 9, Patch: 0}
+var minReqPodmanVer = semver.MustParse("4.9.0")
 
 func init() {
 	priority := registry.Default
@@ -123,12 +123,12 @@ func status(_ *run.CommandOptions) registry.State {
 	if err == nil {
 		klog.Infof("podman version: %s", output)
 
-		v, err := semver.Make(output)
+		v, err := semver.NewVersion(output)
 		if err != nil {
 			return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Fix: "Can't verify minimum required version for podman . See podman website for installation guide.", Doc: "https://podman.io/getting-started/installation.html"}
 		}
 
-		if v.LT(minReqPodmanVer) {
+		if v.LessThan(minReqPodmanVer) {
 			out.WarningT(`The minimum required version for podman is "{{.minVersion}}". your version is "{{.currentVersion}}". minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html`,
 				out.V{"minVersion": minReqPodmanVer.String(), "currentVersion": v.String()})
 		}

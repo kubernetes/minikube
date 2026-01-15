@@ -24,7 +24,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 
 	"k8s.io/minikube/pkg/minikube/driver/auxdriver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -74,7 +74,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 		os.Setenv("PATH", fmt.Sprintf("%s:%s", path, originalPath))
 
 		// NOTE: This should be a real version, as it impacts the downloaded URL
-		newerVersion, err := semver.Make("1.3.0")
+		newerVersion, err := semver.NewVersion("1.3.0")
 		if err != nil {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}

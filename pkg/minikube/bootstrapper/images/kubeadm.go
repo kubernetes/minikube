@@ -20,20 +20,20 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 )
 
 // Kubeadm returns a list of images necessary to bootstrap kubeadm
 func Kubeadm(mirror string, version string) ([]string, error) {
-	v, err := semver.Make(strings.TrimPrefix(version, "v"))
+	v, err := semver.NewVersion(strings.TrimPrefix(version, "v"))
 	if err != nil {
 		return nil, errors.Wrap(err, "semver")
 	}
-	if v.Major > 1 {
+	if v.Major() > 1 {
 		return nil, fmt.Errorf("version too new: %v", v)
 	}
-	if semver.MustParseRange("<1.12.0-alpha.0")(v) {
+	if v.LessThan(semver.MustParse("1.12.0-alpha.0")) {
 		return nil, fmt.Errorf("version too old: %v", v)
 	}
 	imgs := essentials(mirror, v)

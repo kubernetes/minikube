@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
@@ -154,7 +154,7 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 	// because it does not currently use portmap plugin, we pick "our" bridge instead (cri-o one will be disabled automatically)
 	// ref: https://github.com/cri-o/cri-o/blob/f317b267ddef21aee5ffc92d890a77112b006815/contrib/cni/10-crio-bridge.conflist
 	kv, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
-	if err == nil && kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
+	if err == nil && kv.GreaterThanEqual(semver.MustParse("1.24.0-alpha.2")) {
 		klog.Infof("%q driver + %q container runtime found on kubernetes v1.24+, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 		return Bridge{cc: cc}
 	}

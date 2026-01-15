@@ -29,7 +29,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -100,7 +100,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		return nil, err
 	}
 	if stopk8s {
-		nv := semver.Version{Major: 0, Minor: 0, Patch: 0}
+		nv := semver.MustParse("0.0.0")
 		cr := configureRuntimes(starter.Runner, *starter.Cfg, nv)
 
 		showNoK8sVersionInfo(cr)
@@ -409,7 +409,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool, options
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, kv semver.Version) cruntime.Manager {
+func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, kv *semver.Version) cruntime.Manager {
 	co := cruntime.Config{
 		Type:              cc.KubernetesConfig.ContainerRuntime,
 		Socket:            cc.KubernetesConfig.CRISocket,
@@ -515,7 +515,7 @@ func cgroupDriver(cc config.ClusterConfig) string {
 	if driver.IsVM(cc.Driver) {
 		// TODO, if system doesnt support cgroup v2, then use cgroupfs #22321
 		if ver, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion); err == nil {
-			if ver.GTE(semver.MustParse("1.22.0")) {
+			if ver.GreaterThanEqual(semver.MustParse("1.22.0")) {
 				klog.Infof("Kubernetes %s+ detected, using %q cgroup driver", ver.String(), constants.SystemdCgroupDriver)
 				return constants.SystemdCgroupDriver
 			}

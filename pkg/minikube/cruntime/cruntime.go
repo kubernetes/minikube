@@ -22,7 +22,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -152,7 +152,7 @@ type Config struct {
 	// ImageRepository image repository to download image from
 	ImageRepository string
 	// KubernetesVersion Kubernetes version
-	KubernetesVersion semver.Version
+	KubernetesVersion *semver.Version
 	// InsecureRegistry list of insecure registries
 	InsecureRegistry []string
 	// GPUs add GPU devices to the container
@@ -209,6 +209,9 @@ func (e ErrServiceVersion) Error() string {
 
 // New returns an appropriately configured runtime
 func New(c Config) (Manager, error) {
+	if c.KubernetesVersion == nil {
+		c.KubernetesVersion = semver.MustParse("0.0.0")
+	}
 	sm := sysinit.New(c.Runner)
 
 	switch c.Type {
@@ -216,7 +219,7 @@ func New(c Config) (Manager, error) {
 		sp := c.Socket
 		cs := ""
 		// There is no more dockershim socket, in Kubernetes version 1.24 and beyond
-		if sp == "" && c.KubernetesVersion.GTE(semver.MustParse("1.24.0-alpha.0")) {
+		if sp == "" && c.KubernetesVersion.GreaterThanEqual(semver.MustParse("1.24.0-alpha.0")) {
 			sp = ExternalDockerCRISocket
 			cs = "cri-docker.socket"
 		}
@@ -303,11 +306,11 @@ var requiredContainerdVersion = semver.MustParse("1.4.0")
 // compatibleWithVersion checks if current version of "runtime" is compatible with version "v"
 func compatibleWithVersion(runtime, v string) error {
 	if runtime == "containerd" {
-		vv, err := semver.Make(v)
+		vv, err := semver.NewVersion(v)
 		if err != nil {
 			return err
 		}
-		if requiredContainerdVersion.GT(vv) {
+		if requiredContainerdVersion.GreaterThan(vv) {
 			return NewErrServiceVersion(runtime, requiredContainerdVersion.String(), vv.String())
 		}
 	}

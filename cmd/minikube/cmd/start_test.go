@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -117,7 +117,7 @@ func TestGetKubernetesVersion(t *testing.T) {
 	}
 }
 
-var checkRepoMock = func(_ semver.Version, _ string) error { return nil }
+var checkRepoMock = func(_ *semver.Version, _ string) error { return nil }
 
 func TestMirrorCountry(t *testing.T) {
 	// Set default disk size value in lieu of flag init

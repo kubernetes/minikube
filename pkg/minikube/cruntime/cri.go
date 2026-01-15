@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 
 	"github.com/pkg/errors"
 
@@ -381,18 +381,18 @@ func addRepoTagToImageName(imgName string) string {
 }
 
 // kubeletCRIOptions returns the container runtime options for the kubelet
-func kubeletCRIOptions(cr Manager, kubernetesVersion semver.Version) map[string]string {
+func kubeletCRIOptions(cr Manager, kubernetesVersion *semver.Version) map[string]string {
 	opts := map[string]string{
 		"container-runtime-endpoint": fmt.Sprintf("unix://%s", cr.SocketPath()),
 	}
-	if kubernetesVersion.LT(semver.MustParse("1.24.0-alpha.0")) {
+	if kubernetesVersion.LessThan(semver.MustParse("1.24.0-alpha.0")) {
 		opts["container-runtime"] = "remote"
 	}
 	return opts
 }
 
-func checkCNIPlugins(kubernetesVersion semver.Version) error {
-	if kubernetesVersion.LT(semver.Version{Major: 1, Minor: 24}) {
+func checkCNIPlugins(kubernetesVersion *semver.Version) error {
+	if kubernetesVersion.LessThan(semver.MustParse("1.24.0")) {
 		return nil
 	}
 	_, err := os.Stat("/opt/cni/bin")

@@ -37,7 +37,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	core "k8s.io/api/core/v1"
 	"k8s.io/minikube/pkg/kapi"
@@ -221,7 +221,9 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		// for pre-release k8s version, remove any "+" suffix in minor version to be semver-compliant and not panic
 		// ref: https://github.com/kubernetes/minikube/pull/16145#issuecomment-1483283260
 		minor := strings.TrimSuffix(v.Minor, "+")
-		if semver.MustParseRange("<1.19.0")(semver.MustParse(fmt.Sprintf("%s.%s.0", v.Major, minor))) {
+		c, _ := semver.NewConstraint("<1.19.0")
+		vSem, _ := semver.NewVersion(fmt.Sprintf("%s.%s.0", v.Major, minor))
+		if c.Check(vSem) {
 			// legacy: k8s < v1.19 & ingress api v1beta1
 			ingressYaml = "nginx-ingress-v1beta1.yaml"
 			ingressDNSYaml = "ingress-dns-example-v1beta1.yaml"

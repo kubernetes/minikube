@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
@@ -155,7 +155,7 @@ func containerGatewayIP(ociBin string, containerName string) (net.IP, error) {
 func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	var rr *RunResult
 	var err error
-	var v semver.Version
+	var v *semver.Version
 
 	if ociBin == Podman {
 		v, err = podmanVersion()
@@ -165,7 +165,7 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	}
 
 	// podman 2.0.1 introduced docker syntax for .NetworkSettings.Ports (podman#5380)
-	if ociBin == Podman && v.LT(semver.Version{Major: 2, Minor: 0, Patch: 1}) {
+	if ociBin == Podman && v.LessThan(semver.MustParse("2.0.1")) {
 		rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID))
 		if err != nil {
 			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)

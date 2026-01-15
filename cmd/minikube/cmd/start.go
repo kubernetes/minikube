@@ -35,7 +35,7 @@ import (
 	"time"
 
 	"github.com/Delta456/box-cli-maker/v2"
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -615,16 +615,16 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, rtime, machineName st
 		return err
 	}
 
-	client, err := semver.Make(strings.TrimPrefix(gitVersion, version.VersionPrefix))
+	client, err := semver.NewVersion(strings.TrimPrefix(gitVersion, version.VersionPrefix))
 	if err != nil {
 		return errors.Wrap(err, "client semver")
 	}
 
 	cluster := semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix))
-	minorSkew := int(math.Abs(float64(int(client.Minor) - int(cluster.Minor))))
+	minorSkew := int(math.Abs(float64(int(client.Minor()) - int(cluster.Minor()))))
 	klog.Infof("kubectl: %s, cluster: %s (minor skew: %d)", client, cluster, minorSkew)
 
-	if client.Major != cluster.Major || minorSkew > 1 {
+	if client.Major() != cluster.Major() || minorSkew > 1 {
 		out.Ln("")
 		out.WarningT("{{.path}} is version {{.client_version}}, which may have incompatibilities with Kubernetes {{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
@@ -992,7 +992,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	}, st.Error.Error())
 }
 
-func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string, error) {
+func selectImageRepository(mirrorCountry string, v *semver.Version) (bool, string, error) {
 	var tryCountries []string
 	var fallback string
 	klog.Infof("selecting image repository for country %s ...", mirrorCountry)
@@ -1032,7 +1032,7 @@ func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string
 	return false, fallback, nil
 }
 
-var checkRepository = func(v semver.Version, repo string) error {
+var checkRepository = func(v *semver.Version, repo string) error {
 	pauseImage := images.Pause(v, repo)
 	ref, err := name.ParseReference(pauseImage, name.WeakValidation)
 	if err != nil {
@@ -1797,7 +1797,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 
 	}
 
-	nvs, _ := semver.Make(strings.TrimPrefix(kubernetesVer, version.VersionPrefix))
+	nvs, _ := semver.NewVersion(strings.TrimPrefix(kubernetesVer, version.VersionPrefix))
 	oldestVersion := semver.MustParse(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
 	defaultVersion := semver.MustParse(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
 	newestVersion := semver.MustParse(strings.TrimPrefix(constants.NewestKubernetesVersion, version.VersionPrefix))
@@ -1806,18 +1806,18 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	if isTwoDigitSemver(paramVersion) && getLatestPatch(paramVersion) != "" {
 		out.Styled(style.Workaround, `Using Kubernetes {{.version}} since patch version was unspecified`, out.V{"version": nvs})
 	}
-	if nvs.Equals(zeroVersion) {
+	if nvs.Equal(zeroVersion) {
 		klog.Infof("No Kubernetes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
 		return
 	}
-	if nvs.Major > newestVersion.Major {
-		out.WarningT("Specified Major version of Kubernetes {{.specifiedMajor}} is newer than the newest supported Major version: {{.newestMajor}}", out.V{"specifiedMajor": nvs.Major, "newestMajor": newestVersion.Major})
+	if nvs.Major() > newestVersion.Major() {
+		out.WarningT("Specified Major version of Kubernetes {{.specifiedMajor}} is newer than the newest supported Major version: {{.newestMajor}}", out.V{"specifiedMajor": nvs.Major(), "newestMajor": newestVersion.Major()})
 		if !viper.GetBool(force) {
 			out.WarningT("You can force an unsupported Kubernetes version via the --force flag")
 		}
 		exitIfNotForced(reason.KubernetesTooNew, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 	}
-	if nvs.GT(newestVersion) {
+	if nvs.GreaterThan(newestVersion) {
 		out.WarningT("Specified Kubernetes version {{.specified}} is newer than the newest supported version: {{.newest}}. Use `minikube config defaults kubernetes-version` for details.", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
 		if slices.Contains(constants.ValidKubernetesVersions, kubernetesVer) {
 			out.Styled(style.Check, "Kubernetes version {{.specified}} found in version list", out.V{"specified": nvs})
@@ -1836,7 +1836,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 			}
 		}
 	}
-	if nvs.LT(oldestVersion) {
+	if nvs.LessThan(oldestVersion) {
 		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}. Use `minikube config defaults kubernetes-version` for details.", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
 		if !viper.GetBool(force) {
 			out.WarningT("You can force an unsupported Kubernetes version via the --force flag")
@@ -1856,12 +1856,12 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 		return
 	}
 
-	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
+	ovs, err := semver.NewVersion(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
 	if err != nil {
 		klog.Errorf("Error parsing old version %q: %v", old.KubernetesConfig.KubernetesVersion, err)
 	}
 
-	if nvs.LT(ovs) {
+	if nvs.LessThan(ovs) {
 		profileArg := ""
 		if old.Name != constants.DefaultClusterName {
 			profileArg = fmt.Sprintf(" -p %s", old.Name)
@@ -1872,7 +1872,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 			out.V{"prefix": version.VersionPrefix, "new": nvs, "old": ovs, "profile": profileArg, "suggestedName": suggestedName})
 
 	}
-	if defaultVersion.GT(nvs) {
+	if defaultVersion.GreaterThan(nvs) {
 		out.Styled(style.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
 }
@@ -1929,7 +1929,7 @@ $ minikube config unset kubernetes-version`)
 		}
 		kubernetesSemver = potentialPatch
 	}
-	nvs, err := semver.Make(kubernetesSemver)
+	nvs, err := semver.NewVersion(kubernetesSemver)
 	if err != nil {
 		exit.Message(reason.Usage, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
 	}
@@ -2028,13 +2028,13 @@ func validateBareMetal(drvName string) {
 		klog.Warningf("failed getting Kubernetes version: %v", err)
 	}
 	ver, _ := util.ParseKubernetesVersion(kubeVer)
-	if ver.GTE(semver.MustParse("1.18.0-beta.1")) {
+	if !ver.LessThan(semver.MustParse("1.18.0-beta.1")) {
 		if _, err := exec.LookPath("conntrack"); err != nil {
 			exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": ver.String()})
 		}
 	}
 	// crictl is required starting with Kubernetes 1.24, for all runtimes since the removal of dockershim
-	if ver.GTE(semver.MustParse("1.24.0-alpha.0")) {
+	if !ver.LessThan(semver.MustParse("1.24.0-alpha.0")) {
 		if _, err := exec.LookPath("crictl"); err != nil {
 			exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires crictl to be installed in root's path", out.V{"k8sVersion": ver.String()})
 		}

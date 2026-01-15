@@ -19,7 +19,7 @@ package auxdriver
 import (
 	"testing"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
 
@@ -29,24 +29,24 @@ func Test_minDriverVersion(t *testing.T) {
 		desc   string
 		driver string
 		mkV    string
-		want   semver.Version
+		want   *semver.Version
 	}{
-		{"Hyperkit", driver.HyperKit, "1.1.1", *minHyperkitVersion},
+		{"Hyperkit", driver.HyperKit, "1.1.1", minHyperkitVersion},
 		{"Invalid", "_invalid_", "1.1.1", v("1.1.1")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			if got := minAcceptableDriverVersion(tt.driver, v(tt.mkV)); !got.EQ(tt.want) {
+			if got := minAcceptableDriverVersion(tt.driver, v(tt.mkV)); !got.Equal(tt.want) {
 				t.Errorf("Invalid min supported version, got: %v, want: %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func v(s string) semver.Version {
-	r, err := semver.New(s)
+func v(s string) *semver.Version {
+	r, err := semver.NewVersion(s)
 	if err != nil {
 		panic(err)
 	}
-	return *r
+	return r
 }

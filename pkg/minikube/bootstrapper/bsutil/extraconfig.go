@@ -23,7 +23,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -113,7 +113,7 @@ func FindInvalidExtraConfigFlags(opts config.ExtraOptionSlice) []string {
 
 // extraConfigForComponent generates a map of flagname-value pairs for a k8s
 // component.
-func extraConfigForComponent(component string, opts config.ExtraOptionSlice, version semver.Version) (map[string]string, error) {
+func extraConfigForComponent(component string, opts config.ExtraOptionSlice, version *semver.Version) (map[string]string, error) {
 	versionedOpts, err := defaultOptionsForComponentAndVersion(component, version)
 	if err != nil {
 		return nil, errors.Wrapf(err, "setting version specific options for %s", component)
@@ -132,7 +132,7 @@ func extraConfigForComponent(component string, opts config.ExtraOptionSlice, ver
 }
 
 // defaultOptionsForComponentAndVersion returns the default option for a component and version
-func defaultOptionsForComponentAndVersion(component string, version semver.Version) (map[string]string, error) {
+func defaultOptionsForComponentAndVersion(component string, version *semver.Version) (map[string]string, error) {
 	versionedOpts := map[string]string{}
 	for _, opts := range versionSpecificOpts {
 		if opts.Option.Component == component {
@@ -148,7 +148,7 @@ func defaultOptionsForComponentAndVersion(component string, version semver.Versi
 }
 
 // newComponentOptions creates a new componentOptions
-func newComponentOptions(opts config.ExtraOptionSlice, version semver.Version, featureGates string, cp config.Node) ([]componentOptions, error) {
+func newComponentOptions(opts config.ExtraOptionSlice, version *semver.Version, featureGates string, cp config.Node) ([]componentOptions, error) {
 	if invalidOpts := FindInvalidExtraConfigFlags(opts); len(invalidOpts) > 0 {
 		return nil, fmt.Errorf("unknown components %v. valid components are: %v", invalidOpts, KubeadmExtraConfigOpts)
 	}
@@ -193,7 +193,7 @@ func optionPairsForComponent(component string, cp config.Node) map[string]string
 // kubeadm extra args from the slice
 // etcd must also not be included in that section, as those extra args exist in the `etcd` section
 // createExtraComponentConfig generates a map of component to extra args for all of the components except kubeadm
-func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version semver.Version, componentFeatureArgs string, cp config.Node) ([]componentOptions, error) {
+func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version *semver.Version, componentFeatureArgs string, cp config.Node) ([]componentOptions, error) {
 	extraArgsSlice, err := newComponentOptions(extraOptions, version, componentFeatureArgs, cp)
 	if err != nil {
 		return nil, err

@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
@@ -236,7 +236,7 @@ func checkDockerEngineVersion(o string) registry.State {
 		}
 	}
 
-	currSemver, err := semver.ParseTolerant(strings.Join(p, "."))
+	currSemver, err := semver.NewVersion(strings.Join(p, "."))
 	if err != nil {
 		return registry.State{
 			Installed:        true,
@@ -247,13 +247,13 @@ func checkDockerEngineVersion(o string) registry.State {
 		}
 	}
 	// these values are consts and their conversions are covered in unit tests
-	minSemver, _ := semver.ParseTolerant(minDockerVersion)
-	recSemver, _ := semver.ParseTolerant(recommendedDockerVersion)
+	minSemver, _ := semver.NewVersion(minDockerVersion)
+	recSemver, _ := semver.NewVersion(recommendedDockerVersion)
 
-	if currSemver.GTE(recSemver) {
+	if currSemver.GreaterThanEqual(recSemver) {
 		return registry.State{Installed: true, Healthy: true, Error: nil}
 	}
-	if currSemver.GTE(minSemver) {
+	if currSemver.GreaterThanEqual(minSemver) {
 		return registry.State{
 			Installed:        true,
 			Healthy:          true,
@@ -277,11 +277,11 @@ func checkDockerDesktopVersion(version string) (s registry.State) {
 	if len(fields) < 3 || fields[0] != "Docker" || fields[1] != "Desktop" {
 		return s
 	}
-	currSemver, err := semver.Parse(fields[2])
+	currSemver, err := semver.NewVersion(fields[2])
 	if err != nil {
 		return s
 	}
-	if currSemver.EQ(semver.MustParse("4.16.0")) {
+	if currSemver.Equal(semver.MustParse("4.16.0")) {
 		return registry.State{
 			Reason:    "PROVIDER_DOCKER_DESKTOP_VERSION_BAD",
 			Running:   true,
@@ -291,7 +291,7 @@ func checkDockerDesktopVersion(version string) (s registry.State) {
 		}
 	}
 
-	if runtime.GOOS == "darwin" && currSemver.EQ(semver.MustParse("4.34.0")) {
+	if runtime.GOOS == "darwin" && currSemver.Equal(semver.MustParse("4.34.0")) {
 		return registry.State{
 			Reason:    "PROVIDER_DOCKER_DESKTOP_VERSION_BAD",
 			Running:   true,

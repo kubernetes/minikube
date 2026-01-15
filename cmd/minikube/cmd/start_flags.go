@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/spf13/cobra"
@@ -709,7 +709,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		// and if k8s >= v1.25.0-beta.0 (when it went ga and removed as feature gate), set kubelet's localStorageCapacityIsolation option (via kubeadm config) to false.
 		// ref: https://github.com/kubernetes/minikube/issues/14728#issue-1327885840
 		if si.StorageDriver == "btrfs" {
-			if semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix)).LT(semver.MustParse("1.25.0-beta.0")) {
+			if semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix)).LessThan(semver.MustParse("1.25.0-beta.0")) {
 				klog.Info("auto-setting LocalStorageCapacityIsolation to false because using btrfs storage driver")
 				cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "LocalStorageCapacityIsolation=false")
 			} else if !cc.KubernetesConfig.ExtraOptions.Exists("kubelet.localStorageCapacityIsolation=false") {
@@ -768,7 +768,7 @@ func checkNumaCount(k8sVersion string) {
 		if err != nil {
 			exit.Message(reason.Usage, "invalid kubernetes version")
 		}
-		if v.LT(semver.Version{Major: 1, Minor: 18}) {
+		if v.LessThan(semver.MustParse("1.18.0")) {
 			exit.Message(reason.Usage, "numa node is only supported on k8s v1.18 and later")
 		}
 	}

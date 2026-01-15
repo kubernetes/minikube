@@ -24,7 +24,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -76,7 +76,7 @@ func TestParseKubernetesVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error parsing version: %v", err)
 	}
-	if version.NE(semver.MustParse("1.8.0-alpha.5")) {
+	if !version.Equal(semver.MustParse("1.8.0-alpha.5")) {
 		t.Errorf("Expected: %s, Actual:%s", "1.8.0-alpha.5", version)
 	}
 }

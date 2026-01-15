@@ -25,7 +25,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/qemu"
 	"k8s.io/minikube/pkg/libmachine/drivers"
@@ -106,19 +106,19 @@ func qemuFirmwarePath(customPath string) (string, error) {
 	}
 }
 
-func qemuVersion() (semver.Version, error) {
+func qemuVersion() (*semver.Version, error) {
 	qemuSystem, err := qemuSystemProgram()
 	if err != nil {
-		return semver.Version{}, err
+		return nil, err
 	}
 
 	cmd := exec.Command(qemuSystem, "-version")
 	rr, err := cmd.Output()
 	if err != nil {
-		return semver.Version{}, err
+		return nil, err
 	}
 	v := strings.Split(strings.TrimPrefix(string(rr), "QEMU emulator version "), "\n")[0]
-	return semver.Make(v)
+	return semver.NewVersion(v)
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
@@ -146,7 +146,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 				return nil, err
 			}
 			// Surprisingly, highmem doesn't work for low memory situations
-			if v.LT(qemu7) || cc.Memory <= 3072 {
+			if v.LessThan(qemu7) || cc.Memory <= 3072 {
 				qemuMachine += ",highmem=off"
 			}
 			qemuCPU = "host"

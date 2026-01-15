@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -135,7 +135,7 @@ func teardown(cc config.ClusterConfig, name string, options *run.CommandOptions)
 	// avoid "Found multiple CRI endpoints on the host. Please define which one do you wish to use by setting the 'criSocket' field in the kubeadm configuration file: unix:///var/run/containerd/containerd.sock, unix:///var/run/cri-dockerd.sock" error
 	// intentionally non-fatal on any error, propagate and check at the end of segment
 	var kerr error
-	var kv semver.Version
+	var kv *semver.Version
 	kv, kerr = util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
 	if kerr == nil {
 		var crt cruntime.Manager
