@@ -17,12 +17,14 @@ limitations under the License.
 package process
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/shirou/gopsutil/v4/process"
+	"k8s.io/klog/v2"
 )
 
 const pidfileMode = 0o600
@@ -65,25 +67,19 @@ func Exists(pid int, executable string) (bool, error) {
 	// linux this reads /proc/pid/stat
 	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
-		// NewProcess returns an error if the process doesn't exist,
-		// so if we get an error here, it's safe to say the process
-		// doesn't exist (or we can't verify it, effectively it's not the one we want).
-		// However, to match previous behavior where an error might mean "don't know",
-		// we should be careful.
-		// `ps.FindProcess` returned (nil, nil) if not found.
-		// `NewProcess` returns error.
-		// If we really want to be safe:
-		if strings.Contains(err.Error(), "process does not exist") {
+		if errors.Is(err, process.ErrorProcessNotRunning) {
 			return false, nil
 		}
 		// If it's another error, we might want to return it or assume false?
 		// But in this context, if we can't get the process, we can't check its name.
 		// Let's assume if NewProcess fails, it's not the one we want or gone.
+		klog.Warningf("process.NewProcess(%d) failed: %v", pid, err)
 		return false, nil
 	}
 	name, err := proc.Name()
 	if err != nil {
 		// If we can't get the name, it might have exited.
+		klog.Warningf("proc.Name() failed for pid %d: %v", pid, err)
 		return false, nil
 	}
 	return name == executable, nil
