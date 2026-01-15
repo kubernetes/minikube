@@ -144,18 +144,22 @@ func TestMutexConcurrency(t *testing.T) {
 	spec := PathMutexSpec(path)
 
 	// 1. Hold lock for 200ms
+	started := make(chan error)
 	go func() {
 		r, err := Acquire(spec)
 		if err != nil {
-			t.Errorf("routine 1 failed to acquire: %v", err)
+			started <- err
 			return
 		}
+		close(started)
 		time.Sleep(200 * time.Millisecond)
 		r.Release()
 	}()
 
-	// Give release routine time to start and acquire
-	time.Sleep(50 * time.Millisecond)
+	// Wait for the routine to acquire the lock
+	if err := <-started; err != nil {
+		t.Fatalf("routine 1 failed to acquire: %v", err)
+	}
 
 	// 2. Try to acquire with 500ms timeout -> should succeed eventually
 	spec2 := PathMutexSpec(path)
