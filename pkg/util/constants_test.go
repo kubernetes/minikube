@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"net"
 	"testing"
 )
 
@@ -69,5 +70,29 @@ func TestGetDNSIP(t *testing.T) {
 				t.Fatalf("Expected '%s' but got '%s'", tt.expectedIP, ip.String())
 			}
 		}
+	}
+}
+
+func TestAddToIP(t *testing.T) {
+	v4 := net.ParseIP("192.168.0.1").To4()
+	got, ok := addToIP(v4, 1)
+	if !ok || got.String() != "192.168.0.2" {
+		t.Fatalf("addToIP(v4,1) = (%v,%v), want (192.168.0.2,true)", got, ok)
+	}
+
+	maxV4 := net.ParseIP("255.255.255.255").To4()
+	if got, ok := addToIP(maxV4, 1); ok || got != nil {
+		t.Fatalf("addToIP(maxV4,1) = (%v,%v), want (nil,false)", got, ok)
+	}
+
+	v6 := net.ParseIP("fd00::").To16()
+	got, ok = addToIP(v6, 0x10)
+	if !ok || got.String() != "fd00::10" {
+		t.Fatalf("addToIP(v6,0x10) = (%v,%v), want (fd00::10,true)", got, ok)
+	}
+
+	maxV6 := net.ParseIP("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff").To16()
+	if got, ok := addToIP(maxV6, 1); ok || got != nil {
+		t.Fatalf("addToIP(maxV6,1) = (%v,%v), want (nil,false)", got, ok)
 	}
 }
