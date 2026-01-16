@@ -28,7 +28,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/run"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
@@ -271,7 +272,7 @@ func saveImagesToTarFromConfig() error {
 func CacheAndLoadImagesInConfig(profiles []*config.Profile, options *run.CommandOptions) error {
 	images, err := imagesInConfigFile()
 	if err != nil {
-		return errors.Wrap(err, "images")
+		return fmt.Errorf("images: %w", err)
 	}
 	if len(images) == 0 {
 		return nil
@@ -282,7 +283,7 @@ func CacheAndLoadImagesInConfig(profiles []*config.Profile, options *run.Command
 func imagesInConfigFile() ([]string, error) {
 	configFile, err := config.ReadConfig(localpath.ConfigFile())
 	if err != nil {
-		return nil, errors.Wrap(err, "read")
+		return nil, fmt.Errorf("read: %w", err)
 	}
 	if values, ok := configFile[cacheImageConfigKey]; ok {
 		// Type assertion needed because config values are stored as interface{}

@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/drivers/ssh"
@@ -56,13 +55,13 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	})
 
 	if cc.SSHIPAddress == "" {
-		return nil, errors.Errorf("please provide an IP address")
+		return nil, fmt.Errorf("please provide an IP address")
 	}
 
 	// We don't want the API server listening on loopback interface,
 	// even if we might use a tunneled VM port for the SSH service
 	if cc.SSHIPAddress == "127.0.0.1" || cc.SSHIPAddress == "localhost" {
-		return nil, errors.Errorf("please provide real IP address")
+		return nil, fmt.Errorf("please provide real IP address")
 	}
 
 	d.IPAddress = cc.SSHIPAddress
@@ -71,7 +70,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	if strings.HasPrefix(cc.SSHKey, "~") {
 		dirname, err := os.UserHomeDir()
 		if err != nil {
-			return nil, errors.Errorf("Error determining path to ssh key: %v", err)
+			return nil, fmt.Errorf("Error determining path to ssh key: %v", err)
 		}
 		d.SSHKey = filepath.Join(dirname, cc.SSHKey[1:])
 	} else {

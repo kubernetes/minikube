@@ -23,7 +23,6 @@ import (
 	"os/exec"
 	"regexp"
 
-	"github.com/pkg/errors"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine"
@@ -99,7 +98,7 @@ func (t *tunnel) cleanup() *Status {
 	klog.V(3).Infof("cleaning up %s", t.status.TunnelID.Route)
 	err := t.router.Cleanup(t.status.TunnelID.Route)
 	if err != nil {
-		t.status.RouteError = errors.Errorf("error cleaning up route: %v", err)
+		t.status.RouteError = fmt.Errorf("error cleaning up route: %v", err)
 		klog.V(3).Info(t.status.RouteError.Error())
 	} else {
 		err = t.registry.Remove(t.status.TunnelID.Route)

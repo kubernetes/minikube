@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/otiai10/copy"
-	"github.com/pkg/errors"
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog/v2"
 )
@@ -174,7 +173,7 @@ func DstPath(dst string) (string, error) {
 		// Therefore, will replace the drive letter to a volume name.
 		var err error
 		if dst, err = replaceWinDriveLetterToVolumeName(dst); err != nil {
-			return "", errors.Wrap(err, "parsing docker archive dst ref: replace a Win drive letter to a volume name")
+			return "", fmt.Errorf("parsing docker archive dst ref: replace a Win drive letter to a volume name: %w", err)
 		}
 	}
 	return dst, nil

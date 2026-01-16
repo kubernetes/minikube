@@ -22,7 +22,6 @@ import (
 	"os/exec"
 	"path"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -80,19 +79,19 @@ func helmInstallBinary(addon *assets.Addon, runner command.Runner) error {
 		if err != nil {
 			_, err = runner.RunCmd(exec.Command("sudo", "mkdir", "-p", "/usr/local/bin"))
 			if err != nil {
-				return errors.Wrap(err, "creating /usr/local/bin")
+				return fmt.Errorf("creating /usr/local/bin: %w", err)
 			}
 		}
 
 		installCmd := "curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh"
 		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd))
 		if err != nil {
-			return errors.Wrap(err, "downloading helm")
+			return fmt.Errorf("downloading helm: %w", err)
 		}
 		// we copy the binary from /usr/local/bin to /usr/bin because /usr/local/bin is not in PATH in both iso and kicbase
 		_, err = runner.RunCmd(exec.Command("sudo", "mv", "/usr/local/bin/helm", "/usr/bin/helm"))
 		if err != nil {
-			return errors.Wrap(err, "installing helm")
+			return fmt.Errorf("installing helm: %w", err)
 		}
 	}
 	return err

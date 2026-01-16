@@ -26,7 +26,6 @@ import (
 
 	"github.com/hashicorp/go-getter"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -57,7 +56,7 @@ func SetAliyunMirror() {
 // CreateDstDownloadMock is the default mock implementation of download.
 func CreateDstDownloadMock(_, dst string) error {
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return errors.Wrap(err, "mkdir")
+		return fmt.Errorf("mkdir: %w", err)
 	}
 
 	f, err := os.Create(dst)
@@ -98,7 +97,7 @@ func download(src, dst string, options ...getter.ClientOption) error {
 	}
 
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return errors.Wrap(err, "mkdir")
+		return fmt.Errorf("mkdir: %w", err)
 	}
 
 	if DownloadMock != nil {
@@ -113,7 +112,7 @@ func download(src, dst string, options ...getter.ClientOption) error {
 
 	klog.Infof("Downloading: %s -> %s", src, dst)
 	if err := client.Get(); err != nil {
-		return errors.Wrapf(err, "getter: %+v", client)
+		return fmt.Errorf("getter: %+v: %w", client, err)
 	}
 	return os.Rename(tmpDst, dst)
 }
@@ -141,7 +140,7 @@ func lockDownload(file string) (lock.Releaser, error) {
 		spec.Timeout = 5 * time.Minute
 		releaser, err := lock.Acquire(spec)
 		if err != nil {
-			lockChannel <- retPair{nil, errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", file, spec)}
+			lockChannel <- retPair{nil, fmt.Errorf("failed to acquire lock \"%s\": %+v: %w", file, spec, err)}
 			return
 		}
 		lockChannel <- retPair{releaser, err}

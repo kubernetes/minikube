@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/state"
 
 	"k8s.io/klog/v2"
@@ -59,7 +58,7 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 		// only try to delete if docker/podman inspect returns
 		// if it doesn't it means docker daemon is stuck and needs restart
 		if err != nil {
-			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: %s daemon is stuck. please try again", c, ociBin))
+			deleteErrs = append(deleteErrs, fmt.Errorf("delete container %s: %s daemon is stuck. please try again: %w", c, ociBin, err))
 			klog.Errorf("%s daemon seems to be stuck. please try restarting your %s :%v", ociBin, ociBin, err)
 			continue
 		}
@@ -68,7 +67,7 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 		}
 
 		if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", c)); err != nil {
-			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, err))
+			deleteErrs = append(deleteErrs, fmt.Errorf("delete container %s: output %s: %w", c, err, err))
 		}
 
 	}
@@ -89,7 +88,7 @@ func DeleteContainer(ctx context.Context, ociBin string, name string) error {
 	}
 
 	if _, err := runCmd(exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name)); err != nil {
-		return errors.Wrapf(err, "delete %s", name)
+		return fmt.Errorf("delete %s: %w", name, err)
 	}
 	return nil
 }
@@ -98,11 +97,11 @@ func DeleteContainer(ctx context.Context, ociBin string, name string) error {
 // For the container runtime, it creates a volume which will be mounted into kic
 func PrepareContainerNode(p CreateParams) error {
 	if err := createVolume(p.OCIBinary, p.Name, p.Name); err != nil {
-		return errors.Wrapf(err, "creating volume for %s container", p.Name)
+		return fmt.Errorf("creating volume for %s container: %w", p.Name, err)
 	}
 	klog.Infof("Successfully created a %s volume %s", p.OCIBinary, p.Name)
 	if err := prepareVolumeSideCar(p.OCIBinary, p.Image, p.Name); err != nil {
-		return errors.Wrapf(err, "preparing volume for %s container", p.Name)
+		return fmt.Errorf("preparing volume for %s container: %w", p.Name, err)
 	}
 	klog.Infof("Successfully prepared a %s volume %s", p.OCIBinary, p.Name)
 	return nil
@@ -156,7 +155,7 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 		}
 		if err != nil {
 			klog.Warningf("error getting daemon info: %v", err)
-			return errors.Wrap(err, "daemon info")
+			return fmt.Errorf("daemon info: %w", err)
 		}
 	}
 
@@ -273,17 +272,17 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 	}
 
 	if err := createContainer(p.OCIBinary, p.Image, withRunArgs(runArgs...), withMounts(p.Mounts), withPortMappings(p.PortMappings)); err != nil {
-		return errors.Wrap(err, "create container")
+		return fmt.Errorf("create container: %w", err)
 	}
 
 	if err := retry.Expo(checkRunning(p), 15*time.Millisecond, 25*time.Second); err != nil {
 		excerpt := LogContainerDebug(p.OCIBinary, p.Name)
 		_, err := DaemonInfo(p.OCIBinary)
 		if err != nil {
-			return errors.Wrapf(ErrDaemonInfo, "container name %q", p.Name)
+			return fmt.Errorf("container name %q: %w", p.Name, ErrDaemonInfo)
 		}
 
-		return errors.Wrapf(ErrExitedUnexpectedly, "container name %q: log: %s", p.Name, excerpt)
+		return fmt.Errorf("container name %q: log: %s: %w", p.Name, excerpt, ErrExitedUnexpectedly)
 	}
 
 	return nil
@@ -596,12 +595,12 @@ func resetEnv(key string) error {
 	v := os.Getenv(constants.MinikubeExistingPrefix + key)
 	if v == "" {
 		if err := os.Unsetenv(key); err != nil {
-			return errors.Wrapf(err, "resetting %s env", key)
+			return fmt.Errorf("resetting %s env: %w", key, err)
 		}
 		return nil
 	}
 	if err := os.Setenv(key, v); err != nil {
-		return errors.Wrapf(err, "resetting %s env", key)
+		return fmt.Errorf("resetting %s env: %w", key, err)
 	}
 	return nil
 }
@@ -647,7 +646,7 @@ func ContainerStatus(ociBin string, name string, warnSlow ...bool) (state.State,
 	case "dead":
 		return state.Error, nil
 	default:
-		return state.None, errors.Wrapf(err, "unknown state %q", name)
+		return state.None, fmt.Errorf("unknown state %q: %w", name, err)
 	}
 }
 
@@ -671,10 +670,10 @@ func ShutDown(ociBin string, name string) error {
 			klog.Infof("temporary error verifying shutdown: %v", err)
 		}
 		klog.Infof("temporary error: container %s status is %s but expect it to be exited", name, st)
-		return errors.Wrap(err, "couldn't verify container is exited. %v")
+		return fmt.Errorf("couldn't verify container is exited: %w", err)
 	}
 	if err := retry.Expo(stopped, time.Millisecond*500, time.Second*20); err != nil {
-		return errors.Wrap(err, "verify shutdown")
+		return fmt.Errorf("verify shutdown: %w", err)
 	}
 	klog.Infof("Successfully shutdown container %s", name)
 	return nil
@@ -743,7 +742,7 @@ func IsExternalDaemonHost(driver string) bool {
 func podmanVersion() (semver.Version, error) {
 	rr, err := runCmd(exec.Command(Podman, "version", "--format", "{{.Version}}"))
 	if err != nil {
-		return semver.Version{}, errors.Wrapf(err, "podman version")
+		return semver.Version{}, fmt.Errorf("podman version: %w", err)
 	}
 	output := strings.TrimSpace(rr.Stdout.String())
 	return semver.Make(output)

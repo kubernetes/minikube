@@ -54,7 +54,6 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	cp "github.com/otiai10/copy"
 	"github.com/phayes/freeport"
-	"github.com/pkg/errors"
 	"golang.org/x/build/kubernetes/api"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
@@ -2144,7 +2143,7 @@ func startProxyWithCustomCerts(ctx context.Context, t *testing.T) error {
 	// Download the mitmproxy bundle for mitmdump
 	_, err := Run(t, exec.CommandContext(ctx, "curl", "-LO", "https://snapshots.mitmproxy.org/6.0.2/mitmproxy-6.0.2-linux.tar.gz"))
 	if err != nil {
-		return errors.Wrap(err, "download mitmproxy tar")
+		return fmt.Errorf("download mitmproxy tar: %w", err)
 	}
 	defer func() {
 		err := os.Remove("mitmproxy-6.0.2-linux.tar.gz")
@@ -2157,14 +2156,14 @@ func startProxyWithCustomCerts(ctx context.Context, t *testing.T) error {
 
 	_, err = Run(t, exec.CommandContext(ctx, "tar", "xzf", "mitmproxy-6.0.2-linux.tar.gz", "-C", mitmDir))
 	if err != nil {
-		return errors.Wrap(err, "untar mitmproxy tar")
+		return fmt.Errorf("untar mitmproxy tar: %w", err)
 	}
 
 	// Start mitmdump in the background, this will create the needed certs
 	// and provide the necessary proxy at 127.0.0.1:8080
 	mitmRR, err := Start(t, exec.CommandContext(ctx, path.Join(mitmDir, "mitmdump"), "--set", fmt.Sprintf("confdir=%s", mitmDir)))
 	if err != nil {
-		return errors.Wrap(err, "starting mitmproxy")
+		return fmt.Errorf("starting mitmproxy: %w", err)
 	}
 
 	// Store it for cleanup later
@@ -2184,26 +2183,26 @@ func startProxyWithCustomCerts(ctx context.Context, t *testing.T) error {
 		_, err = os.Stat(certFile)
 	}
 	if os.IsNotExist(err) {
-		return errors.Wrap(err, "cert files never showed up")
+		return fmt.Errorf("cert files never showed up: %w", err)
 	}
 
 	destCertPath := path.Join("/etc/ssl/certs", "mitmproxy-ca-cert.pem")
 	symLinkCmd := fmt.Sprintf("ln -fs %s %s", certFile, destCertPath)
 	if _, err := Run(t, exec.CommandContext(ctx, "sudo", "/bin/bash", "-c", symLinkCmd)); err != nil {
-		return errors.Wrap(err, "cert symlink")
+		return fmt.Errorf("cert symlink: %w", err)
 	}
 
 	// Add a symlink of the form {hash}.0
 	rr, err := Run(t, exec.CommandContext(ctx, "openssl", "x509", "-hash", "-noout", "-in", certFile))
 	if err != nil {
-		return errors.Wrap(err, "cert hashing")
+		return fmt.Errorf("cert hashing: %w", err)
 	}
 	stringHash := strings.TrimSpace(rr.Stdout.String())
 	hashLink := path.Join("/etc/ssl/certs", fmt.Sprintf("%s.0", stringHash))
 
 	hashCmd := fmt.Sprintf("test -L %s || ln -fs %s %s", hashLink, destCertPath, hashLink)
 	if _, err := Run(t, exec.CommandContext(ctx, "sudo", "/bin/bash", "-c", hashCmd)); err != nil {
-		return errors.Wrap(err, "cert hash symlink")
+		return fmt.Errorf("cert hash symlink: %w", err)
 	}
 
 	return nil
@@ -2213,7 +2212,7 @@ func startProxyWithCustomCerts(ctx context.Context, t *testing.T) error {
 func startHTTPProxy(t *testing.T) (*http.Server, error) {
 	port, err := freeport.GetFreePort()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get an open port")
+		return nil, fmt.Errorf("Failed to get an open port: %w", err)
 	}
 
 	addr := fmt.Sprintf("localhost:%d", port)

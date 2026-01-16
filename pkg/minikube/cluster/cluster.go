@@ -19,7 +19,6 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/ssh"
 
@@ -46,7 +45,7 @@ func Bootstrapper(api libmachine.API, bootstrapperName string, cc config.Cluster
 	case bootstrapper.Kubeadm:
 		b, err = kubeadm.NewBootstrapper(api, cc, r)
 		if err != nil {
-			return nil, errors.Wrap(err, "getting a new kubeadm bootstrapper")
+			return nil, fmt.Errorf("getting a new kubeadm bootstrapper: %w", err)
 		}
 	default:
 		return nil, fmt.Errorf("unknown bootstrapper: %s", bootstrapperName)
@@ -58,15 +57,15 @@ func Bootstrapper(api libmachine.API, bootstrapperName string, cc config.Cluster
 func ControlPlaneBootstrapper(mAPI libmachine.API, cc *config.ClusterConfig, bootstrapperName string) (bootstrapper.Bootstrapper, error) {
 	cp, err := config.ControlPlane(*cc)
 	if err != nil {
-		return nil, errors.Wrap(err, "get primary control-plane node")
+		return nil, fmt.Errorf("get primary control-plane node: %w", err)
 	}
 	h, err := machine.LoadHost(mAPI, config.MachineName(*cc, cp))
 	if err != nil {
-		return nil, errors.Wrap(err, "load primary control-plane host")
+		return nil, fmt.Errorf("load primary control-plane host: %w", err)
 	}
 	cpr, err := machine.CommandRunner(h)
 	if err != nil {
-		return nil, errors.Wrap(err, "get primary control-plane command runner")
+		return nil, fmt.Errorf("get primary control-plane command runner: %w", err)
 	}
 
 	bs, err := Bootstrapper(mAPI, bootstrapperName, *cc, cpr)

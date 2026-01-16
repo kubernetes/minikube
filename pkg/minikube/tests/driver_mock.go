@@ -20,7 +20,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/mcnflag"
 	"k8s.io/minikube/pkg/libmachine/state"

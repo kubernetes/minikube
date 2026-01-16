@@ -36,7 +36,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -278,7 +279,7 @@ func imageFromPathWithRetry(path string, tag name.Tag) (v1.Image, error) {
 		if err == nil {
 			return img, nil
 		}
-		lastErr = errors.Wrap(err, "tarball")
+		lastErr = fmt.Errorf("tarball: %w", err)
 		if !isRetryableEOF(err) {
 			return nil, lastErr
 		}
@@ -332,7 +333,7 @@ func fixPlatform(ref name.Reference, img v1.Image, p v1.Platform) (v1.Image, err
 	img, err = mutate.ConfigFile(img, cfg)
 	if err != nil {
 		klog.Warningf("failed to change config for %s: %v", ref, err)
-		return img, errors.Wrap(err, "failed to change image config")
+		return img, fmt.Errorf("failed to change image config: %w", err)
 	}
 	return img, nil
 }

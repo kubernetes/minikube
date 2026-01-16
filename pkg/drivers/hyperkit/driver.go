@@ -31,9 +31,10 @@ import (
 	"syscall"
 	"time"
 
+	pkgerrors "errors"
+
 	"github.com/johanneswuerbach/nfsexports"
 	hyperkit "github.com/moby/hyperkit/go"
-	pkgerrors "github.com/pkg/errors"
 	"github.com/shirou/gopsutil/v4/process"
 	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/libmachine/drivers"

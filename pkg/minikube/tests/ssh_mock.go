@@ -28,7 +28,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -62,11 +61,11 @@ func NewSSHServer(t *testing.T) (*SSHServer, error) {
 
 	private, err := rsa.GenerateKey(rand.Reader, 2014)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error generating RSA key")
+		return nil, fmt.Errorf("Error generating RSA key: %w", err)
 	}
 	signer, err := ssh.NewSignerFromKey(private)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating signer from key")
+		return nil, fmt.Errorf("Error creating signer from key: %w", err)
 	}
 	s.Config.AddHostKey(signer)
 	s.SetSessionRequested(false)
@@ -187,7 +186,7 @@ func (s *SSHServer) handleRequest(channel ssh.Channel, req *ssh.Request, wg *syn
 func (s *SSHServer) Start() (int, error) {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		return 0, errors.Wrap(err, "Error creating tcp listener for ssh server")
+		return 0, fmt.Errorf("Error creating tcp listener for ssh server: %w", err)
 	}
 	s.listener = l
 	s.t.Logf("Listening on %s", s.listener.Addr())
@@ -195,11 +194,11 @@ func (s *SSHServer) Start() (int, error) {
 
 	_, p, err := net.SplitHostPort(s.listener.Addr().String())
 	if err != nil {
-		return 0, errors.Wrap(err, "Error splitting host port")
+		return 0, fmt.Errorf("Error splitting host port: %w", err)
 	}
 	port, err := strconv.Atoi(p)
 	if err != nil {
-		return 0, errors.Wrap(err, "Error converting port string to integer")
+		return 0, fmt.Errorf("Error converting port string to integer: %w", err)
 	}
 	return port, nil
 }

@@ -29,7 +29,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -58,7 +57,7 @@ const (
 func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name, val string, options *run.CommandOptions) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
-		return errors.Wrapf(err, "parsing bool: %s", name)
+		return fmt.Errorf("parsing bool: %s: %w", name, err)
 	}
 	if enable {
 		return enableAddonGCPAuth(cfg, options)
@@ -90,7 +89,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig, options *run.CommandOptions) 
 	// Patch service accounts for all namespaces to include the image pull secret.
 	// The image registry pull secret is added to the namespaces in the webhook.
 	if err := patchServiceAccounts(cfg); err != nil {
-		return errors.Wrap(err, "patching service accounts")
+		return fmt.Errorf("patching service accounts: %w", err)
 	}
 
 	// If the env var is explicitly set, even in GCE, then defer to the user and continue
@@ -307,7 +306,7 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig, options *run.CommandOptions)
 func verifyGCPAuthAddon(cc *config.ClusterConfig, name, val string, options *run.CommandOptions) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
-		return errors.Wrapf(err, "parsing bool: %s", name)
+		return fmt.Errorf("parsing bool: %s: %w", name, err)
 	}
 
 	// If we're in GCE and didn't actually start the gcp-auth pods, don't check for them.

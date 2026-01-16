@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -327,7 +326,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 
 		// identify appropriate cni then configure cruntime accordingly
 		if _, err := cni.New(&cc); err != nil {
-			return cc, config.Node{}, errors.Wrap(err, "cni")
+			return cc, config.Node{}, fmt.Errorf("cni: %w", err)
 		}
 	} else {
 		klog.Info("no existing cluster config was found, will generate one from the flags ")
@@ -335,7 +334,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 
 		cnm, err := cni.New(&cc)
 		if err != nil {
-			return cc, config.Node{}, errors.Wrap(err, "cni")
+			return cc, config.Node{}, fmt.Errorf("cni: %w", err)
 		}
 
 		if _, ok := cnm.(cni.Disabled); !ok {
@@ -346,7 +345,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 
 	r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})
 	if err != nil {
-		return cc, config.Node{}, errors.Wrap(err, "new runtime manager")
+		return cc, config.Node{}, fmt.Errorf("new runtime manager: %w", err)
 	}
 
 	// Feed Docker our host proxy environment by default, so that it can pull images

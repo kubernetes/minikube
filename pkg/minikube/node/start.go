@@ -29,8 +29,9 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -114,7 +115,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 
 	sv, err := util.ParseKubernetesVersion(starter.Node.KubernetesVersion)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to parse Kubernetes version")
+		return nil, fmt.Errorf("Failed to parse Kubernetes version: %w", err)
 	}
 
 	// configure the runtime (docker, containerd, crio)
@@ -166,17 +167,17 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to get bootstrapper")
+			return nil, fmt.Errorf("Failed to get bootstrapper: %w", err)
 		}
 
 		// for ha (multi-control plane) cluster, use already running control-plane node to copy over certs to this secondary control-plane node
 		cpr := mustload.Running(starter.Cfg.Name, options).CP.Runner
 		if err = bs.SetupCerts(*starter.Cfg, *starter.Node, cpr); err != nil {
-			return nil, errors.Wrap(err, "setting up certs")
+			return nil, fmt.Errorf("setting up certs: %w", err)
 		}
 
 		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
-			return nil, errors.Wrap(err, "update node")
+			return nil, fmt.Errorf("update node: %w", err)
 		}
 
 		// join cluster only on first node start
@@ -185,10 +186,10 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 			// make sure to use the command runner for the primary control plane to generate the join token
 			pcpBs, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
 			if err != nil {
-				return nil, errors.Wrap(err, "get primary control-plane bootstrapper")
+				return nil, fmt.Errorf("get primary control-plane bootstrapper: %w", err)
 			}
 			if err := joinCluster(starter, pcpBs, bs, options); err != nil {
-				return nil, errors.Wrap(err, "join node to cluster")
+				return nil, fmt.Errorf("join node to cluster: %w", err)
 			}
 		}
 	}
@@ -235,7 +236,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 	} else {
 		klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
 		if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
-			return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
+			return nil, fmt.Errorf("wait %s for node: %w", viper.GetDuration(waitTimeout), err)
 		}
 	}
 
@@ -283,7 +284,7 @@ func startPrimaryControlPlane(starter Starter, cr cruntime.Manager, options *run
 	if config.IsHA(*starter.Cfg) {
 		n, err := network.Inspect(starter.Node.IP)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "inspect network")
+			return nil, nil, fmt.Errorf("inspect network: %w", err)
 		}
 		// update cluster config
 		starter.Cfg.KubernetesConfig.APIServerHAVIP = n.ClientMax // last available ip from node's subnet, should've been reserved already
@@ -295,7 +296,7 @@ func startPrimaryControlPlane(starter Starter, cr cruntime.Manager, options *run
 	// setup kubeadm (must come after setupKubeconfig)
 	bs, err := setupKubeadm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "Failed to setup kubeadm")
+		return nil, nil, fmt.Errorf("Failed to setup kubeadm: %w", err)
 	}
 
 	if err := bs.StartCluster(*starter.Cfg, options); err != nil {
@@ -306,7 +307,7 @@ func startPrimaryControlPlane(starter Starter, cr cruntime.Manager, options *run
 
 	// Write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper.
 	if err := kubeconfig.Update(kcs); err != nil {
-		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
+		return nil, bs, fmt.Errorf("Failed kubeconfig update: %w", err)
 	}
 
 	return kcs, bs, nil
@@ -397,7 +398,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool, options
 	// Abstraction leakage alert: startHost requires the config to be saved, to satisfy pkg/provision/buildroot.
 	// Hence, SaveProfile must be called before startHost, and again afterwards when we know the IP.
 	if err := config.SaveProfile(viper.GetString(config.ProfileName), cc); err != nil {
-		return nil, false, nil, nil, errors.Wrap(err, "Failed to save config")
+		return nil, false, nil, nil, fmt.Errorf("Failed to save config: %w", err)
 	}
 
 	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver, options)
@@ -668,26 +669,26 @@ func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, cluste
 func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, options *run.CommandOptions) (runner command.Runner, preExists bool, machineAPI libmachine.API, hostInfo *host.Host, err error) {
 	m, err := machine.NewAPIClient(options)
 	if err != nil {
-		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to get machine client")
+		return runner, preExists, m, hostInfo, fmt.Errorf("Failed to get machine client: %w", err)
 	}
 	hostInfo, preExists, err = startHostInternal(m, cfg, node, delOnFail)
 	if err != nil {
-		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to start host")
+		return runner, preExists, m, hostInfo, fmt.Errorf("Failed to start host: %w", err)
 	}
 	runner, err = machine.CommandRunner(hostInfo)
 	if err != nil {
-		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to get command runner")
+		return runner, preExists, m, hostInfo, fmt.Errorf("Failed to get command runner: %w", err)
 	}
 
 	ip, err := validateNetwork(hostInfo, runner, cfg.KubernetesConfig.ImageRepository)
 	if err != nil {
-		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to validate network")
+		return runner, preExists, m, hostInfo, fmt.Errorf("Failed to validate network: %w", err)
 	}
 
 	if driver.IsQEMU(hostInfo.Driver.DriverName()) && network.IsBuiltinQEMU(cfg.Network) {
 		apiServerPort, err := getPort()
 		if err != nil {
-			return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to find apiserver port")
+			return runner, preExists, m, hostInfo, fmt.Errorf("Failed to find apiserver port: %w", err)
 		}
 		cfg.APIServerPort = apiServerPort
 	}
@@ -710,7 +711,7 @@ func getPort() (int, error) {
 
 	l, err := net.ListenTCP("tcp", addr)
 	if err != nil {
-		return -1, errors.Errorf("Error accessing port %d", addr.Port)
+		return -1, fmt.Errorf("Error accessing port %d", addr.Port)
 	}
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
@@ -731,7 +732,8 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 		}
 	}
 
-	if err, ff := errors.Cause(err).(*oci.FailFastError); ff {
+	var ff *oci.FailFastError
+	if errors.As(err, &ff) {
 		klog.Infof("will skip retrying to create machine because error is not retriable: %v", err)
 		return hostInfo, exists, err
 	}

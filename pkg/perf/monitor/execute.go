@@ -24,20 +24,18 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-
-	"github.com/pkg/errors"
 )
 
 // RunMkcmp runs minikube built at the given pr against minikube at master
 func RunMkcmp(ctx context.Context, pr int) (string, error) {
 	// run 'git pull' so that minikube dir is up to date
 	if _, err := runCmdInMinikube(ctx, []string{"git", "pull", "origin", "master"}); err != nil {
-		return "", errors.Wrap(err, "running git pull")
+		return "", fmt.Errorf("running git pull: %w", err)
 	}
 	mkcmpPath := "out/mkcmp"
 	minikubePath := "out/minikube"
 	if _, err := runCmdInMinikube(ctx, []string{"make", mkcmpPath, minikubePath}); err != nil {
-		return "", errors.Wrap(err, "building minikube and mkcmp at head")
+		return "", fmt.Errorf("building minikube and mkcmp at head: %w", err)
 	}
 	return runCmdInMinikube(ctx, []string{mkcmpPath, minikubePath, fmt.Sprintf("pr://%d", pr)})
 }
@@ -53,7 +51,7 @@ func runCmdInMinikube(ctx context.Context, command []string) (string, error) {
 
 	log.Printf("Running: %v", cmd.Args)
 	if err := cmd.Run(); err != nil {
-		return "", errors.Wrapf(err, "running %v: %v", cmd.Args, buf.String())
+		return "", fmt.Errorf("running %v: %v: %w", cmd.Args, buf.String(), err)
 	}
 	return buf.String(), nil
 }

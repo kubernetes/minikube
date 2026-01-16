@@ -28,7 +28,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/spf13/viper"
 	core "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"

@@ -26,8 +26,9 @@ import (
 	"regexp"
 	"strings"
 
+	"errors"
+
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/network"
@@ -227,7 +228,7 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 
 	_, info.subnet, err = net.ParseCIDR(vals.Subnet)
 	if err != nil {
-		return info, errors.Wrapf(err, "parse subnet for %s", name)
+		return info, fmt.Errorf("parse subnet for %s: %w", name, err)
 	}
 
 	return info, nil
@@ -236,7 +237,7 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 var podmanInspectGetter = func(name string) (*RunResult, error) {
 	v, err := podmanVersion()
 	if err != nil {
-		return nil, errors.Wrapf(err, "podman version")
+		return nil, fmt.Errorf("podman version: %w", err)
 	}
 	format := `{{range .}}{{if eq .Driver "bridge"}}{{(index .Subnets 0).Subnet}},{{(index .Subnets 0).Gateway}}{{end}}{{end}}`
 	if v.LT(semver.Version{Major: 4, Minor: 0, Patch: 0}) {
@@ -273,7 +274,7 @@ func podmanNetworkInspect(name string) (netInfo, error) {
 
 	_, info.subnet, err = net.ParseCIDR(vals[0])
 	if err != nil {
-		return info, errors.Wrapf(err, "parse subnet for %s", name)
+		return info, fmt.Errorf("parse subnet for %s: %w", name, err)
 	}
 
 	return info, nil
@@ -337,7 +338,7 @@ func DeleteKICNetworksByLabel(ociBin string, label string) []error {
 	var errs []error
 	ns, err := networkNamesByLabel(ociBin, label)
 	if err != nil {
-		return []error{errors.Wrap(err, "list all volume")}
+		return []error{fmt.Errorf("list all volume: %w", err)}
 	}
 	for _, n := range ns {
 		err := RemoveNetwork(ociBin, n)

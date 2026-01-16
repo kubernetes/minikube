@@ -27,7 +27,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
@@ -148,12 +147,12 @@ func kubectlProxy(kubectlVersion string, binaryURL string, contextName string, p
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, "", errors.Wrap(err, "cmd stdout")
+		return nil, "", fmt.Errorf("cmd stdout: %w", err)
 	}
 
 	klog.Infof("Executing: %s %s", cmd.Path, cmd.Args)
 	if err := cmd.Start(); err != nil {
-		return nil, "", errors.Wrap(err, "proxy start")
+		return nil, "", fmt.Errorf("proxy start: %w", err)
 	}
 
 	klog.Infof("Waiting for kubectl to output host:port ...")
@@ -214,7 +213,7 @@ func dashboardURL(addr string, ns string, svc string) string {
 func checkURL(url string) error {
 	resp, err := http.Get(url)
 	if err != nil {
-		return errors.Wrapf(err, "hitting URL:%q\n response: %+v", url, resp)
+		return fmt.Errorf("hitting URL:%q\n response: %+v: %w", url, resp, err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return &retry.RetriableError{

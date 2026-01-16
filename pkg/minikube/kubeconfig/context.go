@@ -17,7 +17,8 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/klog/v2"
 )
@@ -30,14 +31,14 @@ func UnsetCurrentContext(machineName string, configPath ...string) error {
 	}
 	cfg, err := readOrNew(fPath)
 	if err != nil {
-		return errors.Wrap(err, "Error getting kubeconfig status")
+		return fmt.Errorf("Error getting kubeconfig status: %w", err)
 	}
 
 	// Unset current-context only if profile is the current-context
 	if cfg.CurrentContext == machineName {
 		cfg.CurrentContext = ""
 		if err := writeToFile(cfg, fPath); err != nil {
-			return errors.Wrap(err, "writing kubeconfig")
+			return fmt.Errorf("writing kubeconfig: %w", err)
 		}
 		return nil
 	}
@@ -53,7 +54,7 @@ func GetCurrentContext(configPath ...string) (string, error) {
 	}
 	kcfg, err := readOrNew(fPath)
 	if err != nil {
-		return "", errors.Wrap(err, "Error getting kubeconfig status")
+		return "", fmt.Errorf("Error getting kubeconfig status: %w", err)
 	}
 
 	return kcfg.CurrentContext, err
@@ -67,7 +68,7 @@ func SetCurrentContext(name string, configPath ...string) error {
 	}
 	kcfg, err := readOrNew(fPath)
 	if err != nil {
-		return errors.Wrap(err, "Error getting kubeconfig status")
+		return fmt.Errorf("Error getting kubeconfig status: %w", err)
 	}
 	kcfg.CurrentContext = name
 	return writeToFile(kcfg, fPath)
@@ -81,7 +82,7 @@ func DeleteContext(machineName string, configPath ...string) error {
 	}
 	kcfg, err := readOrNew(fPath)
 	if err != nil {
-		return errors.Wrap(err, "Error getting kubeconfig status")
+		return fmt.Errorf("Error getting kubeconfig status: %w", err)
 	}
 
 	if kcfg == nil || api.IsConfigEmpty(kcfg) {
@@ -98,7 +99,7 @@ func DeleteContext(machineName string, configPath ...string) error {
 	}
 
 	if err := writeToFile(kcfg, fPath); err != nil {
-		return errors.Wrap(err, "writing kubeconfig")
+		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
 	return nil
 }

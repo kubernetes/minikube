@@ -29,8 +29,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // exclude is a list of strings to explicitly omit from translation files.
@@ -98,7 +96,7 @@ func newExtractor(functionsToCheck []string) (*state, error) {
 		// Functions must be of the form "package.function"
 		t2 := strings.Split(t, ".")
 		if len(t2) < 2 {
-			return nil, errors.Errorf("invalid function string %s. Needs package name as well", t)
+			return nil, fmt.Errorf("invalid function string %s. Needs package name as well", t)
 		}
 		f := funcType{
 			pack: t2[0],
@@ -128,7 +126,7 @@ func TranslatableStrings(paths []string, functions []string, output string) erro
 	e, err := newExtractor(functions)
 
 	if err != nil {
-		return errors.Wrap(err, "Initializing")
+		return fmt.Errorf("Initializing: %w", err)
 	}
 
 	fmt.Println("Compiling translation strings...")
@@ -148,7 +146,7 @@ func TranslatableStrings(paths []string, functions []string, output string) erro
 			})
 
 			if err != nil {
-				return errors.Wrap(err, "Extracting strings")
+				return fmt.Errorf("Extracting strings: %w", err)
 			}
 		}
 	}
@@ -156,7 +154,7 @@ func TranslatableStrings(paths []string, functions []string, output string) erro
 	err = writeStringsToFiles(e, output)
 
 	if err != nil {
-		return errors.Wrap(err, "Writing translation files")
+		return fmt.Errorf("Writing translation files: %w", err)
 	}
 
 	fmt.Println("Done!")
@@ -453,7 +451,7 @@ func checkBinaryExpression(b *ast.BinaryExpr) string {
 func writeStringsToFiles(e *state, output string) error {
 	err := filepath.Walk(output, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return errors.Wrap(err, "accessing path")
+			return fmt.Errorf("accessing path: %w", err)
 		}
 		if info.Mode().IsDir() {
 			return nil
@@ -465,13 +463,13 @@ func writeStringsToFiles(e *state, output string) error {
 		currentTranslations := make(map[string]interface{})
 		f, err := os.ReadFile(path)
 		if err != nil {
-			return errors.Wrap(err, "reading translation file")
+			return fmt.Errorf("reading translation file: %w", err)
 		}
 		// Unmarshal nonempty files
 		if len(f) > 0 {
 			err = json.Unmarshal(f, &currentTranslations)
 			if err != nil {
-				return errors.Wrap(err, "unmarshalling current translations")
+				return fmt.Errorf("unmarshalling current translations: %w", err)
 			}
 		}
 
@@ -494,12 +492,12 @@ func writeStringsToFiles(e *state, output string) error {
 
 		c, err := json.MarshalIndent(currentTranslations, "", "\t")
 		if err != nil {
-			return errors.Wrap(err, "marshalling translations")
+			return fmt.Errorf("marshalling translations: %w", err)
 		}
 		c = append(c, '\n')
 		err = os.WriteFile(path, c, info.Mode())
 		if err != nil {
-			return errors.Wrap(err, "writing translation file")
+			return fmt.Errorf("writing translation file: %w", err)
 		}
 
 		fmt.Printf(" (%d translated, %d untranslated)\n", t, u)
@@ -512,12 +510,12 @@ func writeStringsToFiles(e *state, output string) error {
 
 	c, err := json.MarshalIndent(e.translations, "", "\t")
 	if err != nil {
-		return errors.Wrap(err, "marshalling translations")
+		return fmt.Errorf("marshalling translations: %w", err)
 	}
 	path := filepath.Join(output, "strings.txt")
 	err = os.WriteFile(path, c, 0644)
 	if err != nil {
-		return errors.Wrap(err, "writing translation file")
+		return fmt.Errorf("writing translation file: %w", err)
 	}
 
 	return nil
