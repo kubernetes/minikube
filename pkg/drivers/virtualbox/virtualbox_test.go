@@ -499,8 +499,8 @@ func (v *MockCreateOperations) doCall(callSignature string) (string, error) {
 
 	call := v.expectedCalls[v.call]
 	if call.signature != "IGNORE CALL" {
-		actual := filepath.ToSlash(callSignature)
-		expected := filepath.ToSlash(call.signature)
+		actual := filepath.Clean(callSignature)
+		expected := filepath.Clean(call.signature)
 		if actual != expected {
 			v.test.Fatal("Unexpected call", callSignature)
 		}
