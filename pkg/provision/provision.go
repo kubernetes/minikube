@@ -28,7 +28,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/cert"
@@ -95,12 +94,12 @@ func configureAuth(p miniProvisioner) error {
 
 	ip, err := driver.GetIP()
 	if err != nil {
-		return errors.Wrap(err, "error getting ip during provisioning")
+		return fmt.Errorf("error getting ip during provisioning: %w", err)
 	}
 
 	hostIP, err := driver.GetSSHHostname()
 	if err != nil {
-		return errors.Wrap(err, "error getting ssh hostname during provisioning")
+		return fmt.Errorf("error getting ssh hostname during provisioning: %w", err)
 	}
 
 	if err := copyHostCerts(authOptions); err != nil {
@@ -157,7 +156,7 @@ func copyHostCerts(authOptions auth.Options) error {
 	for src, dst := range hostCerts {
 		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0777")
 		if err != nil {
-			return errors.Wrapf(err, "open cert file: %s", src)
+			return fmt.Errorf("open cert file: %s: %w", src, err)
 		}
 		defer func() {
 			if err := f.Close(); err != nil {
@@ -166,7 +165,7 @@ func copyHostCerts(authOptions auth.Options) error {
 		}()
 
 		if err := execRunner.Copy(f); err != nil {
-			return errors.Wrapf(err, "transferring file: %+v", f)
+			return fmt.Errorf("transferring file: %+v: %w", f, err)
 		}
 	}
 
@@ -197,7 +196,7 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 	for src, dst := range remoteCerts {
 		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0640")
 		if err != nil {
-			return errors.Wrapf(err, "error copying %s to %s", src, dst)
+			return fmt.Errorf("error copying %s to %s: %w", src, dst, err)
 		}
 		defer func() {
 			if err := f.Close(); err != nil {
@@ -206,7 +205,7 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 		}()
 
 		if err := sshRunner.Copy(f); err != nil {
-			return errors.Wrapf(err, "transferring file to machine %v", f)
+			return fmt.Errorf("transferring file to machine %v: %w", f, err)
 		}
 	}
 
@@ -229,7 +228,7 @@ func setRemoteAuthOptions(p provision.Provisioner) auth.Options {
 func setContainerRuntimeOptions(name string, p miniProvisioner) error {
 	c, err := config.Load(name)
 	if err != nil {
-		return errors.Wrap(err, "getting cluster config")
+		return fmt.Errorf("getting cluster config: %w", err)
 	}
 
 	switch c.KubernetesConfig.ContainerRuntime {

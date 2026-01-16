@@ -27,7 +27,7 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -152,7 +152,7 @@ func makePreload(cfg preloadCfg) error {
 	}()
 
 	if err := generateTarball(kv, cr, tf); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr))
+		return fmt.Errorf("%s: %w", fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr), err)
 	}
 
 	if *noUpload {
@@ -160,7 +160,7 @@ func makePreload(cfg preloadCfg) error {
 		return nil
 	}
 	if err := uploadTarballToGCS(tf, kv); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr))
+		return fmt.Errorf("%s: %w", fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr), err)
 	}
 	return nil
 }

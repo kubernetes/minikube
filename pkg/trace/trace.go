@@ -18,8 +18,6 @@ package trace
 
 import (
 	"fmt"
-
-	"github.com/pkg/errors"
 )
 
 var (
@@ -36,7 +34,7 @@ type minikubeTracer interface {
 func Initialize(t string) error {
 	tr, err := getTracer(t)
 	if err != nil {
-		return errors.Wrap(err, "getting tracer")
+		return fmt.Errorf("getting tracer: %w", err)
 	}
 	tracer = tr
 	return nil

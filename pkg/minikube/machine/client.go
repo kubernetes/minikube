@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/gofrs/flock"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/auth"
@@ -104,7 +103,7 @@ func (api *LocalClient) NewHost(drvName string, rawDriver []byte) (*host.Host, e
 	d := def.Init(api.commandOptions)
 	err := json.Unmarshal(rawDriver, d)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error getting driver %s", string(rawDriver))
+		return nil, fmt.Errorf("Error getting driver %s: %w", string(rawDriver), err)
 	}
 
 	return &host.Host{
@@ -135,7 +134,7 @@ func (api *LocalClient) NewHost(drvName string, rawDriver []byte) (*host.Host, e
 func (api *LocalClient) Load(name string) (*host.Host, error) {
 	h, err := api.Filestore.Load(name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "filestore %q", name)
+		return nil, fmt.Errorf("filestore %q: %w", name, err)
 	}
 
 	def := registry.Driver(h.DriverName)
@@ -233,7 +232,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 
 	for _, step := range steps {
 		if err := step.f(); err != nil {
-			return errors.Wrap(err, step.name)
+			return fmt.Errorf("%s: %w", step.name, err)
 		}
 	}
 

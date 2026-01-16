@@ -24,8 +24,9 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,7 +58,7 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool, options *run.C
 
 		for _, existNode := range p.Config.Nodes {
 			if machineName == config.MachineName(*p.Config, existNode) {
-				return errors.Errorf("Node %s already exists in %s profile", machineName, p.Name)
+				return fmt.Errorf("Node %s already exists in %s profile", machineName, p.Name)
 			}
 		}
 	}
@@ -67,7 +68,7 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool, options *run.C
 	}
 
 	if err := config.SaveNode(cc, &n); err != nil {
-		return errors.Wrap(err, "save node")
+		return fmt.Errorf("save node: %w", err)
 	}
 
 	r, p, m, h, err := Provision(cc, &n, delOnFail, options)
@@ -94,23 +95,23 @@ func teardown(cc config.ClusterConfig, name string, options *run.CommandOptions)
 	// get runner for named node - has to be done before node is drained
 	n, _, err := Retrieve(cc, name)
 	if err != nil {
-		return n, errors.Wrap(err, "retrieve node")
+		return n, fmt.Errorf("retrieve node: %w", err)
 	}
 	m := config.MachineName(cc, *n)
 
 	api, err := machine.NewAPIClient(options)
 	if err != nil {
-		return n, errors.Wrap(err, "get api client")
+		return n, fmt.Errorf("get api client: %w", err)
 	}
 
 	h, err := machine.LoadHost(api, m)
 	if err != nil {
-		return n, errors.Wrap(err, "load host")
+		return n, fmt.Errorf("load host: %w", err)
 	}
 
 	r, err := machine.CommandRunner(h)
 	if err != nil {
-		return n, errors.Wrap(err, "get command runner")
+		return n, fmt.Errorf("get command runner: %w", err)
 	}
 
 	// get runner for healthy control-plane node
@@ -203,7 +204,7 @@ func Delete(cc config.ClusterConfig, name string, options *run.CommandOptions) (
 
 	_, index, err := Retrieve(cc, name)
 	if err != nil {
-		return n, errors.Wrap(err, "retrieve")
+		return n, fmt.Errorf("retrieve: %w", err)
 	}
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)

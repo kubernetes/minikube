@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/drivers/hyperv"
@@ -62,7 +61,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	if d.VSwitch == "" && cfg.HypervUseExternalSwitch {
 		switchName, adapter, err := chooseSwitch(cfg.HypervExternalAdapter)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to choose switch for Hyper-V driver")
+			return nil, fmt.Errorf("failed to choose switch for Hyper-V driver: %w", err)
 		}
 		if cfg.HypervExternalAdapter == "" && switchName == "" {
 			// create a switch on the returned adapter

@@ -23,13 +23,15 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -38,7 +40,7 @@ import (
 func GenerateCACert(certPath, keyPath string, name string) error {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return errors.Wrap(err, "Error generating rsa key")
+		return fmt.Errorf("Error generating rsa key: %w", err)
 	}
 
 	template := x509.Certificate{
@@ -68,7 +70,7 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 	klog.Infof("Generating cert %s with IP's: %s", certPath, ips)
 	signerCertBytes, err := os.ReadFile(signerCertPath)
 	if err != nil {
-		return errors.Wrap(err, "Error reading file: signerCertPath")
+		return fmt.Errorf("Error reading file: signerCertPath: %w", err)
 	}
 	decodedSignerCert, _ := pem.Decode(signerCertBytes)
 	if decodedSignerCert == nil {
@@ -76,11 +78,11 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 	}
 	signerCert, err := x509.ParseCertificate(decodedSignerCert.Bytes)
 	if err != nil {
-		return errors.Wrap(err, "Error parsing certificate: decodedSignerCert.Bytes")
+		return fmt.Errorf("Error parsing certificate: decodedSignerCert.Bytes: %w", err)
 	}
 	signerKeyBytes, err := os.ReadFile(signerKeyPath)
 	if err != nil {
-		return errors.Wrap(err, "Error reading file: signerKeyPath")
+		return fmt.Errorf("Error reading file: signerKeyPath: %w", err)
 	}
 	decodedSignerKey, _ := pem.Decode(signerKeyBytes)
 	if decodedSignerKey == nil {
@@ -88,7 +90,7 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 	}
 	signerKey, err := x509.ParsePKCS1PrivateKey(decodedSignerKey.Bytes)
 	if err != nil {
-		return errors.Wrap(err, "Error parsing private key: decodedSignerKey.Bytes")
+		return fmt.Errorf("Error parsing private key: decodedSignerKey.Bytes: %w", err)
 	}
 
 	template := x509.Certificate{
@@ -110,7 +112,7 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 
 	priv, err := loadOrGeneratePrivateKey(keyPath)
 	if err != nil {
-		return errors.Wrap(err, "Error loading or generating private key: keyPath")
+		return fmt.Errorf("Error loading or generating private key: keyPath: %w", err)
 	}
 
 	return writeCertsAndKeys(&template, certPath, priv, keyPath, signerCert, signerKey)
@@ -129,7 +131,7 @@ func loadOrGeneratePrivateKey(keyPath string) (*rsa.PrivateKey, error) {
 	}
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error generating RSA key")
+		return nil, fmt.Errorf("Error generating RSA key: %w", err)
 	}
 	return priv, nil
 }
@@ -137,33 +139,33 @@ func loadOrGeneratePrivateKey(keyPath string) (*rsa.PrivateKey, error) {
 func writeCertsAndKeys(template *x509.Certificate, certPath string, signeeKey *rsa.PrivateKey, keyPath string, parent *x509.Certificate, signingKey *rsa.PrivateKey) error {
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, parent, &signeeKey.PublicKey, signingKey)
 	if err != nil {
-		return errors.Wrap(err, "Error creating certificate")
+		return fmt.Errorf("Error creating certificate: %w", err)
 	}
 
 	certBuffer := bytes.Buffer{}
 	if err := pem.Encode(&certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}); err != nil {
-		return errors.Wrap(err, "Error encoding certificate")
+		return fmt.Errorf("Error encoding certificate: %w", err)
 	}
 
 	keyBuffer := bytes.Buffer{}
 	if err := pem.Encode(&keyBuffer, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(signeeKey)}); err != nil {
-		return errors.Wrap(err, "Error encoding key")
+		return fmt.Errorf("Error encoding key: %w", err)
 	}
 
 	if err := os.MkdirAll(filepath.Dir(certPath), os.FileMode(0755)); err != nil {
-		return errors.Wrap(err, "Error creating certificate directory")
+		return fmt.Errorf("Error creating certificate directory: %w", err)
 	}
 	klog.Infof("Writing cert to %s ...", certPath)
 	if err := lock.WriteFile(certPath, certBuffer.Bytes(), os.FileMode(0644)); err != nil {
-		return errors.Wrap(err, "Error writing certificate to cert path")
+		return fmt.Errorf("Error writing certificate to cert path: %w", err)
 	}
 
 	if err := os.MkdirAll(filepath.Dir(keyPath), os.FileMode(0755)); err != nil {
-		return errors.Wrap(err, "Error creating key directory")
+		return fmt.Errorf("Error creating key directory: %w", err)
 	}
 	klog.Infof("Writing key to %s ...", keyPath)
 	if err := lock.WriteFile(keyPath, keyBuffer.Bytes(), os.FileMode(0600)); err != nil {
-		return errors.Wrap(err, "Error writing key file")
+		return fmt.Errorf("Error writing key file: %w", err)
 	}
 
 	return nil

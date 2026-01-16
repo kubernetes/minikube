@@ -26,7 +26,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -202,7 +201,7 @@ func (s *OpenRC) GenerateInitShim(svc string, binary string, unit string) ([]ass
 
 	var b bytes.Buffer
 	if err := initScriptTmpl.Execute(&b, opts); err != nil {
-		return nil, errors.Wrap(err, "template execute")
+		return nil, fmt.Errorf("template execute: %w", err)
 	}
 
 	files := []assets.CopyableFile{

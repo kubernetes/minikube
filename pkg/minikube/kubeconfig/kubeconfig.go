@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
@@ -49,7 +48,7 @@ func UpdateEndpoint(contextName string, host string, port int, configPath string
 
 	cfg, err := readOrNew(configPath)
 	if err != nil {
-		return false, errors.Wrap(err, "get kubeconfig")
+		return false, fmt.Errorf("get kubeconfig: %w", err)
 	}
 
 	address := "https://" + host + ":" + strconv.Itoa(port)
@@ -73,12 +72,12 @@ func UpdateEndpoint(contextName string, host string, port int, configPath string
 		kcs.ExtensionCluster = ext
 	}
 	if err = PopulateFromSettings(kcs, cfg); err != nil {
-		return false, errors.Wrap(err, "populate kubeconfig")
+		return false, fmt.Errorf("populate kubeconfig: %w", err)
 	}
 
 	err = writeToFile(cfg, configPath)
 	if err != nil {
-		return false, errors.Wrap(err, "write kubeconfig")
+		return false, fmt.Errorf("write kubeconfig: %w", err)
 	}
 
 	return true, nil
@@ -96,7 +95,7 @@ func VerifyEndpoint(contextName string, host string, port int, configPath string
 
 	gotHost, gotPort, err := Endpoint(contextName, configPath)
 	if err != nil {
-		return errors.Wrap(err, "get endpoint")
+		return fmt.Errorf("get endpoint: %w", err)
 	}
 
 	if host != gotHost || port != gotPort {
@@ -114,23 +113,23 @@ func Endpoint(contextName string, configPath string) (string, int, error) {
 
 	apiCfg, err := readOrNew(configPath)
 	if err != nil {
-		return "", 0, errors.Wrap(err, "read kubeconfig")
+		return "", 0, fmt.Errorf("read kubeconfig: %w", err)
 	}
 
 	cluster, ok := apiCfg.Clusters[contextName]
 	if !ok {
-		return "", 0, errors.Errorf("%q does not appear in %s", contextName, configPath)
+		return "", 0, fmt.Errorf("%q does not appear in %s", contextName, configPath)
 	}
 
 	klog.Infof("found %q server: %q", contextName, cluster.Server)
 	u, err := url.Parse(cluster.Server)
 	if err != nil {
-		return "", 0, errors.Wrap(err, "url parse")
+		return "", 0, fmt.Errorf("url parse: %w", err)
 	}
 
 	port, err := strconv.Atoi(u.Port())
 	if err != nil {
-		return "", 0, errors.Wrap(err, "atoi")
+		return "", 0, fmt.Errorf("atoi: %w", err)
 	}
 
 	return u.Hostname(), port, nil
@@ -140,13 +139,13 @@ func Endpoint(contextName string, configPath string) (string, int, error) {
 func configIssues(cfg *api.Config, contextName string, address string) []error {
 	errs := []error{}
 	if _, ok := cfg.Clusters[contextName]; !ok {
-		errs = append(errs, errors.Errorf("kubeconfig missing %q cluster setting", contextName))
+		errs = append(errs, fmt.Errorf("kubeconfig missing %q cluster setting", contextName))
 	} else if cfg.Clusters[contextName].Server != address {
-		errs = append(errs, errors.Errorf("kubeconfig needs server address update"))
+		errs = append(errs, fmt.Errorf("kubeconfig needs server address update"))
 	}
 
 	if _, ok := cfg.Contexts[contextName]; !ok {
-		errs = append(errs, errors.Errorf("kubeconfig missing %q context setting", contextName))
+		errs = append(errs, fmt.Errorf("kubeconfig missing %q context setting", contextName))
 	}
 
 	if len(errs) > 0 {
@@ -187,13 +186,13 @@ func readOrNew(configPath string) (*api.Config, error) {
 		return api.NewConfig(), nil
 	}
 	if err != nil {
-		return nil, errors.Wrapf(err, "read kubeconfig from %q", configPath)
+		return nil, fmt.Errorf("read kubeconfig from %q: %w", configPath, err)
 	}
 
 	// decode config, empty if no bytes
 	kcfg, err := decode(data)
 	if err != nil {
-		return nil, errors.Wrapf(err, "decode kubeconfig from %q", configPath)
+		return nil, fmt.Errorf("decode kubeconfig from %q: %w", configPath, err)
 	}
 
 	// initialize nil maps
@@ -220,7 +219,7 @@ func decode(data []byte) (*api.Config, error) {
 
 	kcfg, _, err := latest.Codec.Decode(data, nil, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "decode data: %s", string(data))
+		return nil, fmt.Errorf("decode data: %s: %w", string(data), err)
 	}
 
 	return kcfg.(*api.Config), nil
@@ -240,24 +239,24 @@ func writeToFile(config runtime.Object, configPath string) error {
 	// encode config to YAML
 	data, err := runtime.Encode(latest.Codec, config)
 	if err != nil {
-		return errors.Errorf("could not write to '%s': failed to encode config: %v", configPath, err)
+		return fmt.Errorf("could not write to '%s': failed to encode config: %v", configPath, err)
 	}
 
 	// create parent dir if doesn't exist
 	dir := filepath.Dir(configPath)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err = os.MkdirAll(dir, 0755); err != nil {
-			return errors.Wrapf(err, "Error creating directory: %s", dir)
+			return fmt.Errorf("Error creating directory: %s: %w", dir, err)
 		}
 	}
 
 	// write with restricted permissions
 	if err := lock.WriteFile(configPath, data, 0600); err != nil {
-		return errors.Wrapf(err, "Error writing file %s", configPath)
+		return fmt.Errorf("Error writing file %s: %w", configPath, err)
 	}
 
 	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
-		return errors.Wrapf(err, "Error recursively changing ownership for dir: %s", dir)
+		return fmt.Errorf("Error recursively changing ownership for dir: %s: %w", dir, err)
 	}
 
 	return nil

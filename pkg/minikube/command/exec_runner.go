@@ -28,7 +28,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 )
@@ -115,7 +114,7 @@ func (*execRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 	cmd.Stderr = errb
 
 	if err := cmd.Start(); err != nil {
-		return sc, errors.Wrap(err, "start")
+		return sc, fmt.Errorf("start: %w", err)
 	}
 
 	return sc, nil
@@ -143,7 +142,7 @@ func (e *execRunner) Copy(f assets.CopyableFile) error {
 	if _, err := os.Stat(dst); err == nil {
 		klog.Infof("found %s, removing ...", dst)
 		if err := e.Remove(f); err != nil {
-			return errors.Wrapf(err, "error removing file %s", dst)
+			return fmt.Errorf("error removing file %s: %w", dst, err)
 		}
 	}
 
@@ -155,24 +154,24 @@ func (e *execRunner) Copy(f assets.CopyableFile) error {
 
 	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
 	if err != nil || perms > 07777 {
-		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
+		return fmt.Errorf("error converting permissions %s to integer: %w", f.GetPermissions(), err)
 	}
 
 	if e.sudo {
 		// write to temp location ...
 		tmpfile, err := os.CreateTemp("", "minikube")
 		if err != nil {
-			return errors.Wrap(err, "error creating tempfile")
+			return fmt.Errorf("error creating tempfile: %w", err)
 		}
 		defer os.Remove(tmpfile.Name())
 
 		if err := writeFile(tmpfile.Name(), f, os.FileMode(perms)); err != nil {
-			return errors.Wrapf(err, "error writing to tempfile %s", tmpfile.Name())
+			return fmt.Errorf("error writing to tempfile %s: %w", tmpfile.Name(), err)
 		}
 
 		// ... then use sudo to move to target
 		if _, err := e.RunCmd(exec.Command("sudo", "cp", "-a", tmpfile.Name(), dst)); err != nil {
-			return errors.Wrapf(err, "error copying tempfile %s to dst %s", tmpfile.Name(), dst)
+			return fmt.Errorf("error copying tempfile %s to dst %s: %w", tmpfile.Name(), dst, err)
 		}
 		return nil
 	}
@@ -191,7 +190,7 @@ func (e *execRunner) CopyFrom(f assets.CopyableFile) error {
 
 	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
 	if err != nil || perms > 07777 {
-		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
+		return fmt.Errorf("error converting permissions %s to integer: %w", f.GetPermissions(), err)
 	}
 
 	return writeFile(dst, f, os.FileMode(perms))

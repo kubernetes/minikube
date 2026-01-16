@@ -24,7 +24,6 @@ import (
 	"time"
 
 	semver "github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/deploy/addons"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -909,7 +908,7 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 
 	v, err := util.ParseKubernetesVersion(cfg.KubernetesVersion)
 	if err != nil {
-		return errors.Wrap(err, "parsing Kubernetes version")
+		return fmt.Errorf("parsing Kubernetes version: %w", err)
 	}
 
 	opts := struct {

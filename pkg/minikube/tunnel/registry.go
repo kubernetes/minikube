@@ -22,7 +22,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"k8s.io/klog/v2"
 )

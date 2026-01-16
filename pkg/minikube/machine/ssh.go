@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/ssh"
@@ -33,16 +32,16 @@ func GetHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 	machineName := config.MachineName(cc, n)
 	hostInfo, err := LoadHost(api, machineName)
 	if err != nil {
-		return nil, errors.Wrap(err, "host exists and load")
+		return nil, fmt.Errorf("host exists and load: %w", err)
 	}
 
 	currentState, err := hostInfo.Driver.GetState()
 	if err != nil {
-		return nil, errors.Wrap(err, "state")
+		return nil, fmt.Errorf("state: %w", err)
 	}
 
 	if currentState != state.Running {
-		return nil, errors.Errorf("%q is not running", machineName)
+		return nil, fmt.Errorf("%q is not running", machineName)
 	}
 
 	return hostInfo, nil
@@ -64,7 +63,7 @@ func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, n config.Node, 
 	client, err := hostInfo.CreateSSHClient()
 
 	if err != nil {
-		return errors.Wrap(err, "Creating ssh client")
+		return fmt.Errorf("Creating ssh client: %w", err)
 	}
 	return client.Shell(args...)
 }

@@ -26,8 +26,6 @@ import (
 
 	"golang.org/x/sync/syncmap"
 
-	"github.com/pkg/errors"
-
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 )
@@ -76,7 +74,7 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	}
 	_, err := buf.WriteString(outStr)
 	if err != nil {
-		return rr, errors.Wrap(err, "Writing outStr to FakeCommandRunner's buffer")
+		return rr, fmt.Errorf("Writing outStr to FakeCommandRunner's buffer: %w", err)
 	}
 	rr.Stdout = buf
 	rr.Stderr = buf
@@ -118,7 +116,7 @@ func (f *FakeCommandRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 	}
 	_, err := buf.WriteString(outStr)
 	if err != nil {
-		return sc, errors.Wrap(err, "Writing outStr to FakeCommandRunner's buffer")
+		return sc, fmt.Errorf("Writing outStr to FakeCommandRunner's buffer: %w", err)
 	}
 	rr.Stdout = buf
 	rr.Stderr = buf
@@ -136,7 +134,7 @@ func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 	var b bytes.Buffer
 	_, err := io.Copy(&b, file)
 	if err != nil {
-		return errors.Wrapf(err, "error reading file: %+v", file)
+		return fmt.Errorf("error reading file: %+v: %w", file, err)
 	}
 	f.fileMap.Store(file.GetSourcePath(), b.String())
 	return nil
@@ -151,7 +149,7 @@ func (f *FakeCommandRunner) CopyFrom(file assets.CopyableFile) error {
 	b := v.(bytes.Buffer)
 	_, err := io.Copy(file, &b)
 	if err != nil {
-		return errors.Wrapf(err, "error writing file: %+v", file)
+		return fmt.Errorf("error writing file: %+v: %w", file, err)
 	}
 	return nil
 }

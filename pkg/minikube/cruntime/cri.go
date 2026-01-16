@@ -29,8 +29,6 @@ import (
 
 	"github.com/blang/semver/v4"
 
-	"github.com/pkg/errors"
-
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/util/retry"
@@ -86,7 +84,7 @@ func crictlList(cr CommandRunner, root string, o ListContainersOptions) (*comman
 func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) ([]string, error) {
 	rr, err := crictlList(cr, root, o)
 	if err != nil {
-		return nil, errors.Wrap(err, "crictl list")
+		return nil, fmt.Errorf("crictl list: %w", err)
 	}
 
 	// Avoid an id named ""
@@ -117,7 +115,7 @@ func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) (
 	args = append(args, "list", "-f", "json")
 	rr, err = cr.RunCmd(exec.Command("sudo", args...))
 	if err != nil {
-		return nil, errors.Wrap(err, "runc")
+		return nil, fmt.Errorf("runc: %w", err)
 	}
 	content := rr.Stdout.Bytes()
 	klog.Infof("JSON = %s", content)
@@ -158,7 +156,7 @@ func pauseCRIContainers(cr CommandRunner, root string, ids []string) error {
 		args := baseArgs
 		args = append(args, id)
 		if _, err := cr.RunCmd(exec.Command("sudo", args...)); err != nil {
-			return errors.Wrap(err, "runc")
+			return fmt.Errorf("runc: %w", err)
 		}
 	}
 	return nil
@@ -185,7 +183,7 @@ func unpauseCRIContainers(cr CommandRunner, root string, ids []string) error {
 	for _, id := range ids {
 		cargs := append(cargs, id)
 		if _, err := cr.RunCmd(exec.Command("sudo", cargs...)); err != nil {
-			return errors.Wrap(err, "runc")
+			return fmt.Errorf("runc: %w", err)
 		}
 	}
 	return nil
@@ -202,7 +200,7 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 	args := append([]string{crictl, "rm", "--force"}, ids...)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "crictl")
+		return fmt.Errorf("crictl: %w", err)
 	}
 	return nil
 }
@@ -215,7 +213,7 @@ func pullCRIImage(cr CommandRunner, name string) error {
 	args := append([]string{crictl, "pull"}, name)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "crictl")
+		return fmt.Errorf("crictl: %w", err)
 	}
 	return nil
 }
@@ -240,7 +238,7 @@ func removeCRIImage(cr CommandRunner, name string, verifyRemoval bool) error {
 	}
 
 	if !success {
-		return errors.Wrap(err, "crictl")
+		return fmt.Errorf("crictl: %w", err)
 	}
 
 	if !verifyRemoval {
@@ -261,7 +259,7 @@ func removeCRIImage(cr CommandRunner, name string, verifyRemoval bool) error {
 	}
 
 	if err := retry.Expo(checkFunc, 250*time.Millisecond, 10*time.Second); err != nil {
-		return errors.Wrapf(err, "image %s still exists after removal", name)
+		return fmt.Errorf("image %s still exists after removal: %w", name, err)
 	}
 	return nil
 }
@@ -281,7 +279,7 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 	args := append([]string{crictl, "stop", "--timeout=10"}, ids...)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "crictl")
+		return fmt.Errorf("crictl: %w", err)
 	}
 	return nil
 }
@@ -301,7 +299,7 @@ func populateCRIConfig(cr CommandRunner, socket string) error {
 	}
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(cPath), b.String(), cPath))
 	if rr, err := cr.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "Run: %q", rr.Command())
+		return fmt.Errorf("Run: %q: %w", rr.Command(), err)
 	}
 	return nil
 }
@@ -312,7 +310,7 @@ func getCRIInfo(cr CommandRunner) (map[string]interface{}, error) {
 	c := exec.Command("sudo", args...)
 	rr, err := cr.RunCmd(c)
 	if err != nil {
-		return nil, errors.Wrap(err, "get cri info")
+		return nil, fmt.Errorf("get cri info: %w", err)
 	}
 	info := rr.Stdout.String()
 	jsonMap := make(map[string]interface{})
@@ -328,7 +326,7 @@ func listCRIImages(cr CommandRunner) ([]ListImage, error) {
 	c := exec.Command("sudo", "crictl", timeoutOverrideFlag, "images", "--output", "json")
 	rr, err := cr.RunCmd(c)
 	if err != nil {
-		return nil, errors.Wrapf(err, "crictl images")
+		return nil, fmt.Errorf("crictl images: %w", err)
 	}
 
 	var jsonImages crictlImages

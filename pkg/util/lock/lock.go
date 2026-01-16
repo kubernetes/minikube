@@ -24,8 +24,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"errors"
+
 	"github.com/gofrs/flock"
-	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
 )
@@ -59,7 +60,7 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	klog.Infof("WriteFile acquiring %s: %+v", filename, spec)
 	releaser, err := Acquire(spec)
 	if err != nil {
-		return errors.Wrapf(err, "failed to acquire lock for %s: %+v", filename, spec)
+		return fmt.Errorf("failed to acquire lock for %s: %+v: %w", filename, spec, err)
 	}
 
 	defer releaser.Release()
@@ -74,14 +75,14 @@ func AppendToFile(filename string, data []byte, perm os.FileMode) error {
 	klog.Infof("WriteFile acquiring %s: %+v", filename, spec)
 	releaser, err := Acquire(spec)
 	if err != nil {
-		return errors.Wrapf(err, "failed to acquire lock for %s: %+v", filename, spec)
+		return fmt.Errorf("failed to acquire lock for %s: %+v: %w", filename, spec, err)
 	}
 
 	defer releaser.Release()
 
 	fd, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, perm)
 	if err != nil {
-		return errors.Wrapf(err, "failed to open %s: %+v", filename, spec)
+		return fmt.Errorf("failed to open %s: %+v: %w", filename, spec, err)
 	}
 
 	_, err = fd.Write(data)
@@ -103,7 +104,7 @@ func Acquire(spec Spec) (Releaser, error) {
 	tmpDir := os.TempDir()
 	lockDir := filepath.Join(tmpDir, "minikube-locks")
 	if err := os.MkdirAll(lockDir, 0755); err != nil {
-		return nil, errors.Wrap(err, "creating lock dir")
+		return nil, fmt.Errorf("creating lock dir: %w", err)
 	}
 
 	lockPath := filepath.Join(lockDir, spec.Name+".lock")
@@ -116,13 +117,13 @@ func Acquire(spec Spec) (Releaser, error) {
 	locked, err := f.TryLockContext(ctx, spec.Delay)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, errors.Errorf("timed out waiting for lock %s", spec.Name)
+			return nil, fmt.Errorf("timed out waiting for lock %s", spec.Name)
 		}
-		return nil, errors.Wrap(err, "acquiring lock")
+		return nil, fmt.Errorf("acquiring lock: %w", err)
 	}
 
 	if !locked {
-		return nil, errors.Errorf("failed to acquire lock %s", spec.Name)
+		return nil, fmt.Errorf("failed to acquire lock %s", spec.Name)
 	}
 
 	return &flockReleaser{f: f}, nil

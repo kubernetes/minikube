@@ -33,8 +33,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/pkg/errors"
-
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -218,7 +216,7 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		if err := kapi.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, Minutes(2)); err != nil {
-			t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
+			t.Fatal(fmt.Errorf("Error waiting for nginx service to be up: %w", err))
 		}
 	})
 	if !setupSucceeded {

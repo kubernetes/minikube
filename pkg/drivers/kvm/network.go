@@ -26,7 +26,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util/retry"
@@ -97,24 +96,24 @@ func setupNetwork(conn *libvirt.Connect, name string) error {
 	// always ensure autostart is set on the network
 	autostart, err := n.GetAutostart()
 	if err != nil {
-		return errors.Wrapf(err, "checking network %s autostart", name)
+		return fmt.Errorf("checking network %s autostart: %w", name, err)
 	}
 	if !autostart {
 		if err := n.SetAutostart(true); err != nil {
-			return errors.Wrapf(err, "setting autostart for network %s", name)
+			return fmt.Errorf("setting autostart for network %s: %w", name, err)
 		}
 	}
 
 	// always ensure the network is started (active)
 	active, err := n.IsActive()
 	if err != nil {
-		return errors.Wrapf(err, "checking network status for %s", name)
+		return fmt.Errorf("checking network status for %s: %w", name, err)
 	}
 
 	if !active {
 		log.Debugf("network %s is not active, trying to start it...", name)
 		if err := n.Create(); err != nil {
-			return errors.Wrapf(err, "starting network %s", name)
+			return fmt.Errorf("starting network %s: %w", name, err)
 		}
 	}
 	return nil
@@ -148,11 +147,11 @@ func (d *Driver) ensureNetwork() error {
 	if err := setupNetwork(conn, d.PrivateNetwork); err != nil {
 		log.Debugf("Network %s is inoperable, will try to recreate it: %v", d.PrivateNetwork, err)
 		if err := d.deleteNetwork(); err != nil {
-			return errors.Wrapf(err, "deleting inoperable network %s", d.PrivateNetwork)
+			return fmt.Errorf("deleting inoperable network %s: %w", d.PrivateNetwork, err)
 		}
 		log.Debugf("Successfully deleted %s network", d.PrivateNetwork)
 		if err := d.createNetwork(); err != nil {
-			return errors.Wrapf(err, "recreating inoperable network %s", d.PrivateNetwork)
+			return fmt.Errorf("recreating inoperable network %s: %w", d.PrivateNetwork, err)
 		}
 		log.Debugf("Successfully recreated %s network", d.PrivateNetwork)
 		if err := setupNetwork(conn, d.PrivateNetwork); err != nil {
@@ -293,7 +292,7 @@ func (d *Driver) deleteNetwork() error {
 			log.Warnf("Network %s does not exist. Skipping deletion", d.PrivateNetwork)
 			return nil
 		}
-		return errors.Wrapf(err, "failed looking up network %s", d.PrivateNetwork)
+		return fmt.Errorf("failed looking up network %s: %w", d.PrivateNetwork, err)
 	}
 	defer func() {
 		if libvirtNet == nil {
@@ -328,7 +327,7 @@ func (d *Driver) deleteNetwork() error {
 		return libvirtNet.Undefine()
 	}
 	if err := retry.Local(deleteFunc, 10*time.Second); err != nil {
-		return errors.Wrap(err, "deleting network")
+		return fmt.Errorf("deleting network: %w", err)
 	}
 	log.Debugf("Network %s deleted", d.PrivateNetwork)
 
@@ -356,7 +355,7 @@ func (d *Driver) checkDomains(conn *libvirt.Connect) error {
 	log.Debug("Trying to list all domains...")
 	doms, err := conn.ListAllDomains(0)
 	if err != nil {
-		return errors.Wrap(err, "list all domains")
+		return fmt.Errorf("list all domains: %w", err)
 	}
 	log.Debugf("Listed all domains: total of %d domains", len(doms))
 
@@ -370,7 +369,7 @@ func (d *Driver) checkDomains(conn *libvirt.Connect) error {
 		log.Debug("Trying to get name of domain...")
 		name, err := dom.GetName()
 		if err != nil {
-			return errors.Wrap(err, "failed to get name of a domain")
+			return fmt.Errorf("failed to get name of a domain: %w", err)
 		}
 		log.Debugf("Got domain name: %s", name)
 
@@ -386,14 +385,14 @@ func (d *Driver) checkDomains(conn *libvirt.Connect) error {
 		log.Debugf("Getting XML for domain %s...", name)
 		xmlString, err := dom.GetXMLDesc(libvirt.DOMAIN_XML_INACTIVE)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get XML of domain '%s'", name)
+			return fmt.Errorf("failed to get XML of domain '%s': %w", name, err)
 		}
 		log.Debugf("Got XML for domain %s", name)
 
 		v := result{}
 		err = xml.Unmarshal([]byte(xmlString), &v)
 		if err != nil {
-			return errors.Wrapf(err, "failed to unmarshal XML of domain '%s", name)
+			return fmt.Errorf("failed to unmarshal XML of domain '%s: %w", name, err)
 		}
 		log.Debugf("Unmarshaled XML for domain %s: %#v", name, v)
 

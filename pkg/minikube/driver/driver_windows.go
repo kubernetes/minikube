@@ -22,7 +22,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"golang.org/x/sys/windows/registry"
 )
 

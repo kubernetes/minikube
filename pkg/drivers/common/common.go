@@ -27,7 +27,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnflag"
@@ -69,17 +68,17 @@ func CreateRawDisk(diskPath string, sizeMB int) error {
 	if err != nil {
 		if !os.IsNotExist(err) {
 			// un-handle-able error stat-ing the disk file
-			return errors.Wrap(err, "stat")
+			return fmt.Errorf("stat: %w", err)
 		}
 		// disk file does not exist; create it
 		file, err := os.OpenFile(diskPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 		if err != nil {
-			return errors.Wrap(err, "open")
+			return fmt.Errorf("open: %w", err)
 		}
 		defer file.Close()
 
 		if err := file.Truncate(util.ConvertMBToBytes(sizeMB)); err != nil {
-			return errors.Wrap(err, "truncate")
+			return fmt.Errorf("truncate: %w", err)
 		}
 	}
 	return nil
@@ -108,27 +107,27 @@ func (d *CommonDriver) SetConfigFromFlags(_ drivers.DriverOptions) error {
 func createRawDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
 	tarBuf, err := mcnutils.MakeDiskImage(sshKeyPath)
 	if err != nil {
-		return errors.Wrap(err, "make disk image")
+		return fmt.Errorf("make disk image: %w", err)
 	}
 
 	file, err := os.OpenFile(diskPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 	if err != nil {
-		return errors.Wrap(err, "open")
+		return fmt.Errorf("open: %w", err)
 	}
 	defer file.Close()
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
-		return errors.Wrap(err, "seek")
+		return fmt.Errorf("seek: %w", err)
 	}
 
 	if _, err := file.Write(tarBuf.Bytes()); err != nil {
-		return errors.Wrap(err, "write tar")
+		return fmt.Errorf("write tar: %w", err)
 	}
 	if err := file.Close(); err != nil {
-		return errors.Wrapf(err, "closing file %s", diskPath)
+		return fmt.Errorf("closing file %s: %w", diskPath, err)
 	}
 
 	if err := os.Truncate(diskPath, util.ConvertMBToBytes(diskSizeMb)); err != nil {
-		return errors.Wrap(err, "truncate")
+		return fmt.Errorf("truncate: %w", err)
 	}
 	return nil
 }
@@ -152,24 +151,24 @@ func MakeDiskImage(d *drivers.BaseDriver, boot2dockerURL string, diskSize int) e
 	klog.Infof("Making disk image using store path: %s", d.StorePath)
 	b2 := mcnutils.NewB2dUtils(d.StorePath)
 	if err := b2.CopyIsoToMachineDir(boot2dockerURL, d.MachineName); err != nil {
-		return errors.Wrap(err, "copy iso to machine dir")
+		return fmt.Errorf("copy iso to machine dir: %w", err)
 	}
 
 	keyPath := d.GetSSHKeyPath()
 	klog.Infof("Creating ssh key: %s...", keyPath)
 	if err := ssh.GenerateSSHKey(keyPath); err != nil {
-		return errors.Wrap(err, "generate ssh key")
+		return fmt.Errorf("generate ssh key: %w", err)
 	}
 
 	diskPath := GetDiskPath(d)
 	klog.Infof("Creating raw disk image: %s...", diskPath)
 	if _, err := os.Stat(diskPath); os.IsNotExist(err) {
 		if err := createRawDiskImage(publicSSHKeyPath(d), diskPath, diskSize); err != nil {
-			return errors.Wrapf(err, "createRawDiskImage(%s)", diskPath)
+			return fmt.Errorf("createRawDiskImage(%s): %w", diskPath, err)
 		}
 		machPath := d.ResolveStorePath(".")
 		if err := fixMachinePermissions(machPath); err != nil {
-			return errors.Wrapf(err, "fixing permissions on %s", machPath)
+			return fmt.Errorf("fixing permissions on %s: %w", machPath, err)
 		}
 	}
 	return nil
@@ -178,16 +177,16 @@ func MakeDiskImage(d *drivers.BaseDriver, boot2dockerURL string, diskSize int) e
 func fixMachinePermissions(path string) error {
 	klog.Infof("Fixing permissions on %s ...", path)
 	if err := os.Chown(path, syscall.Getuid(), syscall.Getegid()); err != nil {
-		return errors.Wrap(err, "chown dir")
+		return fmt.Errorf("chown dir: %w", err)
 	}
 	files, err := os.ReadDir(path)
 	if err != nil {
-		return errors.Wrap(err, "read dir")
+		return fmt.Errorf("read dir: %w", err)
 	}
 	for _, f := range files {
 		fp := filepath.Join(path, f.Name())
 		if err := os.Chown(fp, syscall.Getuid(), syscall.Getegid()); err != nil {
-			return errors.Wrap(err, "chown file")
+			return fmt.Errorf("chown file: %w", err)
 		}
 	}
 	return nil

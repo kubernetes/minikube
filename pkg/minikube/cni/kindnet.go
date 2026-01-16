@@ -18,10 +18,10 @@ package cni
 
 import (
 	"bytes"
+	"fmt"
 	"os/exec"
 	"text/template"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -190,12 +190,12 @@ func (c KindNet) manifest() (assets.CopyableFile, error) {
 func (c KindNet) Apply(r Runner) error {
 	// This is mostly applicable to the 'none' driver
 	if _, err := r.RunCmd(exec.Command("stat", "/opt/cni/bin/portmap")); err != nil {
-		return errors.Wrap(err, "required 'portmap' CNI plug-in not found")
+		return fmt.Errorf("required 'portmap' CNI plug-in not found: %w", err)
 	}
 
 	m, err := c.manifest()
 	if err != nil {
-		return errors.Wrap(err, "manifest")
+		return fmt.Errorf("manifest: %w", err)
 	}
 	return applyManifest(c.cc, r, m)
 }

@@ -25,8 +25,9 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -136,7 +137,7 @@ func status(_ *run.CommandOptions) (retState registry.State) {
 	si, err := oci.CachedDaemonInfo("docker")
 	if err != nil {
 		// No known fix because we haven't yet seen a failure here
-		return registry.State{Reason: "PROVIDER_DOCKER_INFO_FAILED", Error: errors.Wrap(err, "docker info"), Installed: true, Healthy: false, Doc: docURL}
+		return registry.State{Reason: "PROVIDER_DOCKER_INFO_FAILED", Error: fmt.Errorf("docker info: %w", err), Installed: true, Healthy: false, Doc: docURL}
 	}
 
 	for _, serr := range si.Errors {
@@ -175,7 +176,7 @@ var dockerVersionOrState = func() (string, registry.State) {
 
 	reason := ""
 	if ctx.Err() == context.DeadlineExceeded {
-		err = errors.Wrapf(err, "deadline exceeded running %q", strings.Join(cmd.Args, " "))
+		err = fmt.Errorf("deadline exceeded running %q: %w", strings.Join(cmd.Args, " "), err)
 		reason = "PROVIDER_DOCKER_DEADLINE_EXCEEDED"
 	}
 
@@ -196,7 +197,7 @@ func checkDockerEngineVersion(o string) registry.State {
 	if len(parts) != 2 {
 		return registry.State{
 			Reason:    "PROVIDER_DOCKER_VERSION_PARSING_FAILED",
-			Error:     errors.Errorf("expected version string format is \"{{.Server.Os}}-{{.Server.Version}}\". but got %s", o),
+			Error:     fmt.Errorf("expected version string format is \"{{.Server.Os}}-{{.Server.Version}}\". but got %s", o),
 			Installed: true,
 			Healthy:   false,
 			Doc:       docURL,

@@ -34,7 +34,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/log"

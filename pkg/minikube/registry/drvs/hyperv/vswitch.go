@@ -22,8 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 type netAdapter struct {
@@ -136,7 +134,7 @@ func getOrderedAdapters() ([]netAdapter, error) {
 func createVMSwitch(switchName string, adapter netAdapter) error {
 	err := cmd(fmt.Sprintf("Hyper-V\\New-VMSwitch -Name \"%s\" -NetAdapterInterfaceDescription \"%s\"", switchName, adapter.InterfaceDescription))
 	if err != nil {
-		return errors.Wrapf(err, "failed to create VM switch %s with adapter %s", switchName, adapter.InterfaceGUID)
+		return fmt.Errorf("failed to create VM switch %s with adapter %s: %w", switchName, adapter.InterfaceGUID, err)
 	}
 
 	return nil
@@ -153,7 +151,7 @@ func chooseSwitch(adapterName string) (string, netAdapter, error) {
 		}
 
 		if len(foundAdapters) == 0 {
-			return "", netAdapter{}, errors.Errorf("adapter %s not found", adapterName)
+			return "", netAdapter{}, fmt.Errorf("adapter %s not found", adapterName)
 		}
 
 		adapter = foundAdapters[0]
@@ -167,12 +165,12 @@ func chooseSwitch(adapterName string) (string, netAdapter, error) {
 	}
 
 	if len(adapters) == 0 {
-		return "", netAdapter{}, errors.Errorf("no connected adapter available")
+		return "", netAdapter{}, fmt.Errorf("no connected adapter available")
 	}
 
 	externalVMSwitches, err := getVMSwitch("($_.SwitchType -eq 2)")
 	if err != nil {
-		return "", netAdapter{}, errors.Wrapf(err, "failed to list external VM switches")
+		return "", netAdapter{}, fmt.Errorf("failed to list external VM switches: %w", err)
 	}
 
 	if len(externalVMSwitches) > 0 {
