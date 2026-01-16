@@ -28,7 +28,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"k8s.io/klog/v2"
 )
 
@@ -136,23 +136,28 @@ func getPlan(schema map[string]Item, data interface{}) (plan map[string]Item, pr
 func runWithRetryNotify(ctx context.Context, cmd *exec.Cmd, stdin io.Reader, maxTime time.Duration, maxRetries uint64) error {
 	be := backoff.NewExponentialBackOff()
 	be.Multiplier = 2
-	be.MaxElapsedTime = maxTime
-	bm := backoff.WithMaxRetries(be, maxRetries)
-	bc := backoff.WithContext(bm, ctx)
 
 	notify := func(err error, wait time.Duration) {
 		klog.Errorf("Temporary error running '%s' (will retry in %s): %v", cmd.String(), wait, err)
 	}
-	return backoff.RetryNotify(func() error {
+
+	op := func() (struct{}, error) {
 		cmd.Stdin = stdin
 		var stderr bytes.Buffer
 		cmd.Stderr = &stderr
 		if err := cmd.Run(); err != nil {
-			time.Sleep(be.NextBackOff().Round(1 * time.Second))
-			return fmt.Errorf("%w: %s", err, stderr.String())
+			return struct{}{}, fmt.Errorf("%w: %s", err, stderr.String())
 		}
-		return nil
-	}, bc, notify)
+		return struct{}{}, nil
+	}
+
+	_, err := backoff.Retry(ctx, op,
+		backoff.WithBackOff(be),
+		backoff.WithMaxElapsedTime(maxTime),
+		backoff.WithMaxTries(uint(maxRetries)),
+		backoff.WithNotify(notify),
+	)
+	return err
 }
 
 // parseTmpl replaces placeholders in text with actual data values

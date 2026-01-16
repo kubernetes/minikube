@@ -18,11 +18,12 @@ limitations under the License.
 package retry
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 
 	"k8s.io/klog/v2"
 )
@@ -90,27 +91,39 @@ func Local(callback func() error, maxTime time.Duration) error {
 	b.InitialInterval = 250 * time.Millisecond
 	b.RandomizationFactor = 0.25
 	b.Multiplier = 1.25
-	b.MaxElapsedTime = maxTime
-	return backoff.RetryNotify(callback, b, notify)
+
+	op := func() (struct{}, error) {
+		return struct{}{}, callback()
+	}
+	_, err := backoff.Retry(context.Background(), op, backoff.WithBackOff(b), backoff.WithMaxElapsedTime(maxTime), backoff.WithNotify(notify))
+	return err
 }
 
 // Expo is exponential backoff retry.
 // initInterval is the initial waiting time to start with.
 // maxTime is the max time allowed to spend on the all the retries.
-// maxRetries is the optional max number of retries allowed with default of 13.
+// maxRetries is the optional max number of retries allowed with default of 113.
 func Expo(callback func() error, initInterval time.Duration, maxTime time.Duration, maxRetries ...uint64) error {
 	maxRetry := uint64(defaultMaxRetries) // max number of times to retry
-	if maxRetries != nil {
+	if len(maxRetries) > 0 {
 		maxRetry = maxRetries[0]
 	}
 
 	b := backoff.NewExponentialBackOff()
-	b.MaxElapsedTime = maxTime
 	b.InitialInterval = initInterval
 	b.RandomizationFactor = 0.5
 	b.Multiplier = 1.5
-	bm := backoff.WithMaxRetries(b, maxRetry)
-	return backoff.RetryNotify(callback, bm, notify)
+
+	op := func() (struct{}, error) {
+		return struct{}{}, callback()
+	}
+	_, err := backoff.Retry(context.Background(), op,
+		backoff.WithBackOff(b),
+		backoff.WithMaxElapsedTime(maxTime),
+		backoff.WithMaxTries(uint(maxRetry)),
+		backoff.WithNotify(notify),
+	)
+	return err
 }
 
 // RetriableError is an error that can be tried again

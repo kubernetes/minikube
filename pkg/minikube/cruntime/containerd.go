@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
