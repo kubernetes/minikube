@@ -25,7 +25,6 @@ require (
 	github.com/gofrs/flock v0.13.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.20.7
-	github.com/google/go-github/v74 v74.0.0
 	github.com/google/go-github/v81 v81.0.0
 	github.com/google/slowjam v1.1.2
 	github.com/google/uuid v1.6.0
