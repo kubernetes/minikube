@@ -491,17 +491,17 @@ func (r *Containerd) KubeletOptions() map[string]string {
 
 // ListContainers returns a list of managed by this container runtime
 func (r *Containerd) ListContainers(o ListContainersOptions) ([]string, error) {
-	return listCRIContainers(r.Runner, containerdNamespaceRoot, o)
+	return listCRIContainers(r.Runner, runcBinaryName, containerdNamespaceRoot, o)
 }
 
 // PauseContainers pauses a running container based on ID
 func (r *Containerd) PauseContainers(ids []string) error {
-	return pauseCRIContainers(r.Runner, containerdNamespaceRoot, ids)
+	return pauseCRIContainers(r.Runner, runcBinaryName, containerdNamespaceRoot, ids)
 }
 
 // UnpauseContainers unpauses a running container based on ID
 func (r *Containerd) UnpauseContainers(ids []string) error {
-	return unpauseCRIContainers(r.Runner, containerdNamespaceRoot, ids)
+	return unpauseCRIContainers(r.Runner, runcBinaryName, containerdNamespaceRoot, ids)
 }
 
 // KillContainers removes containers based on ID
