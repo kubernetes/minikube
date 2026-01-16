@@ -460,7 +460,9 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		defer cancel()
 		cmd := helmUninstallOrInstall(ctx, addon.HelmChart, enable)
 		_, err = runner.RunCmd(cmd)
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	// on the first attempt try without force, but on subsequent attempts use force
@@ -483,27 +485,41 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 	return retry.Expo(apply, 250*time.Millisecond, 2*time.Minute)
 }
 
-func verifyAddonStatus(cc *config.ClusterConfig, name string, val string, options *run.CommandOptions) error {
+func verifyAddonStatus(cc *config.ClusterConfig, nameSpace string, val string, options *run.CommandOptions) error {
 	ns := "kube-system"
-	if name == "ingress" {
+	switch nameSpace {
+	case "ingress":
 		ns = "ingress-nginx"
+	case "dashboard":
+		ns = "kubernetes-dashboard"
 	}
-	return verifyAddonStatusInternal(cc, name, val, ns, options)
+	return verifyAddonStatusInternal(cc, nameSpace, val, ns, options)
 }
 
-func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string, ns string, _ *run.CommandOptions) error {
-	klog.Infof("Verifying addon %s=%s in %q", name, val, cc.Name)
+func verifyAddonStatusInternal(cc *config.ClusterConfig, nameSpace string, val string, ns string, options *run.CommandOptions) error {
+	klog.Infof("Verifying addon %s=%s in %q", nameSpace, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
-		return errors.Wrapf(err, "parsing bool: %s", name)
+		return errors.Wrapf(err, "parsing bool: %s", nameSpace)
 	}
 
-	label, ok := addonPodLabels[name]
+	api, err := machine.NewAPIClient(options)
+	if err != nil {
+		return errors.Wrap(err, "machine client")
+	}
+	defer api.Close()
+
+	if !machine.IsRunning(api, cc.Name) {
+		klog.Infof("cluster %q is not running, skipping verification of %s", cc.Name, nameSpace)
+		return nil
+	}
+
+	label, ok := addonPodLabels[nameSpace]
 	if ok && enable {
-		out.Step(style.HealthCheck, "Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
+		out.Step(style.HealthCheck, "Verifying {{.addon_name}} addon...", out.V{"addon_name": nameSpace})
 		client, err := kapi.Client(viper.GetString(config.ProfileName))
 		if err != nil {
-			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)
+			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", nameSpace, err)
 		}
 
 		// This timeout includes image pull time, which can take a few minutes. 3 is not enough.

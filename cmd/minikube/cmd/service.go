@@ -175,7 +175,7 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 				svcs = noNodePortServices
 			}
 			if len(svcs) > 0 {
-				startKicServiceTunnel(svcs, cname, co.Config.Driver)
+				startKicServiceTunnel(svcs, cname, co.Config.Driver, namespace, serviceURLMode, https, serviceURLTemplate)
 			}
 		} else if !serviceURLMode {
 			openURLs(data)
@@ -194,7 +194,7 @@ func init() {
 	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", defaultServiceFormatTemplate, "Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time.")
 }
 
-func startKicServiceTunnel(services service.URLs, configName, driverName string) {
+func startKicServiceTunnel(services service.URLs, configName, driverName, namespace string, urlMode, https bool, urlTemplate *template.Template) {
 	ctrlC := make(chan os.Signal, 1)
 	signal.Notify(ctrlC, os.Interrupt)
 
@@ -212,14 +212,14 @@ func startKicServiceTunnel(services service.URLs, configName, driverName string)
 		sshPort := strconv.Itoa(port)
 		sshKey := filepath.Join(localpath.MiniPath(), "machines", configName, "id_rsa")
 
-		serviceTunnel := kic.NewServiceTunnel(sshPort, sshKey, clientset.CoreV1(), serviceURLMode)
+		serviceTunnel := kic.NewServiceTunnel(sshPort, sshKey, clientset.CoreV1(), urlMode)
 		urls, err := serviceTunnel.Start(svc.Name, namespace)
 
 		if err != nil {
 			exit.Error(reason.SvcTunnelStart, "error starting tunnel", err)
 		}
 		// mutate response urls to HTTPS if needed
-		urls, err = mutateURLs(svc.Name, urls)
+		urls, err = mutateURLs(svc.Name, urls, https, urlTemplate)
 
 		if err != nil {
 			exit.Error(reason.SvcTunnelStart, "error creating urls", err)
@@ -232,7 +232,7 @@ func startKicServiceTunnel(services service.URLs, configName, driverName string)
 
 	time.Sleep(1 * time.Second)
 
-	if !serviceURLMode {
+	if !urlMode {
 		service.PrintServiceList(os.Stdout, data)
 	} else {
 		for _, row := range data {
@@ -240,7 +240,7 @@ func startKicServiceTunnel(services service.URLs, configName, driverName string)
 		}
 	}
 
-	if !serviceURLMode {
+	if !urlMode {
 		openURLs(data)
 	}
 
@@ -249,7 +249,7 @@ func startKicServiceTunnel(services service.URLs, configName, driverName string)
 	<-ctrlC
 }
 
-func mutateURLs(serviceName string, urls []string) ([]string, error) {
+func mutateURLs(serviceName string, urls []string, https bool, urlTemplate *template.Template) ([]string, error) {
 	formattedUrls := make([]string, 0)
 	for _, rawURL := range urls {
 		var doc bytes.Buffer
@@ -261,7 +261,7 @@ func mutateURLs(serviceName string, urls []string) ([]string, error) {
 		if err != nil {
 			exit.Error(reason.SvcTunnelStart, "No valid port found for tunnel.", err)
 		}
-		err = serviceURLTemplate.Execute(&doc, struct {
+		err = urlTemplate.Execute(&doc, struct {
 			IP   string
 			Port int32
 			Name string

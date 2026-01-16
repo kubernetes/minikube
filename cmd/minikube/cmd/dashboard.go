@@ -17,14 +17,10 @@ limitations under the License.
 package cmd
 
 import (
-	"bufio"
-	"fmt"
-	"io"
-	"net/http"
 	"os/exec"
-	"os/user"
 	"regexp"
-	"strconv"
+	"strings"
+	"text/template"
 	"time"
 
 	"github.com/pkg/errors"
@@ -33,6 +29,7 @@ import (
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/style"
 
 	"k8s.io/minikube/pkg/minikube/browser"
@@ -91,7 +88,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		ns := "kubernetes-dashboard"
-		svc := "kubernetes-dashboard"
+		svc := "kubernetes-dashboard-kong-proxy"
 		out.ErrT(style.Verifying, "Verifying dashboard health ...")
 		checkSVC := func() error { return service.CheckService(cname, ns, svc) }
 		// for slow machines or parallels in CI to avoid #7503
@@ -99,116 +96,98 @@ var dashboardCmd = &cobra.Command{
 			exit.Message(reason.SvcCheckTimeout, "dashboard service is not running: {{.error}}", out.V{"error": err})
 		}
 
-		out.ErrT(style.Launch, "Launching proxy ...")
-		p, hostPort, err := kubectlProxy(kubectlVersion, co.Config.BinaryMirror, cname, dashboardExposedPort)
-		if err != nil {
-			exit.Error(reason.HostKubectlProxy, "kubectl proxy", err)
-		}
-		url := dashboardURL(hostPort, ns, svc)
+		// Attempt to finding the service URL directly (e.g. NodePort)
+		// If found, we usage it directly and skip the proxy
+		// The user requested HTTPS URL
+		tmpl := template.Must(template.New("svc-template").Parse("https://{{.IP}}:{{.Port}}"))
+		urls, err := service.GetServiceURLs(co.API, cname, ns, tmpl)
 
-		out.ErrT(style.Verifying, "Verifying proxy health ...")
-		chkURL := func() error { return checkURL(url) }
-		if err = retry.Expo(chkURL, 100*time.Microsecond, 10*time.Minute); err != nil {
-			exit.Message(reason.SvcURLTimeout, "{{.url}} is not accessible: {{.error}}", out.V{"url": url, "error": err})
+		if err != nil {
+			// If we can't find the service, exit.
+			exit.Message(reason.SvcNotFound, "dashboard service not found: {{.error}}", out.V{"error": err})
 		}
 
-		// check if current user is root
-		user, err := user.Current()
-		if err != nil {
-			exit.Error(reason.HostCurrentUser, "Unable to get current user", err)
+		if len(urls) == 0 {
+			exit.Message(reason.SvcNotFound, "dashboard service not found")
 		}
-		if dashboardURLMode || user.Uid == "0" {
-			out.Ln(url)
-		} else {
-			out.Styled(style.Celebrate, "Opening {{.url}} in your default browser...", out.V{"url": url})
-			if err = browser.OpenURL(url); err != nil {
-				exit.Message(reason.HostBrowser, "failed to open browser: {{.error}}", out.V{"error": err})
+
+		// If we need port forwarding (e.g. Docker on Mac), we must start the tunnel
+		if driver.NeedsPortForward(co.Config.Driver) {
+			startKicServiceTunnel(urls, cname, co.Config.Driver, ns, dashboardURLMode, true, tmpl)
+			return
+		}
+
+		// Otherwise, we can likely access NodePort directly (linux, vmware, etc)
+		// Check if we found any URLs
+		found := false
+		for _, u := range urls {
+			if u.Name == svc && len(u.URLs) > 0 {
+				url := u.URLs[0]
+				printDashboardToken(kubectlVersion, co.Config.BinaryMirror, cname, ns)
+				if dashboardURLMode {
+					out.Ln(url)
+				} else {
+					out.Styled(style.Celebrate, "Opening {{.url}} in your default browser...", out.V{"url": url})
+					if err = browser.OpenURL(url); err != nil {
+						exit.Message(reason.HostBrowser, "failed to open browser: {{.error}}", out.V{"error": err})
+					}
+				}
+				found = true
+				break
 			}
 		}
 
-		klog.Infof("Success! I will now quietly sit around until kubectl proxy exits!")
-		if err = p.Wait(); err != nil {
-			klog.Errorf("Wait: %v", err)
+		if !found {
+			exit.Message(reason.SvcNotFound, "dashboard service has no node port")
 		}
 	},
+
 }
 
-// kubectlProxy runs "kubectl proxy", returning host:port
-func kubectlProxy(kubectlVersion string, binaryURL string, contextName string, port int) (*exec.Cmd, string, error) {
-	// port=0 picks a random system port
-
-	kubectlArgs := []string{"--context", contextName, "proxy", "--port", strconv.Itoa(port)}
-
-	var cmd *exec.Cmd
-	if kubectl, err := exec.LookPath("kubectl"); err == nil {
-		cmd = exec.Command(kubectl, kubectlArgs...)
-	} else if cmd, err = KubectlCommand(kubectlVersion, binaryURL, kubectlArgs...); err != nil {
-		return nil, "", err
-	}
-
-	stdoutPipe, err := cmd.StdoutPipe()
+func printDashboardToken(kubectlVersion, binaryURL, cname, ns string) {
+	// 5 = the previous max-attempts for retry.Expo
+	token, err := getDashboardToken(kubectlVersion, binaryURL, cname, ns, 5)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "cmd stdout")
+		out.WarningT("Unable to generate dashboard token: {{.error}}", out.V{"error": err})
+		return
 	}
-
-	klog.Infof("Executing: %s %s", cmd.Path, cmd.Args)
-	if err := cmd.Start(); err != nil {
-		return nil, "", errors.Wrap(err, "proxy start")
-	}
-
-	klog.Infof("Waiting for kubectl to output host:port ...")
-	reader := bufio.NewReader(stdoutPipe)
-
-	var outData []byte
-	for {
-		r, timedOut, err := readByteWithTimeout(reader, 5*time.Second)
-		if err != nil {
-			return cmd, "", fmt.Errorf("readByteWithTimeout: %v", err)
-		}
-		if r == byte('\n') {
-			break
-		}
-		if timedOut {
-			klog.Infof("timed out waiting for input: possibly due to an old kubectl version.")
-			break
-		}
-		outData = append(outData, r)
-	}
-	klog.Infof("proxy stdout: %s", string(outData))
-	return cmd, hostPortRe.FindString(string(outData)), nil
+	out.Styled(style.Permissions, "Dashboard Token:")
+	out.Ln(token)
 }
 
-// readByteWithTimeout returns a byte from a reader or an indicator that a timeout has occurred.
-func readByteWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, error) {
-	bc := make(chan byte, 1)
-	ec := make(chan error, 1)
-	defer func() {
-		close(bc)
-		close(ec)
-	}()
-	go func() {
-		b, err := r.ReadByte()
-		if err != nil {
-			ec <- err
-		} else {
-			bc <- b
-		}
-	}()
-	select {
-	case b := <-bc:
-		return b, false, nil
-	case err := <-ec:
-		return byte(' '), false, err
-	case <-time.After(timeout):
-		return byte(' '), true, nil
+
+func runKubectl(kubectlVersion, binaryURL, cxtName, ns string, args ...string) (string, error) {
+	fullArgs := append([]string{"--context", cxtName, "-n", ns}, args...)
+	var cmd *exec.Cmd
+	var err error
+	if kubectl, errLookup := exec.LookPath("kubectl"); errLookup == nil {
+		cmd = exec.Command(kubectl, fullArgs...)
+	} else if cmd, err = KubectlCommand(kubectlVersion, binaryURL, fullArgs...); err != nil {
+		return "", err
 	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), err
+	}
+	return string(out), nil
 }
 
-// dashboardURL generates a URL for accessing the dashboard service
-func dashboardURL(addr string, ns string, svc string) string {
-	// Reference: https://github.com/kubernetes/dashboard/wiki/Accessing-Dashboard---1.7.X-and-above
-	return fmt.Sprintf("http://%s/api/v1/namespaces/%s/services/http:%s:/proxy/", addr, ns, svc)
+func getDashboardToken(kubectlVersion, binaryURL, ctxName, ns string, attempts int) (string, error) {
+	sa := "admin-user" 
+	// docs https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md#creating-a-service-account
+	// kubectl -n kubernetes-dashboard create token admin-user
+	output, err := runKubectl(kubectlVersion, binaryURL, ctxName, ns, "create", "token", sa, "--duration=24h")
+	if err != nil {
+		// If the SA doesn't exist (race?), try retry?
+		if strings.Contains(output, "not found") && attempts > 0 {
+			time.Sleep(500 * time.Millisecond)
+			return getDashboardToken(kubectlVersion, binaryURL, ctxName, ns, attempts-1)
+		}
+		return "", errors.Wrapf(err, "kubectl create token: %s", output)
+	}
+	return strings.TrimSpace(output), nil
 }
+
 
 // checkURL checks if a URL returns 200 HTTP OK
 func checkURL(url string) error {
