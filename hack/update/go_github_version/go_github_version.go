@@ -56,15 +56,18 @@ func main() {
 		klog.Fatalf("unable to apply update: %v", err)
 	}
 
-	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
-		klog.Fatalf("failed to run go mod tidy: %v", err)
-	}
-
-	// we need to run go mod tidy in the root folder too (since both minikube and hack use go-github)
+	// run go mod tidy in the root folder
 	cmd := exec.Command("go", "mod", "tidy")
 	cmd.Dir = ".."
 	if err := cmd.Run(); err != nil {
-		klog.Fatalf("failed to run go mod tidy in parent folder: %v", err)
+		klog.Fatalf("failed to run go mod tidy in root: %v", err)
+	}
+
+	// run go mod tidy in hack folder
+	cmd = exec.Command("go", "mod", "tidy")
+	cmd.Dir = "."
+	if err := cmd.Run(); err != nil {
+		klog.Fatalf("failed to run go mod tidy in hack: %v", err)
 	}
 
 }
@@ -73,6 +76,8 @@ func generateSchema() map[string]update.Item {
 	files := []string{
 		"cmd/minikube/cmd/config/kubernetes_version.go",
 		"pkg/perf/monitor/github.go",
+		"pkg/minikube/download/gh/gh.go",
+		"pkg/minikube/download/gh/gh_test.go",
 		"hack/preload-images/kubernetes.go",
 		"hack/update/kubeadm_constants/kubeadm_constants.go",
 		"hack/update/ingress_version/ingress_version.go",
@@ -80,6 +85,8 @@ func generateSchema() map[string]update.Item {
 		"hack/update/go_github_version/go_github_version.go",
 		"hack/update/kubernetes_versions_list/kubernetes_versions_list.go",
 		"hack/update/github.go",
+		"hack/changelog/changelog.go",
+		"hack/changelog/changelog_test.go",
 	}
 
 	schema := make(map[string]update.Item)
