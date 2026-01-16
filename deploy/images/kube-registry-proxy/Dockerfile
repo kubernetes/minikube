@@ -11,12 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+# Last update Jan 16, 2026 1:28 PM
 FROM nginx:1.29.4-alpine-slim
 
 RUN apk update && apk upgrade && apk add bash
-
 COPY rootfs/bin/boot /bin/boot
 COPY rootfs/etc/nginx /etc/nginx
-
 CMD ["/bin/boot"]
