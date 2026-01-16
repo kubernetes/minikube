@@ -85,5 +85,5 @@ push-gvisor-image-prow:
 .PHONY: push-kube-registry-proxy-image-prow
 push-kube-registry-proxy-image-prow:
 	docker buildx build --push --platform  $(PROW_IMAGE_PLATFORMS) \
-		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kube-registry-proxy:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kube-registry-proxy:latest -f deploy/images/kube-registry-proxy/Dockerfile .
+		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kube-registry-proxy:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kube-registry-proxy:latest -f deploy/images/kube-registry-proxy/Dockerfile deploy/images/kube-registry-proxy
 
