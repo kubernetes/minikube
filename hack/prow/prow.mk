@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------
-# Bellow Integration tests run in a prow container (no external cloud vm)
+# Below Integration tests run in a prow container (no external cloud vm)
 # ----------------------------------------------------------------
 .PHONY: integration-prow-docker-docker-linux-x86
 integration-prow-docker-docker-linux-x86:
@@ -28,7 +28,7 @@ integration-prow-docker-crio-linux-x86:
 	./hack/prow/util/integration_prow_wrapper.sh ./hack/prow/integration_docker_crio_linux_x86.sh
 
 # ----------------------------------------------------------------
-# Bellow Integration tests run in cloud VM using boskos
+# Below Integration tests run in cloud VM using boskos
 # ----------------------------------------------------------------
 
 .PHONY: integration-prow-none-docker-linux-x86
@@ -67,7 +67,7 @@ setup-prow-gcp-ssh-keys: # set up ssh keys for gcloud cli. These env vars are se
 	cp -f "${GCE_SSH_PUBLIC_KEY_FILE}" ~/.ssh/google_compute_engine.pub
 
 # ----------------------------------------------------------------
-# Bellow are the image push targets for prow
+# Below are the image push targets for prow
 # ----------------------------------------------------------------	
 PROW_IMAGE_PLATFORMS ?= linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
 

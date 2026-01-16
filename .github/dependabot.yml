@@ -63,7 +63,7 @@ updates:
         patterns:
           - "*"
   # ---
-  # Bellow are images used for tooling/locally
+  # Below are images used for tooling/locally
   # ---
   - package-ecosystem: "docker"
     directory: "/deploy/iso/minikube-iso"
