@@ -66,9 +66,12 @@ func TestExtractFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create TEST1.TXT: %v", err)
 	}
-	defer rw.Close()
+
 	if _, err := rw.Write([]byte("content1")); err != nil {
 		t.Fatalf("failed to write to TEST1.TXT: %v", err)
+	}
+	if err := rw.Close(); err != nil {
+		t.Fatalf("failed to close TEST1.TXT: %v", err)
 	}
 
 	// 2. Nested directory and file
@@ -79,9 +82,12 @@ func TestExtractFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create TEST2/TEST2.TXT: %v", err)
 	}
-	defer rw2.Close()
+
 	if _, err := rw2.Write([]byte("content2")); err != nil {
 		t.Fatalf("failed to write to TEST2.TXT: %v", err)
+	}
+	if err := rw2.Close(); err != nil {
+		t.Fatalf("failed to close TEST2/TEST2.TXT: %v", err)
 	}
 
 	// Finalize ISO
