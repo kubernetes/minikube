@@ -31,8 +31,6 @@ import (
 	"syscall"
 	"time"
 
-	pkgerrors "errors"
-
 	"github.com/johanneswuerbach/nfsexports"
 	hyperkit "github.com/moby/hyperkit/go"
 	"github.com/shirou/gopsutil/v4/process"
@@ -106,12 +104,12 @@ func (d *Driver) Create() error {
 
 	// TODO: handle different disk types.
 	if err := common.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
-		return pkgerrors.Wrap(err, "making disk image")
+		return fmt.Errorf("making disk image: %w", err)
 	}
 
 	isoPath := d.ResolveStorePath(isoFilename)
 	if err := d.extractKernel(isoPath); err != nil {
-		return pkgerrors.Wrap(err, "extracting kernel")
+		return fmt.Errorf("extracting kernel: %w", err)
 	}
 
 	return d.Start()
@@ -211,7 +209,7 @@ func (d *Driver) createHost() (*hyperkit.HyperKit, error) {
 	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
 	h, err := hyperkit.New("", d.VpnKitSock, stateDir)
 	if err != nil {
-		return nil, pkgerrors.Wrap(err, "new-ing Hyperkit")
+		return nil, fmt.Errorf("new-ing Hyperkit: %w", err)
 	}
 
 	// TODO: handle the rest of our settings.
@@ -267,7 +265,7 @@ func (d *Driver) Start() error {
 	log.Debugf("Using UUID %s", h.UUID)
 	mac, err := GetMACAddressFromUUID(h.UUID)
 	if err != nil {
-		return pkgerrors.Wrap(err, "getting MAC address from UUID")
+		return fmt.Errorf("getting MAC address from UUID: %w", err)
 	}
 
 	log.Debugf("Generated MAC %s", mac)
@@ -275,7 +273,7 @@ func (d *Driver) Start() error {
 	log.Debugf("Starting with cmdline: %s", d.Cmdline)
 	_, err = h.Start(d.Cmdline)
 	if err != nil {
-		return pkgerrors.Wrapf(err, "starting with cmd line: %s", d.Cmdline)
+		return fmt.Errorf("starting with cmd line %s: %w", d.Cmdline, err)
 	}
 
 	if err := d.setupIP(mac); err != nil {
@@ -289,7 +287,7 @@ func (d *Driver) setupIP(mac string) error {
 	getIP := func() error {
 		st, err := d.GetState()
 		if err != nil {
-			return pkgerrors.Wrap(err, "get state")
+			return fmt.Errorf("get state: %w", err)
 		}
 		if st == state.Error || st == state.Stopped {
 			return fmt.Errorf("hyperkit crashed! command line:\n  hyperkit %s", d.Cmdline)
@@ -371,23 +369,23 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 			log.Debugf("clean start, hyperkit pid file doesn't exist: %s", pidFile)
 			return nil
 		}
-		return pkgerrors.Wrap(err, "stat")
+		return fmt.Errorf("stat: %w", err)
 	}
 
 	log.Warnf("minikube might have been shutdown in an unclean way, the hyperkit pid file still exists: %s", pidFile)
 	bs, err := os.ReadFile(pidFile)
 	if err != nil {
-		return pkgerrors.Wrapf(err, "reading pidfile %s", pidFile)
+		return fmt.Errorf("reading pidfile %s: %w", pidFile, err)
 	}
 	content := strings.TrimSpace(string(bs))
 	pid, err := strconv.Atoi(content)
 	if err != nil {
-		return pkgerrors.Wrapf(err, "parsing pidfile %s", pidFile)
+		return fmt.Errorf("parsing pidfile %s: %w", pidFile, err)
 	}
 
 	st, err := pidState(pid)
 	if err != nil {
-		return pkgerrors.Wrap(err, "pidState")
+		return fmt.Errorf("pidState: %w", err)
 	}
 
 	log.Debugf("pid %d is in state %q", pid, st)
@@ -396,7 +394,7 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 	}
 	log.Debugf("Removing stale pid file %s...", pidFile)
 	if err := os.Remove(pidFile); err != nil {
-		return pkgerrors.Wrap(err, fmt.Sprintf("removing pidFile %s", pidFile))
+		return fmt.Errorf("removing pidFile %s: %w", pidFile, err)
 	}
 	return nil
 }
@@ -409,7 +407,7 @@ func (d *Driver) Stop() error {
 	d.cleanupNfsExports()
 	err := d.sendSignal(syscall.SIGTERM)
 	if err != nil {
-		return pkgerrors.Wrap(err, "hyperkit sigterm failed")
+		return fmt.Errorf("hyperkit sigterm failed: %w", err)
 	}
 
 	// wait 5s for graceful shutdown
@@ -418,7 +416,7 @@ func (d *Driver) Stop() error {
 		time.Sleep(time.Second * 1)
 		s, err := d.GetState()
 		if err != nil {
-			return pkgerrors.Wrap(err, "hyperkit waiting graceful shutdown failed")
+			return fmt.Errorf("hyperkit waiting graceful shutdown failed: %w", err)
 		}
 		if s == state.Stopped {
 			return nil
