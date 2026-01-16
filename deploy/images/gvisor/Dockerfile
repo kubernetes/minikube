@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Last update Jan 8, 2026 5:17 PM
+# Last update Jan 16, 2026 1:28 PM
 FROM golang:1.25.5 AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
