@@ -11,7 +11,6 @@ require (
 	github.com/google/go-github/v81 v81.0.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/olekukonko/tablewriter v1.1.2
-	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	go.opentelemetry.io/otel v1.39.0
@@ -172,6 +171,7 @@ require (
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkg/xattr v0.4.9 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
