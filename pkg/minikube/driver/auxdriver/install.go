@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/juju/mutex/v2"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
@@ -72,7 +71,7 @@ func InstallOrUpdate(name string, directory string, interactive bool, autoUpdate
 	spec := lock.PathMutexSpec(executable)
 	spec.Timeout = 10 * time.Minute
 	klog.Infof("acquiring lock: %+v", spec)
-	releaser, err := mutex.Acquire(spec)
+	releaser, err := lock.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
 	}

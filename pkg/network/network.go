@@ -22,7 +22,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/juju/mutex/v2"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -39,7 +38,7 @@ type Parameters struct {
 	Broadcast string // last network IP address
 	IsPrivate bool   // whether the IP is private or not
 	Interface
-	reservation mutex.Releaser // subnet reservation has lifespan of the process: "If a process dies while the mutex is held, the mutex is automatically released."
+	reservation lock.Releaser // subnet reservation has lifespan of the process: "If a process dies while the mutex is held, the mutex is automatically released."
 }
 
 // Interface contains main network interface parameters.
@@ -239,10 +238,10 @@ func ParseAddr(addr string) (net.IP, *net.IPNet, error) {
 }
 
 // reserveSubnet returns releaser if subnet was successfully reserved, creating lock for subnet to avoid race condition between multiple minikube instances (especially while testing in parallel).
-var reserveSubnet = func(subnet string) (mutex.Releaser, error) {
+var reserveSubnet = func(subnet string) (lock.Releaser, error) {
 	spec := lock.PathMutexSpec(subnet)
 	spec.Timeout = 1 * time.Millisecond // practically: just check, don't wait
-	reservation, err := mutex.Acquire(spec)
+	reservation, err := lock.Acquire(spec)
 	if err != nil {
 		return nil, err
 	}

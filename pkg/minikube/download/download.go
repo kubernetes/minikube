@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-getter"
-	"github.com/juju/mutex/v2"
+
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -129,9 +129,9 @@ func withinUnitTest() bool {
 }
 
 // lockDownload locks `file` if possible and returns a releaser that must be called to release the lock.
-func lockDownload(file string) (mutex.Releaser, error) {
+func lockDownload(file string) (lock.Releaser, error) {
 	type retPair struct {
-		mutex.Releaser
+		lock.Releaser
 		error
 	}
 	lockChannel := make(chan retPair)
@@ -139,7 +139,7 @@ func lockDownload(file string) (mutex.Releaser, error) {
 	go func() {
 		spec := lock.PathMutexSpec(file)
 		spec.Timeout = 5 * time.Minute
-		releaser, err := mutex.Acquire(spec)
+		releaser, err := lock.Acquire(spec)
 		if err != nil {
 			lockChannel <- retPair{nil, errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", file, spec)}
 			return

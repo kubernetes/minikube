@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"sync/atomic"
 
-	"github.com/juju/mutex/v2"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -140,7 +139,7 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 func Update(kcs *Settings) error {
 	spec := lock.PathMutexSpec(filepath.Join(kcs.filePath(), "settings.Update"))
 	klog.Infof("acquiring lock: %+v", spec)
-	releaser, err := mutex.Acquire(spec)
+	releaser, err := lock.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
 	}
