@@ -19,6 +19,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -26,20 +27,27 @@ import (
 
 func TestExitCode(t *testing.T) {
 	var tests = []struct {
-		name  string
-		want  int
-		state *cluster.Status
+		name      string
+		want      int
+		state     *cluster.Status
+		statusErr error
 	}{
-		{"ok", 0, &cluster.Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: cluster.Configured}},
-		{"paused", 2, &cluster.Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: cluster.Configured}},
-		{"down", 7, &cluster.Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: cluster.Misconfigured}},
-		{"missing", 7, &cluster.Status{Host: "Nonexistent", Kubelet: "Nonexistent", APIServer: "Nonexistent", Kubeconfig: "Nonexistent"}},
+		{"ok", 0, &cluster.Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: cluster.Configured}, nil},
+		{"paused", 2, &cluster.Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: cluster.Configured}, nil},
+		{"down", 7, &cluster.Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: cluster.Misconfigured}, nil},
+		{"missing", 7, &cluster.Status{Host: "Nonexistent", Kubelet: "Nonexistent", APIServer: "Nonexistent", Kubeconfig: "Nonexistent"}, nil},
+		{"error", 7, nil, fmt.Errorf("some error")},
+		{"empty", 7, nil, nil},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := exitCode([]*cluster.Status{tc.state})
+			var statuses []*cluster.Status
+			if tc.state != nil {
+				statuses = []*cluster.Status{tc.state}
+			}
+			got := exitCode(statuses, tc.statusErr)
 			if got != tc.want {
-				t.Errorf("exitcode(%+v) = %d, want: %d", tc.state, got, tc.want)
+				t.Errorf("exitcode(%+v, %v) = %d, want: %d", tc.state, tc.statusErr, got, tc.want)
 			}
 		})
 	}
