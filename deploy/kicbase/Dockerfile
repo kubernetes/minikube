@@ -133,7 +133,7 @@ PasswordAuthentication no
 EOF
 
 # Install nerdctl and nerdctld
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     echo "Installing nerdctl and nerdctld ..." &&\
     addgroup --system nerdctl &&\
     mkdir -p /etc/systemd/system/nerdctl.socket.d && \
