@@ -37,7 +37,7 @@ const (
 //nolint:staticcheck // ST1005: error strings should not be capitalized
 var (
 	reHostOnlyAdapterCreated         = regexp.MustCompile(`Interface '(.+)' was successfully created`)
-	errNewHostOnlyAdapterNotVisible  = errors.New("The host-only adapter we just created is not visible. This is a well known VirtualBox bug. You might want to uninstall it and reinstall at least version 5.0.12 that is is supposed to fix this issue")
+	errNewHostOnlyAdapterNotVisible  = errors.New("The host-only adapter we just created is not visible. This is a well known VirtualBox bug. You might want to uninstall it and reinstall at least version 5.0.12 that is supposed to fix this issue")
 	errFailedToCreateHostOnlyAdapter = errors.New("Failed to create host-only adapter")
 	errFailedToFindHostOnlyAdapter   = errors.New("Failed to find a new host-only adapter")
 )
