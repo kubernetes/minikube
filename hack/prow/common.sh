@@ -117,9 +117,23 @@ function gvisor_image_build() {
 }
 
 function run_gopogh() {
-    # todo: currently we do not save to gopogh db
-    echo "Not saving to DB"
-    gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${PULL_NUMBER}" -repo github.com/kubernetes/minikube/ -details "${COMMIT}:$(date +%Y-%m-%d)"
+	# todo: currently we do not save to gopogh db
+	echo "Not saving to DB"
+	gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${PULL_NUMBER}" -repo github.com/kubernetes/minikube/ -details "${COMMIT}:$(date +%Y-%m-%d)"
+
+}
+
+function kic_build() {
+	if [ "${DRIVER}" != "docker" ]; then
+		echo "driver is not docker, skipping kicbase image build"
+	fi
+	git fetch origin master
+	if git diff origin/master -- deploy/kicbase/Dockerfile; then
+		echo "kicbase Dockerfile unchanged, skipping image build"
+	fi
+
+	make local-kicbase-debug
+	docker image ls
 
 }
 
@@ -148,13 +162,14 @@ export E2E_BIN="out/e2e-${OS_ARCH}"
 install_dependencies
 docker_setup
 
-
 if [ "$CONTAINER_RUNTIME" == "containerd" ]; then
 	cp out/gvisor-addon testdata/
 	gvisor_image_build
 fi
 
 print_test_info
+
+kic_build
 
 readonly TEST_OUT="${TEST_HOME}/testout.txt"
 readonly JSON_OUT="${TEST_HOME}/test.json"
