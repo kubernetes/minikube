@@ -159,7 +159,7 @@ func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service)
 
 func (c *sshConn) startAndWait() error {
 	if !c.suppressStdOut {
-		out.Step(style.Running, "Starting tunnel for service {{.service}}.", out.V{"service": c.service})
+		out.Step(style.StartingSSH, "Starting tunnel for service {{.service}}.", out.V{"service": c.service})
 	}
 
 	r, w := io.Pipe()
