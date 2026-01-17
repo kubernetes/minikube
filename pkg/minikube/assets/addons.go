@@ -506,7 +506,7 @@ var Addons = map[string]*Addon{
 			"gvisor-runtimeclass.yaml",
 			"0640"),
 	}, false, "gvisor", "minikube", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gvisor/", map[string]string{
-		"GvisorAddon": "registry.k8s.io/minikube/gvisor:v0.0.3@sha256:2cc0438e89691ed5eab3fce6b68fce6982e5de189418ebfc97a0932cda9bc080",
+		"GvisorAddon": "minikube/gvisor:v0.0.3@sha256:2cc0438e89691ed5eab3fce6b68fce6982e5de189418ebfc97a0932cda9bc080",
 	}, map[string]string{
 		"GvisorAddon": "registry.k8s.io",
 	}, nil),
