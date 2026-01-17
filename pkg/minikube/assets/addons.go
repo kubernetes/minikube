@@ -506,9 +506,9 @@ var Addons = map[string]*Addon{
 			"gvisor-runtimeclass.yaml",
 			"0640"),
 	}, false, "gvisor", "minikube", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gvisor/", map[string]string{
-		"GvisorAddon": "k8s-minikube/gvisor-addon:v0.0.2@sha256:511bf52bdec6be2b846f98e92addf70c544044f96e35085f85ae9bdcd4df2da2",
+		"GvisorAddon": "registry.k8s.io/minikube/gvisor:v0.0.3@sha256:2cc0438e89691ed5eab3fce6b68fce6982e5de189418ebfc97a0932cda9bc080",
 	}, map[string]string{
-		"GvisorAddon": "gcr.io",
+		"GvisorAddon": "registry.k8s.io",
 	}, nil),
 	"ingress-dns": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IngressDNSAssets,
