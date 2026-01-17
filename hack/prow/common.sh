@@ -127,6 +127,7 @@ function kic_build() {
 	if [ "${DRIVER}" != "docker" ]; then
 		echo "driver is not docker, skipping kicbase image build"
 	fi
+	git remote -v
 	git fetch origin master
 	if git diff origin/master -- deploy/kicbase/Dockerfile; then
 		echo "kicbase Dockerfile unchanged, skipping image build"
