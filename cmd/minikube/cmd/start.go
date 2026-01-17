@@ -2085,23 +2085,14 @@ func startNerdctld(options *run.CommandOptions) {
 	co := mustload.Running(ClusterFlagValue(), options)
 	runner := co.CP.Runner
 
-	// and set 777 to these files
-	if rest, err := runner.RunCmd(exec.Command("sudo", "chmod", "777", "/usr/local/bin/nerdctl", "/usr/local/bin/nerdctld")); err != nil {
-		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed setting permission for nerdctl: %s", rest.Output()), err)
-	}
-
-	// sudo systemctl start nerdctld.socket
-	if rest, err := runner.RunCmd(exec.Command("sudo", "systemctl", "start", "nerdctld.socket")); err != nil {
-		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to enable nerdctld.socket: %s", rest.Output()), err)
-	}
-	// sudo systemctl start nerdctld.service
-	if rest, err := runner.RunCmd(exec.Command("sudo", "systemctl", "start", "nerdctld.service")); err != nil {
-		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to enable nerdctld.service: %s", rest.Output()), err)
+	// sudo systemctl start nerdctl.socket
+	if rest, err := runner.RunCmd(exec.Command("sudo", "systemctl", "start", "nerdctl.socket")); err != nil {
+		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to enable nerdctl.socket: %s", rest.Output()), err)
 	}
 
 	// set up environment variable on remote machine. docker client uses 'non-login & non-interactive shell' therefore the only way is to modify .bashrc file of user 'docker'
 	// insert this at 4th line
-	envSetupCommand := exec.Command("/bin/bash", "-c", "sed -i '4i export DOCKER_HOST=unix:///run/nerdctld.sock' .bashrc")
+	envSetupCommand := exec.Command("/bin/bash", "-c", "sed -i '4i export DOCKER_HOST=unix:///var/run/nerdctl.sock' .bashrc")
 	if rest, err := runner.RunCmd(envSetupCommand); err != nil {
 		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s", rest.Output()), err)
 	}
