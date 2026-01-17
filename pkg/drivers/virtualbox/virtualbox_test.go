@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
@@ -497,8 +498,12 @@ func (v *MockCreateOperations) doCall(callSignature string) (string, error) {
 	}
 
 	call := v.expectedCalls[v.call]
-	if call.signature != "IGNORE CALL" && (callSignature != call.signature) {
-		v.test.Fatal("Unexpected call", callSignature)
+	if call.signature != "IGNORE CALL" {
+		actual := filepath.Clean(callSignature)
+		expected := filepath.Clean(call.signature)
+		if actual != expected {
+			v.test.Fatal("Unexpected call", callSignature)
+		}
 	}
 
 	v.call++
