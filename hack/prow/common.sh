@@ -127,6 +127,7 @@ function kic_build() {
 	if [ "${DRIVER}" != "docker" ]; then
 		echo "driver is not docker, skipping kicbase image build"
 	fi
+	git remote add origin https://github.com/kubernetes/minikube.git
 	git remote -v
 	git fetch origin master
 	if git diff origin/master -- deploy/kicbase/Dockerfile; then
