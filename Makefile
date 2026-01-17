@@ -670,9 +670,12 @@ local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and 
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 
 
-.PHONY: local-kicbase-debug
-local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches source code to point to it
+.PHONY: local-kicbase-hardcode
+local-kicbase-hardcode: ## harcode to use local/kicbase:debug image for debugging
 	$(SED) 's|Version = .*|Version = \"$(KIC_VERSION)-$(COMMIT_SHORT)\"|;s|baseImageSHA = .*|baseImageSHA = \"\"|;s|gcrRepo = .*|gcrRepo = \"local/kicbase\"|;s|dockerhubRepo = .*|dockerhubRepo = \"local/kicbase\"|' pkg/drivers/kic/types.go
+
+.PHONY: local-kicbase-debug
+local-kicbase-debug: local-kicbase local-kicbase-hardcode 
 
 .PHONY: build-kic-base-image
 build-kic-base-image: docker-multi-arch-build ## Build multi-arch local/kicbase:latest
