@@ -195,6 +195,7 @@ func TestDockerEnvContainerd(t *testing.T) {
 	groups := regexp.MustCompile(`DOCKER_HOST="(\S*)"`).FindStringSubmatch(output)
 	if len(groups) < 2 {
 		t.Errorf("DOCKER_HOST doesn't match expected format, output is %s", output)
+		return // to avoid panic in the next line
 	}
 	dockerHost := groups[1]
 	segments := strings.Split(dockerHost, ":")
