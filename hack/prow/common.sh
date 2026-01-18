@@ -132,12 +132,15 @@ function kic_build() {
 	fi
 
 	git fetch origin master
+
 	if git diff origin/master -- deploy/kicbase/Dockerfile; then
 		echo "kicbase Dockerfile unchanged, skipping image build"
+	else
+		make local-kicbase
+		docker image ls
 	fi
 
-	make local-kicbase
-	docker image ls
+	
 
 }
 
