@@ -544,7 +544,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		out.Ln("") // extra newline for clarity on the command line
 		// 1st call
 		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
-			return nil, errors.Wrap(err, "adding linux node")
+			return nil, fmt.Errorf("adding linux node: %w", err)
 		}
 	}
 
@@ -569,7 +569,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 
 		out.Ln("") // extra newline for clarity on the command line
 		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
-			return nil, errors.Wrap(err, "adding windows node")
+			return nil, fmt.Errorf("adding windows node: %w", err)
 		}
 	}
 
@@ -1537,7 +1537,7 @@ func validateWindowsOSVersion(osVersion string) error {
 		return nil
 	}
 
-	return errors.Errorf("Invalid Windows Server OS Version: %s. Valid OS version are: %s", osVersion, maps.Keys(validOptions))
+	return fmt.Errorf("Invalid Windows Server OS Version: %s. Valid OS version are: %s", osVersion, maps.Keys(validOptions))
 }
 
 // validateOS validates the supplied OS
@@ -1550,7 +1550,7 @@ func validateOS(os string) error {
 		}
 	}
 
-	return errors.Errorf("Invalid OS: %s. Valid OS are: %s", os, strings.Join(validOptions, ", "))
+	return fmt.Errorf("Invalid OS: %s. Valid OS are: %s", os, strings.Join(validOptions, ", "))
 }
 
 // validateOSandVersion validates the supplied OS and version
@@ -1571,7 +1571,7 @@ func validateOSandVersion(os, version string) error {
 // validateMultiNodeOS validates the supplied OS for multiple nodes
 func validMultiNodeOS(osString string) error {
 	if !strings.HasPrefix(osString, "[") || !strings.HasSuffix(osString, "]") {
-		return errors.Errorf("invalid OS string format: must be enclosed in [ ]")
+		return fmt.Errorf("invalid OS string format: must be enclosed in [ ]")
 	}
 
 	osString = strings.Trim(osString, "[]")
@@ -1580,7 +1580,7 @@ func validMultiNodeOS(osString string) error {
 	osValues := strings.Split(osString, ",")
 
 	if len(osValues) != 2 || osValues[0] != "linux" || osValues[1] != "windows" {
-		return errors.Errorf("invalid OS string format: must be [linux,windows]")
+		return fmt.Errorf("invalid OS string format: must be [linux,windows]")
 	}
 
 	return nil

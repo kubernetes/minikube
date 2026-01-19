@@ -856,7 +856,7 @@ func (k *Bootstrapper) GenerateTokenWindows(cc config.ClusterConfig) (string, er
 	tokenCmd := exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion)))
 	r, err := k.c.RunCmd(tokenCmd)
 	if err != nil {
-		return "", errors.Wrap(err, "generating join command")
+		return "", fmt.Errorf("generating join command: %w", err)
 	}
 
 	joinCmd := r.Stdout.String()
