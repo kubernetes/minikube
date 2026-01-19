@@ -27,7 +27,6 @@ import (
 	"k8s.io/klog/v2"
 
 	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -84,7 +83,7 @@ func initGCPTracer() (*gcpTracer, error) {
 		texporter.WithProjectID(projectID),
 	}...)
 	if err != nil {
-		return nil, errors.Wrap(err, "installing pipeline")
+		return nil, fmt.Errorf("installing pipeline: %w", err)
 	}
 
 	tp := sdktrace.NewTracerProvider(

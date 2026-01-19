@@ -19,7 +19,6 @@ package cmd
 import (
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"fmt"
@@ -153,13 +152,13 @@ func remoteCommandRunner(co *mustload.ClusterController, nodeName string) comman
 
 	h, err := machine.GetHost(co.API, *co.Config, *n)
 	if err != nil {
-		out.ErrLn("%v", errors.Wrap(err, "getting host"))
+		out.ErrLn("%v", fmt.Errorf("getting host: %w", err))
 		os.Exit(1)
 	}
 
 	runner, err := machine.CommandRunner(h)
 	if err != nil {
-		out.ErrLn("%v", errors.Wrap(err, "getting command runner"))
+		out.ErrLn("%v", fmt.Errorf("getting command runner: %w", err))
 		os.Exit(1)
 	}
 
@@ -172,7 +171,7 @@ func copyableFile(co *mustload.ClusterController, src, dst *remotePath) assets.C
 		runner := remoteCommandRunner(co, src.node)
 		f, err := runner.ReadableFile(src.path)
 		if err != nil {
-			out.ErrLn("%v", errors.Wrapf(err, "getting file from %s node", src.node))
+			out.ErrLn("%v", fmt.Errorf("getting file from %s node: %w", src.node, err))
 			os.Exit(1)
 		}
 
@@ -193,7 +192,7 @@ func copyableFile(co *mustload.ClusterController, src, dst *remotePath) assets.C
 
 	fa, err := assets.NewFileAsset(src.path, pt.Dir(dst.path), pt.Base(dst.path), "0644")
 	if err != nil {
-		out.ErrLn("%v", errors.Wrap(err, "getting file asset"))
+		out.ErrLn("%v", fmt.Errorf("getting file asset: %w", err))
 		os.Exit(1)
 	}
 

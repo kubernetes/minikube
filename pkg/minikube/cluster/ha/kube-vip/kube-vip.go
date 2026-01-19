@@ -18,11 +18,11 @@ package kubevip
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"os/exec"
 	"strings"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -131,7 +131,7 @@ func Configure(cc config.ClusterConfig, r command.Runner, kubeadmCfg []byte, wor
 
 	b := bytes.Buffer{}
 	if err := kubeVipTemplate.Execute(&b, params); err != nil {
-		return nil, errors.Wrapf(err, "parse template")
+		return nil, fmt.Errorf("parse template: %w", err)
 	}
 
 	klog.Infof("kube-vip config:\n%s", b.String())

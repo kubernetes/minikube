@@ -26,7 +26,6 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -218,7 +217,7 @@ func buffer(s string, err error) (*command.RunResult, error) {
 	var buf bytes.Buffer
 	_, err = buf.WriteString(s)
 	if err != nil {
-		return rr, errors.Wrap(err, "Writing outStr to FakeRunner's buffer")
+		return rr, fmt.Errorf("Writing outStr to FakeRunner's buffer: %w", err)
 	}
 	rr.Stdout = buf
 	rr.Stderr = buf

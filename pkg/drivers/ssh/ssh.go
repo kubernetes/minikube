@@ -28,7 +28,6 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/libmachine/drivers"
@@ -117,7 +116,7 @@ func (d *Driver) PreCreateCheck() error {
 
 		_, err = ssh.ParsePrivateKey(key)
 		if err != nil {
-			return errors.Wrapf(err, "SSH key does not parse: %q", d.SSHKey)
+			return fmt.Errorf("SSH key does not parse: %q: %w", d.SSHKey, err)
 		}
 	}
 
@@ -144,11 +143,11 @@ func (d *Driver) Create() error {
 	if d.runtime.Name() == "Docker" {
 		groups, err := d.exec.RunCmd(exec.Command("groups", d.GetSSHUsername()))
 		if err != nil {
-			return errors.Wrap(err, "groups")
+			return fmt.Errorf("groups: %w", err)
 		}
 		if !strings.Contains(groups.Stdout.String(), "docker") {
 			if _, err := d.exec.RunCmd(exec.Command("sudo", "usermod", "-aG", "docker", d.GetSSHUsername())); err != nil {
-				return errors.Wrap(err, "usermod")
+				return fmt.Errorf("usermod: %w", err)
 			}
 		}
 	}
@@ -199,11 +198,11 @@ func (d *Driver) Stop() error {
 	}
 	containers, err := d.runtime.ListContainers(cruntime.ListContainersOptions{})
 	if err != nil {
-		return errors.Wrap(err, "containers")
+		return fmt.Errorf("containers: %w", err)
 	}
 	if len(containers) > 0 {
 		if err := d.runtime.StopContainers(containers); err != nil {
-			return errors.Wrap(err, "stop containers")
+			return fmt.Errorf("stop containers: %w", err)
 		}
 	}
 	klog.Infof("ssh driver is stopped!")
@@ -224,25 +223,25 @@ func (d *Driver) Kill() error {
 	// First try to gracefully stop containers
 	containers, err := d.runtime.ListContainers(cruntime.ListContainersOptions{})
 	if err != nil {
-		return errors.Wrap(err, "containers")
+		return fmt.Errorf("containers: %w", err)
 	}
 	if len(containers) == 0 {
 		return nil
 	}
 	// Try to be graceful before sending SIGKILL everywhere.
 	if err := d.runtime.StopContainers(containers); err != nil {
-		return errors.Wrap(err, "stop")
+		return fmt.Errorf("stop: %w", err)
 	}
 
 	containers, err = d.runtime.ListContainers(cruntime.ListContainersOptions{})
 	if err != nil {
-		return errors.Wrap(err, "containers")
+		return fmt.Errorf("containers: %w", err)
 	}
 	if len(containers) == 0 {
 		return nil
 	}
 	if err := d.runtime.KillContainers(containers); err != nil {
-		return errors.Wrap(err, "kill")
+		return fmt.Errorf("kill: %w", err)
 	}
 	return nil
 }

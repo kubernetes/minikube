@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Touching this file will trigger a new image build in Prow Staging https://testgrid.k8s.io/minikube-images
+# Last update Jan 16, 2026 3:19 PM
 FROM nginx:1.29.4-alpine-slim
 
 RUN apk update && apk upgrade && apk add bash
-
 COPY rootfs/bin/boot /bin/boot
 COPY rootfs/etc/nginx /etc/nginx
-
 CMD ["/bin/boot"]

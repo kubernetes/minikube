@@ -25,7 +25,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -58,7 +59,7 @@ func isInBlock(ip string, block string) (bool, error) {
 	if strings.Contains(block, "/") {
 		_, b, err := net.ParseCIDR(block)
 		if err != nil {
-			return false, errors.Wrapf(err, "Error Parsing block %s", b)
+			return false, fmt.Errorf("Error Parsing block %s: %w", b, err)
 		}
 
 		if b.Contains(i) {

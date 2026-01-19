@@ -27,7 +27,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/ssh"
@@ -173,12 +172,12 @@ func (d *Driver) Create() error {
 		} else {
 			// The conflicting container name was not created by minikube
 			// user has a container that conflicts with minikube profile name, will not delete users container.
-			return errors.Wrapf(err, "user has a conflicting container name %q with minikube container. Needs to be deleted by user's consent", params.Name)
+			return fmt.Errorf("user has a conflicting container name %q with minikube container. Needs to be deleted by user's consent: %w", params.Name, err)
 		}
 	}
 
 	if err := oci.PrepareContainerNode(params); err != nil {
-		return errors.Wrap(err, "setting up container node")
+		return fmt.Errorf("setting up container node: %w", err)
 	}
 
 	var waitForPreload sync.WaitGroup
@@ -209,11 +208,11 @@ func (d *Driver) Create() error {
 	}
 
 	if err := oci.CreateContainerNode(params); err != nil {
-		return errors.Wrap(err, "create kic node")
+		return fmt.Errorf("create kic node: %w", err)
 	}
 
 	if err := d.prepareSSH(); err != nil {
-		return errors.Wrap(err, "prepare kic ssh")
+		return fmt.Errorf("prepare kic ssh: %w", err)
 	}
 
 	return nil
@@ -224,13 +223,13 @@ func (d *Driver) prepareSSH() error {
 	keyPath := d.GetSSHKeyPath()
 	klog.Infof("Creating ssh key for kic: %s...", keyPath)
 	if err := ssh.GenerateSSHKey(keyPath); err != nil {
-		return errors.Wrap(err, "generate ssh key")
+		return fmt.Errorf("generate ssh key: %w", err)
 	}
 
 	cmder := command.NewKICRunner(d.NodeConfig.MachineName, d.NodeConfig.OCIBinary)
 	f, err := assets.NewFileAsset(d.GetSSHKeyPath()+".pub", "/home/docker/.ssh/", "authorized_keys", "0644")
 	if err != nil {
-		return errors.Wrap(err, "create pubkey assetfile ")
+		return fmt.Errorf("create pubkey assetfile : %w", err)
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
@@ -239,7 +238,7 @@ func (d *Driver) prepareSSH() error {
 	}()
 
 	if err := cmder.Copy(f); err != nil {
-		return errors.Wrap(err, "copying pub key")
+		return fmt.Errorf("copying pub key: %w", err)
 	}
 
 	// Double-check that the container has not crashed so that we may give a better error message
@@ -250,11 +249,11 @@ func (d *Driver) prepareSSH() error {
 
 	if s != state.Running {
 		excerpt := oci.LogContainerDebug(d.OCIBinary, d.MachineName)
-		return errors.Wrapf(oci.ErrExitedUnexpectedly, "container name %q state %s: log: %s", d.MachineName, s, excerpt)
+		return fmt.Errorf("container name %q state %s: log: %s: %w", d.MachineName, s, excerpt, oci.ErrExitedUnexpectedly)
 	}
 
 	if rr, err := cmder.RunCmd(exec.Command("chown", "docker:docker", "/home/docker/.ssh/authorized_keys")); err != nil {
-		return errors.Wrapf(err, "apply authorized_keys file ownership, output %s", rr.Output())
+		return fmt.Errorf("apply authorized_keys file ownership, output %s: %w", rr.Output(), err)
 	}
 
 	if runtime.GOOS == "windows" {
@@ -275,7 +274,7 @@ func (d *Driver) prepareSSH() error {
 			icaclsCmdOut, icaclsCmdErr := icaclsCmd.CombinedOutput()
 
 			if icaclsCmdErr != nil {
-				return errors.Wrap(icaclsCmdErr, fmt.Sprintf("unable to execute icacls to set permissions: %s", icaclsCmdOut))
+				return fmt.Errorf("%s: %w", fmt.Sprintf("unable to execute icacls to set permissions: %s", icaclsCmdOut), icaclsCmdErr)
 			}
 		}
 	}
@@ -311,7 +310,7 @@ func (d *Driver) GetSSHHostname() (string, error) {
 func (d *Driver) GetSSHPort() (int, error) {
 	p, err := oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.SSHPort)
 	if err != nil {
-		return p, errors.Wrap(err, "get ssh host-port")
+		return p, fmt.Errorf("get ssh host-port: %w", err)
 	}
 	return p, nil
 }
@@ -360,7 +359,7 @@ func (d *Driver) Kill() error {
 
 	cr := command.NewExecRunner(false) // using exec runner for interacting with daemon.
 	if _, err := cr.RunCmd(oci.PrefixCmd(exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName))); err != nil {
-		return errors.Wrapf(err, "killing %q", d.MachineName)
+		return fmt.Errorf("killing %q: %w", d.MachineName, err)
 	}
 	return nil
 }
@@ -373,7 +372,7 @@ func (d *Driver) Remove() error {
 
 	if err := oci.DeleteContainer(context.Background(), d.NodeConfig.OCIBinary, d.MachineName); err != nil {
 		if strings.Contains(err.Error(), "is already in progress") {
-			return errors.Wrap(err, "stuck delete")
+			return fmt.Errorf("stuck delete: %w", err)
 		}
 		if strings.Contains(err.Error(), "No such container:") {
 			return nil // nothing was found to delete.
@@ -415,9 +414,9 @@ func (d *Driver) Start() error {
 	if err := oci.StartContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
 		oci.LogContainerDebug(d.OCIBinary, d.MachineName)
 		if _, err := oci.DaemonInfo(d.OCIBinary); err != nil {
-			return errors.Wrapf(oci.ErrDaemonInfo, "debug daemon info %q", d.MachineName)
+			return fmt.Errorf("debug daemon info %q: %w", d.MachineName, oci.ErrDaemonInfo)
 		}
-		return errors.Wrap(err, "start")
+		return fmt.Errorf("start: %w", err)
 	}
 	checkRunning := func() error {
 		s, err := oci.ContainerStatus(d.NodeConfig.OCIBinary, d.MachineName)
@@ -435,10 +434,10 @@ func (d *Driver) Start() error {
 		excerpt := oci.LogContainerDebug(d.OCIBinary, d.MachineName)
 		_, err := oci.DaemonInfo(d.OCIBinary)
 		if err != nil {
-			return errors.Wrapf(oci.ErrDaemonInfo, "container name %q", d.MachineName)
+			return fmt.Errorf("container name %q: %w", d.MachineName, oci.ErrDaemonInfo)
 		}
 
-		return errors.Wrapf(oci.ErrExitedUnexpectedly, "container name %q: log: %s", d.MachineName, excerpt)
+		return fmt.Errorf("container name %q: log: %s: %w", d.MachineName, excerpt, oci.ErrExitedUnexpectedly)
 	}
 	return nil
 }
@@ -483,7 +482,7 @@ func (d *Driver) Stop() error {
 
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
 	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "stopping %s", d.MachineName)
+		return fmt.Errorf("stopping %s: %w", d.MachineName, err)
 	}
 	return nil
 }
@@ -503,7 +502,7 @@ func killAPIServerProc(runner command.Runner) error {
 		if err == nil { // this means we have a valid pid
 			klog.Warningf("Found a kube-apiserver running with pid %d, will try to kill the proc", pid)
 			if _, err = runner.RunCmd(exec.Command("pkill", "-9", fmt.Sprint(pid))); err != nil {
-				return errors.Wrap(err, "kill")
+				return fmt.Errorf("kill: %w", err)
 			}
 		}
 	}

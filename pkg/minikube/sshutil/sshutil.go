@@ -18,13 +18,13 @@ package sshutil
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 	"k8s.io/client-go/util/homedir"
@@ -39,7 +39,7 @@ import (
 func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 	h, err := newSSHHost(d)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating new ssh host from driver")
+		return nil, fmt.Errorf("Error creating new ssh host from driver: %w", err)
 
 	}
 	defaultKeyPath := filepath.Join(homedir.HomeDir(), ".ssh", "id_rsa")
@@ -54,7 +54,7 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 
 	config, err := machinessh.NewNativeConfig(h.Username, auth)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error creating new native config from ssh using: %s, %s", h.Username, auth)
+		return nil, fmt.Errorf("Error creating new native config from ssh using: %s, %s: %w", h.Username, auth, err)
 	}
 
 	var client *ssh.Client
@@ -84,11 +84,11 @@ func newSSHHost(d drivers.Driver) (*sshHost, error) {
 
 	ip, err := d.GetSSHHostname()
 	if err != nil {
-		return nil, errors.Wrap(err, "Error getting ssh host name for driver")
+		return nil, fmt.Errorf("Error getting ssh host name for driver: %w", err)
 	}
 	port, err := d.GetSSHPort()
 	if err != nil {
-		return nil, errors.Wrap(err, "Error getting ssh port for driver")
+		return nil, fmt.Errorf("Error getting ssh port for driver: %w", err)
 	}
 	return &sshHost{
 		IP:         ip,

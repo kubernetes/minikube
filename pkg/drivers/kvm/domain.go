@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/log"
 	"libvirt.org/go/libvirt"
 )
@@ -71,7 +70,7 @@ func (d *Driver) defineDomain() (*libvirt.Domain, error) {
 	tmpl := template.Must(template.New("domain").Parse(domainTmpl))
 	var domainXML bytes.Buffer
 	if err := tmpl.Execute(&domainXML, d); err != nil {
-		return nil, errors.Wrap(err, "executing domain xml")
+		return nil, fmt.Errorf("executing domain xml: %w", err)
 	}
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
@@ -86,7 +85,7 @@ func (d *Driver) defineDomain() (*libvirt.Domain, error) {
 	log.Infof("defining domain using XML: %v", domainXML.String())
 	dom, err := conn.DomainDefineXML(domainXML.String())
 	if err != nil {
-		return nil, errors.Wrapf(err, "error defining domain xml: %s", domainXML.String())
+		return nil, fmt.Errorf("error defining domain xml: %s: %w", domainXML.String(), err)
 	}
 
 	// save MAC address

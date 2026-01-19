@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.37.0-1768032387-22425
+ISO_VERSION ?= v1.37.0-1768592548-22436
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -373,7 +373,7 @@ test: ## Trigger minikube test
 	MINIKUBE_LDFLAGS="${MINIKUBE_LDFLAGS}" ./test.sh
 
 .PHONY: generate-docs
-generate-docs: extract out/minikube ## Automatically generate commands documentation.
+generate-docs: update-translations out/minikube ## Automatically generate commands documentation.
 	out/minikube generate-docs --path ./site/content/en/docs/commands/ --test-path ./site/content/en/docs/contrib/tests.en.md --code-path ./site/content/en/docs/contrib/errorcodes.en.md
 
 .PHONY: gotest
@@ -401,6 +401,13 @@ out/coverage.html: out/coverage.out
 .PHONY: extract
 extract: ## extract internationalization words for translations
 	go run cmd/extract/extract.go
+
+.PHONY: prune-translations
+prune-translations: ## remove stale translations that no longer exist in strings.txt
+	go run cmd/prune-translations/prune-translations.go
+
+.PHONY: update-translations
+update-translations: extract prune-translations ## extract strings and remove stale translations
 
 .PHONY: cross
 cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform

@@ -24,7 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
@@ -58,7 +57,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 
 	h, err := api.Load(config.MachineName(*cc, *n))
 	if err != nil {
-		return h, errors.Wrap(err, "error loading existing host. Please try running [minikube delete], then run [minikube start] again")
+		return h, fmt.Errorf("error loading existing host. Please try running [minikube delete], then run [minikube start] again: %w", err)
 	}
 	defer postStartValidations(h, cc.Driver)
 
@@ -78,7 +77,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 		h.HostOptions.EngineOptions.Env = e.Env
 		err = provisionDockerMachine(h)
 		if err != nil {
-			return h, errors.Wrap(err, "provision")
+			return h, fmt.Errorf("provision: %w", err)
 		}
 	}
 
@@ -87,7 +86,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 	}
 
 	if err := postStartSetup(h, *cc); err != nil {
-		return h, errors.Wrap(err, "post-start")
+		return h, fmt.Errorf("post-start: %w", err)
 	}
 
 	// on vm node restart and for ha (multi-control plane) topology only (for now),
@@ -126,7 +125,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 
 			h, err = createHost(api, cc, n)
 			if err != nil {
-				return nil, errors.Wrap(err, "recreate")
+				return nil, fmt.Errorf("recreate: %w", err)
 			}
 
 			recreated = true
@@ -151,7 +150,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 	}
 	if err := h.Driver.Start(); err != nil {
 		MaybeDisplayAdvice(err, h.DriverName)
-		return h, errors.Wrap(err, "driver start")
+		return h, fmt.Errorf("driver start: %w", err)
 	}
 	if err := saveHost(api, h, cc, n); err != nil {
 		return h, err
@@ -201,7 +200,7 @@ func ensureSyncedGuestClock(h hostRunner, drv string) error {
 		return nil
 	}
 	if err := adjustGuestClock(h, time.Now()); err != nil {
-		return errors.Wrap(err, "adjusting system clock")
+		return fmt.Errorf("adjusting system clock: %w", err)
 	}
 	return nil
 }
@@ -211,17 +210,17 @@ func ensureSyncedGuestClock(h hostRunner, drv string) error {
 func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
 	rest, err := h.RunSSHCommand("date +%s.%N")
 	if err != nil {
-		return 0, errors.Wrap(err, "get clock")
+		return 0, fmt.Errorf("get clock: %w", err)
 	}
 	klog.Infof("guest clock: %s", rest)
 	ns := strings.Split(strings.TrimSpace(rest), ".")
 	secs, err := strconv.ParseInt(strings.TrimSpace(ns[0]), 10, 64)
 	if err != nil {
-		return 0, errors.Wrap(err, "atoi")
+		return 0, fmt.Errorf("atoi: %w", err)
 	}
 	nsecs, err := strconv.ParseInt(strings.TrimSpace(ns[1]), 10, 64)
 	if err != nil {
-		return 0, errors.Wrap(err, "atoi")
+		return 0, fmt.Errorf("atoi: %w", err)
 	}
 	// NOTE: In a synced state, remote is a few hundred ms ahead of local
 	remote := time.Unix(secs, nsecs)

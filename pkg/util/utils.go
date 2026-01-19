@@ -25,7 +25,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	units "github.com/docker/go-units"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -88,18 +87,18 @@ func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
 		username := os.Getenv("SUDO_USER")
 		usr, err := user.Lookup(username)
 		if err != nil {
-			return errors.Wrap(err, "Error looking up user")
+			return fmt.Errorf("Error looking up user: %w", err)
 		}
 		uid, err := strconv.Atoi(usr.Uid)
 		if err != nil {
-			return errors.Wrapf(err, "Error parsing uid for user: %s", username)
+			return fmt.Errorf("Error parsing uid for user: %s: %w", username, err)
 		}
 		gid, err := strconv.Atoi(usr.Gid)
 		if err != nil {
-			return errors.Wrapf(err, "Error parsing gid for user: %s", username)
+			return fmt.Errorf("Error parsing gid for user: %s: %w", username, err)
 		}
 		if err := ChownR(dir, uid, gid); err != nil {
-			return errors.Wrapf(err, "Error changing ownership for: %s", dir)
+			return fmt.Errorf("Error changing ownership for: %s: %w", dir, err)
 		}
 	}
 	return nil

@@ -17,9 +17,9 @@ limitations under the License.
 package schedule
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -45,7 +45,7 @@ func Daemonize(profiles []string, duration time.Duration, options *run.CommandOp
 	}
 
 	if err := daemonize(daemonizeProfiles, duration, options); err != nil {
-		return errors.Wrap(err, "daemonizing")
+		return fmt.Errorf("daemonizing: %w", err)
 	}
 
 	// save scheduled stop config if daemonize was successful
@@ -53,7 +53,7 @@ func Daemonize(profiles []string, duration time.Duration, options *run.CommandOp
 		_, cc := mustload.Partial(d, options)
 		cc.ScheduledStop = scheduledStop
 		if err := config.SaveProfile(d, cc); err != nil {
-			return errors.Wrap(err, "saving profile")
+			return fmt.Errorf("saving profile: %w", err)
 		}
 	}
 	return nil

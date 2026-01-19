@@ -28,9 +28,10 @@ import (
 	"text/template"
 	"time"
 
+	"errors"
+
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
-	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -70,7 +71,7 @@ func init() {
 func (k *K8sClientGetter) GetCoreClient(ctx string) (typed_core.CoreV1Interface, error) {
 	client, err := kapi.Client(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "client")
+		return nil, fmt.Errorf("client: %w", err)
 	}
 	return client.CoreV1(), nil
 }
@@ -129,12 +130,12 @@ func GetServiceURLs(api libmachine.API, cname string, namespace string, t *templ
 func GetServiceURLsForService(api libmachine.API, cname string, namespace, service string, t *template.Template) (SvcURL, error) {
 	host, err := machine.LoadHost(api, cname)
 	if err != nil {
-		return SvcURL{}, errors.Wrap(err, "Error checking if api exist and loading it")
+		return SvcURL{}, fmt.Errorf("Error checking if api exist and loading it: %w", err)
 	}
 
 	ip, err := host.Driver.GetIP()
 	if err != nil {
-		return SvcURL{}, errors.Wrap(err, "Error getting ip from host")
+		return SvcURL{}, fmt.Errorf("Error getting ip from host: %w", err)
 	}
 
 	client, err := K8s.GetCoreClient(cname)
@@ -152,7 +153,7 @@ func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace st
 
 	svc, err := c.Services(namespace).Get(context.Background(), service, meta.GetOptions{})
 	if err != nil {
-		return SvcURL{}, errors.Wrapf(err, "service '%s' could not be found running", service)
+		return SvcURL{}, fmt.Errorf("service '%s' could not be found running: %w", service, err)
 	}
 
 	endpoints, err := c.Endpoints(namespace).Get(context.Background(), service, meta.GetOptions{})
@@ -200,13 +201,13 @@ func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace st
 func CheckService(cname string, namespace string, service string) error {
 	client, err := K8s.GetCoreClient(cname)
 	if err != nil {
-		return errors.Wrap(err, "Error getting Kubernetes client")
+		return fmt.Errorf("Error getting Kubernetes client: %w", err)
 	}
 
 	svc, err := client.Services(namespace).Get(context.Background(), service, meta.GetOptions{})
 	if err != nil {
 		return &retry.RetriableError{
-			Err: errors.Wrapf(err, "Error getting service %s", service),
+			Err: fmt.Errorf("Error getting service %s: %w", service, err),
 		}
 	}
 	if len(svc.Spec.Ports) == 0 {
@@ -275,7 +276,7 @@ func WaitForService(api libmachine.API, cname string, namespace string, service 
 
 	serviceURL, err := GetServiceURLsForService(api, cname, namespace, service, urlTemplate)
 	if err != nil {
-		return urlList, errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
+		return urlList, fmt.Errorf("Check that minikube is running and that you have specified the correct namespace: %w", err)
 	}
 
 	if !urlMode {
@@ -384,12 +385,12 @@ func DeleteSecret(cname string, namespace, name string) error {
 func CheckServicePods(cname, svcName, namespace string) error {
 	clientset, err := K8s.GetCoreClient(cname)
 	if err != nil {
-		return errors.Wrap(err, "failed to get k8s client")
+		return fmt.Errorf("failed to get k8s client: %w", err)
 	}
 
 	svc, err := clientset.Services(namespace).Get(context.Background(), svcName, meta.GetOptions{})
 	if err != nil {
-		return errors.Wrap(err, "Get service")
+		return fmt.Errorf("Get service: %w", err)
 	}
 	// There are four types of service in k8s: NodePort, ClusterIp, LoadBalancer and ExternalName
 	// However, NodePort means that this service will not be exposed outside the cluster
@@ -402,7 +403,7 @@ func CheckServicePods(cname, svcName, namespace string) error {
 		LabelSelector: labels.Set(svc.Spec.Selector).AsSelector().String(),
 	})
 	if err != nil {
-		return errors.Wrap(err, "List Pods")
+		return fmt.Errorf("List Pods: %w", err)
 	}
 
 	for _, pod := range pods.Items {

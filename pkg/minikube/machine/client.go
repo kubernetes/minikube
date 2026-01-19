@@ -25,8 +25,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/juju/fslock"
-	"github.com/pkg/errors"
+	"github.com/gofrs/flock"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/auth"
@@ -44,6 +43,7 @@ import (
 	"k8s.io/minikube/pkg/libmachine/swarm"
 	"k8s.io/minikube/pkg/libmachine/version"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -73,7 +73,7 @@ func NewAPIClient(options *run.CommandOptions, miniHome ...string) (libmachine.A
 		storePath:      storePath,
 		Filestore:      persist.NewFilestore(storePath, certsDir, certsDir),
 		legacyClient:   NewRPCClient(storePath, certsDir),
-		flock:          fslock.New(localpath.MakeMiniPath("machine_client.lock")),
+		flock:          flock.New(filepath.Join(storePath, "machine_client.lock")),
 		commandOptions: options,
 	}, nil
 }
@@ -85,7 +85,7 @@ type LocalClient struct {
 	storePath string
 	*persist.Filestore
 	legacyClient libmachine.API
-	flock        *fslock.Lock
+	flock        *flock.Flock
 	// TODO: Consider removing when libmachine API is part of minikube:
 	// https://github.com/kubernetes/minikube/issues/21789
 	commandOptions *run.CommandOptions
@@ -103,7 +103,7 @@ func (api *LocalClient) NewHost(drvName string, rawDriver []byte) (*host.Host, e
 	d := def.Init(api.commandOptions)
 	err := json.Unmarshal(rawDriver, d)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error getting driver %s", string(rawDriver))
+		return nil, fmt.Errorf("Error getting driver %s: %w", string(rawDriver), err)
 	}
 
 	return &host.Host{
@@ -134,7 +134,7 @@ func (api *LocalClient) NewHost(drvName string, rawDriver []byte) (*host.Host, e
 func (api *LocalClient) Load(name string) (*host.Host, error) {
 	h, err := api.Filestore.Load(name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "filestore %q", name)
+		return nil, fmt.Errorf("filestore %q: %w", name, err)
 	}
 
 	def := registry.Driver(h.DriverName)
@@ -192,20 +192,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"bootstrapping certificates",
 			func() error {
-				// Lock is needed to avoid race condition in parallel Docker-Env test because issue #10107.
-				// CA cert and client cert should be generated atomically, otherwise might cause bad certificate error.
-				lockErr := api.flock.LockWithTimeout(time.Second * 5)
-				if lockErr != nil {
-					return fmt.Errorf("failed to acquire bootstrap client lock: %v", lockErr)
-				}
-				defer func() {
-					lockErr = api.flock.Unlock()
-					if lockErr != nil {
-						klog.Errorf("failed to release bootstrap cert client lock: %v", lockErr.Error())
-					}
-				}()
-				certErr := cert.BootstrapCertificates(h.AuthOptions())
-				return certErr
+				return api.bootstrapCertificatesWithLock(h)
 			},
 		},
 		{
@@ -245,11 +232,47 @@ func (api *LocalClient) Create(h *host.Host) error {
 
 	for _, step := range steps {
 		if err := step.f(); err != nil {
-			return errors.Wrap(err, step.name)
+			return fmt.Errorf("%s: %w", step.name, err)
 		}
 	}
 
 	return nil
+}
+
+func (api *LocalClient) bootstrapCertificatesWithLock(h *host.Host) error {
+	// Lock is needed to avoid race condition in parallel Docker-Env test because issue #10107.
+	// CA cert and client cert should be generated atomically, otherwise might cause bad certificate error.
+	timeout := time.Second * 5
+	start := time.Now()
+	var lockErr error
+	// gofrs/flock does not support LockWithTimeout, so we implement it manually with a retry loop.
+	for {
+		var locked bool
+		locked, lockErr = api.flock.TryLock()
+		if lockErr != nil {
+			break
+		}
+		if locked {
+			break
+		}
+		if time.Since(start) > timeout {
+			lockErr = fmt.Errorf("timeout acquiring lock")
+			break
+		}
+		time.Sleep(constants.LockRetryInterval)
+	}
+
+	if lockErr != nil {
+		return fmt.Errorf("failed to acquire bootstrap client lock: %v", lockErr)
+	}
+	defer func() {
+		lockErr = api.flock.Unlock()
+		if lockErr != nil {
+			klog.Errorf("failed to release bootstrap cert client lock: %v", lockErr.Error())
+		}
+	}()
+	certErr := cert.BootstrapCertificates(h.AuthOptions())
+	return certErr
 }
 
 // StartDriver starts the driver

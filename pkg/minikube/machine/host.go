@@ -17,7 +17,8 @@ limitations under the License.
 package machine
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/state"
@@ -29,7 +30,7 @@ import (
 func Status(api libmachine.API, machineName string) (string, error) {
 	exists, err := api.Exists(machineName)
 	if err != nil {
-		return "", errors.Wrapf(err, "%s exists", machineName)
+		return "", fmt.Errorf("%s exists: %w", machineName, err)
 	}
 	if !exists {
 		return state.None.String(), nil
@@ -37,12 +38,12 @@ func Status(api libmachine.API, machineName string) (string, error) {
 
 	hostInfo, err := api.Load(machineName)
 	if err != nil {
-		return "", errors.Wrapf(err, "load")
+		return "", fmt.Errorf("load: %w", err)
 	}
 
 	s, err := hostInfo.Driver.GetState()
 	if err != nil {
-		return "", errors.Wrap(err, "state")
+		return "", fmt.Errorf("state: %w", err)
 	}
 	return s.String(), nil
 }
@@ -66,15 +67,15 @@ func LoadHost(api libmachine.API, machineName string) (*host.Host, error) {
 	klog.Infof("Checking if %q exists ...", machineName)
 	exists, err := api.Exists(machineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error checking that machine exists: %s", machineName)
+		return nil, fmt.Errorf("Error checking that machine exists: %s: %w", machineName, err)
 	}
 	if !exists {
-		return nil, errors.Errorf("machine %q does not exist", machineName)
+		return nil, fmt.Errorf("machine %q does not exist", machineName)
 	}
 
 	h, err := api.Load(machineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "loading machine %q", machineName)
+		return nil, fmt.Errorf("loading machine %q: %w", machineName, err)
 	}
 	return h, nil
 }

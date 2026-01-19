@@ -17,14 +17,19 @@ limitations under the License.
 package mcndockerclient
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"net/http"
 
-	"github.com/sayboras/dockerclient"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/client"
 	"k8s.io/minikube/pkg/libmachine/cert"
 )
 
 // DockerClient creates a docker client for a given host.
-func DockerClient(dockerHost DockerHost) (*dockerclient.DockerClient, error) {
+func DockerClient(dockerHost DockerHost) (*client.Client, error) {
 	url, err := dockerHost.URL()
 	if err != nil {
 		return nil, err
@@ -35,27 +40,43 @@ func DockerClient(dockerHost DockerHost) (*dockerclient.DockerClient, error) {
 		return nil, fmt.Errorf("Unable to read TLS config: %s", err)
 	}
 
-	return dockerclient.NewDockerClient(url, tlsConfig)
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+
+	return client.NewClientWithOpts(
+		client.WithHost(url),
+		client.WithHTTPClient(httpClient),
+		client.WithAPIVersionNegotiation(),
+	)
 }
 
 // CreateContainer creates a docker container.
-func CreateContainer(dockerHost DockerHost, config *dockerclient.ContainerConfig, name string) error {
+func CreateContainer(dockerHost DockerHost, config *container.Config, hostConfig *container.HostConfig, name string) error {
+	ctx := context.Background()
 	docker, err := DockerClient(dockerHost)
 	if err != nil {
 		return err
 	}
+	defer docker.Close()
 
-	if err = docker.PullImage(config.Image, nil); err != nil {
+	// Pull plugin image
+	out, err := docker.ImagePull(ctx, config.Image, image.PullOptions{})
+	if err != nil {
 		return fmt.Errorf("Unable to pull image: %s", err)
 	}
+	defer out.Close()
+	// consume output to ensure pull is finished
+	_, _ = io.Copy(io.Discard, out)
 
-	var authConfig *dockerclient.AuthConfig
-	containerID, err := docker.CreateContainer(config, name, authConfig)
+	resp, err := docker.ContainerCreate(ctx, config, hostConfig, nil, nil, name)
 	if err != nil {
 		return fmt.Errorf("Error while creating container: %s", err)
 	}
 
-	if err = docker.StartContainer(containerID, &config.HostConfig); err != nil {
+	if err = docker.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return fmt.Errorf("Error while starting container: %s", err)
 	}
 

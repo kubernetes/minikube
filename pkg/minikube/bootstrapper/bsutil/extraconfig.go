@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 )
@@ -116,7 +115,7 @@ func FindInvalidExtraConfigFlags(opts config.ExtraOptionSlice) []string {
 func extraConfigForComponent(component string, opts config.ExtraOptionSlice, version semver.Version) (map[string]string, error) {
 	versionedOpts, err := defaultOptionsForComponentAndVersion(component, version)
 	if err != nil {
-		return nil, errors.Wrapf(err, "setting version specific options for %s", component)
+		return nil, fmt.Errorf("setting version specific options for %s: %w", component, err)
 	}
 
 	for _, opt := range opts {
@@ -161,7 +160,7 @@ func newComponentOptions(opts config.ExtraOptionSlice, version semver.Version, f
 		}
 		extraConfig, err := extraConfigForComponent(component, opts, version)
 		if err != nil {
-			return nil, errors.Wrapf(err, "getting kubeadm extra args for %s", component)
+			return nil, fmt.Errorf("getting kubeadm extra args for %s: %w", component, err)
 		}
 		if featureGates != "" {
 			extraConfig["feature-gates"] = featureGates

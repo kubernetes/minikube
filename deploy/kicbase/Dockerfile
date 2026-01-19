@@ -43,8 +43,8 @@ COPY containerd_docker_io_hosts.toml /etc/containerd/certs.d/docker.io/hosts.tom
 COPY clean-install /usr/local/bin/clean-install
 COPY entrypoint /usr/local/bin/entrypoint
 COPY CHANGELOG ./CHANGELOG
-COPY nerdctld/nerdctld.socket  /etc/systemd/system/nerdctld.socket
-COPY nerdctld/nerdctld.service  /etc/systemd/system/nerdctld.service
+COPY nerdctld/nerdctl.socket /usr/local/lib/systemd/system/nerdctl.socket
+COPY nerdctld/nerdctl.service /usr/local/lib/systemd/system/nerdctl.service
 COPY auto-pause-${TARGETARCH} /bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
@@ -133,16 +133,21 @@ PasswordAuthentication no
 EOF
 
 # Install nerdctl and nerdctld
-RUN export ARCH=$(dpkg --print-architecture) \
-    && if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ]; then \
-        echo "Installing nerdctl and nerdctld ..." && \
-        curl -L --retry 5 --output /tmp/nerdctl.tgz "https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VERSION}/nerdctl-${NERDCTL_VERSION}-linux-$ARCH.tar.gz" &&\
-        tar -C /usr/local/bin -xzvf /tmp/nerdctl.tgz &&\
-        curl -L --retry 5 --output /tmp/nerdctld.tgz "https://github.com/afbjorklund/nerdctld/releases/download/v${NERDCTLD_VERSION}/nerdctld-${NERDCTLD_VERSION}-linux-$ARCH.tar.gz" &&\
-        tar -C /usr/local/bin -xzvf /tmp/nerdctld.tgz &&\
-        chmod 777  /usr/local/bin/nerdctl &&\
-        chmod 777 /usr/local/bin/nerdctld; \
-    fi
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    echo "Installing nerdctl and nerdctld ..." &&\
+    addgroup --system nerdctl &&\
+    mkdir -p /etc/systemd/system/nerdctl.socket.d && \
+    printf "[Socket]\nSocketMode=0660\nSocketGroup=nerdctl\n" \
+           > /etc/systemd/system/nerdctl.socket.d/override.conf && \
+    mkdir -p /etc/systemd/system/nerdctl.service.d && \
+    printf "[Service]\nEnvironment=CONTAINERD_NAMESPACE=k8s.io\n" \
+           > /etc/systemd/system/nerdctl.service.d/override.conf && \
+    curl -L --retry 5 --output /tmp/nerdctl.tgz "https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VERSION}/nerdctl-${NERDCTL_VERSION}-linux-$ARCH.tar.gz" &&\
+    tar -C /usr/local/bin -xzvf /tmp/nerdctl.tgz &&\
+    curl -L --retry 5 --output /tmp/nerdctld.tgz "https://github.com/afbjorklund/nerdctld/releases/download/v${NERDCTLD_VERSION}/nerdctld-${NERDCTLD_VERSION}-linux-$ARCH.tar.gz" &&\
+    tar -C /usr/local/bin -xzvf /tmp/nerdctld.tgz &&\
+    chmod 755 /usr/local/bin/nerdctl &&\
+    chmod 755 /usr/local/bin/nerdctld
 
 # install docker
 ## ref: https://docs.docker.com/engine/install/debian/#install-using-the-repository
@@ -271,6 +276,7 @@ RUN usermod -p '*' docker && passwd -u docker && passwd -d docker
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/20-passwordless-sudo \
     && chmod 0440 /etc/sudoers.d/20-passwordless-sudo
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then adduser docker podman; fi
+RUN adduser docker nerdctl
 RUN adduser docker buildkit
 USER docker
 RUN mkdir /home/docker/.ssh

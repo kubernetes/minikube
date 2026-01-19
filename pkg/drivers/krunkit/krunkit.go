@@ -32,7 +32,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
@@ -282,7 +283,7 @@ func (d *Driver) setupIP(mac string) error {
 	getIP := func() error {
 		d.IPAddress, err = common.GetIPAddressByMACAddress(mac)
 		if err != nil {
-			return errors.Wrap(err, "failed to get IP address")
+			return fmt.Errorf("failed to get IP address: %w", err)
 		}
 		return nil
 	}
@@ -301,7 +302,7 @@ func (d *Driver) setupIP(mac string) error {
 		return nil
 	}
 	if !isBootpdError(err) {
-		return errors.Wrap(err, "IP address never found in dhcp leases file")
+		return fmt.Errorf("IP address never found in dhcp leases file: %w", err)
 	}
 	if unblockErr := firewall.UnblockBootpd(&d.CommandOptions); unblockErr != nil {
 		klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
@@ -332,11 +333,11 @@ func (d *Driver) Kill() error {
 func (d *Driver) Remove() error {
 	s, err := d.GetState()
 	if err != nil {
-		return errors.Wrap(err, "get state")
+		return fmt.Errorf("get state: %w", err)
 	}
 	if s == state.Running {
 		if err := d.Kill(); err != nil {
-			return errors.Wrap(err, "kill")
+			return fmt.Errorf("kill: %w", err)
 		}
 	}
 	return nil

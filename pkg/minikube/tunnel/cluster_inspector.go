@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/state"
@@ -40,14 +39,14 @@ func (m *clusterInspector) getStateAndHost() (HostState, *host.Host, error) {
 	h, err := machine.LoadHost(m.machineAPI, m.machineName)
 
 	if err != nil {
-		err = errors.Wrapf(err, "error loading machine host for: %s", m.machineName)
+		err = fmt.Errorf("error loading machine host for: %s: %w", m.machineName, err)
 		return Unknown, nil, err
 	}
 
 	var s state.State
 	s, err = h.Driver.GetState()
 	if err != nil {
-		err = errors.Wrapf(err, "error getting host status for %s", m.machineName)
+		err = fmt.Errorf("error getting host status for %s: %w", m.machineName, err)
 		return Unknown, nil, err
 	}
 
@@ -67,14 +66,14 @@ func (m *clusterInspector) getStateAndRoute() (HostState, *Route, error) {
 	var c *config.ClusterConfig
 	c, err = m.configLoader.LoadConfigFromFile(m.machineName)
 	if err != nil {
-		err = errors.Wrapf(err, "error loading config for %s", m.machineName)
+		err = fmt.Errorf("error loading config for %s: %w", m.machineName, err)
 		return hostState, nil, err
 	}
 
 	var route *Route
 	route, err = getRoute(h, *c)
 	if err != nil {
-		err = errors.Wrapf(err, "error getting route info for %s", m.machineName)
+		err = fmt.Errorf("error getting route info for %s: %w", m.machineName, err)
 		return hostState, nil, err
 	}
 	return hostState, route, nil
@@ -83,7 +82,7 @@ func (m *clusterInspector) getStateAndRoute() (HostState, *Route, error) {
 func getRoute(hostInfo *host.Host, clusterConfig config.ClusterConfig) (*Route, error) {
 	hostDriverIP, err := hostInfo.Driver.GetIP()
 	if err != nil {
-		return nil, errors.Wrapf(err, "error getting host IP for %s", hostInfo.Name)
+		return nil, fmt.Errorf("error getting host IP for %s: %w", hostInfo.Name, err)
 	}
 
 	_, ipNet, err := net.ParseCIDR(clusterConfig.KubernetesConfig.ServiceCIDR)

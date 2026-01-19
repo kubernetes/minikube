@@ -21,14 +21,13 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 )
 
 // Kubeadm returns a list of images necessary to bootstrap kubeadm
 func Kubeadm(mirror string, version string) ([]string, error) {
 	v, err := semver.Make(strings.TrimPrefix(version, "v"))
 	if err != nil {
-		return nil, errors.Wrap(err, "semver")
+		return nil, fmt.Errorf("semver: %w", err)
 	}
 	if v.Major > 1 {
 		return nil, fmt.Errorf("version too new: %v", v)

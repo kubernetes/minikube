@@ -20,6 +20,7 @@ package hyperkit
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/user"
@@ -31,9 +32,8 @@ import (
 	"time"
 
 	"github.com/johanneswuerbach/nfsexports"
-	ps "github.com/mitchellh/go-ps"
 	hyperkit "github.com/moby/hyperkit/go"
-	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/v4/process"
 	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/log"
@@ -104,12 +104,12 @@ func (d *Driver) Create() error {
 
 	// TODO: handle different disk types.
 	if err := common.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
-		return errors.Wrap(err, "making disk image")
+		return fmt.Errorf("making disk image: %w", err)
 	}
 
 	isoPath := d.ResolveStorePath(isoFilename)
 	if err := d.extractKernel(isoPath); err != nil {
-		return errors.Wrap(err, "extracting kernel")
+		return fmt.Errorf("extracting kernel: %w", err)
 	}
 
 	return d.Start()
@@ -141,17 +141,23 @@ func pidState(pid int) (state.State, error) {
 	if pid == 0 {
 		return state.Stopped, nil
 	}
-	p, err := ps.FindProcess(pid)
+	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
+		if errors.Is(err, process.ErrorProcessNotRunning) {
+			log.Debugf("hyperkit pid %d: %v", pid, err)
+			return state.Stopped, nil
+		}
 		return state.Error, err
 	}
-	if p == nil {
+	name, err := proc.Name()
+	if err != nil {
+		// Process might be gone
 		log.Debugf("hyperkit pid %d missing from process table", pid)
 		return state.Stopped, nil
 	}
 	// hyperkit or com.docker.hyper
-	if !strings.Contains(p.Executable(), "hyper") {
-		log.Debugf("pid %d is stale, and is being used by %s", pid, p.Executable())
+	if !strings.Contains(name, "hyper") {
+		log.Debugf("pid %d is stale, and is being used by %s", pid, name)
 		return state.Stopped, nil
 	}
 	return state.Running, nil
@@ -203,7 +209,7 @@ func (d *Driver) createHost() (*hyperkit.HyperKit, error) {
 	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
 	h, err := hyperkit.New("", d.VpnKitSock, stateDir)
 	if err != nil {
-		return nil, errors.Wrap(err, "new-ing Hyperkit")
+		return nil, fmt.Errorf("new-ing Hyperkit: %w", err)
 	}
 
 	// TODO: handle the rest of our settings.
@@ -259,7 +265,7 @@ func (d *Driver) Start() error {
 	log.Debugf("Using UUID %s", h.UUID)
 	mac, err := GetMACAddressFromUUID(h.UUID)
 	if err != nil {
-		return errors.Wrap(err, "getting MAC address from UUID")
+		return fmt.Errorf("getting MAC address from UUID: %w", err)
 	}
 
 	log.Debugf("Generated MAC %s", mac)
@@ -267,7 +273,7 @@ func (d *Driver) Start() error {
 	log.Debugf("Starting with cmdline: %s", d.Cmdline)
 	_, err = h.Start(d.Cmdline)
 	if err != nil {
-		return errors.Wrapf(err, "starting with cmd line: %s", d.Cmdline)
+		return fmt.Errorf("starting with cmd line %s: %w", d.Cmdline, err)
 	}
 
 	if err := d.setupIP(mac); err != nil {
@@ -281,7 +287,7 @@ func (d *Driver) setupIP(mac string) error {
 	getIP := func() error {
 		st, err := d.GetState()
 		if err != nil {
-			return errors.Wrap(err, "get state")
+			return fmt.Errorf("get state: %w", err)
 		}
 		if st == state.Error || st == state.Stopped {
 			return fmt.Errorf("hyperkit crashed! command line:\n  hyperkit %s", d.Cmdline)
@@ -363,23 +369,23 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 			log.Debugf("clean start, hyperkit pid file doesn't exist: %s", pidFile)
 			return nil
 		}
-		return errors.Wrap(err, "stat")
+		return fmt.Errorf("stat: %w", err)
 	}
 
 	log.Warnf("minikube might have been shutdown in an unclean way, the hyperkit pid file still exists: %s", pidFile)
 	bs, err := os.ReadFile(pidFile)
 	if err != nil {
-		return errors.Wrapf(err, "reading pidfile %s", pidFile)
+		return fmt.Errorf("reading pidfile %s: %w", pidFile, err)
 	}
 	content := strings.TrimSpace(string(bs))
 	pid, err := strconv.Atoi(content)
 	if err != nil {
-		return errors.Wrapf(err, "parsing pidfile %s", pidFile)
+		return fmt.Errorf("parsing pidfile %s: %w", pidFile, err)
 	}
 
 	st, err := pidState(pid)
 	if err != nil {
-		return errors.Wrap(err, "pidState")
+		return fmt.Errorf("pidState: %w", err)
 	}
 
 	log.Debugf("pid %d is in state %q", pid, st)
@@ -388,7 +394,7 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 	}
 	log.Debugf("Removing stale pid file %s...", pidFile)
 	if err := os.Remove(pidFile); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("removing pidFile %s", pidFile))
+		return fmt.Errorf("removing pidFile %s: %w", pidFile, err)
 	}
 	return nil
 }
@@ -401,7 +407,7 @@ func (d *Driver) Stop() error {
 	d.cleanupNfsExports()
 	err := d.sendSignal(syscall.SIGTERM)
 	if err != nil {
-		return errors.Wrap(err, "hyperkit sigterm failed")
+		return fmt.Errorf("hyperkit sigterm failed: %w", err)
 	}
 
 	// wait 5s for graceful shutdown
@@ -410,7 +416,7 @@ func (d *Driver) Stop() error {
 		time.Sleep(time.Second * 1)
 		s, err := d.GetState()
 		if err != nil {
-			return errors.Wrap(err, "hyperkit waiting graceful shutdown failed")
+			return fmt.Errorf("hyperkit waiting graceful shutdown failed: %w", err)
 		}
 		if s == state.Stopped {
 			return nil

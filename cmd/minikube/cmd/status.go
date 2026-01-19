@@ -25,7 +25,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
@@ -227,7 +226,7 @@ func clusterStatusJSON(statuses []*cluster.Status, w io.Writer, cc *config.Clust
 
 	bs, err := json.Marshal(cs)
 	if err != nil {
-		return errors.Wrap(err, "marshal")
+		return fmt.Errorf("marshal: %w", err)
 	}
 
 	_, err = w.Write(bs)

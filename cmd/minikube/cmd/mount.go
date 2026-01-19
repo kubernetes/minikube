@@ -28,7 +28,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
@@ -281,7 +280,7 @@ func getPort() (int, error) {
 
 	l, err := net.ListenTCP("tcp", addr)
 	if err != nil {
-		return -1, errors.Errorf("Error accessing port %d", addr.Port)
+		return -1, fmt.Errorf("Error accessing port %d", addr.Port)
 	}
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
@@ -318,7 +317,7 @@ func removePid(path string, pid string) error {
 	// we're reading the pids...
 	data, err := os.ReadFile(pidPath)
 	if err != nil {
-		return errors.Wrap(err, "readFile")
+		return fmt.Errorf("readFile: %w", err)
 	}
 
 	pids := []string{}

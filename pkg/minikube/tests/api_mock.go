@@ -22,7 +22,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/host"
@@ -72,7 +73,7 @@ func (api *MockAPI) Close() error {
 func (api *MockAPI) NewHost(drvName string, rawDriver []byte) (*host.Host, error) {
 	var driver MockDriver
 	if err := json.Unmarshal(rawDriver, &driver); err != nil {
-		return nil, errors.Wrap(err, "error unmarshalling json")
+		return nil, fmt.Errorf("error unmarshalling json: %w", err)
 	}
 
 	h := &host.Host{

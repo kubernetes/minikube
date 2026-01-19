@@ -16,7 +16,10 @@ limitations under the License.
 
 package mcndockerclient
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 var CurrentDockerVersioner DockerVersioner = &defaultDockerVersioner{}
 
@@ -31,12 +34,14 @@ func DockerVersion(host DockerHost) (string, error) {
 type defaultDockerVersioner struct{}
 
 func (dv *defaultDockerVersioner) DockerVersion(host DockerHost) (string, error) {
+	ctx := context.Background()
 	client, err := DockerClient(host)
 	if err != nil {
 		return "", fmt.Errorf("Unable to query docker version: %s", err)
 	}
+	defer client.Close()
 
-	version, err := client.Version()
+	version, err := client.ServerVersion(ctx)
 	if err != nil {
 		return "", fmt.Errorf("Unable to query docker version: %s", err)
 	}

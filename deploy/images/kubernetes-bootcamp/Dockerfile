@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Last update Jan 8, 2026 5:17 PM
+
+# Touching this file will trigger a new image build in Prow Staging https://testgrid.k8s.io/minikube-images
+# Last update Jan 16, 2026 3:19 PM
 FROM node:25-slim
 RUN apt-get update && apt-get install curl -y
 EXPOSE 8080

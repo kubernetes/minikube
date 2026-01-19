@@ -17,11 +17,11 @@ limitations under the License.
 package gvisor
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 )
 
@@ -29,15 +29,15 @@ import (
 func Disable() error {
 	log.Print("Disabling gvisor...")
 	if err := os.Remove(filepath.Join(nodeDir, containerdConfigPath)); err != nil {
-		return errors.Wrapf(err, "removing %s", containerdConfigPath)
+		return fmt.Errorf("removing %s: %w", containerdConfigPath, err)
 	}
 	log.Printf("Restoring default config.toml at %s", containerdConfigPath)
 	if err := mcnutils.CopyFile(filepath.Join(nodeDir, containerdConfigBackupPath), filepath.Join(nodeDir, containerdConfigPath)); err != nil {
-		return errors.Wrap(err, "reverting back to default config.toml")
+		return fmt.Errorf("reverting back to default config.toml: %w", err)
 	}
 	// restart containerd
 	if err := restartContainerd(); err != nil {
-		return errors.Wrap(err, "restarting containerd")
+		return fmt.Errorf("restarting containerd: %w", err)
 	}
 	log.Print("Successfully disabled gvisor")
 	return nil
