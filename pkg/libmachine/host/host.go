@@ -60,6 +60,7 @@ type Host struct {
 	HostOptions   *Options
 	Name          string
 	RawDriver     []byte `json:"-"`
+	Guest         Guest
 }
 
 type Options struct {
@@ -69,6 +70,12 @@ type Options struct {
 	EngineOptions *engine.Options
 	SwarmOptions  *swarm.Options
 	AuthOptions   *auth.Options
+}
+
+type Guest struct {
+	Name    string
+	Version string
+	URL     string
 }
 
 type Metadata struct {

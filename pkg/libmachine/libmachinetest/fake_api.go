@@ -36,7 +36,7 @@ func (api *FakeAPI) Close() error {
 	return nil
 }
 
-func (api *FakeAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
+func (api *FakeAPI) NewHost(driverName string, guestOS string, rawDriver []byte) (*host.Host, error) {
 	return nil, nil
 }
 

@@ -194,6 +194,14 @@ func runStart(cmd *cobra.Command, _ []string) {
 		out.WarningT("Profile name '{{.name}}' is not valid", out.V{"name": ClusterFlagValue()})
 		exit.Message(reason.Usage, "Only alphanumeric and dashes '-' are permitted. Minimum 2 characters, starting with alphanumeric.")
 	}
+
+	// change the driver to hyperv, cni to flannel and container runtime to containerd if we have --node-os=windows
+	if cmd.Flags().Changed(nodeOS) {
+		viper.Set("driver", driver.HyperV)
+		viper.Set("cni", "flannel")
+		viper.Set(containerRuntime, constants.Containerd)
+
+	}
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
 		kind := reason.HostConfigLoad
@@ -370,13 +378,6 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		os.Exit(0)
 	}
 
-	// If preloadWindowsIso flag is true then cache the windows ISO
-	if viper.GetBool(preloadWindowsIso) {
-		if err := download.WindowsISO(viper.GetString(windowsNodeVersion)); err != nil {
-			return node.Starter{}, errors.Wrap(err, "Failed to cache Windows ISO")
-		}
-	}
-
 	if driver.IsVM(driverName) && !driver.IsSSH(driverName) {
 		urlString, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
 		if err != nil {
@@ -497,6 +498,13 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 	// target total and number of control-plane nodes
 	numCPNodes := 1
 	numNodes := viper.GetInt(nodes)
+	// if we have -node-os flag set, then nodes flag will be set to 2
+	//  it means one of the nodes is a control-plane node and the other is a windows worker node
+	// so we need to reduce the numNodes by 1
+	if cmd.Flags().Changed(nodeOS) {
+		numNodes--
+	}
+
 	if existing != nil {
 		numCPNodes = 0
 		for _, n := range existing.Nodes {
@@ -522,6 +530,11 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 				KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
 				ContainerRuntime:  starter.Cfg.KubernetesConfig.ContainerRuntime,
 				Worker:            true,
+				Guest: config.Guest{
+					Name:    "linux",
+					Version: "latest",
+					URL:     "",
+				},
 			}
 			if i < numCPNodes { // starter node is also counted as (primary) cp node
 				n.ControlPlane = true
@@ -529,8 +542,34 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		}
 
 		out.Ln("") // extra newline for clarity on the command line
+		// 1st call
 		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
-			return nil, fmt.Errorf("adding node: %w", err)
+			return nil, errors.Wrap(err, "adding linux node")
+		}
+	}
+
+	// we currently trigger the windows node start if the user has set the --windows-node-version or --node-os flag
+	// we might need to get rid of --windows-node-version in the future and just use --node-os flag
+	// start windows node. trigger windows node start  if windows node version or node node os is set at the time of minikube start
+	if cmd.Flags().Changed(windowsNodeVersion) || cmd.Flags().Changed(nodeOS) {
+		// TODO: if windows node version is set to windows server 2022 then the windows node name should be minikube-ws2022
+		nodeName := node.Name(numNodes + 1)
+		n := config.Node{
+			Name:              nodeName,
+			Port:              starter.Cfg.APIServerPort,
+			KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
+			ContainerRuntime:  starter.Cfg.KubernetesConfig.ContainerRuntime,
+			Worker:            true,
+			Guest: config.Guest{
+				Name:    "windows",
+				Version: viper.GetString(windowsNodeVersion),
+				URL:     viper.GetString(windowsVhdURL),
+			},
+		}
+
+		out.Ln("") // extra newline for clarity on the command line
+		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
+			return nil, errors.Wrap(err, "adding windows node")
 		}
 	}
 
@@ -1346,10 +1385,31 @@ func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 
-		// set preloadWindowsIso to true since we need to download the windows ISO file
-		viper.Set(preloadWindowsIso, true)
-
 	}
+
+	if cmd.Flags().Changed(nodeOS) {
+		if err := validMultiNodeOS(viper.GetString(nodeOS)); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+
+		if viper.GetInt(nodes) != 2 {
+			exit.Message(reason.Usage, "The --nodes flag must be set to 2 when using --node-os")
+		}
+	}
+
+	if cmd.Flags().Changed(windowsVhdURL) {
+		if viper.GetString(windowsVhdURL) == "" {
+			// set a default URL if the user has not specified one
+			viper.Set(windowsVhdURL, constants.DefaultWindowsVhdURL)
+			exit.Message(reason.Usage, "The --windows-vhd-url flag must be set to a valid URL")
+		}
+
+		// add validation logic for the windows vhd URL
+		url := viper.GetString(windowsVhdURL)
+		if !strings.HasSuffix(url, ".vhd") && !strings.HasSuffix(url, ".vhdx") {
+			exit.Message(reason.Usage, "The --windows-vhd-url flag must point to a valid VHD or VHDX file")
+		}
+	} ////
 
 	if cmd.Flags().Changed(staticIP) {
 		if err := validateStaticIP(viper.GetString(staticIP), drvName, viper.GetString(subnet)); err != nil {
@@ -1505,6 +1565,24 @@ func validateOSandVersion(os, version string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+// validateMultiNodeOS validates the supplied OS for multiple nodes
+func validMultiNodeOS(osString string) error {
+	if !strings.HasPrefix(osString, "[") || !strings.HasSuffix(osString, "]") {
+		return errors.Errorf("invalid OS string format: must be enclosed in [ ]")
+	}
+
+	osString = strings.Trim(osString, "[]")
+	osString = strings.ReplaceAll(osString, " ", "")
+
+	osValues := strings.Split(osString, ",")
+
+	if len(osValues) != 2 || osValues[0] != "linux" || osValues[1] != "windows" {
+		return errors.Errorf("invalid OS string format: must be [linux,windows]")
+	}
+
 	return nil
 }
 

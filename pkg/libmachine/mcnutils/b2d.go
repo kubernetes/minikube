@@ -37,11 +37,12 @@ import (
 )
 
 const (
-	defaultURL            = "https://api.github.com/repos/boot2docker/boot2docker/releases"
-	defaultISOFilename    = "boot2docker.iso"
-	defaultVolumeIDOffset = int64(0x8028)
-	versionPrefix         = "-v"
-	defaultVolumeIDLength = 32
+	defaultURL                 = "https://api.github.com/repos/boot2docker/boot2docker/releases"
+	defaultISOFilename         = "boot2docker.iso"
+	defaultServerImageFilename = "hybrid-minikube-windows-server.vhdx"
+	defaultVolumeIDOffset      = int64(0x8028)
+	versionPrefix              = "-v"
+	defaultVolumeIDLength      = 32
 )
 
 var (
@@ -279,6 +280,10 @@ type iso interface {
 	path() string
 	// exists reports whether the ISO exists.
 	exists() bool
+	// pathVHD returns the path of the VHD.
+	pathVHD() string
+	// hasVHD returns whether the server VHD exists.
+	hasVHD() bool
 	// version returns version information of the ISO.
 	version() (string, error)
 }
@@ -287,6 +292,8 @@ type iso interface {
 type b2dISO struct {
 	// path of Boot2Docker ISO
 	commonIsoPath string
+	// path of Windows Server VHD
+	commonVHDPath string
 
 	// offset and length of ISO volume ID
 	// cf. http://serverfault.com/questions/361474/is-there-a-way-to-change-a-iso-files-volume-id-from-the-command-line
@@ -307,6 +314,22 @@ func (b *b2dISO) exists() bool {
 	}
 
 	_, err := os.Stat(b.commonIsoPath)
+	return !os.IsNotExist(err)
+}
+
+func (b *b2dISO) pathVHD() string {
+	if b == nil {
+		return ""
+	}
+	return b.commonVHDPath
+}
+
+func (b *b2dISO) hasVHD() bool {
+	if b == nil {
+		return false
+	}
+
+	_, err := os.Stat(b.commonVHDPath)
 	return !os.IsNotExist(err)
 }
 
@@ -366,6 +389,7 @@ func NewB2dUtils(storePath string) *B2dUtils {
 		releaseGetter: &b2dReleaseGetter{isoFilename: defaultISOFilename},
 		iso: &b2dISO{
 			commonIsoPath:  filepath.Join(imgCachePath, defaultISOFilename),
+			commonVHDPath:  filepath.Join(imgCachePath, defaultServerImageFilename),
 			volumeIDOffset: defaultVolumeIDOffset,
 			volumeIDLength: defaultVolumeIDLength,
 		},
@@ -374,10 +398,20 @@ func NewB2dUtils(storePath string) *B2dUtils {
 	}
 }
 
+func (b *B2dUtils) GetImgCachePath() string {
+	return b.imgCachePath
+}
+
 // DownloadISO downloads boot2docker ISO image for the given tag and save it at dest.
 func (b *B2dUtils) DownloadISO(dir, file, isoURL string) error {
 	log.Infof("Downloading %s from %s...", b.path(), isoURL)
 	return b.download(dir, file, isoURL)
+}
+
+// DownloadVHD downloads the Windows Server VHD image and saves it at dest.
+func (b *B2dUtils) DownloadVHD(dir, file, vhdURL string) error {
+	log.Infof("Downloading %s from %s...", b.pathVHD(), vhdURL)
+	return b.download(dir, file, vhdURL)
 }
 
 type ReaderWithProgress struct {
@@ -427,6 +461,31 @@ func (b *B2dUtils) DownloadLatestBoot2Docker(apiURL string) error {
 
 func (b *B2dUtils) DownloadISOFromURL(latestReleaseURL string) error {
 	return b.DownloadISO(b.imgCachePath, b.filename(), latestReleaseURL)
+}
+
+func (b *B2dUtils) UpdateVHDCache(defaultVHDUrl string) error {
+	// recreate the cache dir if it has been manually deleted
+	// this will already be taken care of by the UpdateISOCache method for linux ISO
+
+	exists := b.hasVHD()
+
+	if !exists {
+		log.Info("No default Windows Server VHD found locally, downloading the latest release...")
+
+		filePath := filepath.Join(b.imgCachePath, defaultServerImageFilename)
+
+		fmt.Printf("\n")
+		fmt.Printf("    * Downloading and caching Windows Server VHD image...\n")
+		fmt.Printf("    * This may take a while...\n")
+		err := DownloadVHDX(defaultVHDUrl, filePath, 16, 1) // Download using 16 parts
+
+		if err != nil {
+			return fmt.Errorf("Error: %v", err)
+		}
+		log.Info("Windows Server VHD downloaded successfully")
+	}
+
+	return nil
 }
 
 func (b *B2dUtils) UpdateISOCache(isoURL string) error {
@@ -485,6 +544,24 @@ func (b *B2dUtils) CopyIsoToMachineDir(isoURL, machineName string) error {
 	}
 
 	return b.DownloadISO(machineDir, b.filename(), downloadURL)
+}
+
+func (b *B2dUtils) CopyWindowsVHDToMachineDir(VHDUrl, machineName string) error {
+
+	if err := b.UpdateVHDCache(VHDUrl); err != nil {
+		return err
+	}
+
+	machineDir := filepath.Join(b.storePath, "machines", machineName)
+
+	windowsMachineVHDPath := filepath.Join(machineDir, defaultServerImageFilename)
+
+	// cached location of the windows iso
+	windowsVHDPath := filepath.Join(b.imgCachePath, defaultServerImageFilename)
+
+	log.Infof("Copying %s to %s...", windowsVHDPath, windowsMachineVHDPath)
+	return CopyFile(windowsVHDPath, windowsMachineVHDPath)
+
 }
 
 // isLatest checks the latest release tag and

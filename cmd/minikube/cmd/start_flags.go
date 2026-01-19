@@ -146,9 +146,11 @@ const (
 	staticIP                = "static-ip"
 	gpus                    = "gpus"
 	autoPauseInterval       = "auto-pause-interval"
+	windowsNodeVersion      = "windows-node-version"
+	nodeOS                  = "node-os"
+	windowsVhdURL           = "windows-vhd-url"
 	preloadSrc              = "preload-source"
 	rosetta                 = "rosetta"
-	windowsNodeVersion      = "windows-node-version"
 )
 
 var (
@@ -215,8 +217,11 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
 	startCmd.Flags().StringP(gpus, "g", "", "Allow pods to use your GPUs. Options include: [all,nvidia,amd] (Docker driver with Docker container-runtime only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
+	startCmd.Flags().String(windowsNodeVersion, constants.DefaultWindowsNodeVersion, "The version of Windows to use for the windows node on a multi-node cluster (e.g., 2025). Currently support Windows Server 2025")
+	startCmd.Flags().String(nodeOS, "node-os", "The OS to use for the node. Currently support 'linux, windows'. If not set, it will be set to the same as the control plane node.")
+	startCmd.Flags().String(windowsVhdURL, constants.DefaultWindowsVhdURL, "The VHD URL to use for the windows node on a multi-node cluster. If not set, it will be set to the default Windows Server 2025 VHD URL.")
+
 	startCmd.Flags().String(preloadSrc, "auto", "Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try both).")
-	startCmd.Flags().String(windowsNodeVersion, constants.DefaultWindowsNodeVersion, "The version of Windows to use for the Windows node on a multi-node cluster (e.g., 2019, 2022). Defaults to Windows Server 2022")
 
 }
 
