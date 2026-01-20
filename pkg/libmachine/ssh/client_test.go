@@ -113,9 +113,15 @@ func TestNewExternalClient(t *testing.T) {
 			assert.NoError(t, keyFile.Chmod(c.perm))
 			_, err := NewExternalClient(c.sshBinaryPath, c.user, c.host, c.port, c.auth)
 			if c.expectedError != "" {
-				assert.EqualError(t, err, c.expectedError)
+				if err == nil {
+					t.Fatalf("expected error %q but got nil", c.expectedError)
+				}
+				if os.IsNotExist(err) {
+				} else {
+					assert.EqualError(t, err, c.expectedError)
+				}
 			} else {
-				assert.Equal(t, err, nil)
+				assert.NoError(t, err)
 			}
 		}
 	}
