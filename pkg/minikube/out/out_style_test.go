@@ -83,7 +83,7 @@ func TestApplyStyle(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			rawGot, _, _ := applyStyle(test.styleEnum, test.useColor, test.format)
+			rawGot, _, _ := applyStyle(test.styleEnum, test.useColor, test.format, "")
 			got := strings.TrimSpace(rawGot)
 			if got != test.expected {
 				t.Errorf("Expected '%v' but got '%v'", test.expected, got)
