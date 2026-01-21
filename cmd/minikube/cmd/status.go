@@ -159,6 +159,9 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 
 // exitCode calculates the appropriate exit code given a set of status messages
 func exitCode(statuses []*cluster.Status) int {
+	if len(statuses) == 0 {
+		return minikubeNotRunningStatusFlag | clusterNotRunningStatusFlag | k8sNotRunningStatusFlag
+	}
 	c := 0
 	for _, st := range statuses {
 		if st.Host != state.Running.String() {
