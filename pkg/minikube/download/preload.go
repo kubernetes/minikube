@@ -30,7 +30,6 @@ import (
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/download/gh"
@@ -277,18 +276,18 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 		realPath = targetPath
 		tmp, err := os.CreateTemp(targetDir(), TarballName(k8sVersion, containerRuntime)+".*")
 		if err != nil {
-			return errors.Wrap(err, "tempfile")
+			return fmt.Errorf("tempfile: %w", err)
 		}
 		targetPath = tmp.Name()
 		if err := tmp.Close(); err != nil {
-			return errors.Wrap(err, "tempfile close")
+			return fmt.Errorf("tempfile close: %w", err)
 		}
 	} else if checksum != nil { // add URL parameter for go-getter to automatically verify the checksum
 		url = addChecksumToURL(url, source, checksum)
 	}
 
 	if err := download(url, targetPath); err != nil {
-		return errors.Wrapf(err, "download failed: %s", url)
+		return fmt.Errorf("download failed: %s: %w", url, err)
 	}
 
 	//  to avoid partial/corrupt files in final dest. only rename tmp if download didn't error out.
@@ -296,7 +295,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 		klog.Infof("renaming tempfile to %s ...", TarballName(k8sVersion, containerRuntime))
 		err := os.Rename(targetPath, realPath)
 		if err != nil {
-			return errors.Wrap(err, "rename")
+			return fmt.Errorf("rename: %w", err)
 		}
 	}
 
@@ -322,11 +321,11 @@ func getStorageAttrs(name string) (*storage.ObjectAttrs, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
 	if err != nil {
-		return nil, errors.Wrap(err, "getting storage client")
+		return nil, fmt.Errorf("getting storage client: %w", err)
 	}
 	attrs, err := client.Bucket(PreloadBucket).Object(name).Attrs(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting storage object")
+		return nil, fmt.Errorf("getting storage object: %w", err)
 	}
 	return attrs, nil
 }

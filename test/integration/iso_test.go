@@ -131,4 +131,12 @@ func TestISOImage(t *testing.T) {
 			t.Errorf("expected file %q to exist, but it does not. BTF types are required for CO-RE eBPF programs; set CONFIG_DEBUG_INFO_BTF in kernel configuration.", btfFile)
 		}
 	})
+
+	t.Run("kmodNVMeTCP", func(t *testing.T) {
+		kmod := "nvme-tcp"
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("modinfo %s", kmod)))
+		if err != nil {
+			t.Errorf("failed to get info for kernel module %s: args %q: %v", kmod, rr.Command(), err)
+		}
+	})
 }

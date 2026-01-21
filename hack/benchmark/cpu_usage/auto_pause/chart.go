@@ -26,7 +26,7 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/pkg/errors"
+	"errors"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -77,7 +77,7 @@ func execute() error {
 	napFn := "./out/benchmark-results/" + sessionID + "/cstat.nonautopause.summary"
 	napFile, err := os.Open(napFn)
 	if err != nil {
-		return errors.Wrap(err, "Missing summary csv")
+		return fmt.Errorf("Missing summary csv: %w", err)
 	}
 	defer napFile.Close()
 
@@ -92,7 +92,7 @@ func execute() error {
 
 		s, err := strconv.ParseFloat(napLine[0], 64)
 		if err != nil {
-			return errors.Wrap(err, "Failed to convert to float64")
+			return fmt.Errorf("Failed to convert to float64: %w", err)
 		}
 		napResults = append(napResults, s)
 	}
@@ -102,7 +102,7 @@ func execute() error {
 	apFn := "./out/benchmark-results/" + sessionID + "/cstat.autopause.summary"
 	apFile, err := os.Open(apFn)
 	if err != nil {
-		return errors.Wrap(err, "Missing summary csv")
+		return fmt.Errorf("Missing summary csv: %w", err)
 	}
 	defer apFile.Close()
 
@@ -117,7 +117,7 @@ func execute() error {
 
 		s, err := strconv.ParseFloat(apLine[0], 64)
 		if err != nil {
-			return errors.Wrap(err, "Failed to convert to float64")
+			return fmt.Errorf("Failed to convert to float64: %w", err)
 		}
 		apResults = append(apResults, s)
 	}
@@ -128,7 +128,7 @@ func execute() error {
 	// Create Bar instance with non-autopause benchmark results
 	barNAP, err := plotter.NewBarChart(plotter.Values(napResults), breadth)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create bar chart")
+		return fmt.Errorf("Failed to create bar chart: %w", err)
 	}
 
 	// Set border of the bar graph. 0 is no border color
@@ -141,7 +141,7 @@ func execute() error {
 	// Create Bar instance with auto-pause benchmark results
 	barAP, err := plotter.NewBarChart(plotter.Values(apResults), breadth)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create bar chart")
+		return fmt.Errorf("Failed to create bar chart: %w", err)
 	}
 
 	// Set border of the bar graph. 0 is no border color
@@ -229,12 +229,12 @@ func execute() error {
 	switch runtime.GOOS {
 	case "darwin":
 		if err := p.Save(13*vg.Inch, 8*vg.Inch, FOLDER+"/mac.png"); err != nil {
-			return errors.Wrap(err, "Failed to create bar graph png")
+			return fmt.Errorf("Failed to create bar graph png: %w", err)
 		}
 		log.Printf("Generated graph png to %s/mac.png", FOLDER)
 	case "linux":
 		if err := p.Save(13*vg.Inch, 10*vg.Inch, FOLDER+"/linux.png"); err != nil {
-			return errors.Wrap(err, "Failed to create bar graph png")
+			return fmt.Errorf("Failed to create bar graph png: %w", err)
 		}
 		log.Printf("Generated graph png to %s/linux.png", FOLDER)
 	}

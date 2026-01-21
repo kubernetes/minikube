@@ -24,7 +24,6 @@ import (
 	"path"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -51,12 +50,12 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	k8s := mc.KubernetesConfig
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing Kubernetes version")
+		return nil, fmt.Errorf("parsing Kubernetes version: %w", err)
 	}
 
 	extraOpts, err := extraConfigForComponent(Kubelet, k8s.ExtraOptions, version)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating extra configuration for kubelet")
+		return nil, fmt.Errorf("generating extra configuration for kubelet: %w", err)
 	}
 
 	for k, v := range r.KubeletOptions() {
@@ -110,7 +109,7 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	// parses a map of the feature gates for kubelet
 	_, kubeletFeatureArgs, err := parseFeatureArgs(k8s.FeatureGates)
 	if err != nil {
-		return nil, errors.Wrap(err, "parses feature gate config for kubelet")
+		return nil, fmt.Errorf("parses feature gate config for kubelet: %w", err)
 	}
 
 	if kubeletFeatureArgs != "" {
@@ -155,7 +154,7 @@ func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 	var b bytes.Buffer
 	opts := struct{ KubeletPath string }{KubeletPath: path.Join(binRoot(cfg.KubernetesVersion), "kubelet")}
 	if err := ktmpl.KubeletServiceTemplate.Execute(&b, opts); err != nil {
-		return nil, errors.Wrap(err, "template execute")
+		return nil, fmt.Errorf("template execute: %w", err)
 	}
 	return b.Bytes(), nil
 }

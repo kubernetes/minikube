@@ -33,7 +33,6 @@ import (
 	"github.com/docker/go-units"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
@@ -64,11 +63,11 @@ var saveRoot = path.Join(vmpath.GuestPersistentDir, "images")
 func CacheImagesForBootstrapper(imageRepository, version string) error {
 	images, err := bootstrapper.GetCachedImageList(imageRepository, version)
 	if err != nil {
-		return errors.Wrap(err, "cached images list")
+		return fmt.Errorf("cached images list: %w", err)
 	}
 
 	if err := image.SaveToDir(images, detect.ImageCacheDir(), false); err != nil {
-		return errors.Wrap(err, "Caching images")
+		return fmt.Errorf("Caching images: %w", err)
 	}
 
 	return nil
@@ -78,7 +77,7 @@ func CacheImagesForBootstrapper(imageRepository, version string) error {
 func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, imgs []string, cacheDir string, overwrite bool) error {
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
 	if err != nil {
-		return errors.Wrap(err, "runtime")
+		return fmt.Errorf("runtime: %w", err)
 	}
 
 	// Skip loading images if images already exist
@@ -120,7 +119,7 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, imgs []st
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return errors.Wrap(err, "LoadCachedImages")
+		return fmt.Errorf("LoadCachedImages: %w", err)
 	}
 	klog.Infoln("Successfully loaded all cached images")
 	return nil
@@ -181,7 +180,7 @@ func LoadLocalImages(cc *config.ClusterConfig, runner command.Runner, images []s
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return errors.Wrap(err, "loading images")
+		return fmt.Errorf("loading images: %w", err)
 	}
 	klog.Infoln("Successfully loaded all images")
 	return nil
@@ -195,7 +194,7 @@ func CacheAndLoadImages(images []string, profiles []*config.Profile, overwrite b
 
 	// This is the most important thing
 	if err := image.SaveToDir(images, detect.ImageCacheDir(), overwrite); err != nil {
-		return errors.Wrap(err, "save to dir")
+		return fmt.Errorf("save to dir: %w", err)
 	}
 
 	return DoLoadImages(images, profiles, detect.ImageCacheDir(), overwrite, options)
@@ -205,7 +204,7 @@ func CacheAndLoadImages(images []string, profiles []*config.Profile, overwrite b
 func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, overwrite bool, options *run.CommandOptions) error {
 	api, err := NewAPIClient(options)
 	if err != nil {
-		return errors.Wrap(err, "api")
+		return fmt.Errorf("api: %w", err)
 	}
 	defer api.Close()
 
@@ -281,7 +280,7 @@ func transferAndLoadCachedImage(cr command.Runner, k8s config.KubernetesConfig, 
 func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src string, imgName string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
-		return errors.Wrap(err, "runtime")
+		return fmt.Errorf("runtime: %w", err)
 	}
 
 	if err := removeExistingImage(r, src, imgName); err != nil {
@@ -297,7 +296,7 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 	dst := path.Join(loadRoot, filename)
 	f, err := assets.NewFileAsset(src, loadRoot, filename, "0644")
 	if err != nil {
-		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
+		return fmt.Errorf("creating copyable file asset: %s: %w", filename, err)
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
@@ -306,7 +305,7 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 	}()
 
 	if err := cr.Copy(f); err != nil {
-		return errors.Wrap(err, "transferring cached image")
+		return fmt.Errorf("transferring cached image: %w", err)
 	}
 
 	loadImageLock.Lock()
@@ -317,7 +316,7 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 		if strings.Contains(err.Error(), "ctr: image might be filtered out") {
 			out.WarningT("The image '{{.imageName}}' does not match arch of the container runtime, use a multi-arch image instead", out.V{"imageName": imgName})
 		}
-		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
+		return fmt.Errorf("%s load %s: %w", r.Name(), dst, err)
 	}
 
 	klog.Infof("Transferred and loaded %s from cache", src)
@@ -338,7 +337,7 @@ func removeExistingImage(r cruntime.Manager, src string, imgName string) error {
 
 	errStr := strings.ToLower(err.Error())
 	if !strings.Contains(errStr, "no such image") && !strings.Contains(errStr, "unable to remove the image") {
-		return errors.Wrap(err, "removing image")
+		return fmt.Errorf("removing image: %w", err)
 	}
 
 	return nil
@@ -362,7 +361,7 @@ func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return errors.Wrap(err, "saving cached images")
+		return fmt.Errorf("saving cached images: %w", err)
 	}
 	klog.Infoln("Successfully saved all cached images")
 	return nil
@@ -378,7 +377,7 @@ func SaveLocalImages(cc *config.ClusterConfig, runner command.Runner, images []s
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return errors.Wrap(err, "saving images")
+		return fmt.Errorf("saving images: %w", err)
 	}
 	klog.Infoln("Successfully saved all images")
 	return nil
@@ -397,7 +396,7 @@ func SaveAndCacheImages(images []string, profiles []*config.Profile, options *ru
 func DoSaveImages(images []string, output string, profiles []*config.Profile, cacheDir string, options *run.CommandOptions) error {
 	api, err := NewAPIClient(options)
 	if err != nil {
-		return errors.Wrap(err, "api")
+		return fmt.Errorf("api: %w", err)
 	}
 	defer api.Close()
 
@@ -472,7 +471,7 @@ func transferAndSaveCachedImage(cr command.Runner, k8s config.KubernetesConfig, 
 func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst string, imgName string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
-		return errors.Wrap(err, "runtime")
+		return fmt.Errorf("runtime: %w", err)
 	}
 	found := false
 	// the reason why we are doing this is that
@@ -502,7 +501,7 @@ func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst st
 
 	f, err := assets.NewFileAsset(dst, saveRoot, filename, "0644")
 	if err != nil {
-		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
+		return fmt.Errorf("creating copyable file asset: %s: %w", filename, err)
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
@@ -517,11 +516,11 @@ func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst st
 	}
 	err = r.SaveImage(imgName, src)
 	if err != nil {
-		return errors.Wrapf(err, "%s save %s", r.Name(), src)
+		return fmt.Errorf("%s save %s: %w", r.Name(), src, err)
 	}
 
 	if err := cr.CopyFrom(f); err != nil {
-		return errors.Wrap(err, "transferring cached image")
+		return fmt.Errorf("transferring cached image: %w", err)
 	}
 
 	klog.Infof("Transferred and saved %s to cache", dst)
@@ -546,7 +545,7 @@ func pullImages(crMgr cruntime.Manager, imgs []string) error {
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return errors.Wrap(err, "error pulling images")
+		return fmt.Errorf("error pulling images: %w", err)
 	}
 	klog.Infoln("Successfully pulled images")
 	return nil
@@ -556,7 +555,7 @@ func pullImages(crMgr cruntime.Manager, imgs []string) error {
 func PullImages(images []string, profile *config.Profile, options *run.CommandOptions) error {
 	api, err := NewAPIClient(options)
 	if err != nil {
-		return errors.Wrap(err, "error creating api client")
+		return fmt.Errorf("error creating api client: %w", err)
 	}
 	defer api.Close()
 
@@ -568,7 +567,7 @@ func PullImages(images []string, profile *config.Profile, options *run.CommandOp
 	c, err := config.Load(pName)
 	if err != nil {
 		klog.Errorf("Failed to load profile %q: %v", pName, err)
-		return errors.Wrapf(err, "error loading config for profile :%v", pName)
+		return fmt.Errorf("error loading config for profile :%v: %w", pName, err)
 	}
 
 	for _, n := range c.Nodes {
@@ -592,7 +591,7 @@ func PullImages(images []string, profile *config.Profile, options *run.CommandOp
 			}
 			crMgr, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
 			if err != nil {
-				return errors.Wrap(err, "error creating container runtime")
+				return fmt.Errorf("error creating container runtime: %w", err)
 			}
 			err = pullImages(crMgr, images)
 			if err != nil {
@@ -627,7 +626,7 @@ func removeImages(crMgr cruntime.Manager, imgs []string) error {
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return errors.Wrap(err, "error removing images")
+		return fmt.Errorf("error removing images: %w", err)
 	}
 	klog.Infoln("Successfully removed images")
 	return nil
@@ -637,7 +636,7 @@ func removeImages(crMgr cruntime.Manager, imgs []string) error {
 func RemoveImages(images []string, profile *config.Profile, options *run.CommandOptions) error {
 	api, err := NewAPIClient(options)
 	if err != nil {
-		return errors.Wrap(err, "error creating api client")
+		return fmt.Errorf("error creating api client: %w", err)
 	}
 	defer api.Close()
 
@@ -649,7 +648,7 @@ func RemoveImages(images []string, profile *config.Profile, options *run.Command
 	c, err := config.Load(pName)
 	if err != nil {
 		klog.Errorf("Failed to load profile %q: %v", pName, err)
-		return errors.Wrapf(err, "error loading config for profile :%v", pName)
+		return fmt.Errorf("error loading config for profile :%v: %w", pName, err)
 	}
 
 	for _, n := range c.Nodes {
@@ -673,7 +672,7 @@ func RemoveImages(images []string, profile *config.Profile, options *run.Command
 			}
 			crMgr, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
 			if err != nil {
-				return errors.Wrap(err, "error creating container runtime")
+				return fmt.Errorf("error creating container runtime: %w", err)
 			}
 			err = removeImages(crMgr, images)
 			if err != nil {
@@ -695,7 +694,7 @@ func RemoveImages(images []string, profile *config.Profile, options *run.Command
 func ListImages(profile *config.Profile, format string, options *run.CommandOptions) error {
 	api, err := NewAPIClient(options)
 	if err != nil {
-		return errors.Wrap(err, "error creating api client")
+		return fmt.Errorf("error creating api client: %w", err)
 	}
 	defer api.Close()
 
@@ -704,7 +703,7 @@ func ListImages(profile *config.Profile, format string, options *run.CommandOpti
 	c, err := config.Load(pName)
 	if err != nil {
 		klog.Errorf("Failed to load profile %q: %v", pName, err)
-		return errors.Wrapf(err, "error loading config for profile :%v", pName)
+		return fmt.Errorf("error loading config for profile :%v: %w", pName, err)
 	}
 
 	imageListsFromNodes := [][]cruntime.ListImage{}
@@ -729,7 +728,7 @@ func ListImages(profile *config.Profile, format string, options *run.CommandOpti
 			}
 			cr, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
 			if err != nil {
-				return errors.Wrap(err, "error creating container runtime")
+				return fmt.Errorf("error creating container runtime: %w", err)
 			}
 			list, err := cr.ListImages(cruntime.ListImagesOptions{})
 			if err != nil {
@@ -864,7 +863,7 @@ func renderImagesTable(images [][]string) {
 func TagImage(profile *config.Profile, source string, target string, options *run.CommandOptions) error {
 	api, err := NewAPIClient(options)
 	if err != nil {
-		return errors.Wrap(err, "error creating api client")
+		return fmt.Errorf("error creating api client: %w", err)
 	}
 	defer api.Close()
 
@@ -876,7 +875,7 @@ func TagImage(profile *config.Profile, source string, target string, options *ru
 	c, err := config.Load(pName)
 	if err != nil {
 		klog.Errorf("Failed to load profile %q: %v", pName, err)
-		return errors.Wrapf(err, "error loading config for profile :%v", pName)
+		return fmt.Errorf("error loading config for profile :%v: %w", pName, err)
 	}
 
 	for _, n := range c.Nodes {
@@ -900,7 +899,7 @@ func TagImage(profile *config.Profile, source string, target string, options *ru
 			}
 			crMgr, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
 			if err != nil {
-				return errors.Wrap(err, "error creating container runtime")
+				return fmt.Errorf("error creating container runtime: %w", err)
 			}
 			err = crMgr.TagImage(source, target)
 			if err != nil {
@@ -935,7 +934,7 @@ func pushImages(crMgr cruntime.Manager, imgs []string) error {
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return errors.Wrap(err, "error pushing images")
+		return fmt.Errorf("error pushing images: %w", err)
 	}
 	klog.Infoln("Successfully pushed images")
 	return nil
@@ -945,7 +944,7 @@ func pushImages(crMgr cruntime.Manager, imgs []string) error {
 func PushImages(images []string, profile *config.Profile, options *run.CommandOptions) error {
 	api, err := NewAPIClient(options)
 	if err != nil {
-		return errors.Wrap(err, "error creating api client")
+		return fmt.Errorf("error creating api client: %w", err)
 	}
 	defer api.Close()
 
@@ -957,7 +956,7 @@ func PushImages(images []string, profile *config.Profile, options *run.CommandOp
 	c, err := config.Load(pName)
 	if err != nil {
 		klog.Errorf("Failed to load profile %q: %v", pName, err)
-		return errors.Wrapf(err, "error loading config for profile :%v", pName)
+		return fmt.Errorf("error loading config for profile :%v: %w", pName, err)
 	}
 
 	for _, n := range c.Nodes {
@@ -981,7 +980,7 @@ func PushImages(images []string, profile *config.Profile, options *run.CommandOp
 			}
 			crMgr, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
 			if err != nil {
-				return errors.Wrap(err, "error creating container runtime")
+				return fmt.Errorf("error creating container runtime: %w", err)
 			}
 			err = pushImages(crMgr, images)
 			if err != nil {

@@ -26,7 +26,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -44,11 +43,11 @@ func ErrorCodes(docPath string, pathsToCheck []string) error {
 	for _, pathToCheck := range pathsToCheck {
 		r, err := os.ReadFile(pathToCheck)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("error reading file %s", pathToCheck))
+			return fmt.Errorf("%s: %w", fmt.Sprintf("error reading file %s", pathToCheck), err)
 		}
 		file, err := parser.ParseFile(fset, "", r, parser.ParseComments)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("error parsing file %s", pathToCheck))
+			return fmt.Errorf("%s: %w", fmt.Sprintf("error parsing file %s", pathToCheck), err)
 		}
 
 		if strings.Contains(pathToCheck, "exitcodes.go") {

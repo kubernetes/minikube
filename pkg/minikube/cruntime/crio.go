@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -59,7 +58,7 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 	klog.Infof("configure cri-o to use %q pause image...", pauseImage)
 	c := exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i 's|^.*pause_image = .*$|pause_image = %q|' %s`, pauseImage, crioConfigFile))
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "update pause_image")
+		return fmt.Errorf("update pause_image: %w", err)
 	}
 
 	// configure cgroup driver
@@ -69,7 +68,7 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 	}
 	klog.Infof("configuring cri-o to use %q as cgroup driver...", cgroupDriver)
 	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i 's|^.*cgroup_manager = .*$|cgroup_manager = %q|' %s`, cgroupDriver, crioConfigFile))); err != nil {
-		return errors.Wrap(err, "configuring cgroup_manager")
+		return fmt.Errorf("configuring cgroup_manager: %w", err)
 	}
 	// explicitly set conmon_cgroup to avoid errors like:
 	// - level=fatal msg="Validating runtime config: conmon cgroup should be 'pod' or a systemd slice"
@@ -78,10 +77,10 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 	// ref: https://github.com/cri-o/cri-o/issues/6047
 	// ref: https://kubernetes.io/docs/setup/production-environment/container-runtimes/#cgroup-driver
 	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/conmon_cgroup = .*/d' %s`, crioConfigFile))); err != nil {
-		return errors.Wrap(err, "removing conmon_cgroup")
+		return fmt.Errorf("removing conmon_cgroup: %w", err)
 	}
 	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/cgroup_manager = .*/a conmon_cgroup = %q' %s`, "pod", crioConfigFile))); err != nil {
-		return errors.Wrap(err, "configuring conmon_cgroup")
+		return fmt.Errorf("configuring conmon_cgroup: %w", err)
 	}
 
 	// we might still want to try removing '/etc/cni/net.mk' in case of upgrade from previous minikube version that had/used it
@@ -95,15 +94,15 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 	if kv.GTE(semver.Version{Major: 1, Minor: 22}) {
 		// remove any existing 'net.ipv4.ip_unprivileged_port_start' settings
 		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/^ *"net.ipv4.ip_unprivileged_port_start=.*"/d' %s`, crioConfigFile))); err != nil {
-			return errors.Wrap(err, "removing net.ipv4.ip_unprivileged_port_start")
+			return fmt.Errorf("removing net.ipv4.ip_unprivileged_port_start: %w", err)
 		}
 		// insert 'default_sysctls' list, if not already present
 		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo grep -q "^ *default_sysctls" %s || sudo sed -i '/conmon_cgroup = .*/a default_sysctls = \[\n\]' %s`, crioConfigFile, crioConfigFile))); err != nil {
-			return errors.Wrap(err, "inserting default_sysctls")
+			return fmt.Errorf("inserting default_sysctls: %w", err)
 		}
 		// add 'net.ipv4.ip_unprivileged_port_start' to 'default_sysctls' list
 		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^default_sysctls *= *\[|&\n  "net.ipv4.ip_unprivileged_port_start=0",|' %s`, crioConfigFile))); err != nil {
-			return errors.Wrap(err, "configuring net.ipv4.ip_unprivileged_port_start")
+			return fmt.Errorf("configuring net.ipv4.ip_unprivileged_port_start: %w", err)
 		}
 	}
 
@@ -125,7 +124,7 @@ func (r *CRIO) Version() (string, error) {
 	c := exec.Command("crio", "--version")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return "", errors.Wrap(err, "crio version")
+		return "", fmt.Errorf("crio version: %w", err)
 	}
 
 	// crio version 1.13.0
@@ -146,7 +145,7 @@ func (r *CRIO) SocketPath() string {
 func (r *CRIO) Available() error {
 	c := exec.Command("which", "crio")
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "check crio available")
+		return fmt.Errorf("check crio available: %w", err)
 	}
 	return checkCNIPlugins(r.KubernetesVersion)
 }
@@ -171,7 +170,7 @@ func enableIPForwarding(cr CommandRunner) error {
 	}
 	c = exec.Command("sudo", "sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward")
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "ip_forward")
+		return fmt.Errorf("ip_forward: %w", err)
 	}
 	return nil
 }
@@ -192,13 +191,13 @@ Environment="_CRIO_ROOTLESS=1"
 		targetDir := filepath.Dir(target)
 		c := exec.Command("sudo", "mkdir", "-p", targetDir)
 		if _, err := r.Runner.RunCmd(c); err != nil {
-			return errors.Wrapf(err, "failed to create directory %q", targetDir)
+			return fmt.Errorf("failed to create directory %q: %w", targetDir, err)
 		}
 		asset := assets.NewMemoryAssetTarget([]byte(content), target, "0644")
 		err := r.Runner.Copy(asset)
 		asset.Close()
 		if err != nil {
-			return errors.Wrapf(err, "failed to create %q", target)
+			return fmt.Errorf("failed to create %q: %w", target, err)
 		}
 	}
 	// reload systemd to apply our changes on /etc/systemd
@@ -275,7 +274,7 @@ func (r *CRIO) LoadImage(imgPath string) error {
 	klog.Infof("Loading image: %s", imgPath)
 	c := exec.Command("sudo", "podman", "load", "-i", imgPath)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "crio load image")
+		return fmt.Errorf("crio load image: %w", err)
 	}
 	return nil
 }
@@ -290,7 +289,7 @@ func (r *CRIO) SaveImage(name string, destPath string) error {
 	klog.Infof("Saving image %s: %s", name, destPath)
 	c := exec.Command("sudo", "podman", "save", name, "-o", destPath)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "crio save image")
+		return fmt.Errorf("crio save image: %w", err)
 	}
 	return nil
 }
@@ -305,7 +304,7 @@ func (r *CRIO) TagImage(source string, target string) error {
 	klog.Infof("Tagging image %s: %s", source, target)
 	c := exec.Command("sudo", "podman", "tag", source, target)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "crio tag image")
+		return fmt.Errorf("crio tag image: %w", err)
 	}
 	return nil
 }
@@ -332,14 +331,14 @@ func (r *CRIO) BuildImage(src string, file string, tag string, push bool, env []
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "crio build image")
+		return fmt.Errorf("crio build image: %w", err)
 	}
 	if tag != "" && push {
 		c := exec.Command("sudo", "podman", "push", tag)
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
 		if _, err := r.Runner.RunCmd(c); err != nil {
-			return errors.Wrap(err, "crio push image")
+			return fmt.Errorf("crio push image: %w", err)
 		}
 	}
 	return nil
@@ -350,7 +349,7 @@ func (r *CRIO) PushImage(name string) error {
 	klog.Infof("Pushing image %s", name)
 	c := exec.Command("sudo", "podman", "push", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "crio push image")
+		return fmt.Errorf("crio push image: %w", err)
 	}
 	return nil
 }
@@ -427,7 +426,7 @@ func (r *CRIO) Preload(cc config.ClusterConfig) error {
 	// If images already exist, return
 	imgs, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
 	if err != nil {
-		return errors.Wrap(err, "getting images")
+		return fmt.Errorf("getting images: %w", err)
 	}
 	if crioImagesPreloaded(r.Runner, imgs) {
 		klog.Info("Images already preloaded, skipping extraction")
@@ -481,7 +480,7 @@ func (r *CRIO) Preload(cc config.ClusterConfig) error {
 	// Copy over tarball into host
 	fa, err := assets.NewFileAsset(tarballPath, targetDir, targetName, "0644")
 	if err != nil {
-		return errors.Wrap(err, "getting file asset")
+		return fmt.Errorf("getting file asset: %w", err)
 	}
 	defer func() {
 		if err := fa.Close(); err != nil {
@@ -491,14 +490,14 @@ func (r *CRIO) Preload(cc config.ClusterConfig) error {
 
 	t := time.Now()
 	if err := r.Runner.Copy(fa); err != nil {
-		return errors.Wrap(err, "copying file")
+		return fmt.Errorf("copying file: %w", err)
 	}
 	klog.Infof("duration metric: took %s to copy over tarball", time.Since(t))
 
 	t = time.Now()
 	// extract the tarball to /var in the VM
 	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "--xattrs", "--xattrs-include", "security.capability", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
-		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
+		return fmt.Errorf("extracting tarball: %s: %w", rr.Output(), err)
 	}
 	klog.Infof("duration metric: took %s to extract the tarball", time.Since(t))
 

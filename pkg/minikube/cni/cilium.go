@@ -26,7 +26,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/icza/dyno"
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -89,12 +88,12 @@ func (c Cilium) GenerateCiliumYAML() ([]byte, error) {
 func (c Cilium) Apply(r Runner) error {
 	// see https://kubernetes.io/docs/tasks/administer-cluster/network-policy-provider/cilium-network-policy/
 	if _, err := r.RunCmd(exec.Command("sudo", "/bin/bash", "-c", "grep 'bpffs /sys/fs/bpf' /proc/mounts || sudo mount bpffs -t bpf /sys/fs/bpf")); err != nil {
-		return errors.Wrap(err, "bpf mount")
+		return fmt.Errorf("bpf mount: %w", err)
 	}
 
 	ciliumCfg, err := c.GenerateCiliumYAML()
 	if err != nil {
-		return errors.Wrap(err, "generating cilium cfg")
+		return fmt.Errorf("generating cilium cfg: %w", err)
 	}
 
 	return applyManifest(c.cc, r, manifestAsset(ciliumCfg))

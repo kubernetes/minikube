@@ -25,7 +25,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
@@ -160,6 +159,9 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 
 // exitCode calculates the appropriate exit code given a set of status messages
 func exitCode(statuses []*cluster.Status) int {
+	if len(statuses) == 0 {
+		return minikubeNotRunningStatusFlag | clusterNotRunningStatusFlag | k8sNotRunningStatusFlag
+	}
 	c := 0
 	for _, st := range statuses {
 		if st.Host != state.Running.String() {
@@ -227,7 +229,7 @@ func clusterStatusJSON(statuses []*cluster.Status, w io.Writer, cc *config.Clust
 
 	bs, err := json.Marshal(cs)
 	if err != nil {
-		return errors.Wrap(err, "marshal")
+		return fmt.Errorf("marshal: %w", err)
 	}
 
 	_, err = w.Write(bs)

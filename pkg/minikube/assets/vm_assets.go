@@ -29,7 +29,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"k8s.io/klog/v2"
 )
@@ -165,7 +165,7 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 
 	info, err := os.Stat(src)
 	if err != nil {
-		return nil, errors.Wrapf(err, "stat")
+		return nil, fmt.Errorf("stat: %w", err)
 	}
 
 	if info.Size() == 0 {
@@ -174,7 +174,7 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 
 	f, err := os.Open(src)
 	if err != nil {
-		return nil, errors.Wrap(err, "open")
+		return nil, fmt.Errorf("open: %w", err)
 	}
 
 	return &FileAsset{
@@ -385,7 +385,7 @@ func (m *BinAsset) IsTemplate() bool {
 // Evaluate evaluates the template to a new asset
 func (m *BinAsset) Evaluate(data interface{}) (*MemoryAsset, error) {
 	if !m.IsTemplate() {
-		return nil, errors.Errorf("the asset %s is not a template", m.SourcePath)
+		return nil, fmt.Errorf("the asset %s is not a template", m.SourcePath)
 
 	}
 

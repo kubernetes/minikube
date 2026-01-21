@@ -26,8 +26,6 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/juju/mutex/v2"
-	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
 
@@ -63,7 +61,7 @@ func InstallOrUpdate(name string, directory string, interactive bool, autoUpdate
 	v, err := semver.Make("1.37.0")
 	out.WarningT("Hyperkit driver will be removed in the next minikube release, we have other drivers that work on macOS such as docker or qemu, vfkit. Please consider switching to one of them. For more information, please visit: https://minikube.sigs.k8s.io/docs/drivers/hyperkit/")
 	if err != nil {
-		return errors.Wrap(err, "can't parse version")
+		return fmt.Errorf("can't parse version: %w", err)
 	}
 
 	executable := fmt.Sprintf("docker-machine-driver-%s", name)
@@ -72,9 +70,9 @@ func InstallOrUpdate(name string, directory string, interactive bool, autoUpdate
 	spec := lock.PathMutexSpec(executable)
 	spec.Timeout = 10 * time.Minute
 	klog.Infof("acquiring lock: %+v", spec)
-	releaser, err := mutex.Acquire(spec)
+	releaser, err := lock.Acquire(spec)
 	if err != nil {
-		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
+		return fmt.Errorf("unable to acquire lock for %+v: %w", spec, err)
 	}
 	defer releaser.Release()
 
@@ -135,7 +133,7 @@ func fixDriverPermissions(name string, path string, interactive bool) error {
 		klog.Infof("running: %v", c.Args)
 		err := c.Run()
 		if err != nil {
-			return errors.Wrapf(err, "%v", c.Args)
+			return fmt.Errorf("%v: %w", c.Args, err)
 		}
 	}
 	return nil
@@ -166,7 +164,7 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 
 	driverVersion, err := semver.Make(ev)
 	if err != nil {
-		return path, errors.Wrap(err, "can't parse driver version")
+		return path, fmt.Errorf("can't parse driver version: %w", err)
 	}
 	klog.Infof("%s version is %s", path, driverVersion)
 

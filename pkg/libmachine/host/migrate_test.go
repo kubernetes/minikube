@@ -17,6 +17,8 @@ limitations under the License.
 package host
 
 import (
+	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +27,21 @@ import (
 )
 
 func TestMigrateHost(t *testing.T) {
+	mustMarshal := func(v any) []byte {
+		t.Helper()
+		b, err := json.Marshal(v)
+		if err != nil {
+			t.Fatalf("failed to marshal expected JSON: %v", err)
+		}
+		return b
+	}
+
+	v2MigratedStorePath := filepath.Clean("/Users/nathanleclaire/.docker/machine")
+	v2MigratedDriverData := mustMarshal(map[string]string{
+		"MachineName": "default",
+		"StorePath":   v2MigratedStorePath,
+	})
+
 	testCases := []struct {
 		description                string
 		hostBefore                 *Host
@@ -175,10 +192,10 @@ func TestMigrateHost(t *testing.T) {
 				},
 				Name:       "default",
 				DriverName: "virtualbox",
-				RawDriver:  []byte(`{"MachineName":"default","StorePath":"/Users/nathanleclaire/.docker/machine"}`),
+				RawDriver:  v2MigratedDriverData,
 				Driver: &RawDataDriver{
-					Data:   []byte(`{"MachineName":"default","StorePath":"/Users/nathanleclaire/.docker/machine"}`),
-					Driver: nodriver.NewDriver("default", "/Users/nathanleclaire/.docker/machine"),
+					Data:   v2MigratedDriverData,
+					Driver: nodriver.NewDriver("default", v2MigratedStorePath),
 				},
 			},
 			expectedMigrationPerformed: true,

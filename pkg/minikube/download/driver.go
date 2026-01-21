@@ -22,7 +22,6 @@ import (
 	"runtime"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -45,7 +44,7 @@ func Driver(name string, destination string, v semver.Version) error {
 	if err := download(archURL, destination); err != nil {
 		klog.Infof("failed to download arch specific driver: %v. trying to get the common version", err)
 		if err := download(driverWithChecksumURL(name, v), destination); err != nil {
-			return errors.Wrap(err, "download")
+			return fmt.Errorf("download: %w", err)
 		}
 	}
 

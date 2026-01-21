@@ -25,7 +25,6 @@ import (
 	"text/template"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -84,7 +83,7 @@ func (c Calico) manifest() (assets.CopyableFile, error) {
 func (c Calico) Apply(r Runner) error {
 	m, err := c.manifest()
 	if err != nil {
-		return errors.Wrap(err, "manifest")
+		return fmt.Errorf("manifest: %w", err)
 	}
 	return applyManifest(c.cc, r, m)
 }

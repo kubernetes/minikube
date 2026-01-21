@@ -34,13 +34,14 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/blang/semver/v4"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/v4/cpu"
 	gopshost "github.com/shirou/gopsutil/v4/host"
 	"github.com/spf13/cobra"
@@ -346,9 +347,12 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	rtime := getContainerRuntime(existing)
+	if rtime == constants.Docker && (existing == nil || viper.IsSet(containerRuntime)) {
+		out.WarningT(`Starting v1.39.0, minikube will default to "containerd" container runtime. See #21973 for more info.`)
+	}
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName, options)
 	if err != nil {
-		return node.Starter{}, errors.Wrap(err, "Failed to generate cluster config")
+		return node.Starter{}, fmt.Errorf("Failed to generate cluster config: %w", err)
 	}
 	klog.Infof("cluster config:\n%+v", cc)
 
@@ -371,7 +375,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	if driver.IsVM(driverName) && !driver.IsSSH(driverName) {
 		urlString, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
 		if err != nil {
-			return node.Starter{}, errors.Wrap(err, "Failed to cache ISO")
+			return node.Starter{}, fmt.Errorf("Failed to cache ISO: %w", err)
 		}
 		cc.MinikubeISO = urlString
 	}
@@ -521,7 +525,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 
 		out.Ln("") // extra newline for clarity on the command line
 		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
-			return nil, errors.Wrap(err, "adding node")
+			return nil, fmt.Errorf("adding node: %w", err)
 		}
 	}
 
@@ -617,7 +621,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, rtime, machineName st
 
 	client, err := semver.Make(strings.TrimPrefix(gitVersion, version.VersionPrefix))
 	if err != nil {
-		return errors.Wrap(err, "client semver")
+		return fmt.Errorf("client semver: %w", err)
 	}
 
 	cluster := semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix))
@@ -688,7 +692,7 @@ func kubectlVersion(path string) (string, error) {
 		// really old Kubernetes clients did not have the --output parameter
 		b, err := exec.Command(path, "version", "--client", "--short").Output()
 		if err != nil {
-			return "", errors.Wrap(err, "exec")
+			return "", fmt.Errorf("exec: %w", err)
 		}
 		s := strings.TrimSpace(string(b))
 		return strings.Replace(s, "Client Version: ", "", 1), nil
@@ -701,7 +705,7 @@ func kubectlVersion(path string) (string, error) {
 	}{}
 	err = json.Unmarshal(j, &cv)
 	if err != nil {
-		return "", errors.Wrap(err, "unmarshal")
+		return "", fmt.Errorf("unmarshal: %w", err)
 	}
 
 	return cv.ClientVersion.GitVersion, nil
@@ -1406,7 +1410,7 @@ func validatePorts(ports []string) error {
 	}
 	_, portBindingsMap, err := nat.ParsePortSpecs(portSpecs)
 	if err != nil {
-		return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s (%v)", ports, err)
+		return fmt.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s (%v)", ports, err)
 	}
 	for exposedPort, portBindings := range portBindingsMap {
 		exposedPorts = append(exposedPorts, exposedPort.Port())
@@ -1430,10 +1434,10 @@ func validatePorts(ports []string) error {
 func validatePort(port string) error {
 	p, err := strconv.Atoi(port)
 	if err != nil {
-		return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid: %s", port)
+		return fmt.Errorf("Sorry, one of the ports provided with --ports flag is not valid: %s", port)
 	}
 	if p > 65535 || p < 1 {
-		return errors.Errorf("Sorry, one of the ports provided with --ports flag is outside range: %s", port)
+		return fmt.Errorf("Sorry, one of the ports provided with --ports flag is outside range: %s", port)
 	}
 	return nil
 }
@@ -1442,10 +1446,10 @@ func validatePort(port string) error {
 func validateDiskSize(diskSize string) error {
 	diskSizeMB, err := util.CalculateSizeInMB(diskSize)
 	if err != nil {
-		return errors.Errorf("Validation unable to parse disk size %v: %v", diskSize, err)
+		return fmt.Errorf("Validation unable to parse disk size %v: %v", diskSize, err)
 	}
 	if diskSizeMB < minimumDiskSize {
-		return errors.Errorf("Requested disk size %v is less than minimum of %v", diskSizeMB, minimumDiskSize)
+		return fmt.Errorf("Requested disk size %v is less than minimum of %v", diskSizeMB, minimumDiskSize)
 	}
 	return nil
 }
@@ -1473,12 +1477,12 @@ func validateRuntime(rtime string) error {
 
 	}
 
-	if (rtime == "crio" || rtime == "cri-o") && (strings.HasPrefix(runtime.GOARCH, "ppc64") || detect.RuntimeArch() == "arm" || strings.HasPrefix(detect.RuntimeArch(), "arm/")) {
-		return errors.Errorf("The %s runtime is not compatible with the %s architecture. See https://github.com/cri-o/cri-o/issues/2467 for more details", rtime, runtime.GOARCH)
+	if (rtime == "crio" || rtime == "cri-o") && strings.HasPrefix(runtime.GOARCH, "ppc64") {
+		return fmt.Errorf("The %s runtime is not compatible with the %s architecture. See https://github.com/cri-o/cri-o/issues/2467 for more details", rtime, runtime.GOARCH)
 	}
 
 	if !validRuntime {
-		return errors.Errorf("Invalid Container Runtime: %s. Valid runtimes are: %s", rtime, cruntime.ValidRuntimes())
+		return fmt.Errorf("Invalid Container Runtime: %s. Valid runtimes are: %s", rtime, cruntime.ValidRuntimes())
 	}
 	return nil
 }
@@ -1492,12 +1496,12 @@ func validateGPUs(value, drvName, rtime string) error {
 		return err
 	}
 	if value != "nvidia" && value != "all" && value != "amd" && value != "nvidia.com" {
-		return errors.Errorf(`The gpus flag must be passed a value of "nvidia", "nvidia.com", "amd" or "all"`)
+		return fmt.Errorf(`The gpus flag must be passed a value of "nvidia", "nvidia.com", "amd" or "all"`)
 	}
 	if drvName == constants.Docker && (rtime == constants.Docker || rtime == constants.DefaultContainerRuntime) {
 		return nil
 	}
-	return errors.Errorf("The gpus flag can only be used with the docker driver and docker container-runtime")
+	return fmt.Errorf("The gpus flag can only be used with the docker driver and docker container-runtime")
 }
 
 func validateGPUsArch() error {
@@ -1505,7 +1509,7 @@ func validateGPUsArch() error {
 	case "amd64", "arm64", "ppc64le":
 		return nil
 	}
-	return errors.Errorf("The GPUs flag is only supported on amd64, arm64 & ppc64le, currently using %s", runtime.GOARCH)
+	return fmt.Errorf("The GPUs flag is only supported on amd64, arm64 & ppc64le, currently using %s", runtime.GOARCH)
 }
 
 func validateAutoPauseInterval(interval time.Duration) error {
@@ -1710,7 +1714,7 @@ func validateInsecureRegistry() {
 func configureNodes(cc config.ClusterConfig, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
 	kv, err := getKubernetesVersion(&cc)
 	if err != nil {
-		return cc, config.Node{}, errors.Wrapf(err, "failed getting kubernetes version")
+		return cc, config.Node{}, fmt.Errorf("failed getting kubernetes version: %w", err)
 	}
 	cr := getContainerRuntime(&cc)
 
@@ -1739,7 +1743,7 @@ func configureNodes(cc config.ClusterConfig, existing *config.ClusterConfig) (co
 
 	pcp, err := config.ControlPlane(*existing)
 	if err != nil {
-		return cc, config.Node{}, errors.Wrapf(err, "failed getting control-plane node")
+		return cc, config.Node{}, fmt.Errorf("failed getting control-plane node: %w", err)
 	}
 	pcp.KubernetesVersion = kv
 	pcp.ContainerRuntime = cr
@@ -1760,7 +1764,7 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 			klog.Infof("auto setting extra-config to %q.", eo)
 			err = config.ExtraOptions.Set(eo)
 			if err != nil {
-				err = errors.Wrapf(err, "setting extra option %s", eo)
+				err = fmt.Errorf("setting extra option %s: %w", eo, err)
 			}
 		}
 	}
@@ -1964,16 +1968,16 @@ func validateDockerStorageDriver(drvName string) {
 func validateSubnet(subnet string) error {
 	ip, cidr, err := netutil.ParseAddr(subnet)
 	if err != nil {
-		return errors.Errorf("Sorry, unable to parse subnet: %v", err)
+		return fmt.Errorf("Sorry, unable to parse subnet: %v", err)
 	}
 	if !ip.IsPrivate() {
-		return errors.Errorf("Sorry, the subnet %s is not a private IP", ip)
+		return fmt.Errorf("Sorry, the subnet %s is not a private IP", ip)
 	}
 
 	if cidr != nil {
 		mask, _ := cidr.Mask.Size()
 		if mask > 30 {
-			return errors.Errorf("Sorry, the subnet provided does not have a mask less than or equal to /30")
+			return fmt.Errorf("Sorry, the subnet provided does not have a mask less than or equal to /30")
 		}
 	}
 	return nil
@@ -2049,10 +2053,10 @@ func exitIfNotForced(r reason.Kind, message string, v ...out.V) {
 }
 
 func exitGuestProvision(err error) {
-	if errors.Cause(err) == oci.ErrInsufficientDockerStorage {
+	if errors.Is(err, oci.ErrInsufficientDockerStorage) {
 		exit.Message(reason.RsrcInsufficientDockerStorage, "preload extraction failed: \"No space left on device\"")
 	}
-	if errors.Cause(err) == oci.ErrGetSSHPortContainerNotRunning {
+	if errors.Is(err, oci.ErrGetSSHPortContainerNotRunning) {
 		exit.Message(reason.GuestProvisionContainerExited, "Docker container exited prematurely after it was created, consider investigating Docker's performance/health.")
 	}
 	exit.Error(reason.GuestProvision, "error provisioning guest", err)
@@ -2084,23 +2088,14 @@ func startNerdctld(options *run.CommandOptions) {
 	co := mustload.Running(ClusterFlagValue(), options)
 	runner := co.CP.Runner
 
-	// and set 777 to these files
-	if rest, err := runner.RunCmd(exec.Command("sudo", "chmod", "777", "/usr/local/bin/nerdctl", "/usr/local/bin/nerdctld")); err != nil {
-		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed setting permission for nerdctl: %s", rest.Output()), err)
-	}
-
-	// sudo systemctl start nerdctld.socket
-	if rest, err := runner.RunCmd(exec.Command("sudo", "systemctl", "start", "nerdctld.socket")); err != nil {
-		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to enable nerdctld.socket: %s", rest.Output()), err)
-	}
-	// sudo systemctl start nerdctld.service
-	if rest, err := runner.RunCmd(exec.Command("sudo", "systemctl", "start", "nerdctld.service")); err != nil {
-		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to enable nerdctld.service: %s", rest.Output()), err)
+	// sudo systemctl start nerdctl.socket
+	if rest, err := runner.RunCmd(exec.Command("sudo", "systemctl", "start", "nerdctl.socket")); err != nil {
+		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to enable nerdctl.socket: %s", rest.Output()), err)
 	}
 
 	// set up environment variable on remote machine. docker client uses 'non-login & non-interactive shell' therefore the only way is to modify .bashrc file of user 'docker'
 	// insert this at 4th line
-	envSetupCommand := exec.Command("/bin/bash", "-c", "sed -i '4i export DOCKER_HOST=unix:///run/nerdctld.sock' .bashrc")
+	envSetupCommand := exec.Command("/bin/bash", "-c", "sed -i '4i export DOCKER_HOST=unix:///var/run/nerdctl.sock' .bashrc")
 	if rest, err := runner.RunCmd(envSetupCommand); err != nil {
 		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s", rest.Output()), err)
 	}

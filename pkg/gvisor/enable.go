@@ -28,7 +28,6 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 )
 
@@ -67,16 +66,16 @@ func releaseURL() string {
 //  4. restarts containerd
 func Enable() error {
 	if err := makeGvisorDirs(); err != nil {
-		return errors.Wrap(err, "creating directories on node")
+		return fmt.Errorf("creating directories on node: %w", err)
 	}
 	if err := downloadBinaries(); err != nil {
-		return errors.Wrap(err, "downloading binaries")
+		return fmt.Errorf("downloading binaries: %w", err)
 	}
 	if err := configure(); err != nil {
-		return errors.Wrap(err, "copying config files")
+		return fmt.Errorf("copying config files: %w", err)
 	}
 	if err := restartContainerd(); err != nil {
-		return errors.Wrap(err, "restarting containerd")
+		return fmt.Errorf("restarting containerd: %w", err)
 	}
 	// When pod is terminated, disable gvisor and exit
 	c := make(chan os.Signal, 1)
@@ -99,13 +98,13 @@ func makeGvisorDirs() error {
 	// Make /run/containerd/runsc to hold logs
 	fp := filepath.Join(nodeDir, "run/containerd/runsc")
 	if err := os.MkdirAll(fp, 0755); err != nil {
-		return errors.Wrap(err, "creating runsc dir")
+		return fmt.Errorf("creating runsc dir: %w", err)
 	}
 
 	// Make /tmp/runsc to also hold logs
 	fp = filepath.Join(nodeDir, "tmp/runsc")
 	if err := os.MkdirAll(fp, 0755); err != nil {
-		return errors.Wrap(err, "creating runsc logs dir")
+		return fmt.Errorf("creating runsc logs dir: %w", err)
 	}
 
 	return nil
@@ -113,10 +112,10 @@ func makeGvisorDirs() error {
 
 func downloadBinaries() error {
 	if err := runsc(); err != nil {
-		return errors.Wrap(err, "downloading runsc")
+		return fmt.Errorf("downloading runsc: %w", err)
 	}
 	if err := gvisorContainerdShim(); err != nil {
-		return errors.Wrap(err, "downloading gvisor-containerd-shim")
+		return fmt.Errorf("downloading gvisor-containerd-shim: %w", err)
 	}
 	return nil
 }
@@ -139,7 +138,7 @@ func downloadFileToDest(url, dest string) error {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return errors.Wrapf(err, "creating request for %s", url)
+		return fmt.Errorf("creating request for %s: %w", url, err)
 	}
 	req.Header.Set("User-Agent", "minikube")
 	resp, err := client.Do(req)
@@ -149,19 +148,19 @@ func downloadFileToDest(url, dest string) error {
 	defer resp.Body.Close()
 	if _, err := os.Stat(dest); err == nil {
 		if err := os.Remove(dest); err != nil {
-			return errors.Wrapf(err, "removing %s for overwrite", dest)
+			return fmt.Errorf("removing %s for overwrite: %w", dest, err)
 		}
 	}
 	fi, err := os.Create(dest)
 	if err != nil {
-		return errors.Wrapf(err, "creating %s", dest)
+		return fmt.Errorf("creating %s: %w", dest, err)
 	}
 	defer fi.Close()
 	if _, err := io.Copy(fi, resp.Body); err != nil {
-		return errors.Wrap(err, "copying binary")
+		return fmt.Errorf("copying binary: %w", err)
 	}
 	if err := fi.Chmod(0777); err != nil {
-		return errors.Wrap(err, "fixing perms")
+		return fmt.Errorf("fixing perms: %w", err)
 	}
 	return nil
 }
@@ -173,7 +172,7 @@ func configure() error {
 	log.Printf("Storing default config.toml at %s", containerdConfigBackupPath)
 	configPath := filepath.Join(nodeDir, containerdConfigPath)
 	if err := mcnutils.CopyFile(configPath, filepath.Join(nodeDir, containerdConfigBackupPath)); err != nil {
-		return errors.Wrap(err, "copying default config.toml")
+		return fmt.Errorf("copying default config.toml: %w", err)
 	}
 
 	// Append runsc configuration to contained config.
@@ -182,7 +181,7 @@ func configure() error {
 		return err
 	}
 	if _, err := config.WriteString(configFragment); err != nil {
-		return errors.Wrap(err, "changing config.toml")
+		return fmt.Errorf("changing config.toml: %w", err)
 	}
 	return nil
 }
@@ -194,21 +193,21 @@ func restartContainerd() error {
 	cmd := exec.Command("/usr/sbin/chroot", "/node", "sudo", "systemctl", "stop", "rpc-statd.service")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		fmt.Println(string(out))
-		return errors.Wrap(err, "stopping rpc-statd.service")
+		return fmt.Errorf("stopping rpc-statd.service: %w", err)
 	}
 
 	log.Print("Restarting containerd...")
 	cmd = exec.Command("/usr/sbin/chroot", "/node", "sudo", "systemctl", "restart", "containerd")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		log.Print(string(out))
-		return errors.Wrap(err, "restarting containerd")
+		return fmt.Errorf("restarting containerd: %w", err)
 	}
 
 	log.Print("Starting rpc-statd...")
 	cmd = exec.Command("/usr/sbin/chroot", "/node", "sudo", "systemctl", "start", "rpc-statd.service")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		log.Print(string(out))
-		return errors.Wrap(err, "restarting rpc-statd.service")
+		return fmt.Errorf("restarting rpc-statd.service: %w", err)
 	}
 	log.Print("containerd restart complete")
 	return nil

@@ -24,8 +24,9 @@ import (
 	"strconv"
 	"strings"
 
+	"errors"
+
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -70,7 +71,7 @@ func RoutableHostIPFromInside(ociBin string, clusterName string, containerName s
 
 					return containerGatewayIP(Docker, containerName)
 				}
-				return info.gateway, errors.Wrap(err, "network inspect")
+				return info.gateway, fmt.Errorf("network inspect: %w", err)
 			}
 			return info.gateway, nil
 		}
@@ -90,7 +91,7 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 	rr, err := runCmd(exec.Command(ociBin, "exec", "-t", containerName, "dig", "+short", dns))
 	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
 	if err != nil {
-		return ip, errors.Wrapf(err, "resolve dns to ip")
+		return ip, fmt.Errorf("resolve dns to ip: %w", err)
 	}
 
 	klog.Infof("got host ip for mount in container by digging dns: %s", ip.String())
@@ -101,7 +102,7 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 func gatewayIP(ociBin, containerName string) (string, error) {
 	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
 	if err != nil {
-		return "", errors.Wrapf(err, "inspect gateway")
+		return "", fmt.Errorf("inspect gateway: %w", err)
 	}
 	if gatewayIP := strings.TrimSpace(rr.Stdout.String()); gatewayIP != "" {
 		return gatewayIP, nil
@@ -133,7 +134,7 @@ func networkGateway(ociBin, container, network string) (string, error) {
 `, network, network)
 	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, container))
 	if err != nil {
-		return "", errors.Wrapf(err, "inspect gateway")
+		return "", fmt.Errorf("inspect gateway: %w", err)
 	}
 	return strings.TrimSpace(rr.Stdout.String()), nil
 }
@@ -142,7 +143,7 @@ func networkGateway(ociBin, container, network string) (string, error) {
 func containerGatewayIP(ociBin string, containerName string) (net.IP, error) {
 	gatewayIP, err := gatewayIP(ociBin, containerName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "inspect gateway")
+		return nil, fmt.Errorf("inspect gateway: %w", err)
 	}
 	return net.ParseIP(gatewayIP), nil
 }
@@ -160,7 +161,7 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	if ociBin == Podman {
 		v, err = podmanVersion()
 		if err != nil {
-			return 0, errors.Wrapf(err, "podman version")
+			return 0, fmt.Errorf("podman version: %w", err)
 		}
 	}
 
@@ -168,7 +169,7 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	if ociBin == Podman && v.LT(semver.Version{Major: 2, Minor: 0, Patch: 1}) {
 		rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID))
 		if err != nil {
-			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)
+			return 0, fmt.Errorf("get port %d for %q: %w", contPort, ociID, err)
 		}
 	} else {
 		rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID))
@@ -181,7 +182,7 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 			if strings.Contains(rr.Output(), "error calling index: index of untyped nil") {
 				return 0, ErrGetPortContainerNotRunning
 			}
-			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)
+			return 0, fmt.Errorf("get port %d for %q: %w", contPort, ociID, err)
 		}
 	}
 
@@ -190,7 +191,7 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	p, err := strconv.Atoi(o)
 
 	if err != nil {
-		return p, errors.Wrapf(err, "convert host-port %q to number", p)
+		return p, fmt.Errorf("convert host-port %q to number: %w", p, err)
 	}
 
 	return p, nil
@@ -210,7 +211,7 @@ func podmanContainerIP(ociBin string, name string) (string, string, error) {
 		"-f", "{{.NetworkSettings.IPAddress}}",
 		name))
 	if err != nil {
-		return "", "", errors.Wrapf(err, "podman inspect ip %s", name)
+		return "", "", fmt.Errorf("podman inspect ip %s: %w", name, err)
 	}
 	output := strings.TrimSpace(rr.Stdout.String())
 	if output == "" { // podman returns empty for 127.0.0.1
@@ -229,16 +230,16 @@ func dockerContainerIP(ociBin string, name string) (string, string, error) {
 	// retrieve the IP address of the node using docker inspect
 	lines, err := inspect(ociBin, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
-		return "", "", errors.Wrap(err, "inspecting NetworkSettings.Networks")
+		return "", "", fmt.Errorf("inspecting NetworkSettings.Networks: %w", err)
 	}
 
 	if len(lines) != 1 {
-		return "", "", errors.Errorf("IPs output should only be one line, got %d lines", len(lines))
+		return "", "", fmt.Errorf("IPs output should only be one line, got %d lines", len(lines))
 	}
 
 	ips := strings.Split(lines[0], ",")
 	if len(ips) != 2 {
-		return "", "", errors.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
+		return "", "", fmt.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
 	}
 	return ips[0], ips[1], nil
 }

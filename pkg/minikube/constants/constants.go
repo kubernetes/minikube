@@ -29,7 +29,7 @@ import (
 
 var (
 	// SupportedArchitectures is the list of supported architectures
-	SupportedArchitectures = [5]string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
+	SupportedArchitectures = [4]string{"amd64", "arm64", "ppc64le", "s390x"}
 )
 
 const (
@@ -145,6 +145,9 @@ const (
 
 	// DefaultCertExpiration is the amount of time in the future a certificate will expire in by default, which is 3 years
 	DefaultCertExpiration = time.Hour * 24 * 365 * 3
+
+	// LockRetryInterval is the frequency to check for the lock (10 times a second)
+	LockRetryInterval = 100 * time.Millisecond
 
 	// Mount9PVersionFlag is the flag used to set the mount 9P version
 	Mount9PVersionFlag = "9p-version"

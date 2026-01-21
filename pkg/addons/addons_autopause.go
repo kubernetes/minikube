@@ -17,9 +17,9 @@ limitations under the License.
 package addons
 
 import (
+	"fmt"
 	"strconv"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -36,10 +36,10 @@ import (
 func enableOrDisableAutoPause(cc *config.ClusterConfig, name, val string, options *run.CommandOptions) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
-		return errors.Wrapf(err, "parsing bool: %s", name)
+		return fmt.Errorf("parsing bool: %s: %w", name, err)
 	}
 	out.Infof("auto-pause addon is an alpha feature and still in early development. Please file issues to help us make it better.")
-	out.Infof("https://github.com/kubernetes/minikube/labels/co/auto-pause")
+	out.Infof("https://github.com/kubernetes/minikube/issues?q=state%3Aopen%20label%3Aco%2Fauto-pause")
 
 	co := mustload.Running(cc.Name, options)
 	if enable {

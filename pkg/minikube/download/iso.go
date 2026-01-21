@@ -26,8 +26,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/juju/mutex/v2"
-	"github.com/pkg/errors"
+	"errors"
+
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -41,7 +41,7 @@ const fileScheme = "file"
 // DefaultISOURLs returns a list of ISO URL's to consult by default, in priority order
 func DefaultISOURLs() []string {
 	v := version.GetISOVersion()
-	isoBucket := "minikube-builds/iso/22376"
+	isoBucket := "minikube-builds/iso/22464"
 
 	return []string{
 		fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s-%s.iso", isoBucket, v, runtime.GOARCH),
@@ -107,7 +107,7 @@ func ISO(urls []string, skipChecksum bool) (string, error) {
 func downloadISO(isoURL string, skipChecksum bool) error {
 	u, err := url.Parse(isoURL)
 	if err != nil {
-		return errors.Wrapf(err, "url.parse %q", isoURL)
+		return fmt.Errorf("url.parse %q: %w", isoURL, err)
 	}
 
 	// It's already downloaded
@@ -118,14 +118,14 @@ func downloadISO(isoURL string, skipChecksum bool) error {
 	// Lock before we check for existence to avoid thundering herd issues
 	dst := localISOPath(u)
 	if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
-		return errors.Wrapf(err, "making cache image directory: %s", dst)
+		return fmt.Errorf("making cache image directory: %s: %w", dst, err)
 	}
 	spec := lock.PathMutexSpec(dst)
 	spec.Timeout = 10 * time.Minute
 	klog.Infof("acquiring lock: %+v", spec)
-	releaser, err := mutex.Acquire(spec)
+	releaser, err := lock.Acquire(spec)
 	if err != nil {
-		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
+		return fmt.Errorf("unable to acquire lock for %+v: %w", spec, err)
 	}
 	defer releaser.Release()
 

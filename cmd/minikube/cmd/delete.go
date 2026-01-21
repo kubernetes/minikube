@@ -26,8 +26,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/go-ps"
-	"github.com/pkg/errors"
+	"errors"
+
+	"github.com/shirou/gopsutil/v4/process"
 	"k8s.io/minikube/pkg/libmachine/mcnerror"
 
 	"github.com/spf13/cobra"
@@ -435,10 +436,10 @@ func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 		for _, n := range cc.Nodes {
 			machineName := config.MachineName(*cc, n)
 			if err := machine.DeleteHost(api, machineName); err != nil {
-				switch errors.Cause(err).(type) {
-				case mcnerror.ErrHostDoesNotExist:
+				var e mcnerror.ErrHostDoesNotExist
+				if errors.As(err, &e) {
 					klog.Infof("Host %s does not exist. Proceeding ahead with cleanup.", machineName)
-				default:
+				} else {
 					out.FailureT("Failed to delete cluster: {{.error}}", out.V{"error": err})
 					out.Styled(style.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": machineName})
 				}
@@ -653,7 +654,7 @@ func killProcess(path string) error {
 
 	// if no errors were encountered, it's safe to delete pidFile
 	if err := os.Remove(pidPath); err != nil {
-		return errors.Wrap(err, "while closing mount-pids file")
+		return fmt.Errorf("while closing mount-pids file: %w", err)
 	}
 
 	return nil
@@ -674,13 +675,13 @@ func trySigKillProcess(pid int) error {
 
 	proc, err := os.FindProcess(pid)
 	if err != nil {
-		return errors.Wrapf(err, "os.FindProcess: %d", pid)
+		return fmt.Errorf("os.FindProcess: %d: %w", pid, err)
 	}
 
 	klog.Infof("Killing pid %d ...", pid)
 	if err := proc.Kill(); err != nil {
 		klog.Infof("Kill failed with %v - removing probably stale pid...", err)
-		return errors.Wrapf(err, "removing likely stale unkillable pid: %d", pid)
+		return fmt.Errorf("removing likely stale unkillable pid: %d: %w", pid, err)
 	}
 
 	return nil
@@ -689,17 +690,22 @@ func trySigKillProcess(pid int) error {
 // doesPIDBelongToMinikube tries to find the process with that PID
 // and checks if the executable name contains the string "minikube"
 var isMinikubeProcess = func(pid int) (bool, error) {
-	entry, err := ps.FindProcess(pid)
+	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
-		return false, errors.Wrapf(err, "ps.FindProcess for %d", pid)
+		if errors.Is(err, process.ErrorProcessNotRunning) {
+			return false, nil
+		}
+		// If it's real error, return it
+		return false, err
 	}
-	if entry == nil {
-		klog.Infof("Process not found. pid %d", pid)
+
+	name, err := proc.Name()
+	if err != nil {
 		return false, nil
 	}
 
 	klog.Infof("Found process %d", pid)
-	if !strings.Contains(entry.Executable(), "minikube") {
+	if !strings.Contains(name, "minikube") {
 		klog.Infof("process %d was not started by minikube", pid)
 		return false, nil
 	}
@@ -712,7 +718,7 @@ var isMinikubeProcess = func(pid int) (bool, error) {
 func getPids(path string) ([]int, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, errors.Wrap(err, "ReadFile")
+		return nil, fmt.Errorf("ReadFile: %w", err)
 	}
 	klog.Infof("pidfile contents: %s", data)
 

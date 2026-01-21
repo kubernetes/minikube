@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
@@ -56,16 +56,16 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	defer os.Remove(baseDir)
 
 	if err := os.MkdirAll(baseDir, 0755); err != nil {
-		return errors.Wrap(err, "mkdir")
+		return fmt.Errorf("mkdir: %w", err)
 	}
 	if err := driver.Create(); err != nil {
-		return errors.Wrap(err, "creating kic driver")
+		return fmt.Errorf("creating kic driver: %w", err)
 	}
 
 	// Now, get images to pull
 	imgs, err := images.Kubeadm("", kubernetesVersion)
 	if err != nil {
-		return errors.Wrap(err, "kubeadm images")
+		return fmt.Errorf("kubeadm images: %w", err)
 	}
 
 	if containerRuntime != "docker" { // kic overlay image is only needed by containerd and cri-o https://github.com/kubernetes/minikube/issues/7428
@@ -77,7 +77,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	// will need to do this to enable the container run-time service
 	sv, err := util.ParseKubernetesVersion(kubernetesVersion)
 	if err != nil {
-		return errors.Wrap(err, "Failed to parse Kubernetes version")
+		return fmt.Errorf("Failed to parse Kubernetes version: %w", err)
 	}
 
 	co := cruntime.Config{
@@ -88,16 +88,16 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	}
 	cr, err := cruntime.New(co)
 	if err != nil {
-		return errors.Wrap(err, "failed create new runtime")
+		return fmt.Errorf("failed create new runtime: %w", err)
 	}
 
 	if err := cr.Enable(true, detect.CgroupDriver(), false); err != nil {
-		return errors.Wrap(err, "enable container runtime")
+		return fmt.Errorf("enable container runtime: %w", err)
 	}
 
 	// Verify storage driver/snapshotter after the runtime has been configured.
 	if err := verifyStorage(containerRuntime); err != nil {
-		return errors.Wrap(err, "verifying storage")
+		return fmt.Errorf("verifying storage: %w", err)
 	}
 
 	for _, img := range imgs {
@@ -107,13 +107,13 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 			cmd.Stderr = os.Stderr
 			if err := cmd.Run(); err != nil {
 				time.Sleep(time.Second) // to avoid error: : exec: already started
-				return errors.Wrapf(err, "pulling image %s", img)
+				return fmt.Errorf("pulling image %s: %w", img, err)
 			}
 			return nil
 		}
 		// retry up to 5 times if network is bad
 		if err = retry.Expo(pull, time.Microsecond, time.Minute, 5); err != nil {
-			return errors.Wrapf(err, "pull image %s", img)
+			return fmt.Errorf("pull image %s: %w", img, err)
 		}
 
 	}
@@ -126,11 +126,11 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	sm := sysinit.New(runner)
 
 	if err := bsutil.TransferBinaries(kcfg, runner, sm, ""); err != nil {
-		return errors.Wrap(err, "transferring k8s binaries")
+		return fmt.Errorf("transferring k8s binaries: %w", err)
 	}
 	// Create image tarball
 	if err := createImageTarball(tarballFilename, containerRuntime); err != nil {
-		return errors.Wrap(err, "create tarball")
+		return fmt.Errorf("create tarball: %w", err)
 	}
 
 	return copyTarballToHost(tarballFilename)
@@ -139,17 +139,17 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 func verifyStorage(containerRuntime string) error {
 	if containerRuntime == "docker" {
 		if err := retry.Expo(verifyDockerStorage, 100*time.Microsecond, time.Minute*2); err != nil {
-			return errors.Wrap(err, "Docker storage type is incompatible")
+			return fmt.Errorf("Docker storage type is incompatible: %w", err)
 		}
 	}
 	if containerRuntime == "containerd" {
 		if err := retry.Expo(verifyContainerdStorage, 100*time.Microsecond, time.Minute*2); err != nil {
-			return errors.Wrap(err, "containerd storage type is incompatible")
+			return fmt.Errorf("containerd storage type is incompatible: %w", err)
 		}
 	}
 	if containerRuntime == "cri-o" {
 		if err := retry.Expo(verifyPodmanStorage, 100*time.Microsecond, time.Minute*2); err != nil {
-			return errors.Wrap(err, "Podman storage type is incompatible")
+			return fmt.Errorf("Podman storage type is incompatible: %w", err)
 		}
 	}
 	return nil
@@ -194,7 +194,7 @@ func createImageTarball(tarballFilename, containerRuntime string) error {
 	cmd := exec.Command("docker", args...)
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "tarball cmd: %s", cmd.Args)
+		return fmt.Errorf("tarball cmd: %s: %w", cmd.Args, err)
 	}
 	return nil
 }
@@ -204,7 +204,7 @@ func copyTarballToHost(tarballFilename string) error {
 	cmd := exec.Command("docker", "cp", fmt.Sprintf("%s:/%s", profile, tarballFilename), dest)
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "cp cmd: %s", cmd.Args)
+		return fmt.Errorf("cp cmd: %s: %w", cmd.Args, err)
 	}
 	return nil
 }

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package extract provides functionality to extract translatable strings from the minikube codebase.
 package extract
 
 import (
@@ -28,9 +29,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-
-	"github.com/golang-collections/collections/stack"
-	"github.com/pkg/errors"
 )
 
 // exclude is a list of strings to explicitly omit from translation files.
@@ -65,9 +63,9 @@ type state struct {
 	funcs map[funcType]struct{}
 
 	// A stack representation of funcs for easy iteration
-	fs *stack.Stack
+	fs []funcType
 
-	// The list of translatable strings, in map form for easy json marhsalling
+	// The list of translatable strings, in map form for easy json marshalling
 	translations map[string]interface{}
 
 	// The function call we're currently checking for
@@ -83,6 +81,7 @@ type state struct {
 	currentPackage string
 }
 
+// funcType represents a function by its package and name
 type funcType struct {
 	pack string // The package the function is in
 	name string // The name of the function
@@ -91,20 +90,20 @@ type funcType struct {
 // newExtractor initializes state for extraction
 func newExtractor(functionsToCheck []string) (*state, error) {
 	funcs := make(map[funcType]struct{})
-	fs := stack.New()
+	fs := []funcType{}
 
 	for _, t := range functionsToCheck {
 		// Functions must be of the form "package.function"
 		t2 := strings.Split(t, ".")
 		if len(t2) < 2 {
-			return nil, errors.Errorf("invalid function string %s. Needs package name as well", t)
+			return nil, fmt.Errorf("invalid function string %s. Needs package name as well", t)
 		}
 		f := funcType{
 			pack: t2[0],
 			name: t2[1],
 		}
 		funcs[f] = struct{}{}
-		fs.Push(f)
+		fs = append(fs, f)
 	}
 
 	return &state{
@@ -114,7 +113,7 @@ func newExtractor(functionsToCheck []string) (*state, error) {
 	}, nil
 }
 
-// SetParentFunc Sets the current parent function, along with package information
+// setParentFunc sets the current parent function, along with package information
 func setParentFunc(e *state, f string) {
 	e.parentFunc = funcType{
 		pack: e.currentPackage,
@@ -127,12 +126,15 @@ func TranslatableStrings(paths []string, functions []string, output string) erro
 	e, err := newExtractor(functions)
 
 	if err != nil {
-		return errors.Wrap(err, "Initializing")
+		return fmt.Errorf("Initializing: %w", err)
 	}
 
 	fmt.Println("Compiling translation strings...")
-	for e.fs.Len() > 0 {
-		f := e.fs.Pop().(funcType)
+	for len(e.fs) > 0 {
+		// Pop
+		f := e.fs[len(e.fs)-1]
+		e.fs = e.fs[:len(e.fs)-1]
+
 		e.currentFunc = f
 		for _, root := range paths {
 			err := filepath.Walk(root, func(path string, _ os.FileInfo, _ error) error {
@@ -144,7 +146,7 @@ func TranslatableStrings(paths []string, functions []string, output string) erro
 			})
 
 			if err != nil {
-				return errors.Wrap(err, "Extracting strings")
+				return fmt.Errorf("Extracting strings: %w", err)
 			}
 		}
 	}
@@ -152,13 +154,14 @@ func TranslatableStrings(paths []string, functions []string, output string) erro
 	err = writeStringsToFiles(e, output)
 
 	if err != nil {
-		return errors.Wrap(err, "Writing translation files")
+		return fmt.Errorf("Writing translation files: %w", err)
 	}
 
 	fmt.Println("Done!")
 	return nil
 }
 
+// shouldCheckFile checks if the file at path should be inspected for translatable strings
 func shouldCheckFile(path string) bool {
 	return strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go")
 }
@@ -448,7 +451,7 @@ func checkBinaryExpression(b *ast.BinaryExpr) string {
 func writeStringsToFiles(e *state, output string) error {
 	err := filepath.Walk(output, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return errors.Wrap(err, "accessing path")
+			return fmt.Errorf("accessing path: %w", err)
 		}
 		if info.Mode().IsDir() {
 			return nil
@@ -460,13 +463,13 @@ func writeStringsToFiles(e *state, output string) error {
 		currentTranslations := make(map[string]interface{})
 		f, err := os.ReadFile(path)
 		if err != nil {
-			return errors.Wrap(err, "reading translation file")
+			return fmt.Errorf("reading translation file: %w", err)
 		}
-		// Unmarhsal nonempty files
+		// Unmarshal nonempty files
 		if len(f) > 0 {
 			err = json.Unmarshal(f, &currentTranslations)
 			if err != nil {
-				return errors.Wrap(err, "unmarshalling current translations")
+				return fmt.Errorf("unmarshalling current translations: %w", err)
 			}
 		}
 
@@ -474,13 +477,6 @@ func writeStringsToFiles(e *state, output string) error {
 		for k := range e.translations {
 			if _, ok := currentTranslations[k]; !ok {
 				currentTranslations[k] = ""
-			}
-		}
-
-		// Remove translations from the file that are empty and were not extracted
-		for k, v := range currentTranslations {
-			if _, ok := e.translations[k]; !ok && len(v.(string)) == 0 {
-				delete(currentTranslations, k)
 			}
 		}
 
@@ -496,12 +492,12 @@ func writeStringsToFiles(e *state, output string) error {
 
 		c, err := json.MarshalIndent(currentTranslations, "", "\t")
 		if err != nil {
-			return errors.Wrap(err, "marshalling translations")
+			return fmt.Errorf("marshalling translations: %w", err)
 		}
 		c = append(c, '\n')
 		err = os.WriteFile(path, c, info.Mode())
 		if err != nil {
-			return errors.Wrap(err, "writing translation file")
+			return fmt.Errorf("writing translation file: %w", err)
 		}
 
 		fmt.Printf(" (%d translated, %d untranslated)\n", t, u)
@@ -514,12 +510,12 @@ func writeStringsToFiles(e *state, output string) error {
 
 	c, err := json.MarshalIndent(e.translations, "", "\t")
 	if err != nil {
-		return errors.Wrap(err, "marshalling translations")
+		return fmt.Errorf("marshalling translations: %w", err)
 	}
 	path := filepath.Join(output, "strings.txt")
 	err = os.WriteFile(path, c, 0644)
 	if err != nil {
-		return errors.Wrap(err, "writing translation file")
+		return fmt.Errorf("writing translation file: %w", err)
 	}
 
 	return nil
@@ -529,7 +525,7 @@ func writeStringsToFiles(e *state, output string) error {
 func addParentFuncToList(e *state) {
 	if _, ok := e.funcs[e.parentFunc]; !ok {
 		e.funcs[e.parentFunc] = struct{}{}
-		e.fs.Push(e.parentFunc)
+		e.fs = append(e.fs, e.parentFunc)
 	}
 }
 

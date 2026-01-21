@@ -26,6 +26,8 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/cheggaaa/pb/v3"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -33,7 +35,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/hashicorp/go-getter"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/image"
@@ -139,7 +140,7 @@ func ImageToCache(img string) error {
 	}
 
 	if err := os.MkdirAll(filepath.Dir(f), 0777); err != nil {
-		return errors.Wrapf(err, "making cache image directory: %s", f)
+		return fmt.Errorf("making cache image directory: %s: %w", f, err)
 	}
 
 	if DownloadMock != nil {
@@ -150,11 +151,11 @@ func ImageToCache(img string) error {
 	klog.Infof("Writing %s to local cache", img)
 	ref, err := name.ParseReference(img)
 	if err != nil {
-		return errors.Wrap(err, "parsing reference")
+		return fmt.Errorf("parsing reference: %w", err)
 	}
 	tag, err := name.NewTag(image.Tag(img))
 	if err != nil {
-		return errors.Wrap(err, "parsing tag")
+		return fmt.Errorf("parsing tag: %w", err)
 	}
 	klog.V(3).Infof("Getting image %v", ref)
 	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
@@ -167,7 +168,7 @@ func ImageToCache(img string) error {
 			return ErrNeedsLogin
 		}
 
-		return errors.Wrap(err, "getting remote image")
+		return fmt.Errorf("getting remote image: %w", err)
 	}
 	klog.V(3).Infof("Writing image %v", tag)
 	errchan := make(chan error)
@@ -219,7 +220,7 @@ func ImageToCache(img string) error {
 				p.Finish()
 			}
 			if err != nil {
-				return errors.Wrap(err, "writing tarball image")
+				return fmt.Errorf("writing tarball image: %w", err)
 			}
 			return nil
 		}
@@ -234,9 +235,6 @@ func GHKicbaseTarballToCache(kicBaseVersion string) (string, error) {
 	fileLock := f + ".lock"
 
 	kicbaseArch := runtime.GOARCH
-	if kicbaseArch == "arm" {
-		kicbaseArch = "armv7"
-	}
 
 	releaser, err := lockDownload(fileLock)
 	if err != nil {
@@ -263,13 +261,13 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 	var ref name.Reference
 	tag, err := name.NewTag(image.Tag(img))
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse image reference")
+		return nil, nil, fmt.Errorf("failed to parse image reference: %w", err)
 	}
 	digest, err := name.NewDigest(img)
 	if err != nil {
 		_, ok := err.(*name.ErrBadName)
 		if !ok {
-			return nil, nil, errors.Wrap(err, "new ref")
+			return nil, nil, fmt.Errorf("new ref: %w", err)
 		}
 		// ErrBadName means img contains no digest
 		// It happens if its value is name:tag for example.
@@ -300,7 +298,7 @@ func CacheToDaemon(img string) (string, error) {
 
 	i, err := tarball.ImageFromPath(p, tag)
 	if err != nil {
-		return "", errors.Wrap(err, "tarball")
+		return "", fmt.Errorf("tarball: %w", err)
 	}
 
 	resp, err := daemon.Write(*tag, i)

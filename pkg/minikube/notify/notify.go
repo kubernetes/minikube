@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -171,7 +170,7 @@ func getJSON(url string, target *Releases) error {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return errors.Wrap(err, "error creating new http request")
+		return fmt.Errorf("error creating new http request: %w", err)
 	}
 	ua := fmt.Sprintf("Minikube/%s Minikube-OS/%s Minikube-Arch/%s Minikube-Plaform/%s Minikube-Cloud/%s",
 		version.GetVersion(), runtime.GOOS, runtime.GOARCH, platform(), cloud())
@@ -180,7 +179,7 @@ func getJSON(url string, target *Releases) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "error with http GET for endpoint %s", url)
+		return fmt.Errorf("error with http GET for endpoint %s: %w", url, err)
 	}
 
 	defer resp.Body.Close()
@@ -220,10 +219,10 @@ func AllVersionsFromURL(url string) (Releases, error) {
 	var releases Releases
 	klog.Info("Checking for updates...")
 	if err := getJSON(url, &releases); err != nil {
-		return releases, errors.Wrap(err, "Error getting json from minikube version url")
+		return releases, fmt.Errorf("Error getting json from minikube version url: %w", err)
 	}
 	if len(releases.Releases) == 0 {
-		return releases, errors.Errorf("There were no json releases at the url specified: %s", url)
+		return releases, fmt.Errorf("There were no json releases at the url specified: %s", url)
 	}
 	return releases, nil
 }
@@ -231,7 +230,7 @@ func AllVersionsFromURL(url string) (Releases, error) {
 func writeTimeToFile(path string, inputTime time.Time) error {
 	err := lock.WriteFile(path, []byte(inputTime.Format(timeLayout)), 0o644)
 	if err != nil {
-		return errors.Wrap(err, "Error writing current update time to file: ")
+		return fmt.Errorf("Error writing current update time to file: : %w", err)
 	}
 	return nil
 }

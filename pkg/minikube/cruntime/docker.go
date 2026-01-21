@@ -29,7 +29,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	units "github.com/docker/go-units"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -268,7 +267,7 @@ func (r *Docker) ListImages(ListImagesOptions) ([]ListImage, error) {
 	c := exec.Command("docker", "images", "--no-trunc", "--format", "{{json .}}")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return nil, errors.Wrapf(err, "docker images")
+		return nil, fmt.Errorf("docker images: %w", err)
 	}
 	type dockerImage struct {
 		ID         string `json:"ID"`
@@ -285,11 +284,11 @@ func (r *Docker) ListImages(ListImagesOptions) ([]ListImage, error) {
 
 		var jsonImage dockerImage
 		if err := json.Unmarshal([]byte(img), &jsonImage); err != nil {
-			return nil, errors.Wrap(err, "Image convert problem")
+			return nil, fmt.Errorf("Image convert problem: %w", err)
 		}
 		size, err := units.FromHumanSize(jsonImage.Size)
 		if err != nil {
-			return nil, errors.Wrap(err, "Image size convert problem")
+			return nil, fmt.Errorf("Image size convert problem: %w", err)
 		}
 
 		repoTag := fmt.Sprintf("%s:%s", jsonImage.Repository, jsonImage.Tag)
@@ -308,7 +307,7 @@ func (r *Docker) LoadImage(imgPath string) error {
 	klog.Infof("Loading image: %s", imgPath)
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cat %s | docker load", imgPath))
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "loadimage docker")
+		return fmt.Errorf("loadimage docker: %w", err)
 	}
 	return nil
 }
@@ -321,7 +320,7 @@ func (r *Docker) PullImage(name string) error {
 	}
 	c := exec.Command("docker", "pull", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "pull image docker")
+		return fmt.Errorf("pull image docker: %w", err)
 	}
 	return nil
 }
@@ -331,7 +330,7 @@ func (r *Docker) SaveImage(name string, imagePath string) error {
 	klog.Infof("Saving image %s: %s", name, imagePath)
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker save '%s' | sudo tee %s >/dev/null", name, imagePath))
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "saveimage docker")
+		return fmt.Errorf("saveimage docker: %w", err)
 	}
 	return nil
 }
@@ -344,7 +343,7 @@ func (r *Docker) RemoveImage(name string) error {
 	}
 	c := exec.Command("docker", "rmi", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "remove image docker")
+		return fmt.Errorf("remove image docker: %w", err)
 	}
 	return nil
 }
@@ -354,7 +353,7 @@ func (r *Docker) TagImage(source string, target string) error {
 	klog.Infof("Tagging image %s: %s", source, target)
 	c := exec.Command("docker", "tag", source, target)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "tag image docker")
+		return fmt.Errorf("tag image docker: %w", err)
 	}
 	return nil
 }
@@ -380,14 +379,14 @@ func (r *Docker) BuildImage(src string, file string, tag string, push bool, env 
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "buildimage docker")
+		return fmt.Errorf("buildimage docker: %w", err)
 	}
 	if tag != "" && push {
 		c := exec.Command("docker", "push", tag)
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
 		if _, err := r.Runner.RunCmd(c); err != nil {
-			return errors.Wrap(err, "pushimage docker")
+			return fmt.Errorf("pushimage docker: %w", err)
 		}
 	}
 	return nil
@@ -398,7 +397,7 @@ func (r *Docker) PushImage(name string) error {
 	klog.Infof("Pushing image: %s", name)
 	c := exec.Command("docker", "push", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "push image docker")
+		return fmt.Errorf("push image docker: %w", err)
 	}
 	return nil
 }
@@ -448,7 +447,7 @@ func (r *Docker) ListContainers(o ListContainersOptions) ([]string, error) {
 	args = append(args, fmt.Sprintf("--filter=name=%s", nameFilter), "--format={{.ID}}")
 	rr, err := r.Runner.RunCmd(exec.Command("docker", args...))
 	if err != nil {
-		return nil, errors.Wrapf(err, "docker")
+		return nil, fmt.Errorf("docker: %w", err)
 	}
 	var ids []string
 	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
@@ -471,7 +470,7 @@ func (r *Docker) KillContainers(ids []string) error {
 	args := append([]string{"rm", "-f"}, ids...)
 	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "killing containers docker")
+		return fmt.Errorf("killing containers docker: %w", err)
 	}
 	return nil
 }
@@ -488,7 +487,7 @@ func (r *Docker) StopContainers(ids []string) error {
 	args := append([]string{"stop"}, ids...)
 	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "docker")
+		return fmt.Errorf("docker: %w", err)
 	}
 	return nil
 }
@@ -505,7 +504,7 @@ func (r *Docker) PauseContainers(ids []string) error {
 	args := append([]string{"pause"}, ids...)
 	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "docker")
+		return fmt.Errorf("docker: %w", err)
 	}
 	return nil
 }
@@ -522,7 +521,7 @@ func (r *Docker) UnpauseContainers(ids []string) error {
 	args := append([]string{"unpause"}, ids...)
 	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "docker")
+		return fmt.Errorf("docker: %w", err)
 	}
 	return nil
 }
@@ -618,7 +617,7 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 	// If images already exist, return
 	imgs, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
 	if err != nil {
-		return errors.Wrap(err, "getting images")
+		return fmt.Errorf("getting images: %w", err)
 	}
 	if dockerImagesPreloaded(r.Runner, imgs) {
 		klog.Info("Images already preloaded, skipping extraction")
@@ -643,7 +642,7 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 	// Copy over tarball into host
 	fa, err := assets.NewFileAsset(tarballPath, targetDir, targetName, "0644")
 	if err != nil {
-		return errors.Wrap(err, "getting file asset")
+		return fmt.Errorf("getting file asset: %w", err)
 	}
 	defer func() {
 		if err := fa.Close(); err != nil {
@@ -653,13 +652,13 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 
 	t := time.Now()
 	if err := r.Runner.Copy(fa); err != nil {
-		return errors.Wrap(err, "copying file")
+		return fmt.Errorf("copying file: %w", err)
 	}
 	klog.Infof("duration metric: took %s to copy over tarball", time.Since(t))
 
 	// extract the tarball to /var in the VM
 	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "--xattrs", "--xattrs-include", "security.capability", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
-		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
+		return fmt.Errorf("extracting tarball: %s: %w", rr.Output(), err)
 	}
 
 	//  remove the tarball in the VM
@@ -802,16 +801,16 @@ ExecStart={{.ExecPath}} --container-runtime-endpoint fd:// --pod-infra-container
 
 	b := bytes.Buffer{}
 	if err := CRIDockerServiceConfTemplate.Execute(&b, opts); err != nil {
-		return errors.Wrap(err, "failed to execute template")
+		return fmt.Errorf("failed to execute template: %w", err)
 	}
 	criDockerService := b.Bytes()
 	c := exec.Command("sudo", "mkdir", "-p", path.Dir(CRIDockerServiceConfFile))
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "failed to create directory")
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
 	svc := assets.NewMemoryAssetTarget(criDockerService, CRIDockerServiceConfFile, "0644")
 	if err := cr.Copy(svc); err != nil {
-		return errors.Wrap(err, "failed to copy template")
+		return fmt.Errorf("failed to copy template: %w", err)
 	}
 	return nil
 }

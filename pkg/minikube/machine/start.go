@@ -29,8 +29,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/juju/mutex/v2"
-	"github.com/pkg/errors"
+
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -76,7 +75,7 @@ func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*
 	// Prevent machine-driver boot races, as well as our own certificate race
 	releaser, err := acquireMachinesLock(machineName, cfg.Driver)
 	if err != nil {
-		return nil, false, errors.Wrap(err, "boot lock")
+		return nil, false, fmt.Errorf("boot lock: %w", err)
 	}
 	start := time.Now()
 	defer func() {
@@ -86,7 +85,7 @@ func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*
 
 	exists, err := api.Exists(machineName)
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "exists: %s", machineName)
+		return nil, false, fmt.Errorf("exists: %s: %w", machineName, err)
 	}
 	var h *host.Host
 	if !exists {
@@ -138,16 +137,16 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	}
 	dd, err := def.Config(*cfg, *n)
 	if err != nil {
-		return nil, errors.Wrap(err, "config")
+		return nil, fmt.Errorf("config: %w", err)
 	}
 	data, err := json.Marshal(dd)
 	if err != nil {
-		return nil, errors.Wrap(err, "marshal")
+		return nil, fmt.Errorf("marshal: %w", err)
 	}
 
 	h, err := api.NewHost(cfg.Driver, data)
 	if err != nil {
-		return nil, errors.Wrap(err, "new host")
+		return nil, fmt.Errorf("new host: %w", err)
 	}
 	defer postStartValidations(h, cfg.Driver)
 
@@ -162,7 +161,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 		cfg.StartHostTimeout = 6 * time.Minute
 	}
 	if err := timedCreateHost(h, api, cfg.StartHostTimeout); err != nil {
-		return nil, errors.Wrap(err, "creating host")
+		return nil, fmt.Errorf("creating host: %w", err)
 	}
 	klog.Infof("duration metric: took %s to libmachine.API.Create %q", time.Since(cstart), cfg.Name)
 	if cfg.Driver == driver.SSH {
@@ -170,7 +169,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	}
 
 	if err := postStartSetup(h, *cfg); err != nil {
-		return h, errors.Wrap(err, "post-start")
+		return h, fmt.Errorf("post-start: %w", err)
 	}
 
 	if err := saveHost(api, h, cfg, n); err != nil {
@@ -191,7 +190,7 @@ func timedCreateHost(h *host.Host, api libmachine.API, t time.Duration) error {
 		if err != nil {
 			// Wait for all the logs to reach the client
 			time.Sleep(2 * time.Second)
-			return errors.Wrap(err, "create")
+			return fmt.Errorf("create: %w", err)
 		}
 		return nil
 	case <-time.After(t):
@@ -323,12 +322,12 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 
 	r, err := CommandRunner(h)
 	if err != nil {
-		return errors.Wrap(err, "command runner")
+		return fmt.Errorf("command runner: %w", err)
 	}
 
 	args := append([]string{"mkdir", "-p"}, requiredDirectories...)
 	if _, err := r.RunCmd(exec.Command("sudo", args...)); err != nil {
-		return errors.Wrapf(err, "sudo mkdir (%s)", h.DriverName)
+		return fmt.Errorf("sudo mkdir (%s): %w", h.DriverName, err)
 	}
 
 	if driver.BareMetal(mc.Driver) {
@@ -343,7 +342,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 }
 
 // acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
-func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
+func acquireMachinesLock(name string, drv string) (lock.Releaser, error) {
 	lockPath := filepath.Join(localpath.MiniPath(), "machines", drv)
 	// With KIC, it's safe to provision multiple hosts simultaneously
 	if driver.IsKIC(drv) {
@@ -359,7 +358,7 @@ func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 
 	klog.Infof("acquireMachinesLock for %s: %+v", name, spec)
 	start := time.Now()
-	r, err := mutex.Acquire(spec)
+	r, err := lock.Acquire(spec)
 	if err == nil {
 		klog.Infof("duration metric: took %s to acquireMachinesLock for %q", time.Since(start), name)
 	}
@@ -407,7 +406,7 @@ func AddHostAlias(c command.Runner, name string, ip net.IP) error {
 	}
 
 	if _, err := c.RunCmd(addHostAliasCommand(name, record, true, "/etc/hosts")); err != nil {
-		return errors.Wrap(err, "hosts update")
+		return fmt.Errorf("hosts update: %w", err)
 	}
 	return nil
 }

@@ -17,7 +17,8 @@ limitations under the License.
 package config
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -53,28 +54,28 @@ func init() {
 func Set(name string, value string) error {
 	s, err := findSetting(name)
 	if err != nil {
-		return errors.Wrapf(err, "find settings for %q value of %q", name, value)
+		return fmt.Errorf("find settings for %q value of %q: %w", name, value, err)
 	}
 	// Validate the new value
 	err = invoke(name, value, s.validations)
 	if err != nil {
-		return errors.Wrapf(err, "run validations for %q with value of %q", name, value)
+		return fmt.Errorf("run validations for %q with value of %q: %w", name, value, err)
 	}
 
 	// Set the value
 	cc, err := config.ReadConfig(localpath.ConfigFile())
 	if err != nil {
-		return errors.Wrapf(err, "read config file %q", localpath.ConfigFile())
+		return fmt.Errorf("read config file %q: %w", localpath.ConfigFile(), err)
 	}
 	err = s.set(cc, name, value)
 	if err != nil {
-		return errors.Wrapf(err, "set")
+		return fmt.Errorf("set: %w", err)
 	}
 
 	// Run any callbacks for this property
 	err = invoke(name, value, s.callbacks)
 	if err != nil {
-		return errors.Wrapf(err, "run callbacks for %q with value of %q", name, value)
+		return fmt.Errorf("run callbacks for %q with value of %q: %w", name, value, err)
 	}
 
 	// Write the value

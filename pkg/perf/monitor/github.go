@@ -18,12 +18,12 @@ package monitor
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"time"
 
-	"github.com/google/go-github/v80/github"
-	"github.com/pkg/errors"
+	"github.com/google/go-github/v81/github"
 	"golang.org/x/oauth2"
 )
 
@@ -64,7 +64,7 @@ func (g *Client) CommentOnPR(pr int, message string) error {
 	log.Printf("Creating comment on PR %d: %s", pr, message)
 	_, _, err := g.Issues.CreateComment(g.ctx, g.owner, g.repo, pr, comment)
 	if err != nil {
-		return errors.Wrap(err, "creating github comment")
+		return fmt.Errorf("creating github comment: %w", err)
 	}
 	log.Printf("Successfully commented on PR %d.", pr)
 	return nil
@@ -75,7 +75,7 @@ func (g *Client) ListOpenPRsWithLabel(label string) ([]int, error) {
 	validPrs := []int{}
 	prs, _, err := g.PullRequests.List(g.ctx, g.owner, g.repo, &github.PullRequestListOptions{})
 	if err != nil {
-		return nil, errors.Wrap(err, "listing pull requests")
+		return nil, fmt.Errorf("listing pull requests: %w", err)
 	}
 	for _, pr := range prs {
 		if prContainsLabel(pr.Labels, label) {
@@ -102,11 +102,11 @@ func prContainsLabel(labels []*github.Label, label string) bool {
 func (g *Client) NewCommitsExist(pr int, login string) (bool, error) {
 	lastCommentTime, err := g.timeOfLastComment(pr, login)
 	if err != nil {
-		return false, errors.Wrapf(err, "getting time of last comment by %s on pr %d", login, pr)
+		return false, fmt.Errorf("getting time of last comment by %s on pr %d: %w", login, pr, err)
 	}
 	lastCommitTime, err := g.timeOfLastCommit(pr)
 	if err != nil {
-		return false, errors.Wrapf(err, "getting time of last commit on pr %d", pr)
+		return false, fmt.Errorf("getting time of last commit on pr %d: %w", pr, err)
 	}
 	return lastCommentTime.Before(lastCommitTime), nil
 }

@@ -26,7 +26,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"k8s.io/klog/v2"
 )
@@ -101,7 +101,7 @@ func PruneAllVolumesByLabel(ctx context.Context, ociBin string, label string, wa
 	klog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
 	cmd := exec.CommandContext(ctx, ociBin, "volume", "prune", "-f", "--filter", "label="+label)
 	if _, err := runCmd(cmd, warnSlow...); err != nil {
-		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume by label %s", label))
+		deleteErrs = append(deleteErrs, fmt.Errorf("prune volume by label %s: %w", label, err))
 	}
 
 	return deleteErrs

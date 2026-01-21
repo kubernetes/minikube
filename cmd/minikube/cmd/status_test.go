@@ -43,6 +43,22 @@ func TestExitCode(t *testing.T) {
 			}
 		})
 	}
+
+	// When GetStatus fails, statuses will be nil and should return non-zero exit code
+	t.Run("nil", func(t *testing.T) {
+		got := exitCode(nil)
+		if got != 7 {
+			t.Errorf("exitCode(nil) = %d, want: 7", got)
+		}
+	})
+
+	// Empty slice should also return non-zero exit code
+	t.Run("empty", func(t *testing.T) {
+		got := exitCode([]*cluster.Status{})
+		if got != 7 {
+			t.Errorf("exitCode([]) = %d, want: 7", got)
+		}
+	})
 }
 
 func TestStatusText(t *testing.T) {

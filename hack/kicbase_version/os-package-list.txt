@@ -7,7 +7,7 @@ ii  adduser                         3.134                          all          
 ii  apt                             2.6.1                          amd64        commandline package manager
 ii  base-files                      12.4+deb12u12                  amd64        Debian base system miscellaneous files
 ii  base-passwd                     3.6.1                          amd64        Debian base system master password and group files
-ii  bash                            5.2.15-2+b9                    amd64        GNU Bourne Again SHell
+ii  bash                            5.2.15-2+b10                   amd64        GNU Bourne Again SHell
 ii  bind9-dnsutils                  1:9.18.41-1~deb12u1            amd64        Clients provided with BIND 9
 ii  bind9-host                      1:9.18.41-1~deb12u1            amd64        DNS Lookup Utility
 ii  bind9-libs:amd64                1:9.18.41-1~deb12u1            amd64        Shared Libraries used by BIND 9
@@ -32,30 +32,30 @@ ii  debconf                         1.5.82                         all          
 ii  debian-archive-keyring          2023.3+deb12u2                 all          GnuPG archive keys of the Debian archive
 ii  debianutils                     5.7-0.5~deb12u1                amd64        Miscellaneous utilities specific to Debian
 ii  diffutils                       1:3.8-4                        amd64        File comparison utilities
-ii  dirmngr                         2.2.40-1.1+deb12u1             amd64        GNU privacy guard - network certificate management service
+ii  dirmngr                         2.2.40-1.1+deb12u2             amd64        GNU privacy guard - network certificate management service
 ii  dmsetup                         2:1.02.185-2                   amd64        Linux Kernel Device Mapper userspace library
 ii  dnsutils                        1:9.18.41-1~deb12u1            all          Transitional package for bind9-dnsutils
 ii  docker-buildx-plugin            0.30.1-1~debian.12~bookworm    amd64        Docker Buildx plugin extends build capabilities with BuildKit.
-ii  docker-ce                       5:29.1.3-1~debian.12~bookworm  amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:29.1.3-1~debian.12~bookworm  amd64        Docker CLI: the open-source application container engine
+ii  docker-ce                       5:29.1.5-1~debian.12~bookworm  amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:29.1.5-1~debian.12~bookworm  amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.22                        amd64        Debian package management system
 ii  e2fsprogs                       1.47.0-2+b2                    amd64        ext2/ext3/ext4 file system utilities
 ii  ebtables                        2.0.11-5                       amd64        Ethernet bridge frame table administration
 ii  ethtool                         1:6.1-1                        amd64        display or change Ethernet device settings
 ii  findutils                       4.9.0-4                        amd64        utilities for finding files--find, xargs
 ii  gcc-12-base:amd64               12.2.0-14+deb12u1              amd64        GCC, the GNU Compiler Collection (base package)
-ii  gnupg                           2.2.40-1.1+deb12u1             all          GNU privacy guard - a free PGP replacement
-ii  gnupg-l10n                      2.2.40-1.1+deb12u1             all          GNU privacy guard - localization files
-ii  gnupg-utils                     2.2.40-1.1+deb12u1             amd64        GNU privacy guard - utility programs
+ii  gnupg                           2.2.40-1.1+deb12u2             all          GNU privacy guard - a free PGP replacement
+ii  gnupg-l10n                      2.2.40-1.1+deb12u2             all          GNU privacy guard - localization files
+ii  gnupg-utils                     2.2.40-1.1+deb12u2             amd64        GNU privacy guard - utility programs
 ii  golang-github-containers-common 0.50.1+ds1-4                   all          Common files for github.com/containers repositories
 ii  golang-github-containers-image  5.23.1-4                       all          Configuration files and manpages for github.com/containers repositories
-ii  gpg                             2.2.40-1.1+deb12u1             amd64        GNU Privacy Guard -- minimalist public key operations
-ii  gpg-agent                       2.2.40-1.1+deb12u1             amd64        GNU privacy guard - cryptographic agent
-ii  gpg-wks-client                  2.2.40-1.1+deb12u1             amd64        GNU privacy guard - Web Key Service client
-ii  gpg-wks-server                  2.2.40-1.1+deb12u1             amd64        GNU privacy guard - Web Key Service server
-ii  gpgconf                         2.2.40-1.1+deb12u1             amd64        GNU privacy guard - core configuration utilities
-ii  gpgsm                           2.2.40-1.1+deb12u1             amd64        GNU privacy guard - S/MIME version
-ii  gpgv                            2.2.40-1.1+deb12u1             amd64        GNU privacy guard - signature verification tool
+ii  gpg                             2.2.40-1.1+deb12u2             amd64        GNU Privacy Guard -- minimalist public key operations
+ii  gpg-agent                       2.2.40-1.1+deb12u2             amd64        GNU privacy guard - cryptographic agent
+ii  gpg-wks-client                  2.2.40-1.1+deb12u2             amd64        GNU privacy guard - Web Key Service client
+ii  gpg-wks-server                  2.2.40-1.1+deb12u2             amd64        GNU privacy guard - Web Key Service server
+ii  gpgconf                         2.2.40-1.1+deb12u2             amd64        GNU privacy guard - core configuration utilities
+ii  gpgsm                           2.2.40-1.1+deb12u2             amd64        GNU privacy guard - S/MIME version
+ii  gpgv                            2.2.40-1.1+deb12u2             amd64        GNU privacy guard - signature verification tool
 ii  grep                            3.8-5                          amd64        GNU grep, egrep and fgrep
 ii  gzip                            1.12-1                         amd64        GNU compression utilities
 ii  hostname                        3.23+nmu1                      amd64        utility to set/show the host name or domain name
@@ -81,8 +81,8 @@ ii  libbz2-1.0:amd64                1.0.8-5+b1                     amd64        
 ii  libc-bin                        2.36-9+deb12u13                amd64        GNU C Library: Binaries
 ii  libc6:amd64                     2.36-9+deb12u13                amd64        GNU C Library: Shared libraries
 ii  libcap-ng0:amd64                0.8.3-1+b3                     amd64        alternate POSIX capabilities library
-ii  libcap2:amd64                   1:2.66-4+deb12u2               amd64        POSIX 1003.1e capabilities (library)
-ii  libcap2-bin                     1:2.66-4+deb12u2               amd64        POSIX 1003.1e capabilities (utilities)
+ii  libcap2:amd64                   1:2.66-4+deb12u2+b2            amd64        POSIX 1003.1e capabilities (library)
+ii  libcap2-bin                     1:2.66-4+deb12u2+b2            amd64        POSIX 1003.1e capabilities (utilities)
 ii  libcbor0.8:amd64                0.8.0-2+b1                     amd64        library for parsing and generating CBOR (RFC 7049)
 ii  libcom-err2:amd64               1.47.0-2+b2                    amd64        common error description library
 ii  libcrypt1:amd64                 1:4.4.33-2                     amd64        libcrypt shared library
@@ -103,7 +103,7 @@ ii  libfido2-1:amd64                1.12.0-2+b1                    amd64        
 ii  libfstrm0:amd64                 0.6.1-1                        amd64        Frame Streams (fstrm) library
 ii  libgcc-s1:amd64                 12.2.0-14+deb12u1              amd64        GCC support library
 ii  libgcrypt20:amd64               1.10.1-3                       amd64        LGPL Crypto library - runtime library
-ii  libglib2.0-0:amd64              2.74.6-2+deb12u7               amd64        GLib library of C routines
+ii  libglib2.0-0:amd64              2.74.6-2+deb12u8               amd64        GLib library of C routines
 ii  libgmp10:amd64                  2:6.2.1+dfsg1-1.1              amd64        Multiprecision arithmetic library
 ii  libgnutls30:amd64               3.7.9-2+deb12u5                amd64        GNU TLS library - main runtime library
 ii  libgpg-error0:amd64             1.46-1                         amd64        GnuPG development runtime library
@@ -169,9 +169,9 @@ ii  libsmartcols1:amd64             2.38.1-5+deb12u3               amd64        
 ii  libsqlite3-0:amd64              3.40.1-2+deb12u2               amd64        SQLite 3 shared library
 ii  libss2:amd64                    1.47.0-2+b2                    amd64        command-line interface parsing library
 ii  libssh2-1:amd64                 1.10.0-3+b1                    amd64        SSH2 client-side library
-ii  libssl3:amd64                   3.0.17-1~deb12u3               amd64        Secure Sockets Layer toolkit - shared libraries
+ii  libssl3:amd64                   3.0.18-1~deb12u1               amd64        Secure Sockets Layer toolkit - shared libraries
 ii  libstdc++6:amd64                12.2.0-14+deb12u1              amd64        GNU Standard C++ Library v3
-ii  libsubid4:amd64                 1:4.13+dfsg1-1+deb12u1         amd64        subordinate id handling library -- shared library
+ii  libsubid4:amd64                 1:4.13+dfsg1-1+deb12u2         amd64        subordinate id handling library -- shared library
 ii  libsystemd-shared:amd64         252.39-1~deb12u1               amd64        systemd shared private library
 ii  libsystemd0:amd64               252.39-1~deb12u1               amd64        systemd utility library
 ii  libtasn1-6:amd64                4.19.0-2+deb12u1               amd64        Manage ASN.1 structures (runtime)
@@ -183,12 +183,12 @@ ii  libunistring2:amd64             1.0-2                          amd64        
 ii  libuuid1:amd64                  2.38.1-5+deb12u3               amd64        Universally Unique ID library
 ii  libuv1:amd64                    1.44.2-1+deb12u1               amd64        asynchronous event notification library - runtime library
 ii  libwrap0:amd64                  7.6.q-32                       amd64        Wietse Venema's TCP wrappers library
-ii  libxml2:amd64                   2.9.14+dfsg-1.3~deb12u4        amd64        GNOME XML library
+ii  libxml2:amd64                   2.9.14+dfsg-1.3~deb12u5        amd64        GNOME XML library
 ii  libxtables12:amd64              1.8.9-2                        amd64        netfilter xtables library
 ii  libxxhash0:amd64                0.8.1-1                        amd64        shared library for xxhash
 ii  libyajl2:amd64                  2.1.0-3+deb12u2                amd64        Yet Another JSON Library
 ii  libzstd1:amd64                  1.5.4+dfsg2-5                  amd64        fast lossless compression algorithm
-ii  login                           1:4.13+dfsg1-1+deb12u1         amd64        system login tools
+ii  login                           1:4.13+dfsg1-1+deb12u2         amd64        system login tools
 ii  logsave                         1.47.0-2+b2                    amd64        save the output of a command in a log file
 ii  lz4                             1.9.4-1                        amd64        Fast LZ compression algorithm library - tool
 ii  mawk                            1.3.4.20200120-3.1             amd64        Pattern scanning and text processing language
@@ -205,12 +205,12 @@ ii  nvidia-container-toolkit-base   1.18.1-1                       amd64        
 ii  openssh-client                  1:9.2p1-2+deb12u7              amd64        secure shell (SSH) client, for secure access to remote machines
 ii  openssh-server                  1:9.2p1-2+deb12u7              amd64        secure shell (SSH) server, for secure access from remote machines
 ii  openssh-sftp-server             1:9.2p1-2+deb12u7              amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
-ii  openssl                         3.0.17-1~deb12u3               amd64        Secure Sockets Layer toolkit - cryptographic utility
-ii  passwd                          1:4.13+dfsg1-1+deb12u1         amd64        change and administer password and group data
+ii  openssl                         3.0.18-1~deb12u1               amd64        Secure Sockets Layer toolkit - cryptographic utility
+ii  passwd                          1:4.13+dfsg1-1+deb12u2         amd64        change and administer password and group data
 ii  perl-base                       5.36.0-7+deb12u3               amd64        minimal Perl system
 ii  pigz                            2.6-1                          amd64        Parallel Implementation of GZip
 ii  pinentry-curses                 1.2.1-1                        amd64        curses-based PIN or pass-phrase entry dialog for GnuPG
-ii  podman                          4.3.1+ds1-8+deb12u1+b1         amd64        engine to run OCI-based containers in Pods
+ii  podman                          4.3.1+ds1-8+deb12u1+b2         amd64        engine to run OCI-based containers in Pods
 ii  procps                          2:4.0.2-3                      amd64        /proc file system utilities
 ii  python3                         3.11.2-1+b1                    amd64        interactive high-level object-oriented language (default python3 version)
 ii  python3-minimal                 3.11.2-1+b1                    amd64        minimal subset of the Python language (default python3 version)
@@ -218,12 +218,12 @@ ii  python3.11                      3.11.2-6+deb12u6               amd64        
 ii  python3.11-minimal              3.11.2-6+deb12u6               amd64        Minimal subset of the Python language (version 3.11)
 ii  readline-common                 8.2-1.3                        all          GNU readline and history libraries, common files
 ii  rpcbind                         1.2.6-6+b1                     amd64        converts RPC program numbers into universal addresses
-ii  rsync                           3.2.7-1+deb12u2                amd64        fast, versatile, remote (and local) file-copying tool
+ii  rsync                           3.2.7-1+deb12u4                amd64        fast, versatile, remote (and local) file-copying tool
 ii  runit-helper                    2.15.2                         all          dh-runit implementation detail
 ii  sed                             4.9-1                          amd64        GNU stream editor for filtering/transforming text
 ii  sensible-utils                  0.0.17+nmu1                    all          Utilities for sensible alternative selection
 ii  socat                           1.7.4.4-2                      amd64        multipurpose relay for bidirectional data transfer
-ii  sudo                            1.9.13p3-1+deb12u2             amd64        Provide limited super user privileges to specific users
+ii  sudo                            1.9.13p3-1+deb12u3             amd64        Provide limited super user privileges to specific users
 ii  systemd                         252.39-1~deb12u1               amd64        system and service manager
 ii  systemd-sysv                    252.39-1~deb12u1               amd64        system and service manager - SysV compatibility symlinks
 ii  sysvinit-utils                  3.06-4                         amd64        System-V-like utilities

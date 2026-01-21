@@ -192,7 +192,7 @@ func logFileName(dir string, logIdx int64) string {
 func setFlags(parse bool) {
 	// parse flags beyond subcommand - get around go flag 'limitations':
 	// "Flag parsing stops just before the first non-flag argument" (ref: https://pkg.go.dev/flag#hdr-Command_line_flag_syntax)
-	pflag.CommandLine.ParseErrorsWhitelist.UnknownFlags = true
+	pflag.CommandLine.ParseErrorsAllowlist.UnknownFlags = true
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	// avoid 'pflag: help requested' error, as help will be defined later by cobra cmd.Execute()
 	pflag.BoolP("help", "h", false, "")

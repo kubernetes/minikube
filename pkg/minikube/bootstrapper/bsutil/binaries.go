@@ -24,7 +24,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 
@@ -65,7 +64,7 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.
 		g.Go(func() error {
 			src, err := download.Binary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH, binariesURL)
 			if err != nil {
-				return errors.Wrapf(err, "downloading %s", name)
+				return fmt.Errorf("downloading %s: %w", name, err)
 			}
 
 			if name == "kubelet" && sm.Active(name) {
@@ -76,7 +75,7 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.
 
 			dst := path.Join(dir, name)
 			if err := copyBinary(c, src, dst); err != nil {
-				return errors.Wrapf(err, "copybinary %s -> %s", src, dst)
+				return fmt.Errorf("copybinary %s -> %s: %w", src, dst, err)
 			}
 			return nil
 		})
@@ -113,7 +112,7 @@ func binRoot(version string) string {
 func copyBinary(cr command.Runner, src, dest string) error {
 	f, err := assets.NewFileAsset(src, path.Dir(dest), path.Base(dest), "0755")
 	if err != nil {
-		return errors.Wrap(err, "new file asset")
+		return fmt.Errorf("new file asset: %w", err)
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
@@ -122,7 +121,7 @@ func copyBinary(cr command.Runner, src, dest string) error {
 	}()
 
 	if err := cr.Copy(f); err != nil {
-		return errors.Wrapf(err, "copy")
+		return fmt.Errorf("copy: %w", err)
 	}
 	return nil
 }

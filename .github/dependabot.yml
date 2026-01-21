@@ -9,6 +9,10 @@ updates:
       k8s-dependencies:
         patterns:
           - "k8s.io/*"
+      golang-org:
+        patterns:
+          - "golang.org/*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -19,3 +23,53 @@ updates:
           - "actions/*"
     ignore:
       - dependency-name: "vedantmgoyal2009/winget-releaser"
+  # ---
+  # Docker images 
+  # ---
+  - package-ecosystem: "docker"
+    directory: "/deploy/kicbase"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/deploy/addons/auto-pause"
+    schedule:
+      interval: "weekly"
+    groups:
+      bump-dockerfiles:
+        patterns:
+          - "*"
+  - package-ecosystem: "docker"
+    directory: "/deploy/images/gvisor"
+    schedule:
+      interval: "weekly"
+    groups:
+      bump-dockerfiles:
+        patterns:
+          - "*"
+  - package-ecosystem: "docker"
+    directory: "/deploy/images/kubernetes-bootcamp"
+    schedule:
+      interval: "weekly"
+    groups:
+      bump-dockerfiles:
+        patterns:
+          - "*"
+  - package-ecosystem: "docker"
+    directory: "/deploy/storage-provisioner"
+    schedule:
+      interval: "weekly"
+    groups:
+      bump-dockerfiles:
+        patterns:
+          - "*"
+  # ---
+  # Below are images used for tooling/locally
+  # ---
+  - package-ecosystem: "docker"
+    directory: "/deploy/iso/minikube-iso"
+    schedule:
+      interval: "weekly"
+    groups:
+      bump-dockerfiles-build:
+        patterns:
+          - "*"

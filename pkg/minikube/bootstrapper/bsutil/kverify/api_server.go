@@ -32,7 +32,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
@@ -136,7 +135,7 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 func APIServerVersionMatch(client *kubernetes.Clientset, expected string) error {
 	vi, err := client.ServerVersion()
 	if err != nil {
-		return errors.Wrap(err, "server version")
+		return fmt.Errorf("server version: %w", err)
 	}
 	klog.Infof("control plane version: %s", vi)
 	if version.CompareKubeAwareVersionStrings(vi.String(), expected) != 0 {

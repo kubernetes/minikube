@@ -26,9 +26,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/klauspost/cpuid"
+	"github.com/klauspost/cpuid/v2"
 	"github.com/spf13/viper"
-	"golang.org/x/sys/cpu"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -41,18 +40,7 @@ func RuntimeOS() string {
 
 // RuntimeArch returns the runtime architecture
 func RuntimeArch() string {
-	arch := runtime.GOARCH
-	if arch == "arm" {
-		// runtime.GOARM
-		if !cpu.ARM.HasVFP {
-			return "arm/v5"
-		}
-		if !cpu.ARM.HasVFPv3 {
-			return "arm/v6"
-		}
-		// "arm" (== "arm/v7")
-	}
-	return arch
+	return runtime.GOARCH
 }
 
 // IsMicrosoftWSL will return true if process is running in WSL in windows

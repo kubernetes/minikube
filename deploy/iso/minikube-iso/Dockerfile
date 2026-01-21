@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:22.04
-
-# We need tar >= 1.35
-ARG TAR_VERSION="1.35"
+FROM ubuntu:24.04
 
 RUN apt-get update \
 	&& apt-get install -y apt dpkg apt-utils ca-certificates software-properties-common \
@@ -44,17 +41,6 @@ RUN apt-get update \
 
 RUN mkdir /app
 RUN chmod 777 /app
-
-# Build host-tar
-RUN wget -nv -O /tmp/tar-${TAR_VERSION}.tar.xz https://ftpmirror.gnu.org/tar/tar-${TAR_VERSION}.tar.xz && \
-    echo "4d62ff37342ec7aed748535323930c7cf94acf71c3591882b26a7ea50f3edc16  /tmp/tar-1.35.tar.xz" | sha256sum -c - && \
-    tar -Jx -C /tmp -f /tmp/tar-${TAR_VERSION}.tar.xz && \
-    cd /tmp/tar-${TAR_VERSION} && \
-    FORCE_UNSAFE_CONFIGURE=1 ./configure \
-        --disable-year2038 && \
-    make -j`nproc` && \
-    make install && \
-    rm -rf /tmp/tar-${TAR_VERSION} /tmp/tar-${TAR_VERSION}.tar.xz
 
 RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 ENV LANG=en_US.utf8

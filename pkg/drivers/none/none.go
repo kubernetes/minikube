@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/pkg/errors"
 	knet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"
@@ -157,25 +156,25 @@ func (d *Driver) Kill() error {
 	// First try to gracefully stop containers
 	containers, err := d.runtime.ListContainers(cruntime.ListContainersOptions{})
 	if err != nil {
-		return errors.Wrap(err, "containers")
+		return fmt.Errorf("containers: %w", err)
 	}
 	if len(containers) == 0 {
 		return nil
 	}
 	// Try to be graceful before sending SIGKILL everywhere.
 	if err := d.runtime.StopContainers(containers); err != nil {
-		return errors.Wrap(err, "stop")
+		return fmt.Errorf("stop: %w", err)
 	}
 
 	containers, err = d.runtime.ListContainers(cruntime.ListContainersOptions{})
 	if err != nil {
-		return errors.Wrap(err, "containers")
+		return fmt.Errorf("containers: %w", err)
 	}
 	if len(containers) == 0 {
 		return nil
 	}
 	if err := d.runtime.KillContainers(containers); err != nil {
-		return errors.Wrap(err, "kill")
+		return fmt.Errorf("kill: %w", err)
 	}
 	return nil
 }
@@ -183,7 +182,7 @@ func (d *Driver) Kill() error {
 // Remove a host, including any data which may have been written by it.
 func (d *Driver) Remove() error {
 	if err := d.Kill(); err != nil {
-		return errors.Wrap(err, "kill")
+		return fmt.Errorf("kill: %w", err)
 	}
 	klog.Infof("Removing: %s", cleanupPaths)
 	args := append([]string{"rm", "-rf"}, cleanupPaths...)
@@ -223,22 +222,22 @@ func (d *Driver) Stop() error {
 	// Stop running containers
 	running, err := d.runtime.ListContainers(cruntime.ListContainersOptions{State: cruntime.Running})
 	if err != nil {
-		return errors.Wrap(err, "list running containers")
+		return fmt.Errorf("list running containers: %w", err)
 	}
 	if len(running) > 0 {
 		if err := d.runtime.StopContainers(running); err != nil {
-			return errors.Wrap(err, "stop running containers")
+			return fmt.Errorf("stop running containers: %w", err)
 		}
 	}
 
 	// Stop paused containers
 	paused, err := d.runtime.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused})
 	if err != nil {
-		return errors.Wrap(err, "list paused containers")
+		return fmt.Errorf("list paused containers: %w", err)
 	}
 	if len(paused) > 0 {
 		if err := d.runtime.StopContainers(paused); err != nil {
-			return errors.Wrap(err, "stop paused containers")
+			return fmt.Errorf("stop paused containers: %w", err)
 		}
 	}
 	klog.Infof("none driver is stopped!")

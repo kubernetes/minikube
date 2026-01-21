@@ -20,11 +20,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/juju/mutex/v2"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 func TestFreeSubnet(t *testing.T) {
-	reserveSubnet = func(_ string) (mutex.Releaser, error) { return nil, nil }
+	reserveSubnet = func(_ string) (lock.Releaser, error) { return nil, nil }
 
 	t.Run("NoRetriesSuccess", func(t *testing.T) {
 		startingSubnet := "192.168.0.0"

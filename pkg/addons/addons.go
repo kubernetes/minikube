@@ -28,8 +28,9 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/libmachine/state"
 
@@ -70,7 +71,7 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string, options *
 	klog.Infof("Setting %s=%s in profile %q", name, value, cc.Name)
 	a, valid := isAddonValid(name)
 	if !valid {
-		return errors.Errorf("%s is not a valid addon", name)
+		return fmt.Errorf("%s is not a valid addon", name)
 	}
 
 	// Run any additional validations for this property
@@ -78,7 +79,7 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string, options *
 		if errors.Is(err, ErrSkipThisAddon) {
 			return err
 		}
-		return errors.Wrap(err, "running validations")
+		return fmt.Errorf("running validations: %w", err)
 	}
 
 	preStartMessages(name, value)
@@ -88,7 +89,7 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string, options *
 		if errors.Is(err, ErrSkipThisAddon) {
 			return err
 		}
-		return errors.Wrap(err, "running callbacks")
+		return fmt.Errorf("running callbacks: %w", err)
 	}
 
 	postStartMessages(cc, name, value)
@@ -176,7 +177,7 @@ func Deprecations(name string) (bool, string, string) {
 func Set(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
 	a, valid := isAddonValid(name)
 	if !valid {
-		return errors.Errorf("%s is not a valid addon", name)
+		return fmt.Errorf("%s is not a valid addon", name)
 	}
 	return a.set(cc, name, value, options)
 }
@@ -185,18 +186,18 @@ func Set(cc *config.ClusterConfig, name string, value string, options *run.Comma
 func SetAndSave(profile string, name string, value string, options *run.CommandOptions) error {
 	cc, err := config.Load(profile)
 	if err != nil {
-		return errors.Wrap(err, "loading profile")
+		return fmt.Errorf("loading profile: %w", err)
 	}
 
 	if err := RunCallbacks(cc, name, value, options); err != nil {
 		if errors.Is(err, ErrSkipThisAddon) {
 			return err
 		}
-		return errors.Wrap(err, "run callbacks")
+		return fmt.Errorf("run callbacks: %w", err)
 	}
 
 	if err := Set(cc, name, value, options); err != nil {
-		return errors.Wrap(err, "set")
+		return fmt.Errorf("set: %w", err)
 	}
 
 	klog.Infof("Writing out %q config to set %s=%v...", profile, name, value)
@@ -239,7 +240,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string, opt
 	klog.Infof("Setting addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
-		return errors.Wrapf(err, "parsing bool: %s", name)
+		return fmt.Errorf("parsing bool: %s: %w", name, err)
 	}
 	addon := assets.Addons[name]
 
@@ -253,7 +254,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string, opt
 
 	api, err := machine.NewAPIClient(options)
 	if err != nil {
-		return errors.Wrap(err, "machine client")
+		return fmt.Errorf("machine client: %w", err)
 	}
 	defer api.Close()
 
@@ -288,7 +289,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string, opt
 
 	runner, err := machine.CommandRunner(host)
 	if err != nil {
-		return errors.Wrap(err, "command runner")
+		return fmt.Errorf("command runner: %w", err)
 	}
 
 	bail, err := addonSpecificChecks(cc, name, enable, runner)
@@ -336,7 +337,7 @@ func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, run
 		if driver.NeedsPortForward(cc.Driver) {
 			port, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
 			if err != nil {
-				return false, errors.Wrap(err, "registry port")
+				return false, fmt.Errorf("registry port: %w", err)
 			}
 			if enable {
 				out.Boxed(`Registry addon with {{.driver}} driver uses port {{.port}} please use that instead of default port 5000`, out.V{"driver": cc.Driver, "port": port})
@@ -386,7 +387,7 @@ func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable boo
 func supportLegacyIngress(addon *assets.Addon, cc config.ClusterConfig) error {
 	v, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
-		return errors.Wrap(err, "parsing Kubernetes version")
+		return fmt.Errorf("parsing Kubernetes version: %w", err)
 	}
 	if semver.MustParseRange("<1.19.0")(v) {
 		if addon.Name() == "ingress" {
@@ -424,7 +425,7 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		if addon.IsTemplate() {
 			f, err = addon.Evaluate(data)
 			if err != nil {
-				return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetSourcePath())
+				return fmt.Errorf("evaluate bundled addon %s asset: %w", addon.GetSourcePath(), err)
 			}
 
 		} else {
@@ -495,7 +496,7 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 	klog.Infof("Verifying addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
-		return errors.Wrapf(err, "parsing bool: %s", name)
+		return fmt.Errorf("parsing bool: %s: %w", name, err)
 	}
 
 	label, ok := addonPodLabels[name]
@@ -503,13 +504,13 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 		out.Step(style.HealthCheck, "Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
 		client, err := kapi.Client(viper.GetString(config.ProfileName))
 		if err != nil {
-			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)
+			return fmt.Errorf("get kube-client to validate %s addon: %v: %w", name, err, err)
 		}
 
 		// This timeout includes image pull time, which can take a few minutes. 3 is not enough.
 		err = kapi.WaitForPods(client, ns, label, time.Minute*6)
 		if err != nil {
-			return errors.Wrapf(err, "waiting for %s pods", label)
+			return fmt.Errorf("waiting for %s pods: %w", label, err)
 		}
 
 	}
@@ -623,28 +624,28 @@ func VerifyNotPaused(profile string, enable bool, options *run.CommandOptions) e
 
 	cc, err := config.Load(profile)
 	if err != nil {
-		return errors.Wrap(err, "loading profile")
+		return fmt.Errorf("loading profile: %w", err)
 	}
 
 	api, err := machine.NewAPIClient(options)
 	if err != nil {
-		return errors.Wrap(err, "machine client")
+		return fmt.Errorf("machine client: %w", err)
 	}
 	defer api.Close()
 
 	cp, err := config.ControlPlane(*cc)
 	if err != nil {
-		return errors.Wrap(err, "get control-plane node")
+		return fmt.Errorf("get control-plane node: %w", err)
 	}
 
 	host, err := machine.LoadHost(api, config.MachineName(*cc, cp))
 	if err != nil {
-		return errors.Wrap(err, "get host")
+		return fmt.Errorf("get host: %w", err)
 	}
 
 	s, err := host.Driver.GetState()
 	if err != nil {
-		return errors.Wrap(err, "get state")
+		return fmt.Errorf("get state: %w", err)
 	}
 	if s != state.Running {
 		// can't check the status of pods on a non-running cluster
@@ -653,17 +654,17 @@ func VerifyNotPaused(profile string, enable bool, options *run.CommandOptions) e
 
 	runner, err := machine.CommandRunner(host)
 	if err != nil {
-		return errors.Wrap(err, "command runner")
+		return fmt.Errorf("command runner: %w", err)
 	}
 
 	crName := cc.KubernetesConfig.ContainerRuntime
 	cr, err := cruntime.New(cruntime.Config{Type: crName, Runner: runner})
 	if err != nil {
-		return errors.Wrap(err, "container runtime")
+		return fmt.Errorf("container runtime: %w", err)
 	}
 	runtimePaused, err := cluster.CheckIfPaused(cr, []string{"kube-system"})
 	if err != nil {
-		return errors.Wrap(err, "check paused")
+		return fmt.Errorf("check paused: %w", err)
 	}
 	if !runtimePaused {
 		return nil

@@ -21,7 +21,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
@@ -167,14 +168,15 @@ func stop(api libmachine.API, machineName string) bool {
 		}
 		klog.Warningf("stop host returned error: %v", err)
 
-		switch err := errors.Cause(err).(type) {
-		case mcnerror.ErrHostDoesNotExist:
+		klog.Warningf("stop host returned error: %v", err)
+
+		var e mcnerror.ErrHostDoesNotExist
+		if errors.As(err, &e) {
 			out.Styled(style.Meh, `"{{.machineName}}" does not exist, nothing to stop`, out.V{"machineName": machineName})
 			nonexistent = true
 			return nil
-		default:
-			return err
 		}
+		return err
 	}
 
 	if err := retry.Expo(tryStop, 1*time.Second, 120*time.Second, 5); err != nil {

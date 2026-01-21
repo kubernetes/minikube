@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Touching this file will trigger a new image build in Prow Staging https://testgrid.k8s.io/minikube-images
+# Last update Jan 16, 2026 3:19 PM
 FROM golang:1.25.5 AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -20,7 +22,7 @@ COPY ./ ./
 RUN GOOS=linux CGO_ENABLED=0 go build -o gvisor-addon cmd/gvisor/gvisor.go
 
 # Need an image with chroot
-FROM alpine:3
+FROM alpine:3.23
 RUN apk -U add ca-certificates
 COPY --from=builder /app/gvisor-addon /gvisor-addon
 CMD ["/gvisor-addon"]

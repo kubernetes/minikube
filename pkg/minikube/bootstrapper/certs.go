@@ -32,9 +32,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/juju/mutex/v2"
 	"github.com/otiai10/copy"
-	"github.com/pkg/errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -70,7 +68,7 @@ func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, 
 
 	sharedCerts, regen, err := generateSharedCACerts()
 	if err != nil {
-		return errors.Wrap(err, "generate shared ca certs")
+		return fmt.Errorf("generate shared ca certs: %w", err)
 	}
 
 	xfer := []string{
@@ -84,7 +82,7 @@ func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, 
 	if n.ControlPlane || regen {
 		profileCerts, err := generateProfileCerts(k8s, n, sharedCerts, regen)
 		if err != nil {
-			return errors.Wrap(err, "generate profile certs")
+			return fmt.Errorf("generate profile certs: %w", err)
 		}
 		xfer = append(xfer, profileCerts...)
 	}
@@ -102,14 +100,14 @@ func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, 
 		// note: src(c) is user os' path, dst is kic/iso (linux) path
 		certFile, err := assets.NewFileAsset(c, vmpath.GuestKubernetesCertsDir, filepath.Base(c), properPerms(c))
 		if err != nil {
-			return errors.Wrapf(err, "create cert file asset for %s", c)
+			return fmt.Errorf("create cert file asset for %s: %w", c, err)
 		}
 		copyableFiles = append(copyableFiles, certFile)
 	}
 
 	caCerts, err := collectCACerts()
 	if err != nil {
-		return errors.Wrap(err, "collect ca certs")
+		return fmt.Errorf("collect ca certs: %w", err)
 	}
 
 	for src, dst := range caCerts {
@@ -117,7 +115,7 @@ func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, 
 		// note: src is user os' path, dst is kic/iso (linux) path
 		certFile, err := assets.NewFileAsset(src, path.Dir(dst), path.Base(dst), "0644")
 		if err != nil {
-			return errors.Wrapf(err, "create ca cert file asset for %s", src)
+			return fmt.Errorf("create ca cert file asset for %s: %w", src, err)
 		}
 		copyableFiles = append(copyableFiles, certFile)
 	}
@@ -163,11 +161,11 @@ func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, 
 		kubeCfg := api.NewConfig()
 		err = kubeconfig.PopulateFromSettings(kcs, kubeCfg)
 		if err != nil {
-			return errors.Wrap(err, "populating kubeconfig")
+			return fmt.Errorf("populating kubeconfig: %w", err)
 		}
 		data, err := runtime.Encode(latest.Codec, kubeCfg)
 		if err != nil {
-			return errors.Wrap(err, "encoding kubeconfig")
+			return fmt.Errorf("encoding kubeconfig: %w", err)
 		}
 		kubeCfgFile := assets.NewMemoryAsset(data, vmpath.GuestPersistentDir, "kubeconfig", "0644")
 		copyableFiles = append(copyableFiles, kubeCfgFile)
@@ -175,16 +173,16 @@ func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, 
 
 	for _, f := range copyableFiles {
 		if err := cmd.Copy(f); err != nil {
-			return errors.Wrapf(err, "Copy %s", f.GetSourcePath())
+			return fmt.Errorf("Copy %s: %w", f.GetSourcePath(), err)
 		}
 	}
 
 	if err := installCertSymlinks(cmd, caCerts); err != nil {
-		return errors.Wrap(err, "install cert symlinks")
+		return fmt.Errorf("install cert symlinks: %w", err)
 	}
 
 	if err := renewExpiredKubeadmCerts(cmd, k8s); err != nil {
-		return errors.Wrap(err, "renew expired kubeadm certs")
+		return fmt.Errorf("renew expired kubeadm certs: %w", err)
 	}
 
 	return nil
@@ -225,9 +223,9 @@ func generateSharedCACerts() (sharedCACerts, bool, error) {
 	spec := lock.PathMutexSpec(hold)
 	spec.Timeout = 1 * time.Minute
 	klog.Infof("acquiring lock for ca certs: %+v", spec)
-	releaser, err := mutex.Acquire(spec)
+	releaser, err := lock.Acquire(spec)
 	if err != nil {
-		return cc, false, errors.Wrapf(err, "acquire lock for ca certs %+v", spec)
+		return cc, false, fmt.Errorf("acquire lock for ca certs %+v: %w", spec, err)
 	}
 	defer releaser.Release()
 
@@ -240,7 +238,7 @@ func generateSharedCACerts() (sharedCACerts, bool, error) {
 		regenProfileCerts = true
 		klog.Infof("generating %q ca cert: %s", ca.subject, ca.keyPath)
 		if err := util.GenerateCACert(ca.certPath, ca.keyPath, ca.subject); err != nil {
-			return cc, false, errors.Wrapf(err, "generate %q ca cert: %s", ca.subject, ca.keyPath)
+			return cc, false, fmt.Errorf("generate %q ca cert: %s: %w", ca.subject, ca.keyPath, err)
 		}
 	}
 
@@ -260,7 +258,7 @@ func generateProfileCerts(cfg config.ClusterConfig, n config.Node, shared shared
 
 	serviceIP, err := util.ServiceClusterIP(k8s.ServiceCIDR)
 	if err != nil {
-		return nil, errors.Wrap(err, "get service cluster ip")
+		return nil, fmt.Errorf("get service cluster ip: %w", err)
 	}
 
 	apiServerIPs := append([]net.IP{}, k8s.APIServerIPs...)
@@ -375,17 +373,17 @@ func generateProfileCerts(cfg config.ClusterConfig, n config.Node, shared shared
 			cfg.CertExpiration,
 		)
 		if err != nil {
-			return nil, errors.Wrapf(err, "generate signed profile cert for %q", spec.subject)
+			return nil, fmt.Errorf("generate signed profile cert for %q: %w", spec.subject, err)
 		}
 
 		if spec.hash != "" {
 			klog.Infof("copying %s -> %s", cp, spec.certPath)
 			if err := copy.Copy(cp, spec.certPath); err != nil {
-				return nil, errors.Wrap(err, "copy profile cert")
+				return nil, fmt.Errorf("copy profile cert: %w", err)
 			}
 			klog.Infof("copying %s -> %s", kp, spec.keyPath)
 			if err := copy.Copy(kp, spec.keyPath); err != nil {
-				return nil, errors.Wrap(err, "copy profile cert key")
+				return nil, fmt.Errorf("copy profile cert key: %w", err)
 			}
 		}
 	}
@@ -421,7 +419,7 @@ func renewExpiredKubeadmCerts(cmd command.Runner, cc config.ClusterConfig) error
 	out.WarningT("kubeadm certificates have expired. Generating new ones...")
 	bashCmd := fmt.Sprintf("%s certs renew all --config %s", bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion), constants.KubeadmYamlPath)
 	if _, err := cmd.RunCmd(exec.Command("sudo", "/bin/bash", "-c", bashCmd)); err != nil {
-		return errors.Wrap(err, "kubeadm certs renew")
+		return fmt.Errorf("kubeadm certs renew: %w", err)
 	}
 	return nil
 }
@@ -498,7 +496,7 @@ func collectCACerts() (map[string]string, error) {
 		})
 
 		if err != nil {
-			return nil, errors.Wrapf(err, "collecting CA certs from %s", certsDir)
+			return nil, fmt.Errorf("collecting CA certs from %s: %w", certsDir, err)
 		}
 
 		excluded := []string{"ca.pem", "cert.pem"}
@@ -530,7 +528,7 @@ func getSubjectHash(cr command.Runner, filePath string) (string, error) {
 	rr, err := cr.RunCmd(exec.Command("openssl", "x509", "-hash", "-noout", "-in", filePath))
 	if err != nil {
 		crr, _ := cr.RunCmd(exec.Command("cat", filePath))
-		return "", errors.Wrapf(err, "cert:\n%s\n---\n%s", lrr.Output(), crr.Stdout.String())
+		return "", fmt.Errorf("cert:\n%s\n---\n%s: %w", lrr.Output(), crr.Stdout.String(), err)
 	}
 	stringHash := strings.TrimSpace(rr.Stdout.String())
 	return stringHash, nil
@@ -554,10 +552,10 @@ func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
 		certStorePath := path.Join(vmpath.GuestCertStoreDir, dstFilename)
 		// to avoid shell-based command exploitation will run these separately not in one command
 		if _, err := cr.RunCmd(exec.Command("sudo", "test", "-s", caCertFile)); err != nil {
-			return errors.Wrapf(err, "verify ca cert %s", caCertFile)
+			return fmt.Errorf("verify ca cert %s: %w", caCertFile, err)
 		}
 		if _, err := cr.RunCmd(exec.Command("sudo", "ln", "-fs", caCertFile, certStorePath)); err != nil {
-			return errors.Wrapf(err, "create symlink for %s", caCertFile)
+			return fmt.Errorf("create symlink for %s: %w", caCertFile, err)
 		}
 
 		if !hasSSLBinary {
@@ -566,7 +564,7 @@ func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
 
 		subjectHash, err := getSubjectHash(cr, caCertFile)
 		if err != nil {
-			return errors.Wrapf(err, "calculate hash for cacert %s", caCertFile)
+			return fmt.Errorf("calculate hash for cacert %s: %w", caCertFile, err)
 		}
 		subjectHashLink := path.Join(vmpath.GuestCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
 
@@ -576,7 +574,7 @@ func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
 			continue
 		}
 		if _, err := cr.RunCmd(exec.Command("sudo", "ln", "-fs", certStorePath, subjectHashLink)); err != nil {
-			return errors.Wrapf(err, "create symlink for %s", caCertFile)
+			return fmt.Errorf("create symlink for %s: %w", caCertFile, err)
 		}
 	}
 	return nil

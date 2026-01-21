@@ -17,9 +17,9 @@ limitations under the License.
 package machine
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/libmachine"
@@ -39,7 +39,7 @@ func StopHost(api libmachine.API, machineName string) error {
 	klog.Infof("StopHost: %v", machineName)
 	h, err := api.Load(machineName)
 	if err != nil {
-		return errors.Wrapf(err, "load")
+		return fmt.Errorf("load: %w", err)
 	}
 
 	out.Step(style.Stopping, `Stopping node "{{.name}}"  ...`, out.V{"name": machineName})
@@ -58,7 +58,7 @@ func stop(h *host.Host) error {
 
 	if driver.NeedsShutdown(h.DriverName) {
 		if err := trySSHPowerOff(h); err != nil {
-			return errors.Wrap(err, "ssh power off")
+			return fmt.Errorf("ssh power off: %w", err)
 		}
 	}
 
@@ -69,7 +69,7 @@ func stop(h *host.Host) error {
 			klog.Infof("host is already stopped")
 			return nil
 		}
-		return &retry.RetriableError{Err: errors.Wrap(err, "stop")}
+		return &retry.RetriableError{Err: fmt.Errorf("stop: %w", err)}
 	}
 
 	klog.Infof("duration metric: took %s to stop", time.Since(start))

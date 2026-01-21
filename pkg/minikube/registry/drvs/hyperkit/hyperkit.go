@@ -25,8 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/google/uuid"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
@@ -123,11 +121,11 @@ func isNewerVersion(currentVersion string, specificVersion string) (bool, error)
 	layout := "20060102"
 	currentVersionDate, err := time.Parse(layout, currentVersion)
 	if err != nil {
-		return false, errors.Wrap(err, "parse date")
+		return false, fmt.Errorf("parse date: %w", err)
 	}
 	specificVersionDate, err := time.Parse(layout, specificVersion)
 	if err != nil {
-		return false, errors.Wrap(err, "parse date")
+		return false, fmt.Errorf("parse date: %w", err)
 	}
 	// If currentVersionDate is equal to specificVersionDate, no need to upgrade hyperkit
 	if currentVersionDate.Equal(specificVersionDate) {

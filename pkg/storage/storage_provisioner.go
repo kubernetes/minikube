@@ -22,7 +22,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -105,7 +105,7 @@ func (p *hostPathProvisioner) Delete(_ context.Context, volume *core.PersistentV
 	}
 
 	if err := os.RemoveAll(volume.Spec.HostPath.Path); err != nil {
-		return errors.Wrap(err, "removing hostpath PV")
+		return fmt.Errorf("removing hostpath PV: %w", err)
 	}
 
 	return nil

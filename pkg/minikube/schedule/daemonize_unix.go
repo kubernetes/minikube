@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/VividCortex/godaemon"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -60,19 +59,19 @@ func killPIDForProfile(profile string) error {
 		}
 	}()
 	if err != nil {
-		return errors.Wrapf(err, "reading %s", file)
+		return fmt.Errorf("reading %s: %w", file, err)
 	}
 	pid, err := strconv.Atoi(string(f))
 	if err != nil {
-		return errors.Wrapf(err, "converting %s to int", f)
+		return fmt.Errorf("converting %s to int: %w", f, err)
 	}
 	p, err := os.FindProcess(pid)
 	if err != nil {
-		return errors.Wrap(err, "finding process")
+		return fmt.Errorf("finding process: %w", err)
 	}
 	klog.Infof("killing process %v as it is an old scheduled stop", pid)
 	if err := p.Kill(); err != nil {
-		return errors.Wrapf(err, "killing %v", pid)
+		return fmt.Errorf("killing %v: %w", pid, err)
 	}
 	return nil
 }
