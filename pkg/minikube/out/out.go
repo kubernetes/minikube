@@ -87,6 +87,11 @@ type fdWriter interface {
 // V is a convenience wrapper for templating, it represents the variable key/value pair.
 type V map[string]interface{}
 
+// Color returns a V with the Color key set to the given color
+func Color(c string) V {
+	return V{"Color": c}
+}
+
 // Step writes a stylized and templated message to stdout
 func Step(st style.Enum, format string, a ...V) {
 	if st == style.Option {
