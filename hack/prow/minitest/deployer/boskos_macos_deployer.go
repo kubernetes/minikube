@@ -94,7 +94,6 @@ func (m *MiniTestBosKosMacOSDeployer) Up() error {
 
 func (m *MiniTestBosKosMacOSDeployer) Down() error {
 	//todo: clean up the VM?
-
 	klog.Info("Releasing bosko macos instance")
 	if m.boskosClient == nil {
 		return fmt.Errorf("m.boskosClient not set")
@@ -106,8 +105,7 @@ func (m *MiniTestBosKosMacOSDeployer) Down() error {
 	)
 	if err != nil {
 		fmt.Printf("Error releasing boskos macos instance: %v\n", err)
-		
-		//return fmt.Errorf("down failed to release boskos macos instance: %v", err)
+		return fmt.Errorf("down failed to release boskos macos instance: %v", err)
 	}
 	m.isUp = false
 	return nil
@@ -151,15 +149,11 @@ func (m *MiniTestBosKosMacOSDeployer) requestMacOSInstance() error {
 
 	if err != nil {
 		fmt.Printf("failed to get macos instance from boskos: %v\n", err)
-		m.sshAddr = "28zmx-sibu3-yy3oc-zmvxf-smpwu-058cv95.us-east-2.ip.aws"
-		return nil
-		//return fmt.Errorf("failed to get macos instance from boskos: %v", err)
+		return fmt.Errorf("failed to get macos instance from boskos: %v", err)
 	}
 	if resource.Name == "" {
 		fmt.Printf("boskos returned an empty resource name, resource: %v\n", resource)
-		m.sshAddr = "28zmx-sibu3-yy3oc-zmvxf-smpwu-058cv95.us-east-2.ip.aws"
-		return nil
-		//return fmt.Errorf("boskos returned an empty resource name, resource: %v", resource)
+		return fmt.Errorf("boskos returned an empty resource name, resource: %v", resource)
 	}
 
 	klog.Infof("Got instance %q from boskos", resource.Name)
