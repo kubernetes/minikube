@@ -82,11 +82,13 @@ func TestNewExternalClient(t *testing.T) {
 		auth          *Auth
 		perm          os.FileMode
 		expectedError string
+		expectedNotExist bool
 		skipOS        string
 	}{
 		{
 			auth:          &Auth{Keys: []string{"/tmp/private-key-not-exist"}},
 			expectedError: "stat /tmp/private-key-not-exist: no such file or directory",
+			expectedNotExist: true,
 			skipOS:        "none",
 		},
 		{
@@ -116,7 +118,8 @@ func TestNewExternalClient(t *testing.T) {
 				if err == nil {
 					t.Fatalf("expected error %q but got nil", c.expectedError)
 				}
-				if os.IsNotExist(err) {
+				if c.expectedNotExist {
+					assert.True(t, os.IsNotExist(err), "expected a not-exist error but got: %v", err)
 				} else {
 					assert.EqualError(t, err, c.expectedError)
 				}
