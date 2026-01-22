@@ -301,7 +301,7 @@ var Addons = map[string]*Addon{
 			"kong-ingress-controller.yaml",
 			"0640"),
 	}, false, "kong", "3rd party (Kong HQ)", "@gAmUssA", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
-		"Kong":        "kong:3.9.1@sha256:4379444ecfd82794b27de38a74ba540e8571683dfdfce74c8ecb4018f308fb29",
+		"Kong":        "kong:3.9.1@sha256:9111d452bf4092245edd8b567d54c68f98c71d1a41eb0db84a2cb356af22da93",
 		"KongIngress": "kong/kubernetes-ingress-controller:3.5.3@sha256:e5436a3ddc2896783b55a62c4e9214a851efd2d2d241e19a0f9bc229e4fed3fd",
 	}, map[string]string{
 		"Kong":        "docker.io",
@@ -749,7 +749,7 @@ var Addons = map[string]*Addon{
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml.tmpl", vmpath.GuestAddonsDir, "deployment.yaml", "0640"),
 	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
-		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.46@sha256:b2d3afd227d8162688fe448be5c46da917cc01ef8013c150cc9a2a860abbaa0b",
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.47@sha256:1bc768bdfd61316a577b7b6efeb7102789b1ec4e9296d3649bbaedd6338e6154",
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
 	}, nil),

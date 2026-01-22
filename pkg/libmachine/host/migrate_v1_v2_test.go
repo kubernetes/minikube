@@ -99,8 +99,9 @@ var (
 
 func TestMigrateHostV1ToHostV2(t *testing.T) {
 	h := &Host{}
-	expectedGlobalStorePath := "/Users/catbug/.docker/machine"
+	expectedGlobalStorePath := filepath.Clean("/Users/catbug/.docker/machine")
 	expectedCaPrivateKeyPath := "/Users/catbug/.docker/machine/certs/ca-key.pem"
+	expectedCertDir := filepath.Join(expectedGlobalStorePath, "certs")
 	migratedHost, migrationPerformed, err := MigrateHost(h, v1conf)
 	if err != nil {
 		t.Fatalf("Error attempting to migrate host: %s", err)
@@ -110,15 +111,15 @@ func TestMigrateHostV1ToHostV2(t *testing.T) {
 		t.Fatal("Expected a migration to be reported as performed but it was not")
 	}
 
-	if migratedHost.HostOptions.AuthOptions.StorePath != expectedGlobalStorePath {
-		t.Fatalf("Expected %q, got %q for the store path in AuthOptions", migratedHost.HostOptions.AuthOptions.StorePath, expectedGlobalStorePath)
+	if filepath.Clean(migratedHost.HostOptions.AuthOptions.StorePath) != expectedGlobalStorePath {
+		t.Fatalf("Expected %q, got %q for the store path in AuthOptions", expectedGlobalStorePath, filepath.Clean(migratedHost.HostOptions.AuthOptions.StorePath))
 	}
 
 	if migratedHost.HostOptions.AuthOptions.CaPrivateKeyPath != expectedCaPrivateKeyPath {
-		t.Fatalf("Expected %q, got %q for the private key path in AuthOptions", migratedHost.HostOptions.AuthOptions.CaPrivateKeyPath, expectedCaPrivateKeyPath)
+		t.Fatalf("Expected %q, got %q for the private key path in AuthOptions", expectedCaPrivateKeyPath, migratedHost.HostOptions.AuthOptions.CaPrivateKeyPath)
 	}
 
-	if migratedHost.HostOptions.AuthOptions.CertDir != filepath.Join(expectedGlobalStorePath, "certs") {
-		t.Fatalf("Expected %q, got %q for the cert dir in AuthOptions", migratedHost.HostOptions.AuthOptions.CaPrivateKeyPath, expectedGlobalStorePath)
+	if filepath.Clean(migratedHost.HostOptions.AuthOptions.CertDir) != expectedCertDir {
+		t.Fatalf("Expected %q, got %q for the cert dir in AuthOptions", expectedCertDir, filepath.Clean(migratedHost.HostOptions.AuthOptions.CertDir))
 	}
 }

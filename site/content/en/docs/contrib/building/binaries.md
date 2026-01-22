@@ -8,7 +8,9 @@ weight: 2
 ## Prerequisites
 
 * A recent Go distribution (>=1.22.0)
-* If you are on Windows, you'll need Docker to be installed.
+* If you are on Windows, you'll need to have installed
+  * Docker
+  * GNU Make e.g. `winget install GnuWin32.make`, then add `C:\Program Files (x86)\GnuWin32\bin` to `PATH`
 * 4GB of RAM
 
 ## Downloading the source
