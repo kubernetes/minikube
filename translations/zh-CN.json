@@ -756,7 +756,7 @@
 	"Tip: To remove this root owned cluster, run: sudo {{.cmd}}": "提示：要删除此 root 拥有的集群，请运行：sudo {{.cmd}}",
 	"To access Headlamp, use the following command:\n\n\tminikube{{.profileArg}} service headlamp -n headlamp\n": "要访问 Headlamp，请使用以下命令：\n\n\tminikube{{.profileArg}} service headlamp -n headlamp\n",
 	"To access YAKD - Kubernetes Dashboard, wait for Pod to be ready and run the following command:\n\n\tminikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard\n": "",
-	"To configure vment-helper to run without a password, please check the documentation:": "",
+	"To configure vmnet-helper to run without a password, please check the documentation:": "",
 	"To connect to this cluster, use:  --context={{.name}}": "",
 	"To connect to this cluster, use: kubectl --context={{.profile_name}}": "如需连接到此集群，请使用 kubectl --context={{.profile_name}}",
 	"To disable beta notices, run: 'minikube config set WantBetaUpdateNotification false'": "要禁用测试版通知，请运行: 'minikube config set WantBetaUpdateNotification false'",

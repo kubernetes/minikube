@@ -756,7 +756,7 @@
 	"Tip: To remove this root owned cluster, run: sudo {{.cmd}}": "Συμβουλή: Για να καταργήσετε αυτό το σύμπλεγμα που ανήκει στο root, εκτελέστε: sudo {{.cmd}}",
 	"To access Headlamp, use the following command:\n\n\tminikube{{.profileArg}} service headlamp -n headlamp\n": "Για πρόσβαση στο Headlamp, χρησιμοποιήστε την ακόλουθη εντολή:\n\n\tminikube{{.profileArg}} service headlamp -n headlamp\n",
 	"To access YAKD - Kubernetes Dashboard, wait for Pod to be ready and run the following command:\n\n\tminikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard\n": "Για πρόσβαση στο YAKD - Kubernetes Dashboard, περιμένετε να είναι έτοιμο το Pod και εκτελέστε την ακόλουθη εντολή:\n\n\tminikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard\n",
-	"To configure vment-helper to run without a password, please check the documentation:": "Για να διαμορφώσετε το vment-helper ώστε να εκτελείται χωρίς κωδικό πρόσβασης, ελέγξτε την τεκμηρίωση:",
+	"To configure vmnet-helper to run without a password, please check the documentation:": "",
 	"To connect to this cluster, use:  --context={{.name}}": "Για να συνδεθείτε σε αυτό το σύμπλεγμα, χρησιμοποιήστε:  --context={{.name}}",
 	"To connect to this cluster, use: kubectl --context={{.profile_name}}": "Για να συνδεθείτε σε αυτό το σύμπλεγμα, χρησιμοποιήστε: kubectl --context={{.profile_name}}",
 	"To disable beta notices, run: 'minikube config set WantBetaUpdateNotification false'": "Για να απενεργοποιήσετε τις ειδοποιήσεις beta, εκτελέστε: 'minikube config set WantBetaUpdateNotification false'",
