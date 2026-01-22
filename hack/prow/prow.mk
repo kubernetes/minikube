@@ -91,4 +91,4 @@ push-kube-registry-proxy-image-prow:
 push-kicbase-image-prow:
 	./hack/build_auto_pause.sh $(KICBASE_ARCH) $(CURDIR)/deploy/kicbase
 	docker buildx build --push --platform  $(PROW_IMAGE_PLATFORMS) \
-		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kicbase:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kicbase:latest -f deploy/images/kicbase/Dockerfile .
+		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kicbase:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kicbase:latest -f deploy/kicbase/Dockerfile deploy/kicbase
