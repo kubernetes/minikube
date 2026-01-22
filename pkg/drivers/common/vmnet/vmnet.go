@@ -170,9 +170,9 @@ func (h *Helper) Start(socketPath string) error {
 
 	var info interfaceInfo
 	if err := json.NewDecoder(stdout).Decode(&info); err != nil {
-		if data,err:=os.ReadFile(logfile.Name());err==nil{
+		if data, err := os.ReadFile(logfile.Name()); err == nil {
 			log.Infof("vmnet-helper logfile %q content:\n%s", logfile.Name(), string(data))
-		}else{
+		} else {
 			log.Infof("failed to read vmnet-helper logfile %q: %s", logfile.Name(), err)
 		}
 		return fmt.Errorf("failed to decode vmnet interface info: %w", err)
