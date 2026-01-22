@@ -75,21 +75,21 @@ func TestNewExternalClient(t *testing.T) {
 	defer os.Remove(keyFilename)
 
 	cases := []struct {
-		sshBinaryPath string
-		user          string
-		host          string
-		port          int
-		auth          *Auth
-		perm          os.FileMode
-		expectedError string
+		sshBinaryPath    string
+		user             string
+		host             string
+		port             int
+		auth             *Auth
+		perm             os.FileMode
+		expectedError    string
 		expectedNotExist bool
-		skipOS        string
+		skipOS           string
 	}{
 		{
-			auth:          &Auth{Keys: []string{"/tmp/private-key-not-exist"}},
-			expectedError: "stat /tmp/private-key-not-exist: no such file or directory",
+			auth:             &Auth{Keys: []string{"/tmp/private-key-not-exist"}},
+			expectedError:    "stat /tmp/private-key-not-exist: no such file or directory",
 			expectedNotExist: true,
-			skipOS:        "none",
+			skipOS:           "none",
 		},
 		{
 			auth:   &Auth{Keys: []string{keyFilename}},
