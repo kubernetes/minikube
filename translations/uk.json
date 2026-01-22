@@ -756,7 +756,7 @@
 	"Tip: To remove this root owned cluster, run: sudo {{.cmd}}": "Порада: щоб видалити цей кластер, що належить root, виконайте: sudo {{.cmd}}",
 	"To access Headlamp, use the following command:\n\n\tminikube{{.profileArg}} service headlamp -n headlamp\n": "Щоб отримати доступ до Headlamp, скористайтеся такою командою:\n\n\tminikube{{.profileArg}} service headlamp -n headlamp\n",
 	"To access YAKD - Kubernetes Dashboard, wait for Pod to be ready and run the following command:\n\n\tminikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard\n": "Щоб отримати доступ до YAKD - Kubernetes Dashboard, дочекайтеся готовності Pod і виконайте наступну команду:\n\n\tminikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard\n",
-	"To configure vment-helper to run without a password, please check the documentation:": "Щоб налаштувати vment-helper для запуску без пароля, ознайомтеся з документацією:",
+	"To configure vmnet-helper to run without a password, please check the documentation:": "",
 	"To connect to this cluster, use:  --context={{.name}}": "Щоб підключитися до цього кластера, використовуйте:  --context={{.name}}",
 	"To connect to this cluster, use: kubectl --context={{.profile_name}}": "Щоб підключитися до цього кластера, використовуйте: kubectl --context={{.profile_name}}",
 	"To disable beta notices, run: 'minikube config set WantBetaUpdateNotification false'": "Щоб вимкнути бета-повідомлення, виконайте: 'minikube config set WantBetaUpdateNotification false'",

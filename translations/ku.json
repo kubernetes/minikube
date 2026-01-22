@@ -756,7 +756,7 @@
 	"Tip: To remove this root owned cluster, run: sudo {{.cmd}}": "Serişte: Ji bo rakirina vê cluster-a ku xwediyê wê root e, bixebitîne: sudo {{.cmd}}",
 	"To access Headlamp, use the following command:\n\n\tminikube{{.profileArg}} service headlamp -n headlamp\n": "Ji bo gihîştina Headlamp, vê fermanê bikar bîne:\n\n\tminikube{{.profileArg}} service headlamp -n headlamp\n",
 	"To access YAKD - Kubernetes Dashboard, wait for Pod to be ready and run the following command:\n\n\tminikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard\n": "Ji bo gihîştina YAKD - Kodeberne Dashboard, li benda Pod bimîne heya ku amade be û vê fermanê bixebitîne:\n\n\tminikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard\n",
-	"To configure vment-helper to run without a password, please check the documentation:": "Ji bo veavakirina vment-helper ku bê şîfre bixebite, ji kerema xwe belgeyê kontrol bike:",
+	"To configure vmnet-helper to run without a password, please check the documentation:": "",
 	"To connect to this cluster, use:  --context={{.name}}": "Ji bo girêdana bi vê cluster-ê re, bikar bîne:  --context={{.name}}",
 	"To connect to this cluster, use: kubectl --context={{.profile_name}}": "Ji bo girêdana bi vê cluster-ê re, bikar bîne: kubectl --context={{.profile_name}}",
 	"To disable beta notices, run: 'minikube config set WantBetaUpdateNotification false'": "Ji bo neçalakkirina agahdariyên beta, bixebitîne: 'minikube config set WantBetaUpdateNotification false'",
