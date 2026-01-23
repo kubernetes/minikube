@@ -144,7 +144,7 @@ Steps:
 
 Skips:
 - Skips on `none` driver as image loading is not supported
-- Skips on GitHub Actions and macOS as this test case requires a running docker daemon
+- Skips on GitHub Actions / prow environment and macOS as this test case requires a running docker daemon
 
 #### validateDockerEnv
 check functionality of minikube after evaluating docker-env
