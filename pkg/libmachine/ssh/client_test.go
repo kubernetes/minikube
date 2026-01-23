@@ -75,19 +75,21 @@ func TestNewExternalClient(t *testing.T) {
 	defer os.Remove(keyFilename)
 
 	cases := []struct {
-		sshBinaryPath string
-		user          string
-		host          string
-		port          int
-		auth          *Auth
-		perm          os.FileMode
-		expectedError string
-		skipOS        string
+		sshBinaryPath    string
+		user             string
+		host             string
+		port             int
+		auth             *Auth
+		perm             os.FileMode
+		expectedError    string
+		expectedNotExist bool
+		skipOS           string
 	}{
 		{
-			auth:          &Auth{Keys: []string{"/tmp/private-key-not-exist"}},
-			expectedError: "stat /tmp/private-key-not-exist: no such file or directory",
-			skipOS:        "none",
+			auth:             &Auth{Keys: []string{"/tmp/private-key-not-exist"}},
+			expectedError:    "stat /tmp/private-key-not-exist: no such file or directory",
+			expectedNotExist: true,
+			skipOS:           "none",
 		},
 		{
 			auth:   &Auth{Keys: []string{keyFilename}},
@@ -113,9 +115,16 @@ func TestNewExternalClient(t *testing.T) {
 			assert.NoError(t, keyFile.Chmod(c.perm))
 			_, err := NewExternalClient(c.sshBinaryPath, c.user, c.host, c.port, c.auth)
 			if c.expectedError != "" {
-				assert.EqualError(t, err, c.expectedError)
+				if err == nil {
+					t.Fatalf("expected error %q but got nil", c.expectedError)
+				}
+				if c.expectedNotExist {
+					assert.True(t, os.IsNotExist(err), "expected a not-exist error but got: %v", err)
+				} else {
+					assert.EqualError(t, err, c.expectedError)
+				}
 			} else {
-				assert.Equal(t, err, nil)
+				assert.NoError(t, err)
 			}
 		}
 	}
