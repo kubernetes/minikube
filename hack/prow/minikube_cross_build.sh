@@ -40,15 +40,17 @@ export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}"
 
-BUILT_VERSION=$("out/minikube-$(go env GOOS)-$(go env GOARCH)" version)
-echo ${BUILT_VERSION}
+if [ "${OS}" != "darwin" ]; then
 
-COMMIT=$(echo ${BUILT_VERSION} | grep 'commit:' | awk '{print $2}')
-if (echo ${COMMIT} | grep -q dirty); then
-  echo "'minikube version' reports dirty commit: ${COMMIT}"
-  exit 1
+	BUILT_VERSION=$("out/minikube-${OS_ARCH}" version)
+	echo ${BUILT_VERSION}
+
+	COMMIT=$(echo ${BUILT_VERSION} | grep 'commit:' | awk '{print $2}')
+	if (echo ${COMMIT} | grep -q dirty); then
+		echo "'minikube version' reports dirty commit: ${COMMIT}"
+		exit 1
+	fi
 fi
-
 if [[ "${failed}" -ne 0 ]]; then
   echo "build failed"
   exit "${failed}"
