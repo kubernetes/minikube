@@ -535,6 +535,8 @@ func (d *Driver) getPid() int {
 		log.Warnf("Error reading pid file: %v", err)
 		return 0
 	}
+	defer f.Close()
+
 	dec := json.NewDecoder(f)
 
 	var config struct {

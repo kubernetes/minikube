@@ -484,6 +484,8 @@ func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
 	if err != nil {
 		return nil, st.ModTime(), fmt.Errorf("open: %w", err)
 	}
+	defer f.Close()
+
 	var events []cloudevents.Event
 
 	scanner := bufio.NewScanner(f)
