@@ -79,7 +79,7 @@ func isKnownWindowsShell(raw string) bool {
 	// between the terminal (cmd/powershell) and the process tree we inspect.
 	// Include it because some environments (Windows Terminal, legacy consoles)
 	// will report conhost.exe as the immediate ancestor rather than the shell.
-	case "powershell.exe", "pwsh.exe", "cmd.exe", "conhost.exe", "go.exe":
+	case "powershell.exe", "pwsh.exe", "cmd.exe", "conhost.exe", "go.exe", "bash.exe", "sh.exe", "wsl.exe":
 		return true
 	default:
 		return false
