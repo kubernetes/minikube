@@ -63,6 +63,8 @@ func TestGetNameAndItsPpidOfGrandParent(t *testing.T) {
 	shell, _, err := getNameAndItsPpid(shellppid)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "powershell.exe", shell)
+	// The grandparent process depends on how the test is executed
+	assert.Contains(t, []string{"powershell.exe", "pwsh.exe", "cmd.exe", "go.exe", "conhost.exe"}, shell,
+		"Expected grandparent process to be a shell (powershell.exe, pwsh.exe, cmd.exe, conhost.exe) or test runner (go.exe)")
 	assert.NoError(t, err)
 }
