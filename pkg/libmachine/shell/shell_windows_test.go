@@ -18,6 +18,7 @@ package shell
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,10 +28,21 @@ func TestDetect(t *testing.T) {
 	defer func(shell string) { os.Setenv("SHELL", shell) }(os.Getenv("SHELL"))
 	os.Setenv("SHELL", "")
 
-	shell, err := Detect()
-
-	assert.Equal(t, "powershell", shell)
+	// Determine what shell we're actually running under
+	_, shellppid, err := getNameAndItsPpid(os.Getppid())
 	assert.NoError(t, err)
+	grandparent, _, err := getNameAndItsPpid(shellppid)
+	assert.NoError(t, err)
+
+	shell, err := Detect()
+	assert.NoError(t, err)
+
+	// Assert based on actual parent process
+	if strings.Contains(strings.ToLower(grandparent), "powershell") || strings.Contains(strings.ToLower(grandparent), "pwsh") {
+		assert.Equal(t, "powershell", shell)
+	} else {
+		assert.Equal(t, "cmd", shell)
+	}
 }
 
 func TestDetectOnSSH(t *testing.T) {

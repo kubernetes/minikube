@@ -50,27 +50,9 @@ ARCH=${ARCH:=$(current_arch)}
 
 # installs or updates golang if right version doesn't exists
 function check_and_install_golang() {
-  if ! go version &>/dev/null; then
-    echo "WARNING: No golang installation found in your environment."
+	# always reinstall the requested version to avoid permission issues
     install_golang "$VERSION_TO_INSTALL" "$INSTALL_PATH"
-    return
-  fi
   
-  sudo chown -R $USER:$USER "$INSTALL_PATH"/go
-
-  # golang has been installed and check its version
-  if [[ $(go version | cut -d' ' -f 3) =~ go(([0-9]+)\.([0-9]+).([0-9]+)*) ]]; then
-    HOST_VERSION=${BASH_REMATCH[1]}
-    if [ $HOST_VERSION == $VERSION_TO_INSTALL ]; then
-      echo "go version on the host looks good : $HOST_VERSION"
-    else
-      echo "WARNING: expected go version to be $VERSION_TO_INSTALL but got $HOST_VERSION"
-      install_golang "$VERSION_TO_INSTALL" "$INSTALL_PATH"
-    fi
-  else
-    echo "ERROR: Failed to parse golang version: $(go version)"
-    return
-  fi
 }
 
 # install_golang takes two parameters version and path to install.

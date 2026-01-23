@@ -56,11 +56,17 @@ integration-prow-kvm-crio-linux-x86: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./out/minitest  --deployer boskos --tester kvm-crio-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
 
+.PHONY: integration-vfkit-docker-macos-arm
+integration-vfkit-docker-macos-arm: build-mini-test
+	./hack/prow/minikube_cross_build.sh $(GO_VERSION) darwin arm64
+	./out/minitest  --deployer boskos-macos --tester vfkit-docker-macos-arm64-integration --config hack/prow/boskos-cfg-macos.json
+
+
 .PHONY: build-mini-test
 build-mini-test: # build minitest binary
 	GOTOOLCHAIN=auto go build -C ./hack/prow/minitest -o $(PWD)/out/minitest .
 
-.PHONY: setup-prow-gcp-ssh-keys
+.PHONY: setup-prow-gcp-ssh-keys 
 setup-prow-gcp-ssh-keys: # set up ssh keys for gcloud cli. These env vars are set by test/infra
 	mkdir -p -m 0700 ~/.ssh
 	cp -f "${GCE_SSH_PRIVATE_KEY_FILE}" ~/.ssh/google_compute_engine
