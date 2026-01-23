@@ -82,8 +82,12 @@ func RoutableHostIPFromInside(ociBin string, clusterName string, containerName s
 	if runtime.GOOS == "linux" {
 		return containerGatewayIP(ociBin, containerName)
 	}
-
-	return nil, fmt.Errorf("RoutableHostIPFromInside is currently only implemented for linux")
+	// Podman on macOS and Windows can run inside a VM; host.containers.internal
+	// is the supported DNS entry for host access (similar to host.docker.internal for Docker)
+	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
+		return digDNS(ociBin, containerName, "host.containers.internal")
+	}
+	return nil, fmt.Errorf("RoutableHostIPFromInside not implemented for podman on %s", runtime.GOOS)
 }
 
 // digDNS will get the IP record for a dns
