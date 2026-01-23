@@ -307,7 +307,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		t.Skip("image commands are not available on the none driver")
 	}
 	// docs(skip): Skips on GitHub Actions / prow environment and macOS as this test case requires a running docker daemon
-	if (detect.GithubActionRunner() || detect.ProwCIEnvironment()) && runtime.GOOS == "darwin" {
+	if VFKitDriver() && runtime.GOOS == "darwin" {
 		t.Skip("skipping on darwin github action runners, as this test requires a running docker daemon")
 	}
 

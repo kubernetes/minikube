@@ -234,5 +234,6 @@ if [[ $result -eq 0 ]]; then
 else
 	echo "minikube: FAIL"
 fi
+MINIKUBE_BIN delete --all --purge || true
 
 exit "$result"
