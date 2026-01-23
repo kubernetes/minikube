@@ -185,6 +185,9 @@ func NeedsAuxDriver() bool {
 func VMDriver() bool {
 	return !KicDriver() && !NoneDriver()
 }
+func VFKitDriver() bool {
+	return matchDriverFlag("vfkit")
+}
 
 // ContainerRuntime returns the name of a specific container runtime if it was specified
 func ContainerRuntime() string {

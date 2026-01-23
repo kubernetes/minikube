@@ -31,7 +31,8 @@ var deployers = map[string]func(string) deployer.MiniTestDeployer{
 	// the whole gcp project will be cleaned up after tests are done
 	"boskos": deployer.NewMiniTestBosKosDeployerFromConfigFile,
 	//docker deployer is for testing minitest. This should never be used for testing minikube
-	"docker": deployer.NewMiniTestDockerDeployerFromConfigFile,
+	"docker":       deployer.NewMiniTestDockerDeployerFromConfigFile,
+	"boskos-macos": deployer.NewMiniTestBosKosMacOSDeployerFromConfigFile,
 }
 var testers = map[string]tester.MiniTestTester{
 	"kvm-docker-linux-amd64-integration":     &tester.KVMDockerLinuxAmd64IntegrationTester{},
@@ -40,10 +41,14 @@ var testers = map[string]tester.MiniTestTester{
 	"none-docker-linux-amd64-integration":      &tester.NoneDockerLinuxAmd64IntegrationTester{},
 	"none-containerd-linux-amd64-integration":  &tester.NoneContainerdLinuxAmd64IntegrationTester{},
 	"docker-linux-arm64-integration":         &tester.DockerLinuxArm64IntegrationTester{},
+	"vfkit-docker-macos-arm64-integration":   &tester.VfkitDockerMacOSARM64IntegrationTester{},
 }
 
 func main() {
+	os.Exit(MainWithReturnValue())
+}
 
+func MainWithReturnValue() int {
 	flagSet := flag.CommandLine
 	deployerName := flagSet.String("deployer", "boskos", "deployer to use. Options: [boskos, docker]")
 	config := flagSet.String("config", "", "path to deployer config file")
@@ -54,21 +59,25 @@ func main() {
 	dep := getDeployer(*deployerName)(*config)
 	tester := getTester(*testerName)
 
+	defer func() {
+		// some resource, like mac instance is very precious
+		// no matter what happens we must make sure they are released
+		if err := dep.Down(); err != nil {
+			klog.Errorf("failed to stop deployer after panic: %v", err)
+		}
+	}()
+
 	if err := dep.Up(); err != nil {
-		klog.Fatalf("failed to start deployer: %v", err)
+		klog.Errorf("failed to start deployer: %v", err)
+		return 1
 	}
 	var testErr error
 	if testErr = tester.Run(dep); testErr != nil {
 		klog.Errorf("failed to run tests: %v", testErr)
+		return 1
 	}
 
-	if err := dep.Down(); err != nil {
-		klog.Fatalf("failed to stop deployer: %v", err)
-	}
-	if testErr != nil {
-		os.Exit(1)
-	}
-
+	return 0
 }
 
 func getDeployer(name string) func(string) deployer.MiniTestDeployer {

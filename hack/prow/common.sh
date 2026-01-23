@@ -65,15 +65,34 @@ function install_dependencies() {
 	if [ "$(uname)" != "Darwin" ]; then
 		sudo apt-get -y install lsof psmisc dnsutils
 	else
-		brew install pstree coreutils pidof
+		# install brew if not present
+		if ! command -v brew >/dev/null 2>&1; then
+			/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+			echo >> /Users/ec2-user/.zprofile
+			echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> /Users/ec2-user/.zprofile
+			eval "$(/opt/homebrew/bin/brew shellenv)"
+		fi
+		# install docker cli
+		brew install docker
+
+		
+		# install vfkit
+		brew update
+		brew install vfkit pstree coreutils pidof
 		ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
+		# install vmnet shared on macos in non-interactive mode
+		curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
+
+		# ensure go dirs are owned by current user so that go install can write
+		sudo chown -R $(whoami) $HOME/go
+		sudo chown -R $(whoami) $HOME/Library/Caches/go-build
 	fi
 	# do NOT change manually - only using make update-golang-version
 	GOLANG_VERSION_TO_INSTALL=1.25.5
 	# install golang if not present
-	sudo -E hack/prow/installer/check_install_golang.sh /usr/local $GOLANG_VERSION_TO_INSTALL || true
+	hack/prow/installer/check_install_golang.sh /usr/local $GOLANG_VERSION_TO_INSTALL || true
 	# install gotestsum if not present
-	GOROOT="/usr/local/go" hack/prow/installer/check_install_gotestsum.sh || true
+	hack/prow/installer/check_install_gotestsum.sh || true
 	# install gopogh
 	hack/prow/installer/check_install_gopogh.sh || true
 
@@ -81,13 +100,16 @@ function install_dependencies() {
 	if ! type "jq" >/dev/null; then
 		echo ">> Installing jq"
 		if [ "${ARCH}" == "arm64" && "${OS}" == "linux" ]; then
+		# linux arm64
 			sudo apt-get install jq -y
-		elif [ "${ARCH}" == "arm64" ]; then
-			echo "Unable to install 'jq' automatically for arm64 on Darwin, please install 'jq' manually."
-			exit 5
-		elif [ "${OS}" != "darwin" ]; then
+		elif [ "${ARCH}" == "arm64" && "${OS}" == "darwin"]; then
+		# macos arm64
+			brew install jq
+		elif [ "${OS}" == "linux" ]; then
+		# linux x86
 			curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
 		else
+		# macos ax86
 			curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 && sudo install jq-osx-amd64 /usr/local/bin/jq
 		fi
 	fi
@@ -95,22 +117,24 @@ function install_dependencies() {
 }
 
 function docker_setup() {
+	if [ "$(uname)" != "Darwin" ]; then
+		# clean all docker artifacts up
+		docker system prune -a --volumes -f || true
+		docker system df || true
+		docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 
-	# clean all docker artifacts up
-	docker system prune -a --volumes -f || true
-	docker system df || true
-	docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
-
-	# read only token, never expires
-	#todo: do we need this token
-	# docker login -u minikubebot -p "$DOCKERHUB_READONLY_TOKEN"
+		# read only token, never expires
+		#todo: do we need this token
+		# docker login -u minikubebot -p "$DOCKERHUB_READONLY_TOKEN"
+	fi
 }
 
 function gvisor_image_build() {
-	# Build the gvisor image so that we can integration test changes to pkg/gvisor
-	chmod +x testdata/gvisor-addon
+	
 	# skipping gvisor mac because ofg https://github.com/kubernetes/minikube/issues/5137
 	if [ "$(uname)" != "Darwin" ]; then
+		# Build the gvisor image so that we can integration test changes to pkg/gvisor
+		chmod +x testdata/gvisor-addon
 		# Should match GVISOR_IMAGE_VERSION in Makefile
 		docker build -t gcr.io/k8s-minikube/gvisor-addon:2 -f testdata/gvisor-addon-Dockerfile ./testdata
 	fi
@@ -125,8 +149,8 @@ function run_gopogh() {
 
 # this is where the script starts
 readonly OS_ARCH="${OS}-${ARCH}"
-readonly TEST_ROOT="${HOME}/minikube-integration"
-readonly TEST_HOME="${TEST_ROOT}/${MINIKUBE_LOCATION}-$$"
+readonly TEST_ROOT="${PWD}/minikube-integration"
+readonly TEST_HOME="$(pwd)/${MINIKUBE_LOCATION}-$$"
 
 export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
@@ -210,5 +234,6 @@ if [[ $result -eq 0 ]]; then
 else
 	echo "minikube: FAIL"
 fi
+MINIKUBE_BIN delete --all --purge || true
 
 exit "$result"
