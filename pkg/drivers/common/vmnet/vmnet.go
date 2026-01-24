@@ -28,7 +28,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
+
+	"github.com/blang/semver/v4"
+	"golang.org/x/sys/unix"
+	"gopkg.in/yaml.v2"
 
 	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/state"
@@ -40,10 +45,14 @@ import (
 )
 
 const (
-	pidfileName    = "vmnet-helper.pid"
-	logfileName    = "vmnet-helper.log"
-	sockfileName   = "vmnet-helper.sock"
-	executablePath = "/opt/vmnet-helper/bin/vmnet-helper"
+	pidfileName  = "vmnet-helper.pid"
+	logfileName  = "vmnet-helper.log"
+	sockfileName = "vmnet-helper.sock"
+
+	// Installed from GitHub releases.
+	installPath = "/opt/vmnet-helper/bin/vmnet-helper"
+	// Installed via Homebrew (macOS 26+ only).
+	brewInstallPath = "/opt/homebrew/opt/vmnet-helper/libexec/vmnet-helper"
 )
 
 // Helper manages the vmnet-helper process.
@@ -55,22 +64,72 @@ type Helper struct {
 	// will obtain the same MAC address from vmnet.
 	InterfaceID string
 
-	// Offloading is required for krunkit, doss not work with vfkit.
-	// We must use this until libkrun add support for disabling offloading:
-	// https://github.com/containers/libkrun/issues/264
+	// Offloading is required for krunkit, does not work with vfkit.
 	Offloading bool
 
 	// Set when vmnet interface is started.
 	macAddress string
+
+	// NeedsSudo indicates whether sudo was used when starting the helper. Set
+	// by Start(), used by Stop(), Kill(), and GetState(). Required for managing
+	// the helper child process using the pid file.
+	NeedsSudo bool
+}
+
+// helperVersion is the version of vmnet-helper.
+type helperVersion struct {
+	Version string `yaml:"version"`
+	Commit  string `yaml:"commit"`
+}
+
+// helperInfo contains cached information about vmnet-helper.
+type helperInfo struct {
+	Path      string
+	Version   helperVersion
+	NeedsSudo bool
+	Err       error
+}
+
+var (
+	cached helperInfo
+	once   sync.Once
+)
+
+// getHelperInfo returns cached information about vmnet-helper, initializing it
+// on the first call.
+func getHelperInfo() (helperInfo, error) {
+	once.Do(func() {
+		cached.Path, cached.Err = findHelper()
+		if cached.Err != nil {
+			return
+		}
+		cached.Version, cached.Err = getHelperVersion(cached.Path)
+		if cached.Err != nil {
+			return
+		}
+		var macosVersion string
+		macosVersion, cached.Err = macOSVersion()
+		if cached.Err != nil {
+			return
+		}
+		cached.NeedsSudo, cached.Err = helperNeedsSudo(cached.Version, macosVersion)
+	})
+	return cached, cached.Err
 }
 
 type interfaceInfo struct {
 	MACAddress string `json:"vmnet_mac_address"`
 }
 
-// ValidateHelper checks if vmnet-helper is installed and we can run it as root.
-// The returned error.Kind can be used to provide a suggestion for resolving the
-// issue.
+// ValidateHelper validates that vmnet-helper is installed and configured
+// correctly.
+//
+// If the helper needs sudo, we validate that we can run vmnet-helper without a
+// password, or fallback to interactive sudo and update the user's cached sudo
+// credentials.
+//
+// If we fail with an expected error the returned error.Kind can be used to
+// provide a suggestion for resolving the issue.
 func ValidateHelper(options *run.CommandOptions) error {
 	// Ideally minikube will not try to validate in download-only mode, but this
 	// is called from different places in different drivers, so the easier way
@@ -80,47 +139,20 @@ func ValidateHelper(options *run.CommandOptions) error {
 		return nil
 	}
 
-	// Is it installed?
-	if _, err := os.Stat(executablePath); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return &Error{Kind: reason.NotFoundVmnetHelper, Err: err}
-		}
-		return &Error{Kind: reason.HostPathStat, Err: err}
-	}
-
-	// Can we run it as root without a password?
-	cmd := exec.Command("sudo", "--non-interactive", executablePath, "--version")
-	stdout, err := cmd.Output()
+	helper, err := getHelperInfo()
 	if err != nil {
-		// Can we interact with the user?
-		if options.NonInteractive {
-			if exitErr, ok := err.(*exec.ExitError); ok {
-				stderr := strings.TrimSpace(string(exitErr.Stderr))
-				err = fmt.Errorf("%w: %s", err, stderr)
-			}
-			return &Error{Kind: reason.NotConfiguredVmnetHelper, Err: err}
-		}
+		return err
+	}
 
-		// We can fall back to intereactive sudo this time, but the user should
-		// configure a sudoers rule.
-		out.ErrT(style.Tip, "Unable to run vmnet-helper without a password")
-		out.ErrT(style.Indent, "To configure vment-helper to run without a password, please check the documentation:")
-		out.ErrT(style.Indent, "https://github.com/nirs/vmnet-helper/#granting-permission-to-run-vmnet-helper")
-
-		// Authenticate the user, updating the user's cached credentials.
-		cmd = exec.Command("sudo", executablePath, "--version")
-		stdout, err = cmd.Output()
-		if err != nil {
-			if exitErr, ok := err.(*exec.ExitError); ok {
-				stderr := strings.TrimSpace(string(exitErr.Stderr))
-				err = fmt.Errorf("%w: %s", err, stderr)
-			}
-			return &Error{Kind: reason.NotConfiguredVmnetHelper, Err: err}
+	if helper.NeedsSudo {
+		if err := validateRunningWithSudo(helper.Path, options); err != nil {
+			return err
 		}
 	}
 
-	version := strings.TrimSpace(string(stdout))
-	log.Debugf("Validated vmnet-helper version %q", version)
+	log.Debugf("Validated vmnet-helper (path=%q, version=%q, commit=%q, needsSudo=%v)",
+		helper.Path, helper.Version.Version, helper.Version.Commit, helper.NeedsSudo)
+
 	return nil
 }
 
@@ -128,18 +160,31 @@ func ValidateHelper(options *run.CommandOptions) error {
 // machine. The helper will create a unix datagram socket at the specified path.
 // The client (e.g. vfkit) will connect to this socket.
 func (h *Helper) Start(socketPath string) error {
-	args := []string{
-		"--non-interactive",
-		executablePath,
-		"--socket", socketPath,
-		"--interface-id", h.InterfaceID,
+	helper, err := getHelperInfo()
+	if err != nil {
+		return err
 	}
+
+	// Persist for Stop(), Kill(), and GetState().
+	h.NeedsSudo = helper.NeedsSudo
+
+	var executable string
+	var args []string
+
+	if helper.NeedsSudo {
+		executable = "sudo"
+		args = append(args, "--non-interactive", helper.Path)
+	} else {
+		executable = helper.Path
+	}
+
+	args = append(args, "--socket", socketPath, "--interface-id", h.InterfaceID)
 
 	if h.Offloading {
 		args = append(args, "--enable-tso", "--enable-checksum-offload")
 	}
 
-	cmd := exec.Command("sudo", args...)
+	cmd := exec.Command(executable, args...)
 
 	// Create vmnet-helper in a new process group so it is not harmed when
 	// terminating the minikube process group.
@@ -170,6 +215,11 @@ func (h *Helper) Start(socketPath string) error {
 
 	var info interfaceInfo
 	if err := json.NewDecoder(stdout).Decode(&info); err != nil {
+		if data, err := os.ReadFile(logfile.Name()); err == nil {
+			log.Infof("vmnet-helper logfile %q content:\n%s", logfile.Name(), string(data))
+		} else {
+			log.Infof("failed to read vmnet-helper logfile %q: %s", logfile.Name(), err)
+		}
 		return fmt.Errorf("failed to decode vmnet interface info: %w", err)
 	}
 
@@ -179,12 +229,13 @@ func (h *Helper) Start(socketPath string) error {
 	return nil
 }
 
-// GetMACAddress reutuns the mac address assigned by vmnet framework.
+// GetMACAddress returns the mac address assigned by vmnet framework.
 func (h *Helper) GetMACAddress() string {
 	return h.macAddress
 }
 
-// Stop terminates sudo, which will terminate vmnet-helper.
+// Stop terminates the executable. If running with sudo, sudo will terminate the
+// helper.
 func (h *Helper) Stop() error {
 	log.Info("Stop vmnet-helper")
 	pidfile := h.pidfilePath()
@@ -196,8 +247,9 @@ func (h *Helper) Stop() error {
 		// No pidfile.
 		return nil
 	}
-	log.Debugf("Terminate sudo (pid=%v)", pid)
-	if err := process.Terminate(pid, "sudo"); err != nil {
+	name := h.executableName()
+	log.Debugf("Terminate %s (pid=%v)", name, pid)
+	if err := process.Terminate(pid, name); err != nil {
 		if err != os.ErrProcessDone {
 			return err
 		}
@@ -209,7 +261,8 @@ func (h *Helper) Stop() error {
 	return nil
 }
 
-// Kill both sudo and vmnet-helper by killing the process group.
+// Kill the entire process group. If running with sudo, both sudo and
+// vmnet-helper will be killed.
 func (h *Helper) Kill() error {
 	log.Info("Kill vmnet-helper")
 	pidfile := h.pidfilePath()
@@ -221,7 +274,8 @@ func (h *Helper) Kill() error {
 		// No pidfile.
 		return nil
 	}
-	exists, err := process.Exists(pid, "sudo")
+	name := h.executableName()
+	exists, err := process.Exists(pid, name)
 	if err != nil {
 		return err
 	}
@@ -245,7 +299,7 @@ func (h *Helper) Kill() error {
 	return nil
 }
 
-// GetState returns the sudo child process state.
+// GetState returns the child process state.
 func (h *Helper) GetState() (state.State, error) {
 	pidfile := h.pidfilePath()
 	pid, err := process.ReadPidfile(pidfile)
@@ -256,7 +310,8 @@ func (h *Helper) GetState() (state.State, error) {
 		// No pidfile.
 		return state.Stopped, nil
 	}
-	exists, err := process.Exists(pid, "sudo")
+	name := h.executableName()
+	exists, err := process.Exists(pid, name)
 	if err != nil {
 		return state.Error, err
 	}
@@ -283,6 +338,16 @@ func (h *Helper) pidfilePath() string {
 	return filepath.Join(h.MachineDir, pidfileName)
 }
 
+// executableName returns the name of the executable used by the last Start()
+// call.  Required for checking process state and terminating it. Returns "sudo"
+// if vmnet-helper was started with sudo, otherwise "vmnet-helper".
+func (h *Helper) executableName() string {
+	if h.NeedsSudo {
+		return "sudo"
+	}
+	return "vmnet-helper"
+}
+
 // Apple recommends sizing the receive buffer at 4 times the size of the send
 // buffer, and other projects typically use a 1 MiB send buffer and a 4 MiB
 // receive buffer. However the send buffer size is not used to allocate a buffer
@@ -293,8 +358,8 @@ const sendBufferSize = 65 * 1024
 
 // The receive buffer size determines how many packets can be queued by the
 // peer. Testing shows good performance with a 2 MiB receive buffer. We use a 4
-// MiB buffer to make ENOBUFS errors less likely for the peer and allowing to
-// queue more packets when using the vmnet_enable_tso option.
+// MiB buffer to make ENOBUFS errors less likely for the peer and allows queueing
+// more packets when using the vmnet_enable_tso option.
 const recvBufferSize = 4 * 1024 * 1024
 
 // Socketpair returns a pair of connected unix datagram sockets that can be used
@@ -311,4 +376,128 @@ func Socketpair() (*os.File, *os.File, error) {
 		_ = syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_RCVBUF, recvBufferSize)
 	}
 	return os.NewFile(uintptr(fds[0]), "sock1"), os.NewFile(uintptr(fds[1]), "sock2"), nil
+}
+
+// validateRunningWithSudo validates that we can run vmnet-helper with sudo
+// without a password. If running with sudo fails, and we run in interactive
+// mode, we fall back to interactive sudo and update the user's cached sudo
+// credentials. This ensures that the next attempt to run vmnet-helper with sudo
+// will succeed in the next 5 minutes (default sudo timeout).
+func validateRunningWithSudo(helperPath string, options *run.CommandOptions) error {
+	cmd := exec.Command("sudo", "--non-interactive", helperPath, "--version")
+	if _, err := cmd.Output(); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			stderr := strings.TrimSpace(string(exitErr.Stderr))
+			err = fmt.Errorf("%w: %s", err, stderr)
+		}
+		// If we are not interactive, we can't authenticate the user, so we fail.
+		if options.NonInteractive {
+			return &Error{Kind: reason.NotConfiguredVmnetHelper, Err: err}
+		}
+
+		log.Debugf("Unable to run vmnet-helper without a password: %v", err)
+
+		// We can fall back to interactive sudo this time, but the user should
+		// configure a sudoers rule.
+		out.ErrT(style.Tip, "Unable to run vmnet-helper without a password")
+		out.ErrT(style.Indent, "To configure vmnet-helper to run without a password, please check the documentation:")
+		out.ErrT(style.Indent, "https://github.com/nirs/vmnet-helper/#granting-permission-to-run-vmnet-helper")
+
+		// Authenticate the user, updating the user's cached credentials.
+		cmd = exec.Command("sudo", "--validate")
+		if _, err := cmd.Output(); err != nil {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				stderr := strings.TrimSpace(string(exitErr.Stderr))
+				err = fmt.Errorf("%w: %s", err, stderr)
+			}
+			// If we fail to authenticate the user, we can't run vmnet-helper
+			// with sudo so we must fail.
+			return &Error{Kind: reason.NotConfiguredVmnetHelper, Err: err}
+		}
+
+		log.Debugf("Authenticated user with sudo")
+		return nil
+	}
+
+	log.Debug("Validated running vmnet-helper without a password")
+	return nil
+}
+
+// findHelper finds the path to the vmnet-helper executable.
+func findHelper() (string, error) {
+	paths := []string{brewInstallPath, installPath}
+	for _, path := range paths {
+		if _, err := os.Stat(path); err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				return "", &Error{Kind: reason.HostPathStat, Err: err}
+			}
+			continue
+		}
+		return path, nil
+	}
+	err := fmt.Errorf("failed to find vmnet-helper at %q", paths)
+	return "", &Error{Kind: reason.NotFoundVmnetHelper, Err: err}
+}
+
+// helperNeedsSudo returns true if vmnet-helper needs sudo to run based on the
+// helper version and macOS version.
+func helperNeedsSudo(version helperVersion, macosVersion string) (bool, error) {
+	// ParseTolerant handles "26.2" by normalizing it to "26.2.0".
+	macVer, err := semver.ParseTolerant(macosVersion)
+	if err != nil {
+		return false, fmt.Errorf("invalid macOS version %q: %w", macosVersion, err)
+	}
+	if macVer.LT(semver.MustParse("26.0.0")) {
+		return true, nil
+	}
+
+	// semver.Parse does not support "v" prefix.
+	helperVer, err := semver.Parse(strings.TrimPrefix(version.Version, "v"))
+	if err != nil {
+		return false, fmt.Errorf("invalid helper version %q: %w", version.Version, err)
+	}
+
+	// Since v0.9.0, vmnet-helper is signed with the
+	// 'com.apple.security.virtualization' entitlement and does not need root.
+	return helperVer.LT(semver.MustParse("0.9.0")), nil
+}
+
+// macOSVersion returns the macOS product version string. The format is
+// "major.minor[.patch]"
+func macOSVersion() (string, error) {
+	version, err := unix.Sysctl("kern.osproductversion")
+	if err != nil {
+		return "", fmt.Errorf("failed to get macOS version: %w", err)
+	}
+	return version, nil
+}
+
+// getHelperVersion returns the version of vmnet-helper.
+func getHelperVersion(executablePath string) (helperVersion, error) {
+	cmd := exec.Command(executablePath, "--version")
+	stdout, err := cmd.Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%w: %s", err, exitErr.Stderr)
+		}
+		return helperVersion{}, fmt.Errorf("failed to get vmnet-helper version: %w", err)
+	}
+	return parseHelperVersion(stdout)
+}
+
+// parseHelperVersion parses vmnet-helper version output.
+func parseHelperVersion(stdout []byte) (helperVersion, error) {
+	var version helperVersion
+
+	// Unmarshal current format (>= v0.7.0): "version: v0.7.0\ncommit: 7ee60de20...\n"
+	if err := yaml.Unmarshal(stdout, &version); err != nil {
+		// Fallback for older helper (< v0.7.0): "v0.6.0\n"
+		version.Version = strings.TrimSpace(string(stdout))
+	}
+
+	if version.Version == "" {
+		return version, fmt.Errorf("failed to parse vmnet-helper version: %q", stdout)
+	}
+
+	return version, nil
 }

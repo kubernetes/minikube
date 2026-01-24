@@ -56,11 +56,17 @@ integration-prow-kvm-crio-linux-x86: setup-prow-gcp-ssh-keys build-mini-test
 	./hack/prow/minikube_cross_build.sh $(GO_VERSION) linux amd64
 	./out/minitest  --deployer boskos --tester kvm-crio-linux-amd64-integration --config hack/prow/boskos-cfg-x86.json
 
+.PHONY: integration-vfkit-docker-macos-arm
+integration-vfkit-docker-macos-arm: build-mini-test
+	./hack/prow/minikube_cross_build.sh $(GO_VERSION) darwin arm64
+	./out/minitest  --deployer boskos-macos --tester vfkit-docker-macos-arm64-integration --config hack/prow/boskos-cfg-macos.json
+
+
 .PHONY: build-mini-test
 build-mini-test: # build minitest binary
 	GOTOOLCHAIN=auto go build -C ./hack/prow/minitest -o $(PWD)/out/minitest .
 
-.PHONY: setup-prow-gcp-ssh-keys
+.PHONY: setup-prow-gcp-ssh-keys 
 setup-prow-gcp-ssh-keys: # set up ssh keys for gcloud cli. These env vars are set by test/infra
 	mkdir -p -m 0700 ~/.ssh
 	cp -f "${GCE_SSH_PRIVATE_KEY_FILE}" ~/.ssh/google_compute_engine
@@ -87,3 +93,8 @@ push-kube-registry-proxy-image-prow:
 	docker buildx build --push --platform  $(PROW_IMAGE_PLATFORMS) \
 		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kube-registry-proxy:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kube-registry-proxy:latest -f deploy/images/kube-registry-proxy/Dockerfile deploy/images/kube-registry-proxy
 
+.PHONY: push-kicbase-image-prow
+push-kicbase-image-prow:
+	./hack/build_auto_pause.sh $(KICBASE_ARCH) $(CURDIR)/deploy/kicbase
+	docker buildx build --push --platform  $(PROW_IMAGE_PLATFORMS) \
+		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kicbase:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kicbase:latest -f deploy/kicbase/Dockerfile deploy/kicbase
