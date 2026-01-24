@@ -78,8 +78,8 @@ jobs:
           USER="minikubeadmin"
           
           # Install gotestsum
-          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "go install gotest.tools/gotestsum@latest"
-          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "choco install kubernetes-cli"
+          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=5 "$USER@$HOST" "go install gotest.tools/gotestsum@latest"
+          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=5 "$USER@$HOST" "choco install kubernetes-cli"
 
       - name: Copy Binaries to VM
         env:
@@ -123,7 +123,7 @@ jobs:
           
           echo "$CMD" > run_tests.ps1
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no run_tests.ps1 "$USER@$HOST:C:/Users/$USER/"
-          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "powershell -File C:/Users/$USER/run_tests.ps1"
+          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=9 "$USER@$HOST" "powershell -File C:/Users/$USER/run_tests.ps1"
 
       - name: Fetch Test Results
         if: always() && steps.azlogin.outcome == 'success'
