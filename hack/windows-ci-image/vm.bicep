@@ -1,120 +1,80 @@
+// Requires prior deployment of Shared Image Gallery (SIG) and Virtual Network (VNet)
 targetScope = 'resourceGroup'
 
 // vm.bicepparam
-param sigName string
+@sys.description('Name of existing VM image available from the Shared Image Gallery')
 param sigImageDefinitionName string
+@sys.description('Version of existing VM image available from the Shared Image Gallery')
 param sigImageVersion string
+@sys.description('Name of existing Shared Image Gallery containing the required VM image')
+param sigName string
+
+@sys.description('Name of existing Network Security Group where the new VMs will be associated.')
+param networkNsgName string
+@sys.description('Name of existing Virtual Network where the new VM will be attached.')
+param networkVnetName string
+
+@sys.description('Name of the new Virtual Machine, it will be used for the known VM hostname.')
 param vmName string
+@sys.description('Size of the new Virtual Machine.')
 param vmSize string
 
 var location string = resourceGroup().location
-var namePrefix string = vmName
-var nameSuffix string = uniqueString(resourceGroup().location)
-var networkInterfaceName string = '${namePrefix}-nic-${nameSuffix}'
-var networkSecurityGroupName string = '${namePrefix}-nsg-${nameSuffix}'
-var publicIpName string = '${namePrefix}-pip-${nameSuffix}'
-var subnetName string = '${namePrefix}-snet-${nameSuffix}'
-var virtualMachineName string = '${vmName}-${nameSuffix}'
-var virtualNetworkName string = '${namePrefix}-vnet-${nameSuffix}'
+var nameSuffix string = uniqueString(subscription().id, resourceGroup().id)
+var networkInterfaceName string = '${vmName}-nic-${nameSuffix}'
+var publicIpName string = '${vmName}-pip-${nameSuffix}'
+var virtualMachineName string = vmName // caller must ensure no names clash, so no suffix appended
 
-resource sig 'Microsoft.Compute/galleries@2024-03-03' existing = {
+resource sig 'Microsoft.Compute/galleries@2025-03-03' existing = {
   name: sigName
 }
 
-resource sigImageDefinition 'Microsoft.Compute/galleries/images@2022-08-03' existing = {
+resource sigImageDefinition 'Microsoft.Compute/galleries/images@2025-03-03' existing = {
   name: sigImageDefinitionName
   parent: sig
 }
 
-resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-11-01' = {
-  name: virtualNetworkName
-  location: location
-  tags: { project: 'minikube' }
-  properties: {
-    addressSpace: {
-      addressPrefixes: [
-        '10.0.0.0/16'
-      ]
-    }
-    subnets: [
-      {
-        name: subnetName
-        properties: {
-          addressPrefix: '10.0.1.0/24'
-          networkSecurityGroup: {
-            id: networkSecurityGroup.id
-          }
-        }
-      }
-    ]
-  }
+resource virtualNetwork 'Microsoft.Network/virtualNetworks@2025-05-01' existing = {
+  name: networkVnetName
 }
 
-resource publicIp 'Microsoft.Network/publicIPAddresses@2023-11-01' = {
-  name: publicIpName
+resource networkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2025-05-01' existing = {
+  name: networkNsgName
+}
+
+resource publicIp 'Microsoft.Network/publicIPAddresses@2025-01-01' = {
   location: location
-  tags: { project: 'minikube' }
-  sku: { name: 'Standard' } // Basic: Cannot create more than 0 IPv4 Basic SKU public IP addresses for this subscription in this region.
+  name: publicIpName
   properties: {
+    deleteOption: 'Delete'
     dnsSettings: {
-      domainNameLabel: vmName
+      domainNameLabel: vmName // use as known user-specified hostname (e.g. GitHub workflow may randomise it with GitHub PR id)
     }
     publicIPAddressVersion: 'IPv4'
     publicIPAllocationMethod: 'Static' // Dynamic: Standard sku publicIp /subscriptions/... must have AllocationMethod set to Static.
   }
+  sku: { name: 'Standard' } // Basic: Cannot create more than 0 IPv4 Basic SKU public IP addresses for this subscription in this region.
+  tags: { owner: 'minikube', vm: virtualMachineName }
 }
 
-resource networkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2023-11-01' = {
-  name: networkSecurityGroupName
+resource networkInterface 'Microsoft.Network/networkInterfaces@2025-05-01' = {
   location: location
-  tags: { project: 'minikube' }
-  properties: {
-    securityRules: [
-      {
-        name: 'AllowRDP'
-        properties: {
-          access: 'Allow'
-          destinationAddressPrefix: '*'
-          destinationPortRange: '3389'
-          direction: 'Inbound'
-          priority: 1000
-          protocol: 'Tcp'
-          sourceAddressPrefix: '*'
-          sourcePortRange: '*'
-        }
-      }
-      {
-        name: 'AllowSSH'
-        properties: {
-          access: 'Allow'
-          destinationAddressPrefix: '*'
-          destinationPortRange: '22'
-          direction: 'Inbound'
-          priority: 1001
-          protocol: 'Tcp'
-          sourceAddressPrefix: '*'
-          sourcePortRange: '*'
-        }
-      }
-    ]
-  }
-}
-
-resource networkInterface 'Microsoft.Network/networkInterfaces@2023-11-01' = {
   name: networkInterfaceName
-  location: location
-  tags: { project: 'minikube' }
   properties: {
     ipConfigurations: [
       {
-        name: 'internal'
+        name: virtualMachineName
         properties: {
+          primary: true
           subnet: {
-            id: '${virtualNetwork.id}/subnets/${subnetName}'
+            id: '${virtualNetwork.id}/subnets/${virtualNetwork.properties.subnets[0].name}'
           }
           privateIPAllocationMethod: 'Dynamic'
           publicIPAddress: {
             id: publicIp.id
+            properties: {
+              deleteOption: 'Delete'
+            }
           }
         }
       }
@@ -123,15 +83,26 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2023-11-01' = {
       id: networkSecurityGroup.id
     }
   }
+  tags: { owner: 'minikube', vm: virtualMachineName }
 }
 
-resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-09-01' = {
-  name: virtualMachineName
+resource virtualMachine 'Microsoft.Compute/virtualMachines@2025-04-01' = {
   location: location
-  tags: { project: 'minikube' }
+  name: virtualMachineName
   properties: {
     hardwareProfile: {
       vmSize: vmSize
+    }
+    networkProfile: {
+      networkInterfaces: [
+        {
+          id: networkInterface.id
+          properties: {
+            deleteOption: 'Delete'
+            primary: true
+          }
+        }
+      ]
     }
     //osProfile: {} // Parameter OSProfile is not allowed with a specialized image.
     storageProfile: {
@@ -146,20 +117,11 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-09-01' = {
         deleteOption: 'Delete'
       }
     }
-    networkProfile: {
-      networkInterfaces: [
-        {
-          id: networkInterface.id
-          properties: {
-            primary: true
-          }
-        }
-      ]
-    }
   }
+  tags: { owner: 'minikube', vm: virtualMachineName }
 }
 
 output vmId string = virtualMachine.id
-output vmName string = virtualMachine.name
-output vmHostname string = publicIp.properties.dnsSettings.fqdn
-output publicIpAddress string = publicIp.properties.ipAddress
+output vmHostname string = virtualMachine.name
+output vmPublicFqdn string = publicIp.properties.dnsSettings.fqdn
+output vmPublicIp string = publicIp.properties.ipAddress

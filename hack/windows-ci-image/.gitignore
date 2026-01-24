@@ -1,0 +1,7 @@
+.azure/
+*.auto.*
+*.backup
+*.local.*
+*.rdp
+*secrets*
+vm-connect-ssh.sh
