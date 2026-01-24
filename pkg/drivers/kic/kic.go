@@ -231,7 +231,6 @@ func (d *Driver) prepareSSH() error {
 	if err != nil {
 		return fmt.Errorf("create pubkey assetfile : %w", err)
 	}
-
 	defer func() {
 		if err := f.Close(); err != nil {
 			klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
@@ -239,7 +238,7 @@ func (d *Driver) prepareSSH() error {
 	}()
 
 	if err := cmder.Copy(f); err != nil {
-		return fmt.Errorf("copying pub key in /home/docker/.ssh/: %w", err)
+		return fmt.Errorf("copying pub key: %w", err)
 	}
 
 	// Double-check that the container has not crashed so that we may give a better error message
