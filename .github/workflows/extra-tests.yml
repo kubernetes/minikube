@@ -15,6 +15,10 @@ jobs:
       MINIKUBE_AZ_IMAGE_NAME: "minikube-ci-windows-11"
       MINIKUBE_AZ_IMAGE_VERSION: "1.0.0"
     steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.MINIKUBE_AZ_CLIENT_ID }}","clientSecret":"${{ secrets.MINIKUBE_AZ_PASSWORD }}","subscriptionId":"${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.MINIKUBE_AZ_TENANT_ID }}"}'
       - uses: actions/checkout@v6
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -24,16 +28,6 @@ jobs:
         run: |
           make e2e-windows-amd64.exe
           make minikube-windows-amd64.exe
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: |
-            {
-              "clientId": "${{ secrets.MINIKUBE_AZ_CLIENT_ID }}",
-              "clientSecret": "${{ secrets.MINIKUBE_AZ_PASSWORD }}",
-              "subscriptionId": "${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}",
-              "tenantId": "${{ secrets.MINIKUBE_AZ_TENANT_ID }}"
-            }
       - name: Install Tools (Runner)
         run: |
           sudo apt-get update && sudo apt-get install -y sshpass
