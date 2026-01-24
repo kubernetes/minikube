@@ -121,7 +121,7 @@ jobs:
           
           echo "$CMD" > run_tests.ps1
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no run_tests.ps1 "$USER@$HOST:C:/Users/$USER/"
-          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "powershell -File C:/Users/$USER/run_tests.ps1"
+          sshpass -e ssh -tt -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "powershell -File C:/Users/$USER/run_tests.ps1"
 
       - name: Fetch Test Results
         if: always()
