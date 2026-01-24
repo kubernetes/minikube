@@ -1,0 +1,49 @@
+---
+# Prepares Azure Virtual Network and Network Security Group for test VMs to follow using separate workflow.
+name: 'Windows CI Image: 3 - Deploy VNet'
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    permissions:
+      id-token: write # Require write permission to Fetch an OIDC token.
+    runs-on: ubuntu-latest
+
+    env:
+      AZURE_DEFAULTS_LOCATION: "swedencentral"
+      MINIKUBE_AZ_RESOURCE_GROUP: "SIG-CLUSTER-LIFECYCLE-MINIKUBE"
+      MINIKUBE_AZ_SIG_NAME: "minikube" # unused, but required by make preflight
+      MINIKUBE_AZ_IMAGE_NAME: "minikube-ci-windows-11" # unused but, required by make preflight
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Check Bicep templates
+      run: |
+        make bicep-fmt && make bicep-lint
+
+    # Configured federated identity credential for GitHub Actionsa using:
+    # https://github.com/microsoftgraph/msgraph-bicep-types/tree/main/quickstart-templates/create-fic-for-github-actions
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.MINIKUBE_AZ_CLIENT_ID }}
+        subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+        tenant-id: ${{ secrets.MINIKUBE_AZ_TENANT_ID }}
+
+    # Equivalent of the vnet-deploy target in the Makefile
+    - name: Deploy Azure Virtual Network
+      uses: azure/bicep-deploy@v2
+      with:
+        type: deploymentStack
+        operation: create
+        name: "gha-minikube-vnet"
+        scope: resourceGroup
+        resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
+        subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+        template-file: ./vnet.bicep
+        parameters-file: ./vnet.bicepparam
+        action-on-unmanage-resources: delete
+        deny-settings-mode: none

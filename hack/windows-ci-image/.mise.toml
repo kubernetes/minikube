@@ -1,0 +1,8 @@
+[[env]]
+AZURE_CONFIG_DIR = { value = "{{config_root}}/.azure" }
+[[env]]
+'_'.source = { path = "env.sh" }
+
+[tools]
+packer = "1.14"
+# TODO: Add Azure CLI?
