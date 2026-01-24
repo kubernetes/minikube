@@ -111,7 +111,7 @@ jobs:
           \$env:windows_functional_azure = '$windows_functional_azure';
           
           gotestsum --jsonfile testout.json -f standard-verbose --raw-command -- \`
-            powershell -Command \"./e2e-windows-amd64.exe --minikube-start-args='--driver=hyperv' --binary=minikube-windows-amd64.exe -test.run TestFunctional -test.v -test.timeout=40m | go tool test2json -t | Tee-Object -FilePath testout.txt\"
+            powershell -Command \"./e2e-windows-amd64.exe --minikube-start-args='--driver=hyperv' --binary=minikube-windows-amd64.exe '-test.run' TestFunctional '-test.v' '-test.timeout=40m' | go tool test2json -t | Tee-Object -FilePath testout.txt\"
           
           \$env:result=\$lastexitcode
           if(\$env:result -eq 0){ echo 'minikube: SUCCESS' } else { echo 'minikube: FAIL' }
