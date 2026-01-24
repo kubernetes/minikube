@@ -27,11 +27,13 @@ jobs:
           cache: true
       - name: Build Windows Binaries
         run: |
+          sudo apt-get update &
           make e2e-windows-amd64.exe
           make minikube-windows-amd64.exe
-      - name: Install Tools (Runner)
+      - name: Install Tools )
         run: |
-          sudo apt-get update && sudo apt-get install -y sshpass
+          sudo apt-get install -y sshpass
+          go install github.com/medyagh/gopogh/cmd/gopogh@latest
       - name: Create VM
         id: create_vm
         uses: azure/bicep-deploy@v1
@@ -74,8 +76,8 @@ jobs:
           HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
           USER="minikubeadmin"
           
-          # Install gotestsum and gopogh on the VM
-          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "go install gotest.tools/gotestsum@latest; go install github.com/medyagh/gopogh/cmd/gopogh@latest"
+          # Install gotestsum
+          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "go install gotest.tools/gotestsum@latest"
 
       - name: Copy Binaries to VM
         env:
@@ -114,9 +116,7 @@ jobs:
             powershell -Command \"./e2e-windows-amd64.exe --minikube-start-args='--driver=hyperv' --binary=./minikube-windows-amd64.exe '-test.run' TestFunctional '-test.v' '-test.timeout=40m' | go tool test2json -t | Tee-Object -FilePath testout.txt\"
           
           \$env:result=\$lastexitcode
-          if(\$env:result -eq 0){ echo 'minikube: SUCCESS' } else { echo 'minikube: FAIL' }
-          
-          \$gopogh_status=gopogh --in testout.json --out_html testout.html --out_summary testout_summary.json --name \"\$env:windows_functional_azure\" -pr \$env:SET_PR_NUMBER --repo github.com/kubernetes/minikube/ --details \"\${env:COMMIT}:$(date +%Y-%m-%d):\$env:ROOT_JOB_ID\"
+          if(\$env:result -eq 0){ echo 'minikube: SUCCESS' } else { echo 'minikube: FAIL' }      
           "
           
           echo "$CMD" > run_tests.ps1
@@ -135,7 +135,7 @@ jobs:
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST:C:/Users/$USER/testout.json" . || true
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST:C:/Users/$USER/testout.txt" . || true
 
-      - name: Generate and Upload Report
+      - name: Generate Gopogh
         if: always()
         env:
           SET_PR_NUMBER: ${{ github.event.pull_request.number }}
