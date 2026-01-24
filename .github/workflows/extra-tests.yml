@@ -123,7 +123,7 @@ jobs:
           
           echo "$CMD" > run_tests.ps1
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no run_tests.ps1 "$USER@$HOST:C:/Users/$USER/"
-          sshpass -e ssh -tt -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "powershell -File C:/Users/$USER/run_tests.ps1"
+          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "powershell -File C:/Users/$USER/run_tests.ps1"
 
       - name: Fetch Test Results
         if: always() && steps.azlogin.outcome == 'success'
@@ -177,7 +177,7 @@ jobs:
           scope: resourceGroup
           resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
           subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
-          action-on-unmanage-resources: deleteResources
+          action-on-unmanage-resources: delete
           deny-settings-mode: none
 
       - name: Verify Cleanup
