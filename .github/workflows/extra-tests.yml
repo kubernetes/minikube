@@ -174,7 +174,7 @@ jobs:
         run: |
           # Delete the stack which deletes the resources
           VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
-          az stack group delete --yes --quiet \
+          az stack group delete --yes \
             --name "${VM_NAME}-stack" \
             --resource-group "$MINIKUBE_AZ_RESOURCE_GROUP" \
             --subscription "$MINIKUBE_AZ_SUBSCRIPTION_ID" \
