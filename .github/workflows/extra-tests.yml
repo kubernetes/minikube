@@ -78,7 +78,7 @@ jobs:
           
           # Install gotestsum
           sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "go install gotest.tools/gotestsum@latest"
-          choco install kubernetes-cli
+          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "choco install kubernetes-cli"
 
       - name: Copy Binaries to VM
         env:
