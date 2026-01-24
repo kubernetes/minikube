@@ -177,6 +177,7 @@ jobs:
           scope: resourceGroup
           resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
           subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+          template-file: ./hack/windows-ci-image/vm.bicep
           action-on-unmanage-resources: delete
           deny-settings-mode: none
 
