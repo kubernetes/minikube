@@ -24,6 +24,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
+          cache: true
       - name: Build Windows Binaries
         run: |
           make e2e-windows-amd64.exe
@@ -33,30 +34,43 @@ jobs:
           sudo apt-get update && sudo apt-get install -y sshpass
       - name: Create VM
         id: create_vm
+        uses: azure/bicep-deploy@v1
+        with:
+          type: deploymentStack
+          operation: create
+          name: "${{ github.event.pull_request.number }}-${{ github.run_id }}-stack"
+          scope: resourceGroup
+          resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
+          subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+          template-file: ./hack/windows-ci-image/vm.bicep
+          parameters-file: ./hack/windows-ci-image/vm.bicepparam
+          parameters: '{"vmName": "m-${{ github.event.pull_request.number }}-${{ github.run_id }}"}'
+          action-on-unmanage-resources: delete
+          deny-settings-mode: none
+
+      - name: Wait for SSH
         env:
-          MINIKUBE_AZ_SUBSCRIPTION_ID: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+          SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
         run: |
-          # Generate VM Name
-          TIMESTAMP=$(date +%s)
-          SUFFIX=${TIMESTAMP: -7}
-          VM_NAME="m-${{ github.event.pull_request.number }}-${SUFFIX}"
-          echo "VM_NAME=$VM_NAME" >> $GITHUB_ENV
-          
-          # Deploy Stack
-          cd hack/windows-ci-image
-          az stack group create --verbose \
-            --name "${VM_NAME}-stack" \
-            --resource-group "$MINIKUBE_AZ_RESOURCE_GROUP" \
-            --subscription "$MINIKUBE_AZ_SUBSCRIPTION_ID" \
-            --template-file vm.bicep \
-            --parameters vm.bicepparam \
-            --parameters vmName=$VM_NAME \
-            --action-on-unmanage deleteResources --deny-settings-mode None
+          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
+          echo "Waiting for SSH on $HOST..."
+          for i in {1..30}; do
+            if sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ConnectTimeout=5 "minikubeadmin@$HOST" "echo 'SSH Ready'"; then
+              echo "SSH is ready!"
+              exit 0
+            fi
+            echo "Waiting for SSH... ($i/30)"
+            sleep 10
+          done
+          echo "SSH failed to become ready."
+          exit 1
 
       - name: Install Tools (Windows VM)
         env:
           SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
         run: |
+          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
           HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
           USER="minikubeadmin"
           
@@ -67,6 +81,7 @@ jobs:
         env:
           SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
         run: |
+          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
           HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
           USER="minikubeadmin"
           
@@ -84,6 +99,7 @@ jobs:
           ROOT_JOB_ID: ${{ github.run_id }}
           windows_functional_azure: "Windows Functional Azure"
         run: |
+          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
           HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
           USER="minikubeadmin"
           
@@ -114,6 +130,7 @@ jobs:
         env:
           SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
         run: |
+          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
           HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
           USER="minikubeadmin"
           
@@ -156,6 +173,7 @@ jobs:
           MINIKUBE_AZ_SUBSCRIPTION_ID: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
         run: |
           # Delete the stack which deletes the resources
+          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
           az stack group delete --yes --quiet \
             --name "${VM_NAME}-stack" \
             --resource-group "$MINIKUBE_AZ_RESOURCE_GROUP" \
