@@ -16,6 +16,7 @@ jobs:
       MINIKUBE_AZ_IMAGE_VERSION: "1.0.0"
     steps:
       - name: Azure Login
+        id: azlogin
         uses: azure/login@v2
         with:
           creds: '{"clientId":"${{ secrets.MINIKUBE_AZ_CLIENT_ID }}","clientSecret":"${{ secrets.MINIKUBE_AZ_PASSWORD }}","subscriptionId":"${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.MINIKUBE_AZ_TENANT_ID }}"}'
@@ -36,7 +37,7 @@ jobs:
           go install github.com/medyagh/gopogh/cmd/gopogh@latest
       - name: Create VM
         id: create_vm
-        uses: azure/bicep-deploy@v1
+        uses: azure/bicep-deploy@v2
         with:
           type: deploymentStack
           operation: create
@@ -125,7 +126,7 @@ jobs:
           sshpass -e ssh -tt -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "powershell -File C:/Users/$USER/run_tests.ps1"
 
       - name: Fetch Test Results
-        if: always()
+        if: always() && steps.azlogin.outcome == 'success'
         env:
           SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
         run: |
@@ -137,7 +138,7 @@ jobs:
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST:C:/Users/$USER/testout.txt" . || true
 
       - name: Generate Gopogh
-        if: always()
+        if: always() && steps.azlogin.outcome == 'success'
         env:
           SET_PR_NUMBER: ${{ github.event.pull_request.number }}
           COMMIT: ${{ github.sha }}
@@ -156,7 +157,7 @@ jobs:
           fi
 
       - name: Upload Artifacts
-        if: always()
+        if: always() && steps.azlogin.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: test-results
@@ -167,18 +168,22 @@ jobs:
             testout.txt
 
       - name: Cleanup VM
-        if: always()
-        env:
-          MINIKUBE_AZ_SUBSCRIPTION_ID: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
-        run: |
-          # Delete the stack which deletes the resources
-          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
-          az stack group delete --yes \
-            --name "${{ github.event.pull_request.number }}-${{ github.run_id }}-stack" \
-            --resource-group "$MINIKUBE_AZ_RESOURCE_GROUP" \
-            --subscription "$MINIKUBE_AZ_SUBSCRIPTION_ID" \
-            --action-on-unmanage deleteResources
-          
-          # Verify cleanup
-          echo "Verifying cleanup..."
-          az resource list --resource-group "$MINIKUBE_AZ_RESOURCE_GROUP" --output table
+        if: always() && steps.azlogin.outcome == 'success'
+        uses: azure/bicep-deploy@v2
+        with:
+          type: deploymentStack
+          operation: delete
+          name: "${{ github.event.pull_request.number }}-${{ github.run_id }}-stack"
+          scope: resourceGroup
+          resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
+          subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+          action-on-unmanage-resources: deleteResources
+          deny-settings-mode: none
+
+      - name: Verify Cleanup
+        if: always() && steps.azlogin.outcome == 'success'
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            echo "Verifying cleanup..."
+            az resource list --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" --output table
