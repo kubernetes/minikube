@@ -111,9 +111,7 @@ jobs:
           \$env:windows_functional_azure = '$windows_functional_azure';
           
           gotestsum --jsonfile testout.json -f standard-verbose --raw-command -- \`
-            go tool test2json -t \`
-            ./e2e-windows-amd64.exe --minikube-start-args=\"--driver=hyperv\" --binary=minikube-windows-amd64.exe -test.run TestFunctional -test.v -test.timeout=40m | \`
-            Tee-Object -FilePath testout.txt
+            powershell -Command \"./e2e-windows-amd64.exe --minikube-start-args='--driver=hyperv' --binary=minikube-windows-amd64.exe -test.run TestFunctional -test.v -test.timeout=40m | go tool test2json -t | Tee-Object -FilePath testout.txt\"
           
           \$env:result=\$lastexitcode
           if(\$env:result -eq 0){ echo 'minikube: SUCCESS' } else { echo 'minikube: FAIL' }
@@ -175,7 +173,7 @@ jobs:
           # Delete the stack which deletes the resources
           VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
           az stack group delete --yes \
-            --name "${VM_NAME}-stack" \
+            --name "${{ github.event.pull_request.number }}-${{ github.run_id }}-stack" \
             --resource-group "$MINIKUBE_AZ_RESOURCE_GROUP" \
             --subscription "$MINIKUBE_AZ_SUBSCRIPTION_ID" \
             --action-on-unmanage deleteResources
