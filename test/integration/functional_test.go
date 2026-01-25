@@ -1865,10 +1865,11 @@ func localEmptyCertPath() string {
 // setupFileSync copies files to the Minikube home directory to verify that they are correctly synced to the VM.
 // It tests two main sync mechanisms:
 // 1. Generic file sync: Files placed in $MINIKUBE_HOME/files/<path> should be synced to /<path> in the VM.
-//    - sync.test -> /etc/test/nested/copy/... (verified by validateFileSync)
-//    - minikube_test2.pem -> /etc/ssl/certs/... (verified by validateCertSync)
+//   - sync.test -> /etc/test/nested/copy/... (verified by validateFileSync)
+//   - minikube_test2.pem -> /etc/ssl/certs/... (verified by validateCertSync)
+//
 // 2. Certificate sync: Files placed in $MINIKUBE_HOME/certs should be installed as system certificates in the VM.
-//    - minikube_test.pem -> /etc/ssl/certs/... (verified by validateCertSync)
+//   - minikube_test.pem -> /etc/ssl/certs/... (verified by validateCertSync)
 func setupFileSync(_ context.Context, t *testing.T, _ string) {
 	p := localSyncTestPath()
 	t.Logf("local sync path: %s", p)
