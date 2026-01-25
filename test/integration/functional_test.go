@@ -734,7 +734,8 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 	}
 }
 
-// validateMinikubeKubectlDirectCall validates that calling minikube's kubectl
+// validateMinikubeKubectlDirectCall validates that calling the minikube binary linked as "kubectl" acts as a kubectl wrapper.
+// This tests the feature where minikube behaves like kubectl when invoked via a binary named "kubectl".
 func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 	dir := filepath.Dir(Target())
@@ -742,8 +743,11 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 	if runtime.GOOS == "windows" {
 		newName += ".exe"
 	}
-	dstfn := filepath.Join(dir, newName)
-	err := os.Link(Target(), dstfn)
+	dstfn, err := filepath.Abs(filepath.Join(dir, newName))
+	if err != nil {
+		t.Fatalf("failed to get absolute path check kubectl binary: %v", err)
+	}
+	err = os.Link(Target(), dstfn)
 
 	if err != nil {
 		t.Fatalf("failed to link kubectl binary from %s to %s: %v", Target(), dstfn, err)
