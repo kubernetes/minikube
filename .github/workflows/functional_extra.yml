@@ -1,12 +1,13 @@
 name: Functional Extra
 
 on:
-  pull_request:
+  pull_request_target:
     types: [labeled]
+
 
 jobs:
   windows-hyperv:
-    if: contains(github.event.pull_request.labels.*.name, 'ok-to-extra-test')
+    if: github.repository == 'kubernetes/minikube' && contains(github.event.pull_request.labels.*.name, 'ok-to-extra-test')
     runs-on: ubuntu-latest
     env:
       MINIKUBE_AZ_RESOURCE_GROUP: "SIG-CLUSTER-LIFECYCLE-MINIKUBE"
@@ -15,12 +16,16 @@ jobs:
       MINIKUBE_AZ_IMAGE_NAME: "minikube-ci-windows-11"
       MINIKUBE_AZ_IMAGE_VERSION: "1.0.0"
     steps:
+      - uses: actions/checkout@v6
+        with:
+          # pull_request_target checks out the base branch by default
+          # We need to explicitly checkout the PR's head commit to test the changes
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Azure Login
         id: azlogin
         uses: azure/login@v2
         with:
           creds: '{"clientId":"${{ secrets.MINIKUBE_AZ_CLIENT_ID }}","clientSecret":"${{ secrets.MINIKUBE_AZ_PASSWORD }}","subscriptionId":"${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.MINIKUBE_AZ_TENANT_ID }}"}'
-      - uses: actions/checkout@v6
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
