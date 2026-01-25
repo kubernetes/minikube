@@ -28,7 +28,7 @@ spec:
         name: mysql
         args:
           # 1. Existing optimization
-          - "--performance-schema=OFF"         
+          - "--performance-schema=OFF"
           # 2. CRITICAL: Reduce buffer pool to fit in 384Mi limit
           # 64M is safe for dev; allows room for OS + connections
           - "--innodb-buffer-pool-size=64M"
