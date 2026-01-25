@@ -1795,11 +1795,6 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
-	// docs(skip): Skips for ARM64 architecture since it's not supported by MySQL
-	if arm64Platform() {
-		t.Skip("arm64 is not supported by mysql. Skip the test. See https://github.com/kubernetes/minikube/issues/10144")
-	}
-
 	defer PostMortemLogs(t, profile)
 
 	// docs: Run `kubectl replace --force -f testdata/mysql/yaml`
