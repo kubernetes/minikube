@@ -297,6 +297,8 @@ func TestBinaryMirror(t *testing.T) {
 	}
 
 	newBinaryPath := filepath.Join(newBinaryDir, binaryName)
+	// Usage of os.Rename might result in "invalid cross-device link" error if the files are not on the same partition.
+	// In that case, we fall back to copying the file.
 	if err := os.Rename(binaryPath, newBinaryPath); err != nil {
 		t.Logf("os.Rename failed, falling back to copy (likely cross-device): %v", err)
 		if err := mcnutils.CopyFile(binaryPath, newBinaryPath); err != nil {
