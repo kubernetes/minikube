@@ -1,0 +1,141 @@
+name: Functional Extra
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  windows-hyperv:
+    if: contains(github.event.pull_request.labels.*.name, 'ok-to-extra-test')
+    runs-on: ubuntu-latest
+    env:
+      MINIKUBE_AZ_RESOURCE_GROUP: "SIG-CLUSTER-LIFECYCLE-MINIKUBE"
+      AZURE_DEFAULTS_LOCATION: "southcentralus"
+      MINIKUBE_AZ_SIG_NAME: "minikube"
+      MINIKUBE_AZ_IMAGE_NAME: "minikube-ci-windows-11"
+      MINIKUBE_AZ_IMAGE_VERSION: "1.0.0"
+    steps:
+      - name: Azure Login
+        id: azlogin
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.MINIKUBE_AZ_CLIENT_ID }}","clientSecret":"${{ secrets.MINIKUBE_AZ_PASSWORD }}","subscriptionId":"${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.MINIKUBE_AZ_TENANT_ID }}"}'
+      - uses: actions/checkout@v6
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - name: Build Windows Binaries
+        run: |
+          sudo apt-get update &
+          make e2e-windows-amd64.exe
+          make minikube-windows-amd64.exe
+      - name: Install Gopogh
+        uses: ./.github/actions/install-gopogh
+      - name: Create VM
+        id: create_vm
+        uses: azure/bicep-deploy@v2
+        with:
+          type: deploymentStack
+          operation: create
+          name: "${{ github.event.pull_request.number }}-${{ github.run_id }}-stack"
+          scope: resourceGroup
+          resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
+          subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+          template-file: ./hack/windows-ci-image/vm.bicep
+          parameters-file: ./hack/windows-ci-image/vm.bicepparam
+          parameters: '{"vmName": "m-${{ github.event.pull_request.number }}-${{ github.run_id }}"}'
+          action-on-unmanage-resources: delete
+          deny-settings-mode: none
+
+      - name: Wait for SSH
+        env:
+          SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
+        run: |
+          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
+          echo "Waiting for SSH on $HOST..."
+          for i in {1..30}; do
+            if sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ConnectTimeout=5 "minikubeadmin@$HOST" "echo 'SSH Ready'"; then
+              echo "SSH is ready!"
+              exit 0
+            fi
+            echo "Waiting for SSH... ($i/30)"
+            sleep 10
+          done
+          echo "SSH failed to become ready."
+          exit 1
+
+      - name: Copy Binaries to VM
+        env:
+          SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
+        run: |
+          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
+          USER="minikubeadmin"
+          
+          # Copy binaries
+          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./out/minikube-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./out/e2e-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e scp -r -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./test/integration/testdata "$USER@$HOST:C:/Users/$USER/"
+
+      - name: Run Functional Test
+        continue-on-error: true
+        env:
+          SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
+        run: |
+          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
+          USER="minikubeadmin"
+          
+          CMD="
+          \$env:Path += ';C:\Users\minikubeadmin\go\bin';
+          
+          gotestsum --jsonfile testout.json -f standard-verbose --raw-command -- \`
+            powershell -Command \"./e2e-windows-amd64.exe --minikube-start-args='--driver=hyperv' --binary=./minikube-windows-amd64.exe '-test.run' TestFunctional '-test.v' '-test.timeout=40m' | go tool test2json -t | Tee-Object -FilePath testout.txt\"
+          
+          \$env:result=\$lastexitcode
+          if(\$env:result -eq 0){ echo 'minikube: SUCCESS' } else { echo 'minikube: FAIL' }      
+          "
+          
+          echo "$CMD" > run_tests.ps1
+          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no run_tests.ps1 "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=9 "$USER@$HOST" "powershell -File C:/Users/$USER/run_tests.ps1"
+
+      - name: Copy results from inside the VM
+        if: always() && steps.azlogin.outcome == 'success'
+        env:
+          SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
+        run: |
+          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
+          USER="minikubeadmin"
+          
+          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST:C:/Users/$USER/testout.json" . || true
+          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST:C:/Users/$USER/testout.txt" . || true
+          # Create Report Directory
+          mkdir -p report
+          [ -f testout.json ] && mv testout.json report/
+          [ -f testout.txt ] && mv testout.txt report/
+      - name: Generate Gopogh HTML Report
+        uses: ./.github/actions/generate-report
+        if: always() && steps.azlogin.outcome == 'success'
+        with:
+          json_report_path: './report/testout.json'
+          report_dir: './report'
+          report_title: "Windows Functional Azure ${GITHUB_REF}"
+          artifact_name_suffix: "windows-hyperv"
+          check_strict: 'true'
+
+      - name: Cleanup VM
+        if: always() && steps.azlogin.outcome == 'success'
+        run: az rest --method DELETE --url "/subscriptions/${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}/resourceGroups/${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}/providers/Microsoft.Resources/deploymentStacks/${{ github.event.pull_request.number }}-${{ github.run_id }}-stack?api-version=2024-03-01&actionOnUnmanage=deleteAll" || true
+
+      - name: Verify Cleanup
+        if: always() && steps.azlogin.outcome == 'success'
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            echo "Verifying cleanup..."
+            az resource list --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" --output table

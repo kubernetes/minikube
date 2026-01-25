@@ -1,0 +1,21 @@
+name: 'Install Gopogh'
+description: 'Downloads and installs gopogh'
+inputs:
+  version:
+    description: 'Gopogh version'
+    default: 'v0.29.0'
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: |
+        GOPOGH_VERSION=${{ inputs.version }}
+        GOOS=$(go env GOOS)
+        GOARCH=$(go env GOARCH)
+        URL="https://github.com/medyagh/gopogh/releases/download/${GOPOGH_VERSION}/gopogh-${GOOS}-${GOARCH}"
+        echo "Downloading ${URL}"
+        curl -fsSL "${URL}" -o gopogh
+        sudo install -m 0755 gopogh /usr/local/bin/gopogh
+        rm gopogh
+        command -v gopogh
+        gopogh -version || true
