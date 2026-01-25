@@ -34,6 +34,7 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -298,12 +299,8 @@ func TestBinaryMirror(t *testing.T) {
 	newBinaryPath := filepath.Join(newBinaryDir, binaryName)
 	if err := os.Rename(binaryPath, newBinaryPath); err != nil {
 		t.Logf("os.Rename failed, falling back to copy (likely cross-device): %v", err)
-		input, err := os.ReadFile(binaryPath)
-		if err != nil {
-			t.Fatalf("Failed to read binary file: %v", err)
-		}
-		if err := os.WriteFile(newBinaryPath, input, 0755); err != nil {
-			t.Fatalf("Failed to write binary file: %v", err)
+		if err := mcnutils.CopyFile(binaryPath, newBinaryPath); err != nil {
+			t.Fatalf("Failed to copy binary file: %v", err)
 		}
 		if err := os.Remove(binaryPath); err != nil {
 			t.Logf("Warning: Failed to remove original binary file: %v", err)
