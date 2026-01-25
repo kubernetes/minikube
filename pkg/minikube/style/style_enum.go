@@ -103,6 +103,7 @@ const (
 	WaitingWithSpinner
 	WaitingPods
 	Warning
+	WarningRed
 	Workaround
 	CNI
 	Toolkit

@@ -331,17 +331,26 @@ func SuccessT(format string, a ...V) {
 
 // WarningT is a shortcut for writing a templated warning message to stderr
 func WarningT(format string, a ...V) {
+	warningCommon(style.Warning, format, a...)
+}
+
+// WarningRedT is a shortcut for writing a templated red warning message to stderr
+func WarningRedT(format string, a ...V) {
+	warningCommon(style.WarningRed, format, a...)
+}
+
+func warningCommon(st style.Enum, format string, a ...V) {
 	if JSON {
 		// if spin is active from a previous step, it will stop spinner displaying
 		if spin.Active() {
 			spin.Stop()
 		}
-		st, _, _ := stylized(style.Warning, useColor, format, a...)
+		st, _, _ := stylized(st, useColor, format, a...)
 		register.PrintWarning(st)
 		klog.Warning(st)
 		return
 	}
-	ErrT(style.Warning, format, a...)
+	ErrT(st, format, a...)
 }
 
 // FailureT is a shortcut for writing a templated failure message to stderr

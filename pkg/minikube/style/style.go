@@ -96,6 +96,7 @@ var Config = map[Enum]Options{
 	Failure:          {Prefix: "❌  ", LowPrefix: LowError},
 	Fatal:            {Prefix: "💣  ", LowPrefix: LowError},
 	Warning:          {Prefix: "❗  ", LowPrefix: LowWarning},
+	WarningRed:       {Prefix: "❗  ", LowPrefix: LowWarning, Color: Red},
 	KnownIssue:       {Prefix: "🧯  ", LowPrefix: LowError},
 	UnmetRequirement: {Prefix: "⛔  ", LowPrefix: LowError},
 	NotAllowed:       {Prefix: "🚫  ", LowPrefix: LowError},
