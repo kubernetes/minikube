@@ -1,6 +1,10 @@
 name: Functional Extra
 
 on:
+  # pull_request_target runs in the context of the base repo, allowing access to secrets
+  # unlike pull_request which runs in the context of the merge commit
+  # every commit needs re-labeling "ok-to-extra-test" label by OWNERS 
+  # that ensures unvetted code will not run this test
   pull_request_target:
     types: [labeled]
 
