@@ -76,6 +76,14 @@ jobs:
           echo "SSH failed to become ready."
           exit 1
 
+      - name: Install kubectl
+        env:
+          SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
+        run: |
+          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
+          USER="minikubeadmin"
+          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "powershell -Command \"if (-not (Get-Command kubectl.exe -ErrorAction SilentlyContinue)) { choco install kubernetes-cli --yes --no-prompt --ignore-package-exit-codes --ignore-detected-reboot }\""          
       - name: Copy Binaries to VM
         env:
           SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
@@ -100,12 +108,15 @@ jobs:
           
           CMD="
           \$env:Path += ';C:\Users\minikubeadmin\go\bin';
+          \$OutputEncoding = [System.Text.Encoding]::UTF8;
           
-          gotestsum --jsonfile testout.json -f standard-verbose --raw-command -- \`
-            powershell -Command \"./e2e-windows-amd64.exe --minikube-start-args='--driver=hyperv' --binary=./minikube-windows-amd64.exe '-test.run' TestFunctional '-test.v' '-test.timeout=40m' | go tool test2json -t | Tee-Object -FilePath testout.txt\"
-          
+          ./e2e-windows-amd64.exe --minikube-start-args='--driver=hyperv' --binary=./minikube-windows-amd64.exe '-test.run' TestFunctional '-test.v' '-test.timeout=40m' | Tee-Object -FilePath testout.txt
           \$env:result=\$lastexitcode
+          
+          Get-Content testout.txt | go tool test2json -t | Out-File -Encoding UTF8 testout.json
+          
           if(\$env:result -eq 0){ echo 'minikube: SUCCESS' } else { echo 'minikube: FAIL' }      
+          exit \$env:result
           "
           
           echo "$CMD" > run_tests.ps1
