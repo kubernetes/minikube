@@ -184,7 +184,6 @@ jobs:
 
       - name: Verify Cleanup
         if: always() && steps.azlogin.outcome == 'success'
-        uses: azure/cli@v2
-        with:
-            echo "Verifying cleanup..."
-            az resource list --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" --query "[].{Name:name, Type:type, Created:createdTime}" --output table
+        run: |
+          echo "Verifying cleanup..."
+          az resource list --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" --query "[].{Name:name, Type:type, Created:createdTime}" --output table
