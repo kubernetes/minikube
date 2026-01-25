@@ -84,11 +84,6 @@ jobs:
         continue-on-error: true
         env:
           SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
-          # Pass environment variables needed for gopogh
-          SET_PR_NUMBER: ${{ github.event.pull_request.number }}
-          COMMIT: ${{ github.sha }}
-          ROOT_JOB_ID: ${{ github.run_id }}
-          windows_functional_azure: "Windows Functional Azure"
         run: |
           VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
           HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
@@ -96,10 +91,6 @@ jobs:
           
           CMD="
           \$env:Path += ';C:\Users\minikubeadmin\go\bin';
-          \$env:SET_PR_NUMBER = '$SET_PR_NUMBER';
-          \$env:COMMIT = '$COMMIT';
-          \$env:ROOT_JOB_ID = '$ROOT_JOB_ID';
-          \$env:windows_functional_azure = '$windows_functional_azure';
           
           gotestsum --jsonfile testout.json -f standard-verbose --raw-command -- \`
             powershell -Command \"./e2e-windows-amd64.exe --minikube-start-args='--driver=hyperv' --binary=./minikube-windows-amd64.exe '-test.run' TestFunctional '-test.v' '-test.timeout=40m' | go tool test2json -t | Tee-Object -FilePath testout.txt\"
@@ -139,14 +130,7 @@ jobs:
 
       - name: Cleanup VM
         if: always() && steps.azlogin.outcome == 'success'
-        run: |
-          # Deleted asynchronously to save time
-          az stack group delete \
-            --name "${{ github.event.pull_request.number }}-${{ github.run_id }}-stack" \
-            --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" \
-            --action-on-unmanage delete \
-            --yes \
-            --no-wait || true
+        run: az rest --method DELETE --url "/subscriptions/${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}/resourceGroups/${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}/providers/Microsoft.Resources/deploymentStacks/${{ github.event.pull_request.number }}-${{ github.run_id }}-stack?api-version=2024-03-01&actionOnUnmanage=deleteAll" || true
 
       - name: Verify Cleanup
         if: always() && steps.azlogin.outcome == 'success'
