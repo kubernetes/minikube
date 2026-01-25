@@ -92,9 +92,9 @@ var Config = map[Enum]Options{
 	Workaround:         {Prefix: "👉  ", LowPrefix: LowIndent},
 
 	// Fail emoji's
-	Conflict:         {Prefix: "💢  ", LowPrefix: LowWarning},
-	Failure:          {Prefix: "❌  ", LowPrefix: LowError},
-	Fatal:            {Prefix: "💣  ", LowPrefix: LowError},
+	Conflict:         {Prefix: "💢  ", LowPrefix: LowWarning, Color: Red},
+	Failure:          {Prefix: "❌  ", LowPrefix: LowError, Color: Red},
+	Fatal:            {Prefix: "💣  ", LowPrefix: LowError, Color: Red},
 	Warning:          {Prefix: "❗  ", LowPrefix: LowWarning},
 	WarningRed:       {Prefix: "❗  ", LowPrefix: LowWarning, Color: Red},
 	KnownIssue:       {Prefix: "🧯  ", LowPrefix: LowError},
