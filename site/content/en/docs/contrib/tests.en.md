@@ -225,7 +225,8 @@ Steps:
 - Make sure the command doesn't raise any error
 
 #### validateMinikubeKubectlDirectCall
-validates that calling minikube's kubectl
+validates that calling the minikube binary linked as "kubectl" acts as a kubectl wrapper.
+This tests the feature where minikube behaves like kubectl when invoked via a binary named "kubectl".
 
 Steps:
 - Run `kubectl get pods` by calling the minikube's `kubectl` binary file directly
