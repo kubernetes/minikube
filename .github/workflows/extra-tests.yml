@@ -31,7 +31,7 @@ jobs:
           sudo apt-get update &
           make e2e-windows-amd64.exe
           make minikube-windows-amd64.exe
-      - name: Install Tools )
+      - name: Install Tools
         run: |
           sudo apt-get install -y sshpass
           go install github.com/medyagh/gopogh/cmd/gopogh@latest
@@ -68,18 +68,6 @@ jobs:
           done
           echo "SSH failed to become ready."
           exit 1
-
-      - name: Install Tools (Windows VM)
-        env:
-          SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
-        run: |
-          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
-          HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
-          USER="minikubeadmin"
-          
-          # Install gotestsum
-          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=5 "$USER@$HOST" "go install gotest.tools/gotestsum@latest"
-          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=5 "$USER@$HOST" "choco install kubernetes-cli"
 
       - name: Copy Binaries to VM
         env:
@@ -125,7 +113,7 @@ jobs:
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no run_tests.ps1 "$USER@$HOST:C:/Users/$USER/"
           sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=9 "$USER@$HOST" "powershell -File C:/Users/$USER/run_tests.ps1"
 
-      - name: Fetch Test Results
+      - name: Copy results from inside the VM
         if: always() && steps.azlogin.outcome == 'success'
         env:
           SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
@@ -137,35 +125,128 @@ jobs:
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST:C:/Users/$USER/testout.json" . || true
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST:C:/Users/$USER/testout.txt" . || true
 
-      - name: Generate Gopogh
+      - name: Create Report Directory
         if: always() && steps.azlogin.outcome == 'success'
+        run: |
+          mkdir -p report
+          [ -f testout.json ] && mv testout.json report/
+          [ -f testout.txt ] && mv testout.txt report/
+
+      - name: Generate Gopogh HTML Report
+        if: always() && steps.azlogin.outcome == 'success'
+        shell: bash
         env:
           SET_PR_NUMBER: ${{ github.event.pull_request.number }}
           COMMIT: ${{ github.sha }}
           ROOT_JOB_ID: ${{ github.run_id }}
           windows_functional_azure: "Windows Functional Azure"
         run: |
-          # Run gopogh locally on Linux runner using the fetched json
-          if [ -f "testout.json" ]; then
-            gopogh --in testout.json --out_html testout.html --out_summary testout_summary.json \
-              --name "Windows Functional Azure" \
-              -pr "${{ github.event.pull_request.number }}" \
-              --repo github.com/kubernetes/minikube/ \
-              --details "${{ github.sha }}:$(date +%Y-%m-%d):${{ github.run_id }}"
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "Windows Functional Azure ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          
+          PassNum=$(echo $STAT | jq '.NumberOfPass')
+          FailNum=$(echo $STAT | jq '.NumberOfFail')
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+
+          if [ "${FailNum}" -eq 0 ]; then
+            STATUS_ICON="✓"
           else
-             echo "testout.json not found"
+            STATUS_ICON="✗"
+          fi
+          if [ "${PassNum}" -eq 0 ]; then
+            STATUS_ICON="✗"
           fi
 
-      - name: Upload Artifacts
+          # Result in one sentence
+          RESULT_SHORT="${STATUS_ICON} Completed with ${FailNum} / ${TestsNum} failures"
+
+          echo "RESULT_SHORT=${RESULT_SHORT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+      - name: Set PR or Branch label for report filename
         if: always() && steps.azlogin.outcome == 'success'
-        uses: actions/upload-artifact@v4
+        id: vars
+        run: |
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              echo "PR_OR_MASTER=PR${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            else
+              echo "PR_OR_MASTER=Master" >> $GITHUB_OUTPUT
+            fi
+            echo "COMMIT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+            RUN_ID_SHORT="$GITHUB_RUN_ID"
+            if [ ${#RUN_ID_SHORT} -gt 7 ]; then
+              RUN_ID_SHORT="${RUN_ID_SHORT: -7}"
+            fi
+            echo "RUN_ID_SHORT=${RUN_ID_SHORT}" >> $GITHUB_OUTPUT
+
+      - name: Upload Gopogh report
+        if: always() && steps.azlogin.outcome == 'success'
+        id: upload_gopogh
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: test-results
-          path: |
-            testout_summary.json
-            testout.html
-            testout.json
-            testout.txt
+            name: functional-windows-hyperv-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}-run-${{ steps.vars.outputs.RUN_ID_SHORT}}
+            path: ./report
+
+      - name: The End Result Summary
+        if: always() && steps.azlogin.outcome == 'success'
+        shell: bash
+        run: |
+            summary="$GITHUB_STEP_SUMMARY"
+            Print_Gopogh_Artifact_Download_URL() {
+              ARTIFACT_NAME="functional-windows-hyperv-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}"
+              ARTIFACT_ID='${{ steps.upload_gopogh.outputs.artifact-id }}'
+                if [ -n "$ARTIFACT_ID" ]; then
+                URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/$ARTIFACT_ID"
+                echo "Gopogh report artifact ($ARTIFACT_NAME): $URL"
+                echo "📥 [Download Gopogh Report]($URL)" >> "$summary"
+              else
+                echo "Could not determine artifact ID (action version may not expose it). Find artifact named: $ARTIFACT_NAME"
+                echo "Report artifact name: $ARTIFACT_NAME" | tee -a "$summary"
+              fi
+            }
+
+            Print_Gopogh_Artifact_Download_URL
+            echo "-------------------- RESULT SUMMARY --------------------"
+            echo "$RESULT_SHORT" | tee -a "$summary"            
+
+            numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
+            numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
+            numSkip=$(echo "$STAT" | jq -r '.NumberOfSkip // 0')
+            
+            # Print test counts only if they are non-zero
+            print_test_counts_only() {
+              if [ -n "${numFail}" ]; then
+              echo "Failed: ${numFail}" | tee -a "$summary"
+              fi
+              if [ -n "${numPass}" ]; then
+              echo "Passed: ${numPass}" | tee -a "$summary"
+              fi
+              if [ -n "${numSkip}" ]; then
+              echo "Skipped: ${numSkip}" | tee -a "$summary"
+              fi
+            }
+
+            print_test_counts_only
+
+            # Prints lits of test names grouped by result status
+            print_test_names_by_status() {
+              local count="$1" header="$2" sym="$3" field="$4" to_summary="$5"
+              (( count > 0 )) || return 0
+              local line="------------------------ ${count} ${header} ------------------------"
+              if [ "$to_summary" = "yes" ]; then
+                echo "$line" | tee -a "$summary"
+                jq -r ".${field}[]? | \"  ${sym} \(.)\"" <<<"$STAT" | tee -a "$summary"
+              else
+                echo "$line"
+                jq -r ".${field}[]? | \"  ${sym} \(.)\"" <<<"$STAT"
+              fi
+            }
+
+            print_test_names_by_status "${numFail:-0}"   "Failed"  "✗" "FailedTests"   yes
+            print_test_names_by_status "${numPass:-0}"   "Passed"  "✓" "PassedTests"   no
+            print_test_names_by_status "${numSkip:-0}"   "Skipped" "•" "SkippedTests"  yes
+            echo $summary >> $GITHUB_STEP_SUMMARY
 
       - name: Cleanup VM
         if: always() && steps.azlogin.outcome == 'success'
