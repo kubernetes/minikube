@@ -32,7 +32,7 @@ jobs:
           make e2e-windows-amd64.exe
           make minikube-windows-amd64.exe
       - name: Install Gopogh
-      - uses: ./.github/actions/install-gopogh
+        uses: ./.github/actions/install-gopogh
       - name: Create VM
         id: create_vm
         uses: azure/bicep-deploy@v2
