@@ -150,7 +150,7 @@ jobs:
           go-version: ${{env.GO_VERSION}}
           cache: true      
       - name: Install gopogh
-      - uses: ./.github/actions/install-gopogh
+        uses: ./.github/actions/install-gopogh
       - name: Set up cgroup v2 delegation (rootless)
         if: ${{ matrix.rootless }}
         run: |
@@ -311,7 +311,7 @@ jobs:
         shell: bash
         run: go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
       - name: Generate Gopogh HTML Report
-      - uses: ./.github/actions/generate-report
+        uses: ./.github/actions/generate-report
         if: always()
         with:
           json_report_path: './report/testout.json'
