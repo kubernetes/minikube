@@ -52,7 +52,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	}
 
 	checkStorageClass := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "storageclass", "-o=json"))
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "storageclass", "-o=json"))
 		if err != nil {
 			return err
 		}
@@ -72,14 +72,14 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	}
 
 	// Now create a testpvc
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", path.Join(*testdataDir, "storage-provisioner", "pvc.yaml")))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "apply", "-f", path.Join(*testdataDir, "storage-provisioner", "pvc.yaml")))
 	if err != nil {
 		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
 	}
 
 	// make sure the pvc is Bound
 	checkStoragePhase := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "pvc", "myclaim", "-o=json"))
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "pvc", "myclaim", "-o=json"))
 		if err != nil {
 			return err
 		}
@@ -103,13 +103,13 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 
 	// write to the persistent volume
 	podName := "sp-pod"
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", podName, "--", "touch", "/tmp/mount/foo"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "exec", podName, "--", "touch", "/tmp/mount/foo"))
 	if err != nil {
 		t.Fatalf("creating file in pv: args %q: %v", rr.Command(), err)
 	}
 
 	// kill the pod
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "-f", path.Join(*testdataDir, "storage-provisioner", "pod.yaml")))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "delete", "-f", path.Join(*testdataDir, "storage-provisioner", "pod.yaml")))
 	if err != nil {
 		t.Fatalf("kubectl delete pod.yaml failed: args %q: %v", rr.Command(), err)
 	}
@@ -117,7 +117,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	createPVTestPod(ctx, t, profile)
 
 	// make sure the file we previously wrote to the persistent volume still exists
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", podName, "--", "ls", "/tmp/mount"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "exec", podName, "--", "ls", "/tmp/mount"))
 	if err != nil {
 		t.Fatalf("creating file in pv: args %q: %v", rr.Command(), err)
 	}
@@ -128,7 +128,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 
 func createPVTestPod(ctx context.Context, t *testing.T, profile string) {
 	// Deploy a pod that will mount the PV
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", path.Join(*testdataDir, "storage-provisioner", "pod.yaml")))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "apply", "-f", path.Join(*testdataDir, "storage-provisioner", "pod.yaml")))
 	if err != nil {
 		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
 	}

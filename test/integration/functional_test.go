@@ -230,7 +230,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// docs: Get the node labels from the cluster with `kubectl get nodes`
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "nodes", "--output=go-template", "--template='{{range $k, $v := (index .items 0).metadata.labels}}{{$k}} {{end}}'"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "nodes", "--output=go-template", "--template='{{range $k, $v := (index .items 0).metadata.labels}}{{$k}} {{end}}'"))
 	if err != nil {
 		t.Errorf("failed to 'kubectl get nodes' with args %q: %v", rr.Command(), err)
 	}
@@ -692,7 +692,7 @@ func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// docs: Run `kubectl config current-context`
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "config", "current-context"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "config", "current-context"))
 	if err != nil {
 		t.Errorf("failed to get current-context. args %q : %v", rr.Command(), err)
 	}
@@ -707,7 +707,7 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// docs: Run `kubectl get po -A` to get all pods in the current minikube profile
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-A"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "po", "-A"))
 	if err != nil {
 		t.Errorf("failed to get kubectl pods: args %q : %v", rr.Command(), err)
 	}
@@ -825,7 +825,7 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 	}
 
 	// docs: Run `kubectl get po po -l tier=control-plane -n kube-system -o=json` to get all the Kubernetes conponents
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-l", "tier=control-plane", "-n", "kube-system", "-o=json"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "po", "-l", "tier=control-plane", "-n", "kube-system", "-o=json"))
 	if err != nil {
 		t.Fatalf("failed to get components. args %q: %v", rr.Command(), err)
 	}
@@ -1422,19 +1422,19 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 			t.Logf("-----------------------service failure post-mortem--------------------------------")
 			ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
 			defer cancel()
-			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "po", "hello-node"))
+			rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "describe", "po", "hello-node"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
 			}
 			t.Logf("hello-node pod describe:\n%s", rr.Stdout)
 
-			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "-l", "app=hello-node"))
+			rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "logs", "-l", "app=hello-node"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
 			}
 			t.Logf("hello-node logs:\n%s", rr.Stdout)
 
-			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "svc", "hello-node"))
+			rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "describe", "svc", "hello-node"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
 			}
@@ -1456,11 +1456,11 @@ func validateServiceCmdDeployApp(ctx context.Context, t *testing.T, profile stri
 		var rr *RunResult
 		var err error
 
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image", echoServerImage))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "deployment", "hello-node", "--image", echoServerImage))
 		if err != nil {
 			t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 		}
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
 		if err != nil {
 			t.Fatalf("failed to expose hello-node deployment: %q : %v", rr.Command(), err)
 		}
@@ -1617,19 +1617,19 @@ func validateServiceCmdConnect(ctx context.Context, t *testing.T, profile string
 			t.Logf("-----------------------service failure post-mortem--------------------------------")
 			ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
 			defer cancel()
-			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "po", "hello-node-connect"))
+			rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "describe", "po", "hello-node-connect"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
 			}
 			t.Logf("hello-node pod describe:\n%s", rr.Stdout)
 
-			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "-l", "app=hello-node-connect"))
+			rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "logs", "-l", "app=hello-node-connect"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
 			}
 			t.Logf("hello-node logs:\n%s", rr.Stdout)
 
-			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "svc", "hello-node-connect"))
+			rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "describe", "svc", "hello-node-connect"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
 			}
@@ -1641,11 +1641,11 @@ func validateServiceCmdConnect(ctx context.Context, t *testing.T, profile string
 	var err error
 
 	// docs: Create a new `kickbase/echo-server` deployment
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node-connect", "--image", echoServerImage))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "deployment", "hello-node-connect", "--image", echoServerImage))
 	if err != nil {
 		t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 	}
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node-connect", "--type=NodePort", "--port=8080"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "expose", "deployment", "hello-node-connect", "--type=NodePort", "--port=8080"))
 	if err != nil {
 		t.Fatalf("failed to expose hello-node deployment: %q : %v", rr.Command(), err)
 	}
@@ -1803,7 +1803,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// docs: Run `kubectl replace --force -f testdata/mysql/yaml`
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
 	if err != nil {
 		t.Fatalf("failed to kubectl replace mysql: args %q failed: %v", rr.Command(), err)
 	}
@@ -1817,7 +1817,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 	// docs: Run `mysql -e show databases;` inside the MySQL pod to verify MySQL is up and running
 	// docs: Retry with exponential backoff if failed, as `mysqld` first comes up without users configured. Scan for names in case of a reschedule.
 	mysql := func() error {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
 		return err
 	}
 	if err = retry.Expo(mysql, 1*time.Second, Minutes(5)); err != nil {
@@ -2342,13 +2342,13 @@ func validateLicenseCmd(ctx context.Context, t *testing.T, _ string) {
 func validateInvalidService(ctx context.Context, t *testing.T, profile string) {
 
 	// try to start an invalid service. This service is linked to a pod whose image name is invalid, so this pod will never become running
-	rrApply, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "invalidsvc.yaml")))
+	rrApply, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "invalidsvc.yaml")))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rrApply.Command(), err)
 	}
 	defer func() {
 		// Cleanup test configurations in advance of future tests
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "-f", filepath.Join(*testdataDir, "invalidsvc.yaml")))
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "delete", "-f", filepath.Join(*testdataDir, "invalidsvc.yaml")))
 		if err != nil {
 			t.Fatalf("clean up %s failed: %v", rr.Command(), err)
 		}
