@@ -80,6 +80,20 @@ func TestApplyStyle(t *testing.T) {
 			useColor:    true,
 			format:      "foo",
 		},
+		{
+			expected:    fmt.Sprintf("%s%sfoo\n%s", style.Config[style.WarningRed].Prefix, style.Red, style.Reset),
+			description: "format foo, warning red style, color on",
+			styleEnum:   style.WarningRed,
+			useColor:    true,
+			format:      "foo",
+		},
+		{
+			expected:    fmt.Sprintf("%sfoo", style.LowWarning),
+			description: "format foo, warning red style, color off",
+			styleEnum:   style.WarningRed,
+			useColor:    false,
+			format:      "foo",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
