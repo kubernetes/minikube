@@ -139,17 +139,14 @@ jobs:
 
       - name: Cleanup VM
         if: always() && steps.azlogin.outcome == 'success'
-        uses: azure/bicep-deploy@v2
-        with:
-          type: deploymentStack
-          operation: delete
-          name: "${{ github.event.pull_request.number }}-${{ github.run_id }}-stack"
-          scope: resourceGroup
-          resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
-          subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
-          template-file: ./hack/windows-ci-image/vm.bicep
-          action-on-unmanage-resources: delete
-          deny-settings-mode: none
+        run: |
+          # Deleted asynchronously to save time
+          az stack group delete \
+            --name "${{ github.event.pull_request.number }}-${{ github.run_id }}-stack" \
+            --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" \
+            --action-on-unmanage delete \
+            --yes \
+            --no-wait || true
 
       - name: Verify Cleanup
         if: always() && steps.azlogin.outcome == 'success'
