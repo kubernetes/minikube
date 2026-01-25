@@ -1,11 +1,11 @@
-name: Extra tests
+name: Functional Extra
 
 on:
   pull_request:
     types: [labeled]
 
 jobs:
-  windows-hyperv-functional:
+  windows-hyperv:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-extra-test')
     runs-on: ubuntu-latest
     env:
