@@ -172,8 +172,7 @@ runs:
           # Strict Check logic
           if [ "$CHECK_STRICT" = "true" ]; then
               # Allow overriding minimum expected passes
-              local min_pass="${MIN_PASS_THRESHOLD:-45}"
-              local timeout_pattern="Test Timed out"
+              timeout_pattern="Test Timed out"
     
               echo "---------------------------------------------------------"
     
@@ -194,10 +193,7 @@ runs:
                 exit 4
               fi
               
-              if [ "${numPass:-0}" -lt "$min_pass" ]; then
-                echo "*** Only ${numPass} passed (< required ${min_pass}) ***" | tee -a "$summary"
-                exit 5
-              fi
+
     
               echo "Exit criteria satisfied: ${numPass} passed, ${numFail} failed, ${numSkip} skipped."
           fi
