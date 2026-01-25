@@ -1053,10 +1053,6 @@ update-cilium-version:
 update-yakd-version:
 	cd hack && go run update/yakd_version/yakd_version.go
 
-.PHONY: update-kube-registry-proxy-version
-update-kube-registry-proxy-version:
-	cd hack && go run update/kube_registry_proxy_version/kube_registry_proxy_version.go
-
 .PHONY: update-headlamp-version
 update-headlamp-version:
 	cd hack && go run update/headlamp_version/headlamp_version.go
