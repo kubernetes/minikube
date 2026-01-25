@@ -1862,10 +1862,17 @@ func localEmptyCertPath() string {
 	return filepath.Join(localpath.MiniPath(), "/certs", fmt.Sprintf("%d_empty.pem", os.Getpid()))
 }
 
-// Copy extra file into minikube home folder for file sync test
+// setupFileSync copies files to the Minikube home directory to verify that they are correctly synced to the VM.
+// It tests two main sync mechanisms:
+// 1. Generic file sync: Files placed in $MINIKUBE_HOME/files/<path> should be synced to /<path> in the VM.
+//    - sync.test -> /etc/test/nested/copy/... (verified by validateFileSync)
+//    - minikube_test2.pem -> /etc/ssl/certs/... (verified by validateCertSync)
+// 2. Certificate sync: Files placed in $MINIKUBE_HOME/certs should be installed as system certificates in the VM.
+//    - minikube_test.pem -> /etc/ssl/certs/... (verified by validateCertSync)
 func setupFileSync(_ context.Context, t *testing.T, _ string) {
 	p := localSyncTestPath()
 	t.Logf("local sync path: %s", p)
+	// This file is tested by validateFileSync to ensure generic file sync works
 	syncFile := filepath.Join(*testdataDir, "sync.test")
 	err := cp.Copy(syncFile, p)
 	if err != nil {
@@ -1874,7 +1881,8 @@ func setupFileSync(_ context.Context, t *testing.T, _ string) {
 
 	testPem := filepath.Join(*testdataDir, "minikube_test.pem")
 
-	// Write to a temp file for an atomic write
+	// Write to a temp file for an atomic write to $MINIKUBE_HOME/certs
+	// This tests that certs in this dir are installed to /etc/ssl/certs and /usr/share/ca-certificates in the VM
 	tmpPem := localTestCertPath() + ".pem"
 	if err := cp.Copy(testPem, tmpPem); err != nil {
 		t.Fatalf("failed to copy %s: %v", testPem, err)
@@ -1899,6 +1907,7 @@ func setupFileSync(_ context.Context, t *testing.T, _ string) {
 	}
 
 	testPem2 := filepath.Join(*testdataDir, "minikube_test2.pem")
+	// This tests that certs placed in $MINIKUBE_HOME/files/etc/ssl/certs are also processed correctly
 	tmpPem2 := localTestCertFilesPath() + ".pem"
 	if err := cp.Copy(testPem2, tmpPem2); err != nil {
 		t.Fatalf("failed to copy %s: %v", testPem2, err)
@@ -1922,7 +1931,8 @@ func setupFileSync(_ context.Context, t *testing.T, _ string) {
 		t.Errorf("%s size=%d, want %d", localTestCertFilesPath(), got.Size(), want.Size())
 	}
 
-	// Create an empty file just to mess with people
+	// Create an empty file just to mess with people.
+	// This tests that empty files or garbage files in these directories don't crash the sync process.
 	if _, err := os.Create(localEmptyCertPath()); err != nil {
 		t.Fatalf("create failed: %v", err)
 	}
