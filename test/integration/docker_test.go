@@ -255,3 +255,86 @@ func TestDockerEnvContainerd(t *testing.T) {
 		t.Fatal("failed to detect image 'local/minikube-dockerenv-containerd-test' in output of docker image ls")
 	}
 }
+
+// TestDockerEnvCrio makes sure that minikube docker-env command works when the runtime is crio
+func TestDockerEnvCrio(t *testing.T) {
+	t.Log("running with", ContainerRuntime(), DockerDriver(), runtime.GOOS, runtime.GOARCH)
+	if ContainerRuntime() != constants.CRIO || !DockerDriver() || runtime.GOOS != "linux" {
+		t.Skip("skipping: TestDockerEnvCrio can only be run with the crio runtime on Docker driver")
+	}
+	profile := UniqueProfileName("dockerenv")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
+	defer CleanupWithLogs(t, profile, cancel)
+
+	// start the minikube with crio runtime
+	args := append([]string{"start", "-p", profile}, StartArgs()...)
+	cmd := exec.CommandContext(ctx, Target(), args...)
+	startResult, err := Run(t, cmd)
+	if err != nil {
+		t.Errorf("failed to start minikube with args: %q : %v", startResult.Command(), err)
+	}
+	time.Sleep(time.Second * 10)
+
+	// execute 'minikube docker-env --ssh-host --ssh-add' and extract the 'DOCKER_HOST' environment value
+	cmd = exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s docker-env --ssh-host --ssh-add -p %s", Target(), profile))
+	result, err := Run(t, cmd)
+	if err != nil {
+		t.Errorf("failed to execute minikube docker-env --ssh-host --ssh-add, error: %v, output: %s", err, result.Output())
+	}
+
+	output := result.Output()
+	groups := regexp.MustCompile(`DOCKER_HOST="(\S*)"`).FindStringSubmatch(output)
+	if len(groups) < 2 {
+		t.Errorf("DOCKER_HOST doesn't match expected format, output is %s", output)
+	}
+	dockerHost := groups[1]
+	segments := strings.Split(dockerHost, ":")
+	if len(segments) < 3 {
+		t.Errorf("DOCKER_HOST doesn't match expected format, output is %s", dockerHost)
+	}
+
+	// get SSH_AUTH_SOCK
+	groups = regexp.MustCompile(`SSH_AUTH_SOCK=(\S*)`).FindStringSubmatch(output)
+	if len(groups) < 2 {
+		t.Errorf("failed to acquire SSH_AUTH_SOCK, output is %s", output)
+	}
+	sshAuthSock := groups[1]
+	// get SSH_AGENT_PID
+	groups = regexp.MustCompile(`SSH_AGENT_PID=(\S*)`).FindStringSubmatch(output)
+	if len(groups) < 2 {
+		t.Errorf("failed to acquire SSH_AUTH_PID, output is %s", output)
+	}
+	sshAgentPid := groups[1]
+
+	cmd = exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("SSH_AUTH_SOCK=%s SSH_AGENT_PID=%s DOCKER_HOST=%s docker version", sshAuthSock, sshAgentPid, dockerHost))
+
+	result, err = Run(t, cmd)
+	if err != nil {
+		t.Fatalf("failed to execute 'docker version', error: %v, output: %s", err, result.Output())
+	}
+	// if we are really connecting to podman inside node, docker version output should have word 'Podman'
+	// If everything works properly, in the output of `docker version` you should be able to see something like
+	/*
+		Server:       Podman Engine
+	*/
+	if !strings.Contains(result.Output(), "Podman") {
+		t.Fatal("failed to detect keyword 'Podman' in output of docker version")
+	}
+
+	// now try to build an image
+	cmd = exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("SSH_AUTH_SOCK=%s SSH_AGENT_PID=%s DOCKER_HOST=%s DOCKER_BUILDKIT=0 docker build -t local/minikube-dockerenv-crio-test:latest testdata/docker-env", sshAuthSock, sshAgentPid, dockerHost))
+	result, err = Run(t, cmd)
+	if err != nil {
+		t.Errorf("failed to build images, error: %v, output:%s", err, result.Output())
+	}
+
+	// and check whether that image is really available
+	cmd = exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("SSH_AUTH_SOCK=%s SSH_AGENT_PID=%s DOCKER_HOST=%s docker image ls", sshAuthSock, sshAgentPid, dockerHost))
+	result, err = Run(t, cmd)
+	if err != nil {
+		t.Fatalf("failed to execute 'docker image ls', error: %v, output: %s", err, result.Output())
+	}
+	if !strings.Contains(result.Output(), "local/minikube-dockerenv-crio-test") {
+		t.Fatal("failed to detect image 'local/minikube-dockerenv-crio-test' in output of docker image ls")
+	}
+}
