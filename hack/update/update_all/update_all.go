@@ -43,7 +43,6 @@ var (
 		"istio_operator_version":        true, // till this is fixed https://github.com/istio/istio/issues/57185
 		"kicbase_version":               true, // This one is not related to auto updating, this is a tool used by kicbae_auto_build
 		"preload_version":               true, // This is an internal tool to bump the preload version, not a component update
-		"kubectl_version":               true, // used by kubevirt addon, disabled until we find a replacement for bitnami/kubectl image
 	}
 )
 
