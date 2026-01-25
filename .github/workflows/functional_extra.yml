@@ -150,12 +150,41 @@ jobs:
 
       - name: Cleanup VM
         if: always() && steps.azlogin.outcome == 'success'
-        run: az rest --method DELETE --url "/subscriptions/${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}/resourceGroups/${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}/providers/Microsoft.Resources/deploymentStacks/${{ github.event.pull_request.number }}-${{ github.run_id }}-stack?api-version=2024-03-01&actionOnUnmanage=deleteAll" || true
+        run: |
+          STACK_NAME="${{ github.event.pull_request.number }}-${{ github.run_id }}-stack"
+          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          
+          echo "Deleting Deployment Stack: $STACK_NAME"
+          # Try deleting the stack first
+          az stack group delete --name "$STACK_NAME" --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" --action-on-unmanage deleteAll --yes || echo "Stack deletion failed or stack not found"
+          
+          echo "Ensuring VM and resources are deleted..."
+          # Force delete VM and components if they still exist
+          VM_ID=$(az vm show --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" --name "$VM_NAME" --query id -o tsv 2>/dev/null) || true
+          
+          if [ -n "$VM_ID" ]; then
+            echo "VM $VM_NAME still exists. deleting..."
+            # Get associated resources
+            NIC_ID=$(az vm show --ids "$VM_ID" --query "networkProfile.networkInterfaces[0].id" -o tsv 2>/dev/null) || true
+            OS_DISK_ID=$(az vm show --ids "$VM_ID" --query "storageProfile.osDisk.managedDisk.id" -o tsv 2>/dev/null) || true
+            if [ -n "$NIC_ID" ]; then
+              PUBLIC_IP_ID=$(az network nic show --ids "$NIC_ID" --query "ipConfigurations[0].publicIpAddress.id" -o tsv 2>/dev/null) || true
+            fi
+            
+            # Delete VM
+            az vm delete --ids "$VM_ID" --yes --no-wait
+            
+            # Delete associated resources
+            [ -n "$OS_DISK_ID" ] && az disk delete --ids "$OS_DISK_ID" --yes --no-wait || true
+            [ -n "$NIC_ID" ] && az network nic delete --ids "$NIC_ID" --yes --no-wait || true
+            [ -n "$PUBLIC_IP_ID" ] && az network public-ip delete --ids "$PUBLIC_IP_ID" --yes --no-wait || true
+          else
+            echo "VM $VM_NAME not found (already deleted?)"
+          fi
 
       - name: Verify Cleanup
         if: always() && steps.azlogin.outcome == 'success'
         uses: azure/cli@v2
         with:
-          inlineScript: |
             echo "Verifying cleanup..."
-            az resource list --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" --output table
+            az resource list --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" --query "[].{Name:name, Type:type, Created:createdTime}" --output table
