@@ -94,6 +94,27 @@ func TestApplyStyle(t *testing.T) {
 			useColor:    false,
 			format:      "foo",
 		},
+		{
+			expected:    fmt.Sprintf("%s%sfoo\n%s", style.Config[style.Conflict].Prefix, style.Red, style.Reset),
+			description: "format foo, conflict style, color on",
+			styleEnum:   style.Conflict,
+			useColor:    true,
+			format:      "foo",
+		},
+		{
+			expected:    fmt.Sprintf("%s%sfoo\n%s", style.Config[style.Failure].Prefix, style.Red, style.Reset),
+			description: "format foo, failure style, color on",
+			styleEnum:   style.Failure,
+			useColor:    true,
+			format:      "foo",
+		},
+		{
+			expected:    fmt.Sprintf("%s%sfoo\n%s", style.Config[style.Fatal].Prefix, style.Red, style.Reset),
+			description: "format foo, fatal style, color on",
+			styleEnum:   style.Fatal,
+			useColor:    true,
+			format:      "foo",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
