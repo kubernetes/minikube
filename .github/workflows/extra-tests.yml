@@ -80,6 +80,7 @@ jobs:
           # Copy binaries
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./out/minikube-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./out/e2e-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e scp -r -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./test/integration/testdata "$USER@$HOST:C:/Users/$USER/"
 
       - name: Run Functional Test
         continue-on-error: true
