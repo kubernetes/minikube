@@ -383,16 +383,10 @@ func kubeletCRIOptions(cr Manager, kubernetesVersion semver.Version) map[string]
 	opts := map[string]string{
 		"container-runtime-endpoint": fmt.Sprintf("unix://%s", cr.SocketPath()),
 	}
-	if kubernetesVersion.LT(semver.MustParse("1.24.0-alpha.0")) {
-		opts["container-runtime"] = "remote"
-	}
 	return opts
 }
 
 func checkCNIPlugins(kubernetesVersion semver.Version) error {
-	if kubernetesVersion.LT(semver.Version{Major: 1, Minor: 24}) {
-		return nil
-	}
 	_, err := os.Stat("/opt/cni/bin")
 	return err
 }

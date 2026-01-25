@@ -35,9 +35,6 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-// Container runtimes
-const remoteContainerRuntime = "remote"
-
 // GenerateKubeadmYAML generates the kubeadm.yaml file for primary control-plane node.
 func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Manager) ([]byte, error) {
 	k8s := cc.KubernetesConfig

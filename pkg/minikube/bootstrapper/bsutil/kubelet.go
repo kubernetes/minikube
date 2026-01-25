@@ -26,7 +26,6 @@ import (
 	"github.com/blang/semver/v4"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -89,14 +88,6 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	if _, ok := extraOpts["hostname-override"]; !ok {
 		nodeName := KubeNodeName(mc, nc)
 		extraOpts["hostname-override"] = nodeName
-	}
-
-	// Handled by CRI in 1.24+, and not by kubelet
-	if version.LT(semver.MustParse("1.24.0-alpha.2")) {
-		pauseImage := images.Pause(version, k8s.ImageRepository)
-		if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
-			extraOpts["pod-infra-container-image"] = pauseImage
-		}
 	}
 
 	// container-runtime-endpoint kubelet flag was deprecated but corresponding containerRuntimeEndpoint kubelet config field is "required" and supported from k8s v1.27
