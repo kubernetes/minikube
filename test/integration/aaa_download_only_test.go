@@ -297,7 +297,17 @@ func TestBinaryMirror(t *testing.T) {
 
 	newBinaryPath := filepath.Join(newBinaryDir, binaryName)
 	if err := os.Rename(binaryPath, newBinaryPath); err != nil {
-		t.Errorf("Failed to move binary file: %+v", err)
+		t.Logf("os.Rename failed, falling back to copy (likely cross-device): %v", err)
+		input, err := os.ReadFile(binaryPath)
+		if err != nil {
+			t.Fatalf("Failed to read binary file: %v", err)
+		}
+		if err := os.WriteFile(newBinaryPath, input, 0755); err != nil {
+			t.Fatalf("Failed to write binary file: %v", err)
+		}
+		if err := os.Remove(binaryPath); err != nil {
+			t.Logf("Warning: Failed to remove original binary file: %v", err)
+		}
 	}
 	if err := createSha256File(newBinaryPath); err != nil {
 		t.Errorf("Failed to generate sha256 checksum file: %+v", err)
