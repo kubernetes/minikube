@@ -207,7 +207,7 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		// Start the "nginx" pod.
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "testsvc.yaml")))
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "testsvc.yaml")))
 		if err != nil {
 			t.Fatalf("%s failed: %v", rr.Command(), err)
 		}
@@ -229,7 +229,7 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 		}
 		// Wait until the nginx-svc has a loadbalancer ingress IP
 		err := wait.PollUntilContextTimeout(ctx, 5*time.Second, Minutes(3), true, func(ctx context.Context) (bool, error) {
-			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
+			rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
 			if err != nil {
 				return false, err
 			}
@@ -241,7 +241,7 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 		})
 		if err != nil {
 			t.Errorf("nginx-svc svc.status.loadBalancer.ingress never got an IP: %v", err)
-			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc"))
+			rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "svc", "nginx-svc"))
 			if err != nil {
 				t.Errorf("%s failed: %v", rr.Command(), err)
 			}
@@ -285,7 +285,7 @@ func validateAccessDirect(ctx context.Context, t *testing.T, profile string) {
 	if err := retry.Expo(fetch, 3*time.Second, Minutes(2), 13); err != nil {
 		t.Errorf("failed to hit nginx at %q: %v", url, err)
 
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc"))
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "svc", "nginx-svc"))
 		if err != nil {
 			t.Errorf("%s failed: %v", rr.Command(), err)
 		}
