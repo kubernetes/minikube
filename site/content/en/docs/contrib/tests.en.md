@@ -385,9 +385,6 @@ Steps:
 - Run `mysql -e show databases;` inside the MySQL pod to verify MySQL is up and running
 - Retry with exponential backoff if failed, as `mysqld` first comes up without users configured. Scan for names in case of a reschedule.
 
-Skips:
-- Skips for ARM64 architecture since it's not supported by MySQL
-
 #### validateFileSync
 to check existence of the test file
 
