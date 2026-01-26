@@ -79,16 +79,25 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 			return nil, fmt.Errorf("generating MAC address: %v", err)
 		}
 	case cfg.Network == "vmnet-shared" || strings.HasPrefix(cfg.Network, "vmnet:"):
-		// We generate a random UUID (or use a user provided one). vmnet-helper
-		// will obtain a mac address from the vmnet framework using the UUID.
-		u := cfg.UUID
-		if u == "" {
-			u = uuid.NewString()
-		}
 		// Normalize legacy "vmnet-shared" to "vmnet:shared".
 		networkName := cfg.Network
 		if networkName == "vmnet-shared" {
 			networkName = "vmnet:shared"
+		}
+		var u string
+		if vmnet.GeneratesMACAddress() {
+			// Interface-id mode: generate UUID, vmnet will provide MAC.
+			u = cfg.UUID
+			if u == "" {
+				u = uuid.NewString()
+			}
+		} else {
+			// Network mode: we generate the MAC address.
+			var err error
+			mac, err = common.GenerateMACAddress()
+			if err != nil {
+				return nil, fmt.Errorf("generating MAC address: %v", err)
+			}
 		}
 		helper = &vmnet.Helper{
 			MachineDir:  filepath.Join(storePath, "machines", machineName),
