@@ -53,6 +53,9 @@ const (
 	installPath = "/opt/vmnet-helper/bin/vmnet-helper"
 	// Installed via Homebrew (macOS 26+ only).
 	brewInstallPath = "/opt/homebrew/opt/vmnet-helper/libexec/vmnet-helper"
+
+	// vmnet-broker launchd plist path.
+	brokerPlistPath = "/Library/LaunchDaemons/com.github.nirs.vmnet-broker.plist"
 )
 
 // Helper manages the vmnet-helper process.
@@ -84,10 +87,12 @@ type helperVersion struct {
 
 // helperInfo contains cached information about vmnet-helper.
 type helperInfo struct {
-	Path      string
-	Version   helperVersion
-	NeedsSudo bool
-	Err       error
+	Path            string
+	Version         helperVersion
+	NeedsSudo       bool
+	SupportsNetwork bool // true if helper supports --network option
+	BrokerInstalled bool // true if vmnet-broker launchd plist exists
+	Err             error
 }
 
 var (
@@ -113,6 +118,11 @@ func getHelperInfo() (helperInfo, error) {
 			return
 		}
 		cached.NeedsSudo, cached.Err = helperNeedsSudo(cached.Version, macosVersion)
+		if cached.Err != nil {
+			return
+		}
+		cached.SupportsNetwork = helperSupportsNetwork(cached.Path)
+		cached.BrokerInstalled = brokerInstalled()
 	})
 	return cached, cached.Err
 }
@@ -153,8 +163,8 @@ func ValidateHelper(options *run.CommandOptions) error {
 		}
 	}
 
-	log.Debugf("Validated vmnet-helper (path=%q, version=%q, commit=%q, needsSudo=%v)",
-		helper.Path, helper.Version.Version, helper.Version.Commit, helper.NeedsSudo)
+	log.Debugf("Validated vmnet-helper (path=%q, version=%q, commit=%q, needsSudo=%v, supportsNetwork=%v, brokerInstalled=%v)",
+		helper.Path, helper.Version.Version, helper.Version.Commit, helper.NeedsSudo, helper.SupportsNetwork, helper.BrokerInstalled)
 
 	return nil
 }
@@ -441,6 +451,20 @@ func findHelper() (string, error) {
 	}
 	err := fmt.Errorf("failed to find vmnet-helper at %q", paths)
 	return "", &Error{Kind: reason.NotFoundVmnetHelper, Err: err}
+}
+
+// brokerInstalled returns true if the vmnet-broker launchd plist is installed.
+func brokerInstalled() bool {
+	_, err := os.Stat(brokerPlistPath)
+	return err == nil
+}
+
+// helperSupportsNetwork returns true if vmnet-helper supports the --network option.
+func helperSupportsNetwork(path string) bool {
+	// Use CombinedOutput since help may go to stderr.
+	out, _ := exec.Command(path, "--help").CombinedOutput()
+	// Check for the specific option format to avoid false positives.
+	return strings.Contains(string(out), "[--network NAME]")
 }
 
 // helperNeedsSudo returns true if vmnet-helper needs sudo to run based on the
