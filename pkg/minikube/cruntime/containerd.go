@@ -598,7 +598,7 @@ func containerdImagesPreloaded(runner command.Runner, imgs []string) bool {
 		return err
 	}
 
-	if err := retry.Expo(imageList, 250*time.Millisecond, 5*time.Second); err != nil {
+	if err := retry.Expo(imageList, 250*time.Millisecond, 30*time.Second); err != nil {
 		klog.Warningf("failed to get image list: %v", err)
 		return false
 	}
