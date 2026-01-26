@@ -31,7 +31,7 @@ jobs:
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpCNIPlugins.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@98357b18bf14b5342f975ff684046ec3b2a07725
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Kicbase/ISO: Update cni-plugins from ${{ steps.bumpCNIPlugins.outputs.OLD_VERSION }} to ${{ steps.bumpCNIPlugins.outputs.NEW_VERSION }}'
