@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/google/uuid"
 	"k8s.io/minikube/pkg/libmachine/drivers"
@@ -69,24 +70,30 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	machineName := config.MachineName(cfg, n)
 	storePath := localpath.MiniPath()
 
-	switch cfg.Network {
-	case "nat", "":
+	switch {
+	case cfg.Network == "nat" || cfg.Network == "":
 		// We generate a random mac address.
 		var err error
 		mac, err = common.GenerateMACAddress()
 		if err != nil {
 			return nil, fmt.Errorf("generating MAC address: %v", err)
 		}
-	case "vmnet-shared":
-		// We generate a random UUID (or use a user provided one). vment-helper
+	case cfg.Network == "vmnet-shared" || strings.HasPrefix(cfg.Network, "vmnet:"):
+		// We generate a random UUID (or use a user provided one). vmnet-helper
 		// will obtain a mac address from the vmnet framework using the UUID.
 		u := cfg.UUID
 		if u == "" {
 			u = uuid.NewString()
 		}
+		// Normalize legacy "vmnet-shared" to "vmnet:shared".
+		networkName := cfg.Network
+		if networkName == "vmnet-shared" {
+			networkName = "vmnet:shared"
+		}
 		helper = &vmnet.Helper{
 			MachineDir:  filepath.Join(storePath, "machines", machineName),
 			InterfaceID: u,
+			NetworkName: networkName,
 		}
 	default:
 		return nil, fmt.Errorf("unsupported network: %q", cfg.Network)

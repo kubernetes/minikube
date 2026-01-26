@@ -67,6 +67,11 @@ type Helper struct {
 	// will obtain the same MAC address from vmnet.
 	InterfaceID string
 
+	// NetworkName specifies the vmnet network. Format is "vmnet:name" where name
+	// is passed to vmnet-helper --network option when using broker mode. Empty
+	// value is treated as "vmnet:shared" for backward compatibility.
+	NetworkName string
+
 	// Offloading is required for krunkit, does not work with vfkit.
 	Offloading bool
 

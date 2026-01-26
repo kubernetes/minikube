@@ -89,6 +89,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		VmnetHelper: vmnet.Helper{
 			MachineDir:  filepath.Join(storePath, "machines", machineName),
 			InterfaceID: u,
+			NetworkName: "vmnet:shared",
 		},
 	}, nil
 }
