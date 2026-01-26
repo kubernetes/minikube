@@ -118,7 +118,10 @@ func getHelperInfo() (helperInfo, error) {
 }
 
 type interfaceInfo struct {
-	MACAddress string `json:"vmnet_mac_address"`
+	MACAddress   string `json:"vmnet_mac_address"`
+	StartAddress string `json:"vmnet_start_address"`
+	EndAddress   string `json:"vmnet_end_address"`
+	SubnetMask   string `json:"vmnet_subnet_mask"`
 }
 
 // ValidateHelper validates that vmnet-helper is installed and configured
@@ -223,7 +226,8 @@ func (h *Helper) Start(socketPath string) error {
 		return fmt.Errorf("failed to decode vmnet interface info: %w", err)
 	}
 
-	log.Infof("Got mac address %q", info.MACAddress)
+	log.Infof("Interface: mac=%s, range=%s-%s, mask=%s",
+		info.MACAddress, info.StartAddress, info.EndAddress, info.SubnetMask)
 	h.macAddress = info.MACAddress
 
 	return nil
