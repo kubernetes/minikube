@@ -19,7 +19,6 @@ limitations under the License.
 package vfkit
 
 import (
-	"crypto/rand"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -28,6 +27,7 @@ import (
 	"github.com/google/uuid"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/vfkit"
@@ -73,7 +73,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	case "nat", "":
 		// We generate a random mac address.
 		var err error
-		mac, err = generateMACAddress()
+		mac, err = common.GenerateMACAddress()
 		if err != nil {
 			return nil, fmt.Errorf("generating MAC address: %v", err)
 		}
@@ -122,15 +122,4 @@ func status(_ *run.CommandOptions) registry.State {
 		return registry.State{Error: err, Fix: "Run 'brew install vfkit'", Doc: docURL}
 	}
 	return registry.State{Installed: true, Healthy: true, Running: true}
-}
-
-func generateMACAddress() (string, error) {
-	buf := make([]byte, 6)
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
-	}
-	// Set local bit, ensure unicast address
-	buf[0] = (buf[0] | 2) & 0xfe
-	mac := fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5])
-	return mac, nil
 }
