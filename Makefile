@@ -939,6 +939,10 @@ update-crun-version:
 update-metrics-server-version:
 	cd hack && go run update/metrics_server_version/metrics_server_version.go
 
+.PHONY: update-kubevirt-version
+update-kubevirt-version:
+	cd hack && go run update/kubevirt_version/kubevirt_version.go
+
 .PHONY: update-runc-version
 update-runc-version:
 	cd hack && go run update/runc_version/runc_version.go
