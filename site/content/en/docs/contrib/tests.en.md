@@ -225,7 +225,8 @@ Steps:
 - Make sure the command doesn't raise any error
 
 #### validateMinikubeKubectlDirectCall
-validates that calling minikube's kubectl
+validates that calling the minikube binary linked as "kubectl" acts as a kubectl wrapper.
+This tests the feature where minikube behaves like kubectl when invoked via a binary named "kubectl".
 
 Steps:
 - Run `kubectl get pods` by calling the minikube's `kubectl` binary file directly
@@ -383,9 +384,6 @@ Steps:
 - Wait for the `mysql` pod to be running
 - Run `mysql -e show databases;` inside the MySQL pod to verify MySQL is up and running
 - Retry with exponential backoff if failed, as `mysqld` first comes up without users configured. Scan for names in case of a reschedule.
-
-Skips:
-- Skips for ARM64 architecture since it's not supported by MySQL
 
 #### validateFileSync
 to check existence of the test file

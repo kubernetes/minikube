@@ -146,7 +146,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		}
 
 		// Start the "busybox-mount" pod.
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml")))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml")))
 		if err != nil {
 			t.Fatalf("failed to 'kubectl replace' for busybox-mount-test. args %q : %v", rr.Command(), err)
 		}
@@ -167,7 +167,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		}
 
 		// test that file written from host was read in by the pod via cat /mount-9p/written-by-host;
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "busybox-mount"))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "logs", "busybox-mount"))
 		if err != nil {
 			t.Errorf("failed to get kubectl logs for busybox-mount. args %q : %v", rr.Command(), err)
 		}

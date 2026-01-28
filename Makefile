@@ -939,6 +939,10 @@ update-crun-version:
 update-metrics-server-version:
 	cd hack && go run update/metrics_server_version/metrics_server_version.go
 
+.PHONY: update-kubevirt-version
+update-kubevirt-version:
+	cd hack && go run update/kubevirt_version/kubevirt_version.go
+
 .PHONY: update-runc-version
 update-runc-version:
 	cd hack && go run update/runc_version/runc_version.go
@@ -1052,10 +1056,6 @@ update-cilium-version:
 .PHONY: update-yakd-version
 update-yakd-version:
 	cd hack && go run update/yakd_version/yakd_version.go
-
-.PHONY: update-kube-registry-proxy-version
-update-kube-registry-proxy-version:
-	cd hack && go run update/kube_registry_proxy_version/kube_registry_proxy_version.go
 
 .PHONY: update-headlamp-version
 update-headlamp-version:

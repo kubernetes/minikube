@@ -14,7 +14,7 @@ sed -e "s/%HOST%/$REGISTRY_HOST/g" \
 	</etc/nginx/conf.d/default.conf.in >/etc/nginx/conf.d/default.conf
 
 # wait for registry to come online
-while ! curl -sS "$REGISTRY_HOST:$REGISTRY_PORT" &>/dev/null; do
+while ! wget -q --spider "$REGISTRY_HOST:$REGISTRY_PORT" &>/dev/null; do
 	printf "waiting for the registry (%s:%s) to come online...\n" "$REGISTRY_HOST" "$REGISTRY_PORT"
 	sleep 1
 done

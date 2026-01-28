@@ -49,7 +49,7 @@ jobs:
     name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
         with:
           go-version: ${{env.GO_VERSION}}
           cache: true      
@@ -143,23 +143,14 @@ jobs:
     steps:
       - id: info-block
         uses: medyagh/info-block@main
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
         with:
           go-version: ${{env.GO_VERSION}}
           cache: true      
       - name: Install gopogh
-        shell: bash
-        run: |
-          GOPOGH_VERSION=v0.29.0
-          GOOS=$(go env GOOS)
-          GOARCH=$(go env GOARCH)
-          URL="https://github.com/medyagh/gopogh/releases/download/${GOPOGH_VERSION}/gopogh-${GOOS}-${GOARCH}"
-          echo "Downloading ${URL}"
-          curl -fsSL "${URL}" -o gopogh
-          sudo install -m 0755 gopogh /usr/local/bin/gopogh
-          rm gopogh
-          command -v gopogh
-          gopogh -version || true
+        uses: ./.github/actions/install-gopogh
       - name: Set up cgroup v2 delegation (rootless)
         if: ${{ matrix.rootless }}
         run: |
@@ -315,150 +306,19 @@ jobs:
           TIME_ELAPSED="${min} min $sec seconds "
           # make variables available for next step 
           echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
-      - name: Generate Gopogh HTML Report
+      - name: Convert Test Output to JSON
         if: always()
         shell: bash
-        run: |
-          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${{ matrix.name }} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
-          # Check if the test step failed AND the log contains "timed out"
-          if [[ "${{ steps.run_test.outcome }}" == "failure" && $(grep -c "panic: test timed out" ./report/testout.txt) -gt 0 ]]; then
-            # If it was a timeout, set your custom message
-            RESULT_SHORT="⌛⌛⌛ Test Timed out ${TIME_ELAPSED} ⌛⌛⌛"
-          else
-            PassNum=$(echo $STAT | jq '.NumberOfPass')
-            FailNum=$(echo $STAT | jq '.NumberOfFail')
-            TestsNum=$(echo $STAT | jq '.NumberOfTests')
-
-            if [ "${FailNum}" -eq 0 ]; then
-              STATUS_ICON="✓"
-            else
-              STATUS_ICON="✗"
-            fi
-            if [ "${PassNum}" -eq 0 ]; then
-              STATUS_ICON="✗"
-            fi
-
-            # Result in one sentence
-            RESULT_SHORT="${STATUS_ICON} Completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          fi
-
-          echo "RESULT_SHORT=${RESULT_SHORT}" >> $GITHUB_ENV
-          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
-          echo 'STAT<<EOF' >> $GITHUB_ENV
-          echo "${STAT}" >> $GITHUB_ENV
-          echo 'EOF' >> $GITHUB_ENV
-      - name: Set PR or Branch label for report filename
-        id: vars
-        run: |
-            if [ "${{ github.event_name }}" = "pull_request" ]; then
-              echo "PR_OR_MASTER=PR${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-            else
-              echo "PR_OR_MASTER=Master" >> $GITHUB_OUTPUT
-            fi
-            echo "COMMIT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
-            RUN_ID_SHORT="$GITHUB_RUN_ID"
-            if [ ${#RUN_ID_SHORT} -gt 7 ]; then
-              RUN_ID_SHORT="${RUN_ID_SHORT: -7}"
-            fi
-            echo "RUN_ID_SHORT=${RUN_ID_SHORT}" >> $GITHUB_OUTPUT
-      - name: Upload Gopogh report
-        id: upload_gopogh
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        run: go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+      - name: Generate Gopogh HTML Report
+        uses: ./.github/actions/generate-report
+        if: always()
         with:
-            name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}-run-${{ steps.vars.outputs.RUN_ID_SHORT}}
-            path: ./report
-      - name: The End Result Summary ${{ matrix.name }}
-        shell: bash
-        run: |
-            summary="$GITHUB_STEP_SUMMARY"
-            Print_Gopogh_Artifact_Download_URL() {
-              ARTIFACT_NAME="functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}"
-              ARTIFACT_ID='${{ steps.upload_gopogh.outputs.artifact-id }}'
-                if [ -n "$ARTIFACT_ID" ]; then
-                URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/$ARTIFACT_ID"
-                echo "Gopogh report artifact ($ARTIFACT_NAME): $URL"
-                echo "📥 [Download Gopogh Report]($URL)" >> "$summary"
-              else
-                echo "Could not determine artifact ID (action version may not expose it). Find artifact named: $ARTIFACT_NAME"
-                echo "Report artifact name: $ARTIFACT_NAME" | tee -a "$summary"
-              fi
-            }
-
-            Print_Gopogh_Artifact_Download_URL
-            echo "-------------------- RESULT SUMMARY --------------------"
-            echo "$RESULT_SHORT" | tee -a "$summary"            
-            echo "Time Elapsed: ${TIME_ELAPSED}" | tee -a "$summary"
-
-            numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
-            numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
-            numSkip=$(echo "$STAT" | jq -r '.NumberOfSkip // 0')
-            
-            # Print test counts only if they are non-zero
-            print_test_counts_only() {
-              if [ -n "${numFail}" ]; then
-              echo "Failed: ${numFail}" | tee -a "$summary"
-              fi
-              if [ -n "${numPass}" ]; then
-              echo "Passed: ${numPass}" | tee -a "$summary"
-              fi
-              if [ -n "${numSkip}" ]; then
-              echo "Skipped: ${numSkip}" | tee -a "$summary"
-              fi
-            }
-
-            print_test_counts_only
-
-            # Prints lits of test names grouped by result status
-            print_test_names_by_status() {
-              local count="$1" header="$2" sym="$3" field="$4" to_summary="$5"
-              (( count > 0 )) || return 0
-              local line="------------------------ ${count} ${header} ------------------------"
-              if [ "$to_summary" = "yes" ]; then
-                echo "$line" | tee -a "$summary"
-                jq -r ".${field}[]? | \"  ${sym} \(.)\"" <<<"$STAT" | tee -a "$summary"
-              else
-                echo "$line"
-                jq -r ".${field}[]? | \"  ${sym} \(.)\"" <<<"$STAT"
-              fi
-            }
-
-            print_test_names_by_status "${numFail:-0}"   "Failed"  "✗" "FailedTests"   yes
-            print_test_names_by_status "${numPass:-0}"   "Passed"  "✓" "PassedTests"   no
-            print_test_names_by_status "${numSkip:-0}"   "Skipped" "•" "SkippedTests"  yes
-            echo $summary >> $GITHUB_STEP_SUMMARY
-            decide_exit_code() {
-              # Allow overriding minimum expected passes for when some tests pass and others are timed out
-              local min_pass="${MIN_PASS_THRESHOLD:-45}"
-              local timeout_pattern="Test Timed out"
-
-              echo "---------------------------------------------------------"
-
-              # Timeout detection
-              if echo "$RESULT_SHORT" | grep -iq "$timeout_pattern"; then
-                echo "*** Detected test timeout ${TIME_ELAPSED} ⌛: '$timeout_pattern' ***"
-                exit 3
-              fi
-
-              # Any failures
-              if [ "${numFail:-0}" -gt 0 ]; then
-                echo "*** ${numFail} test(s) failed ***" 
-                exit 2
-              fi
-
-              # Zero passes (likely setup issue)
-              if [ "${numPass:-0}" -eq 0 ]; then
-                echo "*** No tests passed ***" 
-                exit 4
-              fi
-
-              # Insufficient passes safeguard
-              if [ "${numPass:-0}" -lt "$min_pass" ]; then
-                echo "*** Only ${numPass} passed (< required ${min_pass}) ***" | tee -a "$summary"
-                exit 5
-              fi
-
-              echo "Exit criteria satisfied: ${numPass} passed, ${numFail} failed, ${numSkip} skipped." 
-            }
-
-            decide_exit_code
+          json_report_path: './report/testout.json'
+          report_dir: './report'
+          report_title: "${{ matrix.name }} ${GITHUB_REF}"
+          artifact_name_suffix: "${{ matrix.name }}"
+          time_elapsed: "${{ env.TIME_ELAPSED }}"
+          check_strict: 'true'
+          test_outcome: "${{ steps.run_test.outcome }}"
+          test_text_path: './report/testout.txt'

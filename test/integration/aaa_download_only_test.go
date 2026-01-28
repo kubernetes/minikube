@@ -34,6 +34,7 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -296,8 +297,16 @@ func TestBinaryMirror(t *testing.T) {
 	}
 
 	newBinaryPath := filepath.Join(newBinaryDir, binaryName)
+	// Usage of os.Rename might result in "invalid cross-device link" error if the files are not on the same partition.
+	// In that case, we fall back to copying the file.
 	if err := os.Rename(binaryPath, newBinaryPath); err != nil {
-		t.Errorf("Failed to move binary file: %+v", err)
+		t.Logf("os.Rename failed, falling back to copy (likely cross-device): %v", err)
+		if err := mcnutils.CopyFile(binaryPath, newBinaryPath); err != nil {
+			t.Fatalf("Failed to copy binary file: %v", err)
+		}
+		if err := os.Remove(binaryPath); err != nil {
+			t.Logf("Warning: Failed to remove original binary file: %v", err)
+		}
 	}
 	if err := createSha256File(newBinaryPath); err != nil {
 		t.Errorf("Failed to generate sha256 checksum file: %+v", err)

@@ -162,7 +162,7 @@ func TestStartStop(t *testing.T) {
 							t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
 						}
 
-						rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "config", "get-contexts", profile))
+						rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "config", "get-contexts", profile))
 						if err != nil {
 							t.Logf("config context error: %v (may be ok)", err)
 						}
@@ -210,7 +210,7 @@ func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile, 
 		return
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "deploy/metrics-server", "-n", "kube-system"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "describe", "deploy/metrics-server", "-n", "kube-system"))
 	if err != nil {
 		t.Errorf("failed to get info on auto-pause deployments. args %q: %v", rr.Command(), err)
 	}
@@ -286,7 +286,7 @@ func validateAddonAfterStop(ctx context.Context, t *testing.T, profile, tcName, 
 		t.Errorf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
 	}
 
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "deploy/dashboard-metrics-scraper", "-n", "kubernetes-dashboard"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "describe", "deploy/dashboard-metrics-scraper", "-n", "kubernetes-dashboard"))
 	if err != nil {
 		t.Errorf("failed to get info on kubernetes-dashboard deployments. args %q: %v", rr.Command(), err)
 	}
@@ -316,7 +316,7 @@ func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 	t.Helper()
 
 	// schedule a pod to assert persistence
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
@@ -328,7 +328,7 @@ func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Use this pod to confirm that the runtime resource limits are sane
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "ulimit -n"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "ulimit -n"))
 	if err != nil {
 		t.Fatalf("ulimit: %v", err)
 	}

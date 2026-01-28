@@ -9,19 +9,19 @@ metadata:
 data:
   uninstall.sh: |
     #!/bin/bash
+    export KUBEVIRT_VERSION="v1.7.0"
 
     kubectl delete kubevirt kubevirt -n kubevirt
 
-    kubectl delete -f /manifests/kubevirt-operator.yaml
-
+    kubectl delete -f "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml"
   install.sh: |
     #!/bin/bash
 
-    export KUBEVIRT_VERSION=$(curl -s https://api.github.com/repos/kubevirt/kubevirt/releases | grep tag_name | grep -v -- - | sort -V | tail -1 | awk -F':' '{print $2}' | sed 's/,//' | xargs)
+    # To update: check https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirt/stable.txt
+    export KUBEVIRT_VERSION="v1.7.0"
     echo "Installing KubeVirt version: $KUBEVIRT_VERSION"
 
-    curl -Ls "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml" -o /manifests/kubevirt-operator.yaml
-    kubectl create -f /manifests/kubevirt-operator.yaml
+    kubectl create -f "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml"
 
     HARDWARE_EMULATION=$(grep -E 'svm|vmx' /proc/cpuinfo)
     if [ -z "$HARDWARE_EMULATION" ]; then

@@ -380,10 +380,10 @@ var Addons = map[string]*Addon{
 			"registry-proxy.yaml",
 			"0640"),
 	}, false, "registry", "minikube", "", "", map[string]string{
-		"KubeRegistryProxy": "k8s-minikube/kube-registry-proxy:0.0.9@sha256:f832bbe1d48c62de040bd793937eaa0c05d2f945a55376a99c80a4dd9961aeb1",
+		"KubeRegistryProxy": "minikube/kube-registry-proxy:v0.0.11@sha256:e321acf067df0a78fba3ff97748c10029ca2c413c5b7207e4ca000c62fcdac93",
 		"Registry":          "registry:3.0.0@sha256:cd92709b4191c5779cd7215ccd695db6c54652e7a62843197e367427efb84d0e",
 	}, map[string]string{
-		"KubeRegistryProxy": "gcr.io",
+		"KubeRegistryProxy": "registry.k8s.io",
 		"Registry":          "docker.io",
 	}, nil),
 	"registry-creds": NewAddon([]*BinAsset{
@@ -506,7 +506,7 @@ var Addons = map[string]*Addon{
 			"gvisor-runtimeclass.yaml",
 			"0640"),
 	}, false, "gvisor", "minikube", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gvisor/", map[string]string{
-		"GvisorAddon": "minikube/gvisor:v0.0.3@sha256:2cc0438e89691ed5eab3fce6b68fce6982e5de189418ebfc97a0932cda9bc080",
+		"GvisorAddon": "minikube/gvisor:v0.0.4@sha256:0f389d92114b6342bcdb971fc8e89e9d60683d49aa5e31b89d744ec420196fd9",
 	}, map[string]string{
 		"GvisorAddon": "registry.k8s.io",
 	}, nil),
