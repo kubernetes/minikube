@@ -1,0 +1,10 @@
+[Unit]
+Description=nerdctl
+Documentation=https://github.com/containerd/nerdctl
+
+[Socket]
+ListenStream=%t/nerdctl.sock
+SocketMode=0660
+
+[Install]
+WantedBy=sockets.target
