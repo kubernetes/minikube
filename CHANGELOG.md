@@ -17,12 +17,14 @@
 ## Warnings & Deprications
  * UI: Add a warning on changing default runtime to "containerd" in the next version (v1.39.0) (#22508)
  * hyperkit: remove driver builds & warn users to switch (#21946)
+ * Remove minikube support for 32-bit architectures (#22401)
 
 ## Improvements
+* UI: colorful based on status (profile list, addons list) (#22418)
+* Skip caching binaries when --no-kubernetes is set (#21139)
 * improve retry logs to print less duplicate lines (#22232)
 * improve ssh runner copying cert files (#21923)
 * vmnet: Skip validation in download-only mode (#21635)
-* HA (multi-control plane): Update kube-vip from v1.0.0 to v1.0.3  (#21699)(#21960)(#22258)
 * Improve windows cert in kubeconfig: normalize generated cert paths to forward slashes (#21845)
 * Add cgroup v2 freezer check for API server status (#22249)
 * Set  `FailCgroupV1` kubelet option for kubenetes 1.35+ if cgroup v1 (#22319)
@@ -31,7 +33,7 @@
 * crio: verify images are deleted after "image rm" (#22243)
 * docker runtime: Use CRI for ListImages function (#22263)
 * image save: Add retry logic for local image in case of EOF (#22072)
-
+* HA (multi-control plane): Update kube-vip from v1.0.0 to v1.0.3  (#21699)(#21960)(#22258)
 
 
 ## Drivers
@@ -67,10 +69,16 @@
 * Add support for Ukrainian language through LANGUAGE=uk (#21624)
 * Improve french translation (#21559)(#21849)(#22155)(#22386)(#22515)(#22114)
 * Improve  Chinese translations (#22082)
+
 * UI: improve warning message for proxy (#21980)
 * ui: fix correct formatting in tunnel service output (#22400)
 * align command paramaters for the ai playground fix (#21583)
 
+## CNI
+* CNI: Update calico from v3.30.3 to v3.31.3 (#21835)(#21961)(#22259)
+* CNI: Update cilium from v1.18.1 to v1.18.6 (#21655)(#21794)(#21953)(#22253)(#22487)
+* CNI: Update flannel from v0.27.3 to v0.27.4 (#21700)
+* CNI: Update kindnetd from v20250512-df8de77b to v20251212-v0.29.0-alpha-105-g20ccfc88 (#22127)
 
 ## Addons
 * Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from 1.5.41 to 1.5.47 (#21709)(#21832)(#21956)(#22255)(#22489)
@@ -88,6 +96,7 @@
 * addon: auto-pause fix github link (#22433)
 * addon: bump kube-regsitry-proxy image (#22551)
 * addon: fix registry-proxy alpine-slim to use wget (#22550)
+* inspektor-gadget addon: remove deleted asset (#21855)
 
 
 ## Base image versions
@@ -110,54 +119,61 @@
 * Kicbase: Switch ubuntu jammy to debian bookworm (#21643)
 * Kicbase: Update nerdctld from 0.6.1 to 0.7.0 (#21703)
 
-## CNI
-* CNI: Update calico from v3.30.3 to v3.31.3 (#21835)(#21961)(#22259)
-* CNI: Update cilium from v1.18.1 to v1.18.6 (#21655)(#21794)(#21953)(#22253)(#22487)
-* CNI: Update flannel from v0.27.3 to v0.27.4 (#21700)
-* CNI: Update kindnetd from v20250512-df8de77b to v20251212-v0.29.0-alpha-105-g20ccfc88 (#22127)
 
 
-
-
-
-## K8s-Infra Migration
-PRs related to the large infra migraiton to k8s-infra 
+## Infra Migration
+minikube infra structure is under heavy migration to k8s-infra here are some related PRs
 * preload: download from github when gcs not available (#21605)
 * prow add docker-docker-linux-x86-64 integration test in prow (#21807)
 * prow: migrate  kubernetes bootcamp image to prow (#21904)
+* ci: migrate kube-registry-proxy and gvisor to registry.k8s.io (#22544)
+* ci: move gvisor addon to registry.k8s.io (#22484)
+* ci: add configs needed to push gvisor image to k8s-infra using prow (#22406)
+* ci: Add kube-registry-proxy image to k8s.io infra (#22448)
+* add building kicbase in prow in registry.k8s.io (#22518)
+* ci: rename prowjobs to be shorter and easier to read (#22218)
+* ci: rename prow tests (#22223)
+* CI: delete prow images not needed anymore (#21756)
+* ci: prow fix errors in cloudbuild.yaml (#22007)
+* prow: migrate kubernetes bootcamp image to prow (#21904)
+* prow: run macos functional tests in prow (#22034)
+* prow: images build for all other archs (linux/ppc64le,linux/s390x) (#22471)
+* ci: update prow gvisor image jobs (#22411)
+* prow: add docker-docker-linux-x86-64 integration test in prow (#21807)
+* CI: add kvm-docker-linux-x86-64 integration test in prow (#21556)
+* ci: add kvm containerd to prow test (#22006)
+* ci: add kvm crio to prow (#22009)
+* ci: add docker crio prow (#22011)
+* ci: add docker docker test with arm64 arch to prow (#22039)
+* ci: Added docker-containerd-linux-x86-64 tests to prow (#21974)
+* ci: add None Contained X86 tests to Prow (#22235)
+ci: remove preload scripts from minikube repo and point to external (#22079)
 * build deps: Move hyperv and virtualbox drivers to minikube (#21966)
 * rename flag to to --perload-source (#22236)
 * copy the external vmware driver to internal (#21969)
 * add building kicbase in prow in registry.k8s.io (#22518)
 * Internalize github.com/docker/machine/libmachine (#21647)
+* Upgrade buildroot image to ubuntu:22.04 (#22187)
 * Always build the auto-pause binary on the host (#22354)
 * cleanup: Replace go-difflib with go-cmp in bsutil tests and add missing coverage (#22456)
 * Codespace: add golang and kvm device (#22217)
 * config: Use slices.Contains (#21681)
-* inspektor-gadget addon: remove deleted asset (#21855)
-* Normalize line endings to LF according to .gitattributes (#22026)
 * preload: download from github when gcs not available (#21605)
 * preload: verify storage type after container runtime is enabled (#22042)
 * prow: images build for all other archs (linux/ppc64le,linux/s390x) (#22471)
 * prow: run macos functional tests in prow (#22034)
 * Refactor Invoking Kubeadm command to prepare for debian 12 (#21642)
 * Release: Update kicbase to v0.0.49 (#22572)
-* Remove minikube support for 32-bit architectures (#22401)
 * Remove old obsolete Podman kubic repository (#21773)
 * Remove the cnitool package from iso (#22349)
 * remove unmaintained storage-provisioner-gluster addon (#20370)
 * RPM package: Add vendor info (#21759)
 * set sysctl params for inotify, to avoid 'too many open files' errors (#21599)
-* Skip caching binaries when --no-kubernetes is set (#21139)
 * Test(shell): accept bash/sh/wsl as valid grandparent on Windows (#22525)
 * tests: Bump timeout tests TestISOImage/PersistentMounts//data (#22289)
-* UI: colorful based on status (profile list, addons list) (#22418)
-* Update golangci-lint version and config with linters and formatters (#21870)
-* Update minikube-machine with less code lint (#21772)
-* Update minikube-machine with less code lint (#21872)
-* Update README.md to modify badges and text (#22087)
-* Update roadmap for 2025-2026 (#21873)
-* Upgrade buildroot image to ubuntu:22.04 (#22187)
+* ci: remove free gha macos functioanl tests (#22109)
+* ci: remove preload scripts from minikube repo and point to external (#22079)
+* ci: rename prow tests (#22223)
 
 
 For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
@@ -170,7 +186,6 @@ Thank you to our contributors for this release!
 - Adil Ansari
 - Aguacero 🌧️
 - Alban Crequy
-- Anders Björklund
 - Anders F Björklund
 - Andrii Holovin
 - Bob Sira
@@ -180,9 +195,7 @@ Thank you to our contributors for this release!
 - coderrick
 - ComradeProgrammer
 - Copilot
-- copilot-swe-agent[bot]
 - Daniel
-- dependabot[bot]
 - developowl
 - divanshu-go
 - Divy Singhvi
