@@ -53,8 +53,8 @@ type Config struct {
 var cfg = Config{
 	// if PR title "starts with" these words, skip them from change log
 	SkipPrefixes: []string{
-		"ci:",
-		"test:",
+		// "ci:",
+		// "test:",
 		"build:",
 		"Build(deps):",
 		"site:",
@@ -84,6 +84,12 @@ var cfg = Config{
 		"vbox:":       "Drivers",
 		"improve":     "Improvements",
 		"translation": "UI",
+		"ci":          "infra",
+		"prow":        "infra",
+		"test":        "infra",
+		"integration": "infra",
+		"k8s-infra":   "infra",
+		"infra":       "infra",
 	},
 	AllowedLabels: []string{"kind/feature", "kind/bug", "kind/enhancement"},
 }
