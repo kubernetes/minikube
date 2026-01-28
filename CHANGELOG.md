@@ -4,6 +4,7 @@
 
 ## Higlight
 - No Sudo required for using gpu with vfkit/krunkit on  macOS 26+ (requires latest vmnet-helper)
+- Dont forget to checkout [AI Playground on Macos GPUs using minikube](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
 
 ## Features
 * Add support for Kubernetes v1.35.0 v1.34.1 (#21650)(#22015)(#22119)(#22328)
@@ -55,7 +56,6 @@
 * fix: Increase timeout for containerd image list  (#22558)
 * fix: kubevirt addon by removing curl dependency (#22557)
 * fix: return non-zero exit code when status unavailable (#22494)
-
 * crio: fix ingress by enabling hostNetwork and ClusterFirstWithHostNet (#22239)
 * crio: fix preload overwriting user images (#22246)
 * Fix Podman mount on macOS by adding host.containers.internal support (#22451)
