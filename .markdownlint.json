@@ -5,7 +5,5 @@
   "commands-show-output": false,
   "ul-style": false,
   "line-length": false,
-  "no-duplicate-heading": {
-    "siblings_only": true
-  }
+  "no-duplicate-heading": false
 }

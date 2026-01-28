@@ -40,7 +40,6 @@
 * image save: Add retry logic for local image in case of EOF (#22072)
 * HA (multi-control plane): Update kube-vip from v1.0.0 to v1.0.3  (#21699)(#21960)(#22258)
 
-
 ## Drivers
 
 * drivers: Introduce WaitForSSHAccess and fix macos smoke tests (#22179)
@@ -53,7 +52,6 @@
 * verify aux drivers installed correctly and exit nicely if not (#21576)
 * vfkit: Add Rosetta support for deploying amd64 images on Apple silicon (#22140)
 * VM: Enable cgroup v2 by using "systemd cgroup driver"  for Kubernetes… (#22320)
-
 
 ## Bug fixes
 
@@ -68,7 +66,6 @@
 * Fix the cri-dockerd version upgrade script (#22358)
 * fix kubelet config option FailCgroupV1 to failCgroupV1 (#22325)
 * addon registry-creds: Fix segfault without config file (#21786)
-
 
 ## UI
 
@@ -126,7 +123,6 @@
 * kicbase: Clean up the nerdctld installation (#22438)
 * Kicbase: Switch ubuntu jammy to debian bookworm (#21643)
 * Kicbase: Update nerdctld from 0.6.1 to 0.7.0 (#21703)
-
 
 ## Infra Migration
 
