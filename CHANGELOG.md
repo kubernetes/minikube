@@ -3,10 +3,12 @@
 ## Version 1.38.0 - 2026-01-28
 
 ## Higlight
+
 - No Sudo required for using gpu with vfkit/krunkit on  macOS 26+ (requires latest vmnet-helper)
 - Dont forget to checkout [AI Playground on Macos GPUs using minikube](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
 
 ## Features
+
 * Add support for Kubernetes v1.35.0 v1.34.1 (#21650)(#22015)(#22119)(#22328)
 * VM Drivers: add support for NVMe-oF/TCP block devices (#22464)
 * VM Drivers: Enable BTF debug symbols to support eBPF tooling in iso (#21800)
@@ -16,11 +18,13 @@
 * preload: download from github when gcs not available (#21605)
 
 ## Warnings & Deprications
- * UI: Add a warning on changing default runtime to "containerd" in the next version (v1.39.0) (#22508)
- * hyperkit: remove driver builds & warn users to switch (#21946)
- * Remove minikube support for 32-bit architectures (#22401)
+
+* UI: Add a warning on changing default runtime to "containerd" in the next version (v1.39.0) (#22508)
+* hyperkit: remove driver builds & warn users to switch (#21946)
+* Remove minikube support for 32-bit architectures (#22401)
 
 ## Improvements
+
 * UI: colorful based on status (profile list, addons list) (#22418)
 * Skip caching binaries when --no-kubernetes is set (#21139)
 * improve retry logs to print less duplicate lines (#22232)
@@ -38,6 +42,7 @@
 
 
 ## Drivers
+
 * drivers: Introduce WaitForSSHAccess and fix macos smoke tests (#22179)
 * hyperkit driver: Fix file descriptor leaks in status (#22524)
 * kvm: fix minikube on Fedora/RHEL with SELinux (#21550)
@@ -51,6 +56,7 @@
 
 
 ## Bug fixes
+
 * KIC Drivers: fix docker driver with crio runtime: install dbus (#21724)
 * fix: correctly detect nested VMs on macOS and remove timeout multiplier (#22277)
 * fix: Increase timeout for containerd image list  (#22558)
@@ -65,6 +71,7 @@
 
 
 ## UI
+
 * Add support for Kurdish language through LANGUAGE=ku  (#22512)
 * Add support for Ukrainian language through LANGUAGE=uk (#21624)
 * Improve french translation (#21559)(#21849)(#22155)(#22386)(#22515)(#22114)
@@ -75,12 +82,14 @@
 * align command paramaters for the ai playground fix (#21583)
 
 ## CNI
+
 * CNI: Update calico from v3.30.3 to v3.31.3 (#21835)(#21961)(#22259)
 * CNI: Update cilium from v1.18.1 to v1.18.6 (#21655)(#21794)(#21953)(#22253)(#22487)
 * CNI: Update flannel from v0.27.3 to v0.27.4 (#21700)
 * CNI: Update kindnetd from v20250512-df8de77b to v20251212-v0.29.0-alpha-105-g20ccfc88 (#22127)
 
 ## Addons
+
 * Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from 1.5.41 to 1.5.47 (#21709)(#21832)(#21956)(#22255)(#22489)
 * Addon Headlamp: Update Headlamp image from v0.35.0 to v0.36.0 (#21706)(#21958)(#22256)
 * Addon ingress: Update ingress-nginx/controller image from v1.13.2 to v1.13.3 (#21701)(#21865)(#22049)
@@ -97,7 +106,6 @@
 * addon: bump kube-regsitry-proxy image (#22551)
 * addon: fix registry-proxy alpine-slim to use wget (#22550)
 * inspektor-gadget addon: remove deleted asset (#21855)
-
 
 ## Base image versions
 
@@ -120,9 +128,10 @@
 * Kicbase: Update nerdctld from 0.6.1 to 0.7.0 (#21703)
 
 
-
 ## Infra Migration
+
 minikube infra structure is under heavy migration to k8s-infra here are some related PRs
+
 * preload: download from github when gcs not available (#21605)
 * prow add docker-docker-linux-x86-64 integration test in prow (#21807)
 * prow: migrate  kubernetes bootcamp image to prow (#21904)
@@ -174,7 +183,6 @@ ci: remove preload scripts from minikube repo and point to external (#22079)
 * ci: remove free gha macos functioanl tests (#22109)
 * ci: remove preload scripts from minikube repo and point to external (#22079)
 * ci: rename prow tests (#22223)
-
 
 For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
 
