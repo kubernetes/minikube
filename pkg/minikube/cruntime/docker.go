@@ -46,9 +46,6 @@ import (
 // KubernetesContainerPrefix is the prefix of each Kubernetes container
 const KubernetesContainerPrefix = "k8s_"
 
-const InternalDockerCRISocket = "/var/run/dockershim.sock"
-const ExternalDockerCRISocket = "/var/run/cri-dockerd.sock"
-
 // ErrISOFeature is the error returned when disk image is missing features
 type ErrISOFeature struct {
 	missing string
@@ -104,19 +101,16 @@ func (r *Docker) SocketPath() string {
 	if r.Socket != "" {
 		return r.Socket
 	}
-	return InternalDockerCRISocket
+	return "/var/run/cri-dockerd.sock"
 }
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Docker) Available() error {
-	// If Kubernetes version >= 1.24, require both cri-dockerd and dockerd.
-	if r.KubernetesVersion.GTE(semver.Version{Major: 1, Minor: 24}) {
-		if _, err := exec.LookPath("cri-dockerd"); err != nil {
-			return err
-		}
-		if _, err := exec.LookPath("dockerd"); err != nil {
-			return err
-		}
+	if _, err := exec.LookPath("cri-dockerd"); err != nil {
+		return err
+	}
+	if _, err := exec.LookPath("dockerd"); err != nil {
+		return err
 	}
 	if err := checkCNIPlugins(r.KubernetesVersion); err != nil {
 		return err

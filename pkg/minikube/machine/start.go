@@ -28,8 +28,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
-
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -299,12 +297,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 		return nil
 	}
 
-	k8sVer, err := semver.ParseTolerant(mc.KubernetesConfig.KubernetesVersion)
-	if err != nil {
-		klog.Errorf("unable to parse Kubernetes version: %s", mc.KubernetesConfig.KubernetesVersion)
-		return err
-	}
-	if driver.IsNone(h.DriverName) && k8sVer.GTE(semver.Version{Major: 1, Minor: 24}) {
+	if driver.IsNone(h.DriverName) {
 		if mc.KubernetesConfig.ContainerRuntime == constants.Docker {
 			if _, err := exec.LookPath("cri-dockerd"); err != nil {
 				exit.Message(reason.NotFoundCriDockerd, "\n\n")
