@@ -19,6 +19,26 @@ alias m="minikube"
 alias ml="minikube profile list"
 alias mld="minikube delete --all"
 alias mk="/workspaces/minikube/out/minikube"
+alias reset-view='echo "To reset VS Code layout:" && echo "  1. Press Ctrl+Shift+P (or Cmd+Shift+P on Mac)" && echo "  2. Type: View: Reset View Locations" && echo "  3. Press Enter"'
 source <(kubectl completion bash)
 complete -o default -F __start_kubectl k
 source <(minikube completion bash)
+
+# Display welcome message on first terminal entry
+if [ ! -f "$HOME/.devcontainer-welcome-shown" ]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════════════╗"
+    echo "║  Welcome to minikube in GitHub Codespaces                           ║"
+    echo "╚══════════════════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "To start minikube simply type:"
+    echo ""
+    echo "    minikube start"
+    echo ""
+    echo "Useful aliases:"
+    echo "  m          - minikube"
+    echo "  k          - kubectl"
+    echo "  reset-view - Show how to reset VS Code layout"
+    echo ""
+    touch "$HOME/.devcontainer-welcome-shown"
+fi
