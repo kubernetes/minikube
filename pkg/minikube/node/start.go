@@ -794,6 +794,13 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 		}
 	}
 
+	// Ensure host-provided custom CAs are installed/trusted *before* we do HTTPS connectivity checks.
+	// This prevents a misleading "SSL certificate problem" warning for corp proxies/VPNs.
+	if err := bootstrapper.EnsureCACertsEarly(r); err != nil {
+		// Non-fatal; continue with the probe anyway.
+		klog.Warningf("pre-probe CA setup failed: %v", err)
+	}
+
 	if shouldTrySSH(h.Driver.DriverName(), ip) {
 		if err := trySSH(h, ip); err != nil {
 			return ip, err
@@ -856,6 +863,19 @@ func trySSH(h *host.Host, ip string) error {
 	return err
 }
 
+// isCertError reports whether an error from the in-guest probe looks like a trust problem.
+// We keep this scoped to common curl/OpenSSL messages to avoid masking real connectivity issues.
+func isCertError(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := err.Error()
+	return strings.Contains(s, "curl: (60)") ||
+		strings.Contains(s, "SSL certificate problem") ||
+		strings.Contains(s, "certificate signed by unknown authority") ||
+		strings.Contains(s, "x509: certificate signed by unknown authority")
+}
+
 // tryRegistry tries to connect to the image repository
 func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
@@ -876,8 +896,22 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 	if runtime.GOOS == "windows" {
 		exe = "curl.exe"
 	}
+	// First in-guest probe
 	cmd := exec.Command(exe, opts...)
-	if rr, err := r.RunCmd(cmd); err != nil {
+	rr, err := r.RunCmd(cmd)
+	if err != nil {
+		// Retry once if the first failure looks like a cert trust error.
+		if isCertError(err) {
+			cmdRetry := exec.Command(exe, opts...)
+			if rr2, err2 := r.RunCmd(cmdRetry); err2 == nil {
+				// Success after CA trust; suppress the earlier warning entirely.
+				return
+			} else {
+				// Use the latest error/output for logging below.
+				rr, err = rr2, err2
+			}
+		}
+
 		klog.Warningf("%s failed: %v", rr.Args, err)
 
 		// using QEMU with the user network
@@ -895,7 +929,9 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 		// on the ssh driver is not helpful.
 		warning := "Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}"
 		if !driver.IsNone(driverName) && !driver.IsSSH(driverName) {
-			if err := cmd.Run(); err != nil {
+			// Build a fresh host-side command; exec.Cmd cannot be reused after Run().
+			cmdHost := exec.Command(exe, opts...)
+			if err := cmdHost.Run(); err != nil {
 				// both inside and outside failed
 				warning = "Failing to connect to {{.curlTarget}} from both inside the minikube {{.type}} and host machine"
 			}
