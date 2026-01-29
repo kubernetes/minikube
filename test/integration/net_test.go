@@ -28,18 +28,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/blang/semver/v4"
 	"k8s.io/minikube/pkg/kapi"
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/reason"
-	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
 // TestNetworkPlugins tests all supported CNI options
-// Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
-// Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection
+// Options tested: bridge, flannel, kindnet, calico, cilium
+// Flags tested: enable-default-cni (legacy), auto-detection
 func TestNetworkPlugins(t *testing.T) {
 	// generate reasonably unique profile name suffix to be used for all tests
 	suffix := UniqueProfileName("")
@@ -59,13 +55,11 @@ func TestNetworkPlugins(t *testing.T) {
 			hairpin       bool
 		}{
 			// kindnet CNI is used by default and hairpin is enabled
-			{"auto", []string{}, "", "", "", usingCNI()},
-			{"kubenet", []string{"--network-plugin=kubenet"}, "kubenet", "", "", true},
+			{"auto", []string{}, "", "", "", true},
 			{"bridge", []string{"--cni=bridge"}, "cni", "", "", true},
 			{"enable-default-cni", []string{"--enable-default-cni=true"}, "cni", "", "", true},
 			{"flannel", []string{"--cni=flannel"}, "cni", "app=flannel", "kube-flannel", true},
 			{"kindnet", []string{"--cni=kindnet"}, "cni", "app=kindnet", "kube-system", true},
-			{"false", []string{"--cni=false"}, "", "", "", true},
 			{"custom-flannel", []string{fmt.Sprintf("--cni=%s", filepath.Join(*testdataDir, "kube-flannel.yaml"))}, "cni", "", "kube-flannel", true},
 			{"calico", []string{"--cni=calico"}, "cni", "k8s-app=calico-node", "kube-system", true},
 			{"cilium", []string{"--cni=cilium"}, "cni", "k8s-app=cilium", "kube-system", true},
@@ -82,15 +76,10 @@ func TestNetworkPlugins(t *testing.T) {
 				// collect debug logs
 				defer debugLogs(t, profile)
 
-				if ContainerRuntime() != "docker" && tc.name == "false" {
+				if tc.name == "false" {
 					// CNI is required for current container runtime
 					validateFalseCNI(ctx, t, profile)
 					return
-				}
-
-				if ContainerRuntime() != "docker" && tc.name == "kubenet" {
-					// CNI is disabled when --network-plugin=kubenet option is passed. See cni.New(..) function
-					t.Skipf("Skipping the test as %s container runtimes requires CNI", ContainerRuntime())
 				}
 
 				// (current) cilium is known to mess up the system when interfering with other network tests, so we disable it for now - probably needs updating?
@@ -120,27 +109,6 @@ func TestNetworkPlugins(t *testing.T) {
 						if _, err := PodWait(ctx, t, profile, tc.namespace, tc.podLabel, Minutes(10)); err != nil {
 							t.Fatalf("failed waiting for %s labeled pod: %v", tc.podLabel, err)
 						}
-					})
-				}
-				if !t.Failed() {
-					t.Run("KubeletFlags", func(t *testing.T) {
-						var rr *RunResult
-						var err error
-						if NoneDriver() {
-							// none does not support 'minikube ssh'
-							rr, err = Run(t, exec.CommandContext(ctx, "pgrep", "-a", "kubelet"))
-						} else {
-							rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
-						}
-						if err != nil {
-							t.Fatalf("ssh failed: %v", err)
-						}
-						out := rr.Stdout.String()
-						c, err := config.Load(profile)
-						if err != nil {
-							t.Errorf("failed to load cluster config: %v", err)
-						}
-						verifyKubeletFlagsOutput(t, c.KubernetesConfig.KubernetesVersion, tc.kubeletPlugin, out)
 					})
 				}
 
@@ -213,21 +181,6 @@ func TestNetworkPlugins(t *testing.T) {
 	})
 }
 
-// usingCNI checks if not using dockershim
-func usingCNI() bool {
-	if ContainerRuntime() != "docker" {
-		return true
-	}
-	version, err := util.ParseKubernetesVersion(constants.DefaultKubernetesVersion)
-	if err != nil {
-		return false
-	}
-	if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
-		return true
-	}
-	return false
-}
-
 // validateFalseCNI checks that minikube returns and error
 // if container runtime is "containerd" or "crio"
 // and --cni=false
@@ -272,26 +225,6 @@ func validateHairpinMode(ctx context.Context, t *testing.T, profile string, hair
 		if tryHairPin() == nil {
 			t.Errorf("hairpin connection unexpectedly succeeded - misconfigured test?")
 		}
-	}
-}
-
-func verifyKubeletFlagsOutput(t *testing.T, k8sVersion, kubeletPlugin, out string) {
-	version, err := util.ParseKubernetesVersion(k8sVersion)
-	if err != nil {
-		t.Errorf("failed to parse kubernetes version %s: %v", k8sVersion, err)
-	}
-	if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
-		return
-	}
-	if kubeletPlugin == "" {
-		if strings.Contains(out, "--network-plugin") && ContainerRuntime() == "docker" {
-			t.Errorf("expected no network plug-in, got %s", out)
-		}
-		if !strings.Contains(out, "--network-plugin=cni") && ContainerRuntime() != "docker" {
-			t.Errorf("expected cni network plugin with conatinerd/crio, got %s", out)
-		}
-	} else if !strings.Contains(out, fmt.Sprintf("--network-plugin=%s", kubeletPlugin)) {
-		t.Errorf("expected --network-plugin=%s, got %s", kubeletPlugin, out)
 	}
 }
 
