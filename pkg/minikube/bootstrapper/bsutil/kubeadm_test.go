@@ -63,6 +63,11 @@ func getExtraOpts() []config.ExtraOption {
 			Key:       "mode",
 			Value:     "iptables",
 		},
+		config.ExtraOption{
+			Component: Etcd,
+			Key:       "listen-metrics-urls",
+			Value:     "http://0.0.0.0:2381",
+		},
 	}
 }
 
@@ -296,7 +301,8 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 
 func TestEtcdExtraArgs(t *testing.T) {
 	expected := map[string]string{
-		"key": "value",
+		"key":                 "value",
+		"listen-metrics-urls": "http://0.0.0.0:2381",
 	}
 	extraOpts := append(getExtraOpts(), config.ExtraOption{
 		Component: Etcd,
