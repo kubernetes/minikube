@@ -1,0 +1,14 @@
+config BR2_PACKAGE_CONMON_LATEST
+	bool "conmon-latest"
+	depends on BR2_TOOLCHAIN_HAS_THREADS # libglib2
+	depends on BR2_USE_MMU # libglib2
+	depends on BR2_USE_WCHAR # libglib2
+	select BR2_PACKAGE_LIBGLIB2
+	help
+	  Conmon is an OCI container runtime monitor.
+
+	  https://github.com/containers/conmon
+
+comment "conmon needs a toolchain w/ threads, wchar"
+	depends on !BR2_USE_WCHAR || !BR2_TOOLCHAIN_HAS_THREADS
+	depends on BR2_USE_MMU
