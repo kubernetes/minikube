@@ -108,6 +108,7 @@ var statusCmd = &cobra.Command{
 func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *config.ClusterConfig) {
 	for {
 		var statuses []*cluster.Status
+		var statusErr error
 
 		if nodeName != "" || statusFormat != defaultStatusFormat && len(cc.Nodes) > 1 {
 			n, _, err := node.Retrieve(*cc, nodeName)
@@ -118,6 +119,7 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 			st, err := cluster.NodeStatus(api, *cc, *n)
 			if err != nil {
 				klog.Errorf("status error: %v", err)
+				statusErr = err
 			}
 			statuses = append(statuses, st)
 		} else {
@@ -125,6 +127,7 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 			statuses, err = cluster.GetStatus(api, cc)
 			if err != nil {
 				klog.Errorf("status error: %v", err)
+				statusErr = err
 			}
 		}
 
@@ -151,17 +154,20 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 		}
 
 		if duration == 0 {
-			os.Exit(exitCode(statuses))
+			os.Exit(exitCode(statuses, statusErr))
 		}
 		time.Sleep(duration)
 	}
 }
 
 // exitCode calculates the appropriate exit code given a set of status messages
-func exitCode(statuses []*cluster.Status) int {
-	if len(statuses) == 0 {
+func exitCode(statuses []*cluster.Status, statusErr error) int {
+	// If there was an error getting status or no statuses were returned,
+	// return all flags set to indicate complete failure
+	if statusErr != nil || len(statuses) == 0 {
 		return minikubeNotRunningStatusFlag | clusterNotRunningStatusFlag | k8sNotRunningStatusFlag
 	}
+
 	c := 0
 	for _, st := range statuses {
 		if st.Host != state.Running.String() {
