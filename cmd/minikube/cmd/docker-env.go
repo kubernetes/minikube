@@ -314,14 +314,20 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			exit.Message(reason.Usage, err.Error())
 		}
 
-		// for the sake of docker-env command, start nerdctl and nerdctld
-		if cr == constants.Containerd {
-			out.WarningT("Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better")
+		// for the sake of docker-env command, start nerdctl and nerdctld (or the podman system service, "podmand")
+		if cr == constants.Containerd || cr == constants.CRIO {
+			if cr == constants.Containerd {
+				out.WarningT("Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better")
 
-			startNerdctld(options)
+				startNerdctld(options)
+			} else if cr == constants.CRIO {
+				out.WarningT("Using the docker-env command with the cri-o runtime is a highly experimental feature, please provide feedback or contribute to make it better")
 
-			// docker-env on containerd depends on nerdctld (https://github.com/afbjorklund/nerdctld) as "docker" daeomn
-			// and nerdctld daemon must be used with ssh connection (it is set in kicbase image's Dockerfile)
+				startPodmand(options)
+			}
+
+			// docker-env on containerd depends on nerdctld (https://github.com/afbjorklund/nerdctld) as "docker" daemon
+			// and nerdctld (or podman) daemon must be used with ssh connection (it is set in kicbase image's Dockerfile)
 			// so directly set --ssh-host --ssh-add to true, even user didn't specify them
 			sshAdd = true
 			sshHost = true
@@ -415,7 +421,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			cmd.Stderr = os.Stderr
 
 			// TODO: refactor to work with docker, temp fix to resolve regression
-			if cr == constants.Containerd {
+			if cr == constants.Containerd || cr == constants.CRIO {
 				cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AUTH_SOCK=%s", co.Config.SSHAuthSock))
 				cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AGENT_PID=%d", co.Config.SSHAgentPID))
 			}
@@ -425,7 +431,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			}
 
 			// TODO: refactor to work with docker, temp fix to resolve regression
-			if cr == constants.Containerd {
+			if cr == constants.Containerd || cr == constants.CRIO {
 				// eventually, run something similar to ssh --append-known
 				appendKnownHelper(nodeName, true)
 			}
@@ -672,9 +678,6 @@ func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 }
 
 func dockerEnvSupported(containerRuntime, driverName string) error {
-	if containerRuntime != constants.Docker && containerRuntime != constants.Containerd {
-		return fmt.Errorf("the docker-env command only supports the docker and containerd runtimes")
-	}
 	// we only support containerd-env on the Docker driver
 	if containerRuntime == constants.Containerd && driverName != driver.Docker {
 		return fmt.Errorf("the docker-env command only supports the containerd runtime with the docker driver")
