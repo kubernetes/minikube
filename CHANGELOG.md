@@ -4,8 +4,9 @@
 
 ## Higlight
 
-- No Sudo required for using gpu with vfkit/krunkit on  macOS 26+ (requires latest vmnet-helper)
-- Dont forget to checkout [AI Playground on Macos GPUs using minikube](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
+* No Sudo required for with vfkit/krunkit on macOS 26+ (requires latest vmnet-helper)
+* No Sudo required to run [AI Playground on Macos GPUs using minikube](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
+* vfkit: Add Rosetta support for deploying amd64 images on Apple silicon (#22140)
 
 ## Features
 
@@ -13,7 +14,7 @@
 * VM Drivers: add support for NVMe-oF/TCP block devices (#22464)
 * VM Drivers: Enable BTF debug symbols to support eBPF tooling in iso (#21800)
 * Add option to download preloads from github instead of GCS through  --preload-source (#22221)
-* Vfkit/Krukit drivers: add ability to Run vmnet-helper as unprivileged user on macOS 26+ (#22501)
+* Vfkit/Krunkit drivers: add ability to Run vmnet-helper as unprivileged user on macOS 26+ (#22501)
 * add option to add helm-based addons (#21847)
 * preload: download from github when gcs not available (#21605)
 
@@ -105,7 +106,6 @@
 * inspektor-gadget addon: remove deleted asset (#21855)
 
 ## Base image versions
-
 * iso: bump to containerd/nerdctl 2.x (#21409)
 * ISO: Update docker-buildx from v0.17.1 to v0.30.1 (#22425)
 * iso: Use same Go version (1.25.5) (#22101)
@@ -126,8 +126,7 @@
 
 ## Infra Migration
 
-minikube infra structure is under heavy migration to k8s-infra here are some related PRs
-
+minikube infra structure is under heavy migration to k8s-infra here are some related PRs:
 * preload: download from github when gcs not available (#21605)
 * prow add docker-docker-linux-x86-64 integration test in prow (#21807)
 * prow: migrate  kubernetes bootcamp image to prow (#21904)
@@ -194,7 +193,6 @@ Thank you to our contributors for this release!
 - Andrii Holovin
 - Bob Sira
 - Byounguk Lee
-- ByoungUk Lee
 - caesarsage
 - coderrick
 - ComradeProgrammer
