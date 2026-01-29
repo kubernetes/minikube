@@ -80,10 +80,45 @@ func TestApplyStyle(t *testing.T) {
 			useColor:    true,
 			format:      "foo",
 		},
+		{
+			expected:    fmt.Sprintf("%s%sfoo\n%s", style.Config[style.WarningRed].Prefix, style.Red, style.Reset),
+			description: "format foo, warning red style, color on",
+			styleEnum:   style.WarningRed,
+			useColor:    true,
+			format:      "foo",
+		},
+		{
+			expected:    fmt.Sprintf("%sfoo", style.LowWarning),
+			description: "format foo, warning red style, color off",
+			styleEnum:   style.WarningRed,
+			useColor:    false,
+			format:      "foo",
+		},
+		{
+			expected:    fmt.Sprintf("%s%sfoo\n%s", style.Config[style.Conflict].Prefix, style.Red, style.Reset),
+			description: "format foo, conflict style, color on",
+			styleEnum:   style.Conflict,
+			useColor:    true,
+			format:      "foo",
+		},
+		{
+			expected:    fmt.Sprintf("%s%sfoo\n%s", style.Config[style.Failure].Prefix, style.Red, style.Reset),
+			description: "format foo, failure style, color on",
+			styleEnum:   style.Failure,
+			useColor:    true,
+			format:      "foo",
+		},
+		{
+			expected:    fmt.Sprintf("%s%sfoo\n%s", style.Config[style.Fatal].Prefix, style.Red, style.Reset),
+			description: "format foo, fatal style, color on",
+			styleEnum:   style.Fatal,
+			useColor:    true,
+			format:      "foo",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			rawGot, _, _ := applyStyle(test.styleEnum, test.useColor, test.format)
+			rawGot, _, _ := applyStyle(test.styleEnum, test.useColor, test.format, "")
 			got := strings.TrimSpace(rawGot)
 			if got != test.expected {
 				t.Errorf("Expected '%v' but got '%v'", test.expected, got)

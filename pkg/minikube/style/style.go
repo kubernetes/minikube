@@ -43,7 +43,8 @@ type Options struct {
 	LowPrefix string
 	// ShouldSpin is a character to place at ending of message
 	ShouldSpin    bool
-	HideAfterSpin bool // Hide the prefix after spinning
+	HideAfterSpin bool   // Hide the prefix after spinning
+	Color         string // Color to apply to the message
 }
 
 // SpinnerCharacter is which of the spinner.CharSets to use
@@ -91,10 +92,11 @@ var Config = map[Enum]Options{
 	Workaround:         {Prefix: "👉  ", LowPrefix: LowIndent},
 
 	// Fail emoji's
-	Conflict:         {Prefix: "💢  ", LowPrefix: LowWarning},
-	Failure:          {Prefix: "❌  ", LowPrefix: LowError},
-	Fatal:            {Prefix: "💣  ", LowPrefix: LowError},
+	Conflict:         {Prefix: "💢  ", LowPrefix: LowWarning, Color: Red},
+	Failure:          {Prefix: "❌  ", LowPrefix: LowError, Color: Red},
+	Fatal:            {Prefix: "💣  ", LowPrefix: LowError, Color: Red},
 	Warning:          {Prefix: "❗  ", LowPrefix: LowWarning},
+	WarningRed:       {Prefix: "❗  ", LowPrefix: LowWarning, Color: Red},
 	KnownIssue:       {Prefix: "🧯  ", LowPrefix: LowError},
 	UnmetRequirement: {Prefix: "⛔  ", LowPrefix: LowError},
 	NotAllowed:       {Prefix: "🚫  ", LowPrefix: LowError},

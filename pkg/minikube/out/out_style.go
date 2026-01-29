@@ -31,7 +31,7 @@ func applyPrefix(prefix, format string) string {
 }
 
 // applyStyle translates the given string if necessary then adds any appropriate style prefix.
-func applyStyle(st style.Enum, useColor bool, format string) (string, bool, bool) {
+func applyStyle(st style.Enum, useColor bool, format string, overrideColor string) (string, bool, bool) {
 	format = translate.T(format)
 
 	s, ok := style.Config[st]
@@ -49,6 +49,12 @@ func applyStyle(st style.Enum, useColor bool, format string) (string, bool, bool
 	if !useColor {
 		return applyPrefix(style.LowPrefix(s), format), s.ShouldSpin, s.HideAfterSpin
 	}
+
+	if overrideColor != "" {
+		format = overrideColor + format + style.Reset
+	} else if s.Color != "" {
+		format = s.Color + format + style.Reset
+	}
 	return applyPrefix(s.Prefix, format), s.ShouldSpin, s.HideAfterSpin
 }
 
@@ -58,6 +64,16 @@ func stylized(st style.Enum, useColor bool, format string, a ...V) (string, bool
 	if a == nil {
 		a = []V{}
 	}
-	format, shouldSpin, hideAfterSpin = applyStyle(st, useColor, format)
+
+	var overrideColor string
+	for _, v := range a {
+		if c, ok := v["Color"]; ok {
+			if s, ok := c.(string); ok {
+				overrideColor = s
+			}
+		}
+	}
+
+	format, shouldSpin, hideAfterSpin = applyStyle(st, useColor, format, overrideColor)
 	return Fmt(format, a...), shouldSpin, hideAfterSpin
 }
