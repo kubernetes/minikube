@@ -34,12 +34,34 @@ import (
 )
 
 // HelmChart holds information about a helm chart.
+//
+// When --image-repository is specified (e.g., "ghcr.io/volcano-sh:latest"), the generated
+// helm command will include --set flags for registry, image names, and tag:
+//
+//	helm upgrade --install volcano volcano/volcano --create-namespace --namespace volcano-system \
+//	  --set basic.image_registry=ghcr.io \
+//	  --set basic.controller_image_name=volcano-sh/vc-controller-manager \
+//	  --set basic.scheduler_image_name=volcano-sh/vc-scheduler \
+//	  --set basic.admission_image_name=volcano-sh/vc-webhook-manager \
+//	  --set basic.image_tag_version=latest
 type HelmChart struct {
 	Name       string
 	Repo       string
+	RepoURL    string
 	Namespace  string
 	Values     []string
 	ValueFiles []string
+	// ImageSetKey is the Helm value path used to override the container image registry.
+	// Example: "basic.image_registry" for volcano, "image.repository" for metrics-server.
+	ImageSetKey string
+	// TagSetKey is the Helm value path used to override the image tag version.
+	// Example: "basic.image_tag_version" for volcano.
+	TagSetKey string
+	// ImageNameKeys maps image name suffixes to their Helm value keys.
+	// Example for volcano: {"vc-controller-manager": "basic.controller_image_name"}
+	// When --image-repository=ghcr.io/volcano-sh:latest is specified, this generates:
+	//   --set basic.controller_image_name=volcano-sh/vc-controller-manager
+	ImageNameKeys map[string]string
 }
 
 // Addon is a named list of assets, that can be enabled
@@ -583,21 +605,19 @@ var Addons = map[string]*Addon{
 		"GCPAuthWebhook":     "gcr.io",
 		"KubeWebhookCertgen": "registry.k8s.io",
 	}, nil),
-	"volcano": NewAddon([]*BinAsset{
-		MustBinAsset(addons.VolcanoAssets,
-			"volcano/volcano-development.yaml.tmpl",
-			vmpath.GuestAddonsDir,
-			"volcano-deployment.yaml",
-			"0640"),
-	}, false, "volcano", "third-party (volcano)", "hwdef", "", map[string]string{
-		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.13.1@sha256:1572d6bd3e4616caa80dbd224d86a879a5c4eb1bdb07699f45eccdc56439ce42",
-		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.13.1@sha256:c5ce04dc9959fa7af979e92f6d85a664b07c7103a06f133b5631d951412cd918",
-		"vc_scheduler":          "volcanosh/vc-scheduler:v1.13.1@sha256:53c0d84598fdd9ba10f3ccf214219bf5058dc2bddb22a740a7ddf4fef8f79853",
-	}, map[string]string{
-		"vc_webhook_manager":    "docker.io",
-		"vc_controller_manager": "docker.io",
-		"vc_scheduler":          "docker.io",
-	}, nil),
+	"volcano": NewAddon([]*BinAsset{}, false, "volcano", "third-party (volcano)", "hwdef", "", nil, nil, &HelmChart{
+		Name:        "volcano",
+		Repo:        "volcano/volcano",
+		RepoURL:     "https://volcano-sh.github.io/helm-charts",
+		Namespace:   "volcano-system",
+		ImageSetKey: "basic.image_registry",
+		TagSetKey:   "basic.image_tag_version",
+		ImageNameKeys: map[string]string{
+			"vc-controller-manager": "basic.controller_image_name",
+			"vc-scheduler":          "basic.scheduler_image_name",
+			"vc-webhook-manager":    "basic.admission_image_name",
+		},
+	}),
 	"volumesnapshots": NewAddon([]*BinAsset{
 		// make sure the order of apply. `csi-hostpath-snapshotclass` must be the first position, because it depends on `snapshot.storage.k8s.io_volumesnapshotclasses`
 		// if user disable volumesnapshots addon and delete `csi-hostpath-snapshotclass` after `snapshot.storage.k8s.io_volumesnapshotclasses`, kubernetes will return the error

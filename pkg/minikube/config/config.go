@@ -53,6 +53,8 @@ const (
 	AddonImages = "addon-images"
 	// AddonRegistries stores custom addon images config
 	AddonRegistries = "addon-registries"
+	// AddonImageRepository stores custom image repository for helm-based addons
+	AddonImageRepository = "addon-image-repository"
 	// AddonListFlag represents the key for addons parameter
 	AddonListFlag = "addons"
 	// EmbedCerts represents the config for embedding certificates in kubeconfig
