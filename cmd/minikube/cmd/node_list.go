@@ -32,7 +32,7 @@ import (
 var nodeListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List nodes.",
-	Long:  "List existing minikube nodes.",
+	Long:  "List existing minikube nodes. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/node/#minikube-node-list",
 	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 0 {
 			exit.Message(reason.Usage, "Usage: minikube node list")

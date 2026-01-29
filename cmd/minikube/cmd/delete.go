@@ -68,7 +68,7 @@ var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Deletes a local Kubernetes cluster",
 	Long: `Deletes a local Kubernetes cluster. This command deletes the VM, and removes all
-associated files.`,
+associated files. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/delete`,
 	Run: runDelete,
 }
 

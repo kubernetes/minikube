@@ -56,7 +56,7 @@ var (
 var dashboardCmd = &cobra.Command{
 	Use:   "dashboard",
 	Short: "Access the Kubernetes dashboard running within the minikube cluster",
-	Long:  `Access the Kubernetes dashboard running within the minikube cluster`,
+	Long:  `Access the Kubernetes dashboard running within the minikube cluster. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/dashboard`,
 	Run: func(_ *cobra.Command, _ []string) {
 		options := flags.CommandOptions()
 		cname := ClusterFlagValue()

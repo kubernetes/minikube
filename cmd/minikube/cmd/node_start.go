@@ -36,7 +36,7 @@ import (
 var nodeStartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Starts a node.",
-	Long:  "Starts an existing stopped node in a cluster.",
+	Long:  "Starts an existing stopped node in a cluster. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/node/#minikube-node-start",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Usage: minikube node start [name]")

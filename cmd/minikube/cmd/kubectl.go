@@ -52,7 +52,8 @@ This will run the Kubernetes client (kubectl) with the same version as the clust
 Normally it will download a binary matching the host operating system and architecture,
 but optionally you can also run it directly on the control plane over the ssh connection.
 This can be useful if you cannot run kubectl locally for some reason, like unsupported
-host. Please be aware that when using --ssh all paths will apply to the remote machine.`,
+host. Please be aware that when using --ssh all paths will apply to the remote machine. For a detailed 
+example see https://minikube.sigs.k8s.io/docs/commands/kubectl`,
 	Example: "minikube kubectl -- --help\nminikube kubectl -- get pods --namespace kube-system",
 	Run: func(_ *cobra.Command, args []string) {
 		options := flags.CommandOptions()
