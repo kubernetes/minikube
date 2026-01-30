@@ -111,7 +111,7 @@ echo "Generating tarballs for kicbase images"
 # first get the correct tag of the kic base image
 KIC_VERSION=$(grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
 # then generate tarballs for all architectures
-for ARCH in "amd64" "arm64" "arm/v7" "ppc64le" "s390x" 
+for ARCH in "amd64" "arm64" "ppc64le" "s390x" 
 do
   SUFFIX=$(echo $ARCH | sed 's/\///g')
   IMAGE_NAME=kicbase/stable:${KIC_VERSION}
