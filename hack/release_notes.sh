@@ -20,7 +20,7 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 # Parse the token from `gh auth`
 GH_TOKEN=$(mktemp)
-gh auth status -t 2>&1 | sed -n -r 's/^.*Token: ([a-zA-Z0-9_]*)/\1/p' > "$GH_TOKEN"
+gh auth token > "$GH_TOKEN"
 
 # Ensure the token is deleted when the script exits, so the token is not leaked.
 function cleanup_token() {
