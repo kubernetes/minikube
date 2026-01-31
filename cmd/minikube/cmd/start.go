@@ -2095,8 +2095,27 @@ func startNerdctld(options *run.CommandOptions) {
 
 	// set up environment variable on remote machine. docker client uses 'non-login & non-interactive shell' therefore the only way is to modify .bashrc file of user 'docker'
 	// insert this at 4th line
-	envSetupCommand := exec.Command("/bin/bash", "-c", "sed -i '4i export DOCKER_HOST=unix:///var/run/nerdctl.sock' .bashrc")
-	if rest, err := runner.RunCmd(envSetupCommand); err != nil {
-		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s", rest.Output()), err)
+	checkDockerHostCmd := exec.Command("/bin/bash", "-c", "echo $DOCKER_HOST")
+	dockerHostResult, err := runner.RunCmd(checkDockerHostCmd)
+	if err != nil {
+		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to check DOCKER_HOST: %s", dockerHostResult.Output()), err)
+	}
+	if !strings.Contains(dockerHostResult.Output(), "unix:///var/run/nerdctl.sock") {
+		envSetupCommand := exec.Command("/bin/bash", "-c", "sed -i '4i export DOCKER_HOST=unix:///var/run/nerdctl.sock' .bashrc")
+		if rest, err := runner.RunCmd(envSetupCommand); err != nil {
+			exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s in /home/docker/.bashrc", rest.Output()), err)
+		}
+	}
+
+	checkDockerHostCmd = exec.Command("sudo", "-i", "bash", "-c", "echo $DOCKER_HOST")
+	rootDockerHostResult, err := runner.RunCmd(checkDockerHostCmd)
+	if err != nil {
+		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to check root DOCKER_HOST: %s", rootDockerHostResult.Output()), err)
+	}
+	if !strings.Contains(dockerHostResult.Output(), "unix:///var/run/nerdctl.sock") {
+		envSetupCommand := exec.Command("/bin/bash", "-c", "sudo sed -i '4i export DOCKER_HOST=unix:///var/run/nerdctl.sock' /root/.bashrc")
+		if rest, err := runner.RunCmd(envSetupCommand); err != nil {
+			exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s in /root/.bashrc", rest.Output()), err)
+		}
 	}
 }
