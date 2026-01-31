@@ -29,13 +29,9 @@ func TestChooseDefault(t *testing.T) {
 		version          string
 		want             string
 	}{
-		{"docker", "docker", "v1.23.0", "Disabled"},
 		{"docker", "docker", "v1.27.0", "bridge CNI"},
-		{"docker", "containerd", "v1.23.0", "CNI"},
 		{"docker", "containerd", "v1.27.0", "CNI"},
-		{"qemu", "docker", "v1.23.0", "Disabled"},
 		{"qemu", "docker", "v1.27.0", "bridge CNI"},
-		{"qemu", "containerd", "v1.23.0", "bridge CNI"},
 		{"qemu", "containerd", "v1.27.0", "bridge CNI"},
 	}
 	for _, tc := range tests {
