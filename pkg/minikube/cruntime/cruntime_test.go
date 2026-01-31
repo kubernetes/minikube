@@ -57,34 +57,6 @@ func TestName(t *testing.T) {
 	}
 }
 
-func TestDefaultDockerSocketPath(t *testing.T) {
-	var tests = []struct {
-		version string
-		want    string
-	}{
-		{"1.20.0", InternalDockerCRISocket},
-		{"1.21.3", InternalDockerCRISocket},
-		{"1.23.0", InternalDockerCRISocket},
-		{"1.24.0-alpha.0", ExternalDockerCRISocket},
-		{"1.24.0-beta.0", ExternalDockerCRISocket},
-		{"1.24.6", ExternalDockerCRISocket},
-	}
-	for _, tc := range tests {
-		runtime := "docker"
-		version := semver.MustParse(tc.version)
-		t.Run(runtime, func(t *testing.T) {
-			r, err := New(Config{Type: runtime, KubernetesVersion: version})
-			if err != nil {
-				t.Fatalf("New(%s): %v", tc.version, err)
-			}
-			got := r.SocketPath()
-			if got != tc.want {
-				t.Errorf("SocketPath(%s) = %q, want: %q", tc.version, got, tc.want)
-			}
-		})
-	}
-}
-
 func TestImageExists(t *testing.T) {
 	var tests = []struct {
 		runtime string
@@ -150,16 +122,11 @@ func TestKubeletOptions(t *testing.T) {
 		version string
 		want    map[string]string
 	}{
-		{"docker", "1.23.0", map[string]string{"container-runtime": "docker"}},
 		{"docker", "1.24.0", map[string]string{
 			"container-runtime-endpoint": "unix:///var/run/cri-dockerd.sock",
 		}},
 		{"crio", "1.25.0", map[string]string{
 			"container-runtime-endpoint": "unix:///var/run/crio/crio.sock",
-		}},
-		{"containerd", "1.23.0", map[string]string{
-			"container-runtime":          "remote",
-			"container-runtime-endpoint": "unix:///run/containerd/containerd.sock",
 		}},
 		{"containerd", "1.24.0", map[string]string{
 			"container-runtime-endpoint": "unix:///run/containerd/containerd.sock",
@@ -619,20 +586,24 @@ func TestVersion(t *testing.T) {
 
 // defaultServices reflects the default boot state for the minikube VM
 var defaultServices = map[string]serviceState{
-	"docker":        SvcRunning,
-	"docker.socket": SvcRunning,
-	"crio":          SvcExited,
-	"crio-shutdown": SvcExited,
-	"containerd":    SvcExited,
+	"docker":            SvcRunning,
+	"docker.socket":     SvcRunning,
+	"cri-docker":        SvcRunning,
+	"cri-docker.socket": SvcRunning,
+	"crio":              SvcExited,
+	"crio-shutdown":     SvcExited,
+	"containerd":        SvcExited,
 }
 
 // allServices reflects the state of all actual services running at once
 var allServices = map[string]serviceState{
-	"docker":        SvcRunning,
-	"docker.socket": SvcRunning,
-	"crio":          SvcRunning,
-	"crio-shutdown": SvcExited,
-	"containerd":    SvcRunning,
+	"docker":            SvcRunning,
+	"docker.socket":     SvcRunning,
+	"cri-docker":        SvcRunning,
+	"cri-docker.socket": SvcRunning,
+	"crio":              SvcRunning,
+	"crio-shutdown":     SvcExited,
+	"containerd":        SvcRunning,
 }
 
 func TestDisable(t *testing.T) {
@@ -675,35 +646,43 @@ func TestEnable(t *testing.T) {
 	}{
 		{"DockerDefaultServices", "docker", defaultServices,
 			map[string]serviceState{
-				"docker":        SvcRestarted,
-				"docker.socket": SvcRunning,
-				"containerd":    SvcExited,
-				"crio":          SvcExited,
-				"crio-shutdown": SvcExited,
+				"docker":            SvcRestarted,
+				"docker.socket":     SvcRunning,
+				"cri-docker":        SvcRestarted,
+				"cri-docker.socket": SvcRestarted,
+				"containerd":        SvcExited,
+				"crio":              SvcExited,
+				"crio-shutdown":     SvcExited,
 			}},
 		{"DockerAllServices", "docker", allServices,
 			map[string]serviceState{
-				"docker":        SvcRestarted,
-				"docker.socket": SvcRunning,
-				"containerd":    SvcExited,
-				"crio":          SvcExited,
-				"crio-shutdown": SvcExited,
+				"docker":            SvcRestarted,
+				"docker.socket":     SvcRunning,
+				"cri-docker":        SvcRestarted,
+				"cri-docker.socket": SvcRestarted,
+				"containerd":        SvcExited,
+				"crio":              SvcExited,
+				"crio-shutdown":     SvcExited,
 			}},
 		{"ContainerdDefaultServices", "containerd", defaultServices,
 			map[string]serviceState{
-				"docker":        SvcExited,
-				"docker.socket": SvcExited,
-				"containerd":    SvcRestarted,
-				"crio":          SvcExited,
-				"crio-shutdown": SvcExited,
+				"docker":            SvcExited,
+				"docker.socket":     SvcExited,
+				"cri-docker":        SvcExited,
+				"cri-docker.socket": SvcExited,
+				"containerd":        SvcRestarted,
+				"crio":              SvcExited,
+				"crio-shutdown":     SvcExited,
 			}},
 		{"CrioServices", "crio", defaultServices,
 			map[string]serviceState{
-				"docker":        SvcExited,
-				"docker.socket": SvcExited,
-				"containerd":    SvcExited,
-				"crio":          SvcRestarted,
-				"crio-shutdown": SvcExited,
+				"docker":            SvcExited,
+				"docker.socket":     SvcExited,
+				"cri-docker":        SvcExited,
+				"cri-docker.socket": SvcExited,
+				"containerd":        SvcExited,
+				"crio":              SvcRestarted,
+				"crio-shutdown":     SvcExited,
 			}},
 	}
 	for _, tc := range tests {
