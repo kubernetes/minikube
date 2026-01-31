@@ -19,15 +19,16 @@ limitations under the License.
 package vfkit
 
 import (
-	"crypto/rand"
 	"fmt"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/google/uuid"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/vfkit"
@@ -69,24 +70,39 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	machineName := config.MachineName(cfg, n)
 	storePath := localpath.MiniPath()
 
-	switch cfg.Network {
-	case "nat", "":
+	switch {
+	case cfg.Network == "nat" || cfg.Network == "":
 		// We generate a random mac address.
 		var err error
-		mac, err = generateMACAddress()
+		mac, err = common.GenerateMACAddress()
 		if err != nil {
 			return nil, fmt.Errorf("generating MAC address: %v", err)
 		}
-	case "vmnet-shared":
-		// We generate a random UUID (or use a user provided one). vment-helper
-		// will obtain a mac address from the vmnet framework using the UUID.
-		u := cfg.UUID
-		if u == "" {
-			u = uuid.NewString()
+	case cfg.Network == "vmnet-shared" || strings.HasPrefix(cfg.Network, "vmnet:"):
+		// Normalize legacy "vmnet-shared" to "vmnet:shared".
+		networkName := cfg.Network
+		if networkName == "vmnet-shared" {
+			networkName = "vmnet:shared"
+		}
+		var u string
+		if vmnet.GeneratesMACAddress() {
+			// Interface-id mode: generate UUID, vmnet will provide MAC.
+			u = cfg.UUID
+			if u == "" {
+				u = uuid.NewString()
+			}
+		} else {
+			// Network mode: we generate the MAC address.
+			var err error
+			mac, err = common.GenerateMACAddress()
+			if err != nil {
+				return nil, fmt.Errorf("generating MAC address: %v", err)
+			}
 		}
 		helper = &vmnet.Helper{
 			MachineDir:  filepath.Join(storePath, "machines", machineName),
 			InterfaceID: u,
+			NetworkName: networkName,
 		}
 	default:
 		return nil, fmt.Errorf("unsupported network: %q", cfg.Network)
@@ -122,15 +138,4 @@ func status(_ *run.CommandOptions) registry.State {
 		return registry.State{Error: err, Fix: "Run 'brew install vfkit'", Doc: docURL}
 	}
 	return registry.State{Installed: true, Healthy: true, Running: true}
-}
-
-func generateMACAddress() (string, error) {
-	buf := make([]byte, 6)
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
-	}
-	// Set local bit, ensure unicast address
-	buf[0] = (buf[0] | 2) & 0xfe
-	mac := fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5])
-	return mac, nil
 }
