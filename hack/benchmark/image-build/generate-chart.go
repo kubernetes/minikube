@@ -79,14 +79,14 @@ var RuntimeMethods = map[string][]string{
 }
 
 const (
-	INTERATIVE    = "Iterative"
-	NONINTERATIVE = "NonIterative"
+	ITERATIVE    = "Iterative"
+	NONITERATIVE = "NonIterative"
 )
 
 var Itrs = []string{
-	INTERATIVE,
-	// to simplify the output, non-interative is omitted
-	// NONINTERATIVE,
+	ITERATIVE,
+	// to simplify the output, non-iterative is omitted
+	// NONITERATIVE,
 }
 
 // method name-> test result
@@ -134,8 +134,8 @@ func readInLatestTestResult(latestBenchmarkPath string) ItrTestResults {
 	var res = ItrTestResults{
 		Results: make(map[string]ImageTestResults),
 	}
-	res.Results[INTERATIVE] = make(ImageTestResults)
-	res.Results[NONINTERATIVE] = make(ImageTestResults)
+	res.Results[ITERATIVE] = make(ImageTestResults)
+	res.Results[NONITERATIVE] = make(ImageTestResults)
 
 	f, err := os.Open(latestBenchmarkPath)
 	if err != nil {
@@ -157,43 +157,43 @@ func readInLatestTestResult(latestBenchmarkPath string) ItrTestResults {
 			continue
 		}
 
-		valuesInterative := []float64{}
-		valuesNonInterative := []float64{}
-		// interative test results of each env are stored in the following columns
-		indicesInterative := []int{1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53}
-		// non-interative test results of each env are stored in the following columns
-		indicesNonInterative := []int{3, 7, 11, 15, 19, 23, 27, 31, 35, 39, 43, 47, 51, 55}
+		valuesIterative := []float64{}
+		valuesNonIterative := []float64{}
+		// iterative test results of each env are stored in the following columns
+		indicesIterative := []int{1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53}
+		// non-iterative test results of each env are stored in the following columns
+		indicesNonIterative := []int{3, 7, 11, 15, 19, 23, 27, 31, 35, 39, 43, 47, 51, 55}
 
-		for _, i := range indicesInterative {
+		for _, i := range indicesIterative {
 			if line[i] == "NaN" {
 				// we use -1 as invalid value
-				valuesInterative = append(valuesInterative, -1)
+				valuesIterative = append(valuesIterative, -1)
 				continue
 			}
 			v, err := strconv.ParseFloat(line[i], 64)
 			if err != nil {
 				log.Fatal(err)
 			}
-			valuesInterative = append(valuesInterative, v)
+			valuesIterative = append(valuesIterative, v)
 		}
 
-		for _, i := range indicesNonInterative {
+		for _, i := range indicesNonIterative {
 			if line[i] == "NaN" {
 				// we use -1 as invalid value
-				valuesNonInterative = append(valuesNonInterative, -1)
+				valuesNonIterative = append(valuesNonIterative, -1)
 				continue
 			}
 			v, err := strconv.ParseFloat(line[i], 64)
 			if err != nil {
 				log.Fatal(err)
 			}
-			valuesNonInterative = append(valuesNonInterative, v)
+			valuesNonIterative = append(valuesNonIterative, v)
 		}
 
 		imageName := line[0]
 
-		res.Results[INTERATIVE][imageName] = NewTestResult(valuesInterative)
-		res.Results[NONINTERATIVE][imageName] = NewTestResult(valuesNonInterative)
+		res.Results[ITERATIVE][imageName] = NewTestResult(valuesIterative)
+		res.Results[NONITERATIVE][imageName] = NewTestResult(valuesNonIterative)
 
 	}
 
