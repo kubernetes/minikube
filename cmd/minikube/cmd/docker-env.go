@@ -675,10 +675,6 @@ func dockerEnvSupported(containerRuntime, driverName string) error {
 	if containerRuntime != constants.Docker && containerRuntime != constants.Containerd {
 		return fmt.Errorf("the docker-env command only supports the docker and containerd runtimes")
 	}
-	// we only support containerd-env on the Docker driver
-	if containerRuntime == constants.Containerd && driverName != driver.Docker {
-		return fmt.Errorf("the docker-env command only supports the containerd runtime with the docker driver")
-	}
 	return nil
 }
 
