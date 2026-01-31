@@ -216,10 +216,12 @@ func (m *mockReleaseGetter) download(dir, file, isoURL string) error {
 }
 
 type mockISO struct {
-	isopath string
-	exist   bool
-	ver     string
-	verCh   <-chan string
+	isopath  string
+	exist    bool
+	ver      string
+	vhdpath  string
+	vhdexist bool
+	verCh    <-chan string
 }
 
 func (m *mockISO) path() string {
@@ -228,6 +230,14 @@ func (m *mockISO) path() string {
 
 func (m *mockISO) exists() bool {
 	return m.exist
+}
+
+func (m *mockISO) pathVHD() string {
+	return m.vhdpath
+}
+
+func (m *mockISO) hasVHD() bool {
+	return m.vhdexist
 }
 
 func (m *mockISO) version() (string, error) {

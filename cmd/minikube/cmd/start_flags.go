@@ -118,6 +118,7 @@ const (
 	ha                      = "ha"
 	nodes                   = "nodes"
 	preload                 = "preload"
+	preloadWindowsIso       = "preload-windows-iso"
 	deleteOnFailure         = "delete-on-failure"
 	forceSystemd            = "force-systemd"
 	kicBaseImage            = "base-image"
@@ -145,6 +146,9 @@ const (
 	staticIP                = "static-ip"
 	gpus                    = "gpus"
 	autoPauseInterval       = "auto-pause-interval"
+	windowsNodeVersion      = "windows-node-version"
+	nodeOS                  = "node-os"
+	windowsVhdURL           = "windows-vhd-url"
 	preloadSrc              = "preload-source"
 	rosetta                 = "rosetta"
 )
@@ -197,6 +201,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(ha, false, "Create Highly Available Multi-Control Plane Cluster with a minimum of three control-plane nodes that will also be marked for work.")
 	startCmd.Flags().IntP(nodes, "n", 1, "The total number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
+	startCmd.Flags().Bool(preloadWindowsIso, false, "If set, download the Windows ISO to improve start time of setting up a windows node. Defaults to false.")
 	startCmd.Flags().Bool(noKubernetes, false, "If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use systemd as cgroup manager. Defaults to false.")
@@ -212,7 +217,12 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
 	startCmd.Flags().StringP(gpus, "g", "", "Allow pods to use your GPUs. Options include: [all,nvidia,amd] (Docker driver with Docker container-runtime only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
+	startCmd.Flags().String(windowsNodeVersion, constants.DefaultWindowsNodeVersion, "The version of Windows to use for the windows node on a multi-node cluster (e.g., 2025). Currently support Windows Server 2025")
+	startCmd.Flags().String(nodeOS, "node-os", "The OS to use for the node. Currently support 'linux, windows'. If not set, it will be set to the same as the control plane node.")
+	startCmd.Flags().String(windowsVhdURL, constants.DefaultWindowsVhdURL, "The VHD URL to use for the windows node on a multi-node cluster. If not set, it will be set to the default Windows Server 2025 VHD URL.")
+
 	startCmd.Flags().String(preloadSrc, "auto", "Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try both).")
+
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -655,6 +665,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		SocketVMnetClientPath:   detect.SocketVMNetClientPath(),
 		SocketVMnetPath:         detect.SocketVMNetPath(),
 		StaticIP:                viper.GetString(staticIP),
+		WindowsNodeVersion:      viper.GetString(windowsNodeVersion),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -907,6 +918,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.SocketVMnetClientPath, socketVMnetClientPath)
 	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 	updateDurationFromFlag(cmd, &cc.AutoPauseInterval, autoPauseInterval)
+	updateStringFromFlag(cmd, &cc.WindowsNodeVersion, windowsNodeVersion)
 	updateBoolFromFlag(cmd, &cc.Rosetta, rosetta)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
