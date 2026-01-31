@@ -174,6 +174,8 @@ var podmanEnvCmd = &cobra.Command{
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
+		out.WarningT("Using the podman-env command is deprecated, use docker-env for all container runtimes")
+
 		r := co.CP.Runner
 		if ok := isPodmanAvailable(r); !ok {
 			exit.Message(reason.EnvPodmanUnavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
