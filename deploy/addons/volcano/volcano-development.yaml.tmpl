@@ -317,9 +317,11 @@ spec:
               maxRetry:
                 default: 3
                 format: int32
+                minimum: 0
                 type: integer
               minAvailable:
                 format: int32
+                minimum: 0
                 type: integer
               minSuccess:
                 format: int32
@@ -328,8 +330,12 @@ spec:
               networkTopology:
                 properties:
                   highestTierAllowed:
-                    default: 1
+                    minimum: 0
                     type: integer
+                  highestTierName:
+                    maxLength: 253
+                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                    type: string
                   mode:
                     default: hard
                     enum:
@@ -386,12 +392,18 @@ spec:
                   type: object
                 type: array
               priorityClassName:
+                maxLength: 253
+                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                 type: string
               queue:
+                default: default
+                maxLength: 253
+                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                 type: string
               runningEstimate:
                 type: string
               schedulerName:
+                maxLength: 63
                 type: string
               tasks:
                 items:
@@ -407,12 +419,51 @@ spec:
                       type: object
                     maxRetry:
                       format: int32
+                      minimum: 0
                       type: integer
                     minAvailable:
                       format: int32
+                      minimum: 0
                       type: integer
                     name:
+                      maxLength: 63
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                       type: string
+                    partitionPolicy:
+                      properties:
+                        minPartitions:
+                          default: 0
+                          format: int32
+                          minimum: 0
+                          type: integer
+                        networkTopology:
+                          properties:
+                            highestTierAllowed:
+                              minimum: 0
+                              type: integer
+                            highestTierName:
+                              maxLength: 253
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                              type: string
+                            mode:
+                              default: hard
+                              enum:
+                              - hard
+                              - soft
+                              type: string
+                          type: object
+                        partitionSize:
+                          format: int32
+                          minimum: 1
+                          type: integer
+                        totalPartitions:
+                          format: int32
+                          minimum: 1
+                          type: integer
+                      required:
+                      - partitionSize
+                      - totalPartitions
+                      type: object
                     policies:
                       items:
                         properties:
@@ -457,6 +508,7 @@ spec:
                       type: array
                     replicas:
                       format: int32
+                      minimum: 0
                       type: integer
                     template:
                       properties:
@@ -970,6 +1022,23 @@ spec:
                                               - fieldPath
                                               type: object
                                               x-kubernetes-map-type: atomic
+                                            fileKeyRef:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                optional:
+                                                  default: false
+                                                  type: boolean
+                                                path:
+                                                  type: string
+                                                volumeName:
+                                                  type: string
+                                              required:
+                                              - key
+                                              - path
+                                              - volumeName
+                                              type: object
+                                              x-kubernetes-map-type: atomic
                                             resourceFieldRef:
                                               properties:
                                                 containerName:
@@ -1398,6 +1467,29 @@ spec:
                                     type: object
                                   restartPolicy:
                                     type: string
+                                  restartPolicyRules:
+                                    items:
+                                      properties:
+                                        action:
+                                          type: string
+                                        exitCodes:
+                                          properties:
+                                            operator:
+                                              type: string
+                                            values:
+                                              items:
+                                                format: int32
+                                                type: integer
+                                              type: array
+                                              x-kubernetes-list-type: set
+                                          required:
+                                          - operator
+                                          type: object
+                                      required:
+                                      - action
+                                      type: object
+                                    type: array
+                                    x-kubernetes-list-type: atomic
                                   securityContext:
                                     properties:
                                       allowPrivilegeEscalation:
@@ -1682,6 +1774,23 @@ spec:
                                               - fieldPath
                                               type: object
                                               x-kubernetes-map-type: atomic
+                                            fileKeyRef:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                optional:
+                                                  default: false
+                                                  type: boolean
+                                                path:
+                                                  type: string
+                                                volumeName:
+                                                  type: string
+                                              required:
+                                              - key
+                                              - path
+                                              - volumeName
+                                              type: object
+                                              x-kubernetes-map-type: atomic
                                             resourceFieldRef:
                                               properties:
                                                 containerName:
@@ -2110,6 +2219,29 @@ spec:
                                     type: object
                                   restartPolicy:
                                     type: string
+                                  restartPolicyRules:
+                                    items:
+                                      properties:
+                                        action:
+                                          type: string
+                                        exitCodes:
+                                          properties:
+                                            operator:
+                                              type: string
+                                            values:
+                                              items:
+                                                format: int32
+                                                type: integer
+                                              type: array
+                                              x-kubernetes-list-type: set
+                                          required:
+                                          - operator
+                                          type: object
+                                      required:
+                                      - action
+                                      type: object
+                                    type: array
+                                    x-kubernetes-list-type: atomic
                                   securityContext:
                                     properties:
                                       allowPrivilegeEscalation:
@@ -2351,6 +2483,8 @@ spec:
                               type: boolean
                             hostname:
                               type: string
+                            hostnameOverride:
+                              type: string
                             imagePullSecrets:
                               items:
                                 properties:
@@ -2406,6 +2540,23 @@ spec:
                                                   type: string
                                               required:
                                               - fieldPath
+                                              type: object
+                                              x-kubernetes-map-type: atomic
+                                            fileKeyRef:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                optional:
+                                                  default: false
+                                                  type: boolean
+                                                path:
+                                                  type: string
+                                                volumeName:
+                                                  type: string
+                                              required:
+                                              - key
+                                              - path
+                                              - volumeName
                                               type: object
                                               x-kubernetes-map-type: atomic
                                             resourceFieldRef:
@@ -2836,6 +2987,29 @@ spec:
                                     type: object
                                   restartPolicy:
                                     type: string
+                                  restartPolicyRules:
+                                    items:
+                                      properties:
+                                        action:
+                                          type: string
+                                        exitCodes:
+                                          properties:
+                                            operator:
+                                              type: string
+                                            values:
+                                              items:
+                                                format: int32
+                                                type: integer
+                                              type: array
+                                              x-kubernetes-list-type: set
+                                          required:
+                                          - operator
+                                          type: object
+                                      required:
+                                      - action
+                                      type: object
+                                    type: array
+                                    x-kubernetes-list-type: atomic
                                   securityContext:
                                     properties:
                                       allowPrivilegeEscalation:
@@ -3932,6 +4106,25 @@ spec:
                                                   type: array
                                                   x-kubernetes-list-type: atomic
                                               type: object
+                                            podCertificate:
+                                              properties:
+                                                certificateChainPath:
+                                                  type: string
+                                                credentialBundlePath:
+                                                  type: string
+                                                keyPath:
+                                                  type: string
+                                                keyType:
+                                                  type: string
+                                                maxExpirationSeconds:
+                                                  format: int32
+                                                  type: integer
+                                                signerName:
+                                                  type: string
+                                              required:
+                                              - keyType
+                                              - signerName
+                                              type: object
                                             secret:
                                               properties:
                                                 items:
@@ -4134,14 +4327,18 @@ spec:
                       - single-numa-node
                       type: string
                   type: object
+                minItems: 1
                 type: array
               ttlSecondsAfterFinished:
                 format: int32
+                minimum: 0
                 type: integer
               volumes:
                 items:
                   properties:
                     mountPath:
+                      minLength: 1
+                      pattern: ^[^:]+$
                       type: string
                     volumeClaim:
                       properties:
@@ -4232,6 +4429,7 @@ spec:
                           type: string
                       type: object
                     volumeClaimName:
+                      maxLength: 253
                       type: string
                   required:
                   - mountPath
@@ -4258,18 +4456,23 @@ spec:
                 type: object
               failed:
                 format: int32
+                minimum: 0
                 type: integer
               minAvailable:
                 format: int32
+                minimum: 0
                 type: integer
               pending:
                 format: int32
+                minimum: 0
                 type: integer
               retryCount:
                 format: int32
+                minimum: 0
                 type: integer
               running:
                 format: int32
+                minimum: 0
                 type: integer
               runningDuration:
                 type: string
@@ -4281,12 +4484,24 @@ spec:
                   message:
                     type: string
                   phase:
+                    enum:
+                    - Pending
+                    - Aborting
+                    - Aborted
+                    - Running
+                    - Restarting
+                    - Completing
+                    - Completed
+                    - Terminating
+                    - Terminated
+                    - Failed
                     type: string
                   reason:
                     type: string
                 type: object
               succeeded:
                 format: int32
+                minimum: 0
                 type: integer
               taskStatusCount:
                 additionalProperties:
@@ -4300,12 +4515,15 @@ spec:
                 type: object
               terminating:
                 format: int32
+                minimum: 0
                 type: integer
               unknown:
                 format: int32
+                minimum: 0
                 type: integer
               version:
                 format: int32
+                minimum: 0
                 type: integer
             type: object
         type: object
@@ -4383,9 +4601,11 @@ spec:
                       maxRetry:
                         default: 3
                         format: int32
+                        minimum: 0
                         type: integer
                       minAvailable:
                         format: int32
+                        minimum: 0
                         type: integer
                       minSuccess:
                         format: int32
@@ -4394,8 +4614,12 @@ spec:
                       networkTopology:
                         properties:
                           highestTierAllowed:
-                            default: 1
+                            minimum: 0
                             type: integer
+                          highestTierName:
+                            maxLength: 253
+                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                            type: string
                           mode:
                             default: hard
                             enum:
@@ -4452,12 +4676,18 @@ spec:
                           type: object
                         type: array
                       priorityClassName:
+                        maxLength: 253
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                         type: string
                       queue:
+                        default: default
+                        maxLength: 253
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                         type: string
                       runningEstimate:
                         type: string
                       schedulerName:
+                        maxLength: 63
                         type: string
                       tasks:
                         items:
@@ -4473,12 +4703,51 @@ spec:
                               type: object
                             maxRetry:
                               format: int32
+                              minimum: 0
                               type: integer
                             minAvailable:
                               format: int32
+                              minimum: 0
                               type: integer
                             name:
+                              maxLength: 63
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                               type: string
+                            partitionPolicy:
+                              properties:
+                                minPartitions:
+                                  default: 0
+                                  format: int32
+                                  minimum: 0
+                                  type: integer
+                                networkTopology:
+                                  properties:
+                                    highestTierAllowed:
+                                      minimum: 0
+                                      type: integer
+                                    highestTierName:
+                                      maxLength: 253
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                      type: string
+                                    mode:
+                                      default: hard
+                                      enum:
+                                      - hard
+                                      - soft
+                                      type: string
+                                  type: object
+                                partitionSize:
+                                  format: int32
+                                  minimum: 1
+                                  type: integer
+                                totalPartitions:
+                                  format: int32
+                                  minimum: 1
+                                  type: integer
+                              required:
+                              - partitionSize
+                              - totalPartitions
+                              type: object
                             policies:
                               items:
                                 properties:
@@ -4523,6 +4792,7 @@ spec:
                               type: array
                             replicas:
                               format: int32
+                              minimum: 0
                               type: integer
                             template:
                               properties:
@@ -5036,6 +5306,23 @@ spec:
                                                       - fieldPath
                                                       type: object
                                                       x-kubernetes-map-type: atomic
+                                                    fileKeyRef:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        optional:
+                                                          default: false
+                                                          type: boolean
+                                                        path:
+                                                          type: string
+                                                        volumeName:
+                                                          type: string
+                                                      required:
+                                                      - key
+                                                      - path
+                                                      - volumeName
+                                                      type: object
+                                                      x-kubernetes-map-type: atomic
                                                     resourceFieldRef:
                                                       properties:
                                                         containerName:
@@ -5464,6 +5751,29 @@ spec:
                                             type: object
                                           restartPolicy:
                                             type: string
+                                          restartPolicyRules:
+                                            items:
+                                              properties:
+                                                action:
+                                                  type: string
+                                                exitCodes:
+                                                  properties:
+                                                    operator:
+                                                      type: string
+                                                    values:
+                                                      items:
+                                                        format: int32
+                                                        type: integer
+                                                      type: array
+                                                      x-kubernetes-list-type: set
+                                                  required:
+                                                  - operator
+                                                  type: object
+                                              required:
+                                              - action
+                                              type: object
+                                            type: array
+                                            x-kubernetes-list-type: atomic
                                           securityContext:
                                             properties:
                                               allowPrivilegeEscalation:
@@ -5748,6 +6058,23 @@ spec:
                                                       - fieldPath
                                                       type: object
                                                       x-kubernetes-map-type: atomic
+                                                    fileKeyRef:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        optional:
+                                                          default: false
+                                                          type: boolean
+                                                        path:
+                                                          type: string
+                                                        volumeName:
+                                                          type: string
+                                                      required:
+                                                      - key
+                                                      - path
+                                                      - volumeName
+                                                      type: object
+                                                      x-kubernetes-map-type: atomic
                                                     resourceFieldRef:
                                                       properties:
                                                         containerName:
@@ -6176,6 +6503,29 @@ spec:
                                             type: object
                                           restartPolicy:
                                             type: string
+                                          restartPolicyRules:
+                                            items:
+                                              properties:
+                                                action:
+                                                  type: string
+                                                exitCodes:
+                                                  properties:
+                                                    operator:
+                                                      type: string
+                                                    values:
+                                                      items:
+                                                        format: int32
+                                                        type: integer
+                                                      type: array
+                                                      x-kubernetes-list-type: set
+                                                  required:
+                                                  - operator
+                                                  type: object
+                                              required:
+                                              - action
+                                              type: object
+                                            type: array
+                                            x-kubernetes-list-type: atomic
                                           securityContext:
                                             properties:
                                               allowPrivilegeEscalation:
@@ -6417,6 +6767,8 @@ spec:
                                       type: boolean
                                     hostname:
                                       type: string
+                                    hostnameOverride:
+                                      type: string
                                     imagePullSecrets:
                                       items:
                                         properties:
@@ -6472,6 +6824,23 @@ spec:
                                                           type: string
                                                       required:
                                                       - fieldPath
+                                                      type: object
+                                                      x-kubernetes-map-type: atomic
+                                                    fileKeyRef:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        optional:
+                                                          default: false
+                                                          type: boolean
+                                                        path:
+                                                          type: string
+                                                        volumeName:
+                                                          type: string
+                                                      required:
+                                                      - key
+                                                      - path
+                                                      - volumeName
                                                       type: object
                                                       x-kubernetes-map-type: atomic
                                                     resourceFieldRef:
@@ -6902,6 +7271,29 @@ spec:
                                             type: object
                                           restartPolicy:
                                             type: string
+                                          restartPolicyRules:
+                                            items:
+                                              properties:
+                                                action:
+                                                  type: string
+                                                exitCodes:
+                                                  properties:
+                                                    operator:
+                                                      type: string
+                                                    values:
+                                                      items:
+                                                        format: int32
+                                                        type: integer
+                                                      type: array
+                                                      x-kubernetes-list-type: set
+                                                  required:
+                                                  - operator
+                                                  type: object
+                                              required:
+                                              - action
+                                              type: object
+                                            type: array
+                                            x-kubernetes-list-type: atomic
                                           securityContext:
                                             properties:
                                               allowPrivilegeEscalation:
@@ -7998,6 +8390,25 @@ spec:
                                                           type: array
                                                           x-kubernetes-list-type: atomic
                                                       type: object
+                                                    podCertificate:
+                                                      properties:
+                                                        certificateChainPath:
+                                                          type: string
+                                                        credentialBundlePath:
+                                                          type: string
+                                                        keyPath:
+                                                          type: string
+                                                        keyType:
+                                                          type: string
+                                                        maxExpirationSeconds:
+                                                          format: int32
+                                                          type: integer
+                                                        signerName:
+                                                          type: string
+                                                      required:
+                                                      - keyType
+                                                      - signerName
+                                                      type: object
                                                     secret:
                                                       properties:
                                                         items:
@@ -8200,14 +8611,18 @@ spec:
                               - single-numa-node
                               type: string
                           type: object
+                        minItems: 1
                         type: array
                       ttlSecondsAfterFinished:
                         format: int32
+                        minimum: 0
                         type: integer
                       volumes:
                         items:
                           properties:
                             mountPath:
+                              minLength: 1
+                              pattern: ^[^:]+$
                               type: string
                             volumeClaim:
                               properties:
@@ -8298,6 +8713,7 @@ spec:
                                   type: string
                               type: object
                             volumeClaimName:
+                              maxLength: 253
                               type: string
                           required:
                           - mountPath
@@ -8500,7 +8916,7 @@ rules:
     verbs: ["create", "list", "watch", "update", "patch"]
   - apiGroups: [""]
     resources: ["pods"]
-    verbs: ["create", "get", "list", "watch", "delete", "patch"]
+    verbs: ["create", "get", "list", "watch", "delete", "patch", "update"]
   - apiGroups: [""]
     resources: ["pods/finalizers"]
     verbs: ["update", "patch"]
@@ -8549,6 +8965,12 @@ rules:
   - apiGroups: [ "" ]
     resources: [ "nodes" ]
     verbs: [ "list", "watch" ]
+  - apiGroups: ["shard.volcano.sh"]
+    resources: ["nodeshards", "nodeshards/status"]
+    verbs: ["list", "watch", "get", "create", "delete", "update", "patch"]
+  - apiGroups: ["config.volcano.sh"]
+    resources: ["colocationconfigurations"]
+    verbs: ["get", "list", "watch"]
 ---
 # Source: volcano/templates/controllers.yaml
 kind: ClusterRoleBinding
@@ -8741,7 +9163,7 @@ rules:
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["configmaps"]
-    verbs: ["get", "create", "delete", "update"]
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
   - apiGroups: ["apps"]
     resources: ["daemonsets", "replicasets", "statefulsets"]
     verbs: ["list", "watch", "get"]
@@ -8760,6 +9182,12 @@ rules:
   - apiGroups: [ "resource.k8s.io" ]
     resources: [ "devicetaintrules" ]
     verbs: [ "get", "list", "watch" ]
+  - apiGroups: ["shard.volcano.sh"]
+    resources: ["nodeshards"]
+    verbs: ["list", "watch", "get"]
+  - apiGroups: ["shard.volcano.sh"]
+    resources: ["nodeshards/status"]
+    verbs: ["update"]
 ---
 # Source: volcano/templates/scheduler.yaml
 kind: ClusterRoleBinding
@@ -8931,6 +9359,7 @@ spec:
                   if there's not enough resources to start all tasks, the scheduler
                   will not start anyone.
                 format: int32
+                minimum: 0
                 type: integer
               minResources:
                 additionalProperties:
@@ -8949,9 +9378,11 @@ spec:
                   format: int32
                   type: integer
                 description: |-
-                  MinTaskMember defines the minimal number of pods to run each task in the pod group;
+                  MinTaskMember defines the minimal number of pods to run for each task in the pod group;
                   if there's not enough resources to start each task, the scheduler
                   will not start anyone.
+                  SubGroupPolicy covers all capabilities of minTaskMember, while providing richer network topology and Gang scheduling management capabilities.
+                  Recommend using SubGroupPolicy to uniformly manage Gang scheduling for each Task group.
                 type: object
               networkTopology:
                 description: NetworkTopology defines the NetworkTopology config, this
@@ -8959,10 +9390,16 @@ spec:
                   CRD.
                 properties:
                   highestTierAllowed:
-                    default: 1
                     description: HighestTierAllowed specifies the highest tier that
                       a job allowed to cross when scheduling.
+                    minimum: 0
                     type: integer
+                  highestTierName:
+                    description: |-
+                      HighestTierName specifies the highest tier name that a job allowed to cross when scheduling.
+                      HighestTierName and HighestTierAllowed cannot be set simultaneously.
+                    maxLength: 253
+                    type: string
                   mode:
                     default: hard
                     description: Mode specifies the mode of the network topology constrain.
@@ -8979,13 +9416,129 @@ spec:
                   name must be defined by creating a PriorityClass object with that name.
                   If not specified, the PodGroup priority will be default or zero if there is no
                   default.
+                maxLength: 253
                 type: string
               queue:
                 default: default
                 description: |-
                   Queue defines the queue to allocate resource for PodGroup; if queue does not exist,
                   the PodGroup will not be scheduled. Defaults to `default` Queue with the lowest weight.
+                maxLength: 253
+                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                 type: string
+              subGroupPolicy:
+                description: |-
+                  Compared with minTaskMember, it offers more comprehensive topology scheduling and Gang scheduling management capabilities.
+                  Concurrent use with minTaskMember is not recommended, and SubGroupPolicy is the long-term evolution direction.
+                items:
+                  properties:
+                    labelSelector:
+                      description: |-
+                        LabelSelector is used to find matching pods.
+                        Pods that match this label selector are counted to determine the number of pods
+                        in their corresponding topology domain.
+                      properties:
+                        matchExpressions:
+                          description: matchExpressions is a list of label selector
+                            requirements. The requirements are ANDed.
+                          items:
+                            description: |-
+                              A label selector requirement is a selector that contains values, a key, and an operator that
+                              relates the key and values.
+                            properties:
+                              key:
+                                description: key is the label key that the selector
+                                  applies to.
+                                type: string
+                              operator:
+                                description: |-
+                                  operator represents a key's relationship to a set of values.
+                                  Valid operators are In, NotIn, Exists and DoesNotExist.
+                                type: string
+                              values:
+                                description: |-
+                                  values is an array of string values. If the operator is In or NotIn,
+                                  the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                  the values array must be empty. This array is replaced during a strategic
+                                  merge patch.
+                                items:
+                                  type: string
+                                type: array
+                                x-kubernetes-list-type: atomic
+                            required:
+                            - key
+                            - operator
+                            type: object
+                          type: array
+                          x-kubernetes-list-type: atomic
+                        matchLabels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                            map is equivalent to an element of matchExpressions, whose key field is "key", the
+                            operator is "In", and the values array contains only "value". The requirements are ANDed.
+                          type: object
+                      type: object
+                      x-kubernetes-map-type: atomic
+                    matchLabelKeys:
+                      description: |-
+                        MatchLabelKeys: A label-based grouping configuration field for Pods, defining filtering rules for grouping label keys
+                        Core function: Refine grouping of Pods that meet LabelSelector criteria by label attributes, with the following rules and constraints:
+                        1. Scope: Only applies to Pods matching the predefined LabelSelector
+                        2. Grouping rule: Specify one or more label keys; Pods containing the target label keys with exactly the same corresponding label values are grouped together
+                        3. Policy constraint: Pods in the same group follow a unified NetworkTopology policy to achieve group-level network behavior governance
+                      items:
+                        type: string
+                      type: array
+                      x-kubernetes-list-type: atomic
+                    minSubGroups:
+                      default: 0
+                      description: |-
+                        MinSubGroups: Minimum number of subgroups required to trigger scheduling. Scheduling is initiated only if cluster resources meet the requirements of at least this number of subgroups.
+                        Subgroup-level Gang Scheduling
+                      format: int32
+                      minimum: 0
+                      type: integer
+                    name:
+                      description: Name specifies the name of SubGroupPolicy
+                      maxLength: 253
+                      type: string
+                    networkTopology:
+                      description: NetworkTopology defines the NetworkTopology config,
+                        this field works in conjunction with network topology feature
+                        and hyperNode CRD.
+                      properties:
+                        highestTierAllowed:
+                          description: HighestTierAllowed specifies the highest tier
+                            that a job allowed to cross when scheduling.
+                          minimum: 0
+                          type: integer
+                        highestTierName:
+                          description: |-
+                            HighestTierName specifies the highest tier name that a job allowed to cross when scheduling.
+                            HighestTierName and HighestTierAllowed cannot be set simultaneously.
+                          maxLength: 253
+                          type: string
+                        mode:
+                          default: hard
+                          description: Mode specifies the mode of the network topology
+                            constrain.
+                          enum:
+                          - hard
+                          - soft
+                          type: string
+                      type: object
+                    subGroupSize:
+                      default: 1
+                      description: |-
+                        SubGroupSize defines the number of pods in each sub-affinity group.
+                        Only when a subGroup of pods, with a size of "subGroupSize", can satisfy the network topology constraint then will the subGroup be scheduled.
+                      format: int32
+                      minimum: 1
+                      type: integer
+                  type: object
+                type: array
             type: object
           status:
             description: |-
@@ -9025,17 +9578,26 @@ spec:
               failed:
                 description: The number of pods which reached phase Failed.
                 format: int32
+                minimum: 0
                 type: integer
               phase:
                 description: Current phase of PodGroup.
+                enum:
+                - Pending
+                - Running
+                - Unknown
+                - Inqueue
+                - Completed
                 type: string
               running:
                 description: The number of actively running pods.
                 format: int32
+                minimum: 0
                 type: integer
               succeeded:
                 description: The number of pods which reached phase Succeeded.
                 format: int32
+                minimum: 0
                 type: integer
             type: object
         type: object
@@ -9135,6 +9697,13 @@ spec:
                   x-kubernetes-int-or-string: true
                 description: ResourceList is a set of (resource name, quantity) pairs.
                 type: object
+              dequeueStrategy:
+                default: traverse
+                description: DequeueStrategy defines the dequeue strategy of queue
+                enum:
+                - fifo
+                - traverse
+                type: string
               deserved:
                 additionalProperties:
                   anyOf:
@@ -9184,11 +9753,14 @@ spec:
                 type: object
               parent:
                 description: Parent define the parent of queue
+                maxLength: 253
+                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                 type: string
               priority:
                 description: Priority define the priority of queue. Higher values
                   are prioritized for scheduling and considered later during reclamation.
                 format: int32
+                minimum: 0
                 type: integer
               reclaimable:
                 description: Reclaimable indicate whether the queue can be reclaimed
@@ -9196,6 +9768,7 @@ spec:
                 type: boolean
               type:
                 description: Type define the type of queue
+                maxLength: 253
                 type: string
               weight:
                 default: 1
@@ -9219,14 +9792,17 @@ spec:
               completed:
                 description: The number of `Completed` PodGroup in this queue.
                 format: int32
+                minimum: 0
                 type: integer
               inqueue:
                 description: The number of `Inqueue` PodGroup in this queue.
                 format: int32
+                minimum: 0
                 type: integer
               pending:
                 description: The number of 'Pending' PodGroup in this queue.
                 format: int32
+                minimum: 0
                 type: integer
               reservation:
                 description: Reservation is the profile of resource reservation for
@@ -9251,13 +9827,20 @@ spec:
               running:
                 description: The number of 'Running' PodGroup in this queue.
                 format: int32
+                minimum: 0
                 type: integer
               state:
                 description: State is state of queue
+                enum:
+                - Open
+                - Closed
+                - Closing
+                - Unknown
                 type: string
               unknown:
                 description: The number of 'Unknown' PodGroup in this queue.
                 format: int32
+                minimum: 0
                 type: integer
             type: object
         type: object
@@ -9380,6 +9963,9 @@ spec:
     - jsonPath: .spec.tier
       name: Tier
       type: string
+    - jsonPath: .spec.tierName
+      name: TierName
+      type: string
     - jsonPath: .status.nodeCount
       name: NodeCount
       type: integer
@@ -9428,7 +10014,12 @@ spec:
                             name:
                               description: Name specifies the exact name of the node
                                 to match.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                               type: string
+                          required:
+                          - name
                           type: object
                         labelMatch:
                           description: LabelMatch defines the labels match criteria
@@ -9483,7 +10074,10 @@ spec:
                             pattern:
                               description: Pattern defines the regex pattern to match
                                 node names.
+                              minLength: 1
                               type: string
+                          required:
+                          - pattern
                           type: object
                       type: object
                       x-kubernetes-validations:
@@ -9503,10 +10097,16 @@ spec:
                   required:
                   - type
                   type: object
+                minItems: 1
                 type: array
               tier:
                 description: Tier categorizes the performance level of the HyperNode.
+                minimum: 0
                 type: integer
+              tierName:
+                description: TierName represents the level name of the HyperNode.
+                maxLength: 253
+                type: string
             required:
             - tier
             type: object
@@ -9578,6 +10178,293 @@ spec:
                 minimum: 0
                 type: integer
             type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+# Source: volcano/templates/shard_v1alpha1_nodeshards.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: nodeshards.shard.volcano.sh
+spec:
+  group: shard.volcano.sh
+  names:
+    kind: NodeShard
+    listKind: NodeShardList
+    plural: nodeshards
+    shortNames:
+    - nsh
+    singular: nodeshard
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: NodeShard is a collection of nodes dedicated to a specific scheduler
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Specification of the desired behavior of the NodeShard.
+            properties:
+              nodesDesired:
+                description: NodesDesired defines the list of nodes desired to be
+                  included in this NodeShard.
+                items:
+                  type: string
+                type: array
+            required:
+            - nodesDesired
+            type: object
+          status:
+            description: |-
+              Status represents the current information about a NodeShard.
+              This data may not be up to date.
+            properties:
+              lastUpdateTime:
+                description: LastUpdateTime is the last time the status was updated.
+                format: date-time
+                type: string
+              nodesInUse:
+                description: NodesInUse is the list of nodes currently in use by the
+                  NodeShard.
+                items:
+                  type: string
+                type: array
+              nodesToAdd:
+                description: NodesToAdd is the list of nodes preparing to be added
+                  to the NodeShard.
+                items:
+                  type: string
+                type: array
+              nodesToRemove:
+                description: NodesToRemove is the list of nodes preparing to be removed
+                  from the NodeShard.
+                items:
+                  type: string
+                type: array
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+# Source: volcano/templates/config_v1alpha1_colocationconfigurations.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: colocationconfigurations.config.volcano.sh
+spec:
+  group: config.volcano.sh
+  names:
+    kind: ColocationConfiguration
+    listKind: ColocationConfigurationList
+    plural: colocationconfigurations
+    singular: colocationconfiguration
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: ColocationConfiguration is the Schema for the colocationconfigurations
+          API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: spec defines the desired state of ColocationConfiguration
+            properties:
+              memoryQos:
+                description: MemoryQos defines the memory QoS configuration
+                properties:
+                  highRatio:
+                    default: 100
+                    description: 'HighRatio is the memory throttling ratio; default=100,
+                      range: 0~100'
+                    maximum: 100
+                    minimum: 0
+                    type: integer
+                  lowRatio:
+                    default: 0
+                    description: 'LowRatio is the memory priority protection ratio;
+                      default=0, range: 0~100'
+                    maximum: 100
+                    minimum: 0
+                    type: integer
+                  minRatio:
+                    default: 0
+                    description: 'MinRatio is the absolute memory protection ratio;
+                      default=0, range: 0~100'
+                    maximum: 100
+                    minimum: 0
+                    type: integer
+                type: object
+              selector:
+                description: Selector is a label selector to match the target pods
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: |-
+                        A label selector requirement is a selector that contains values, a key, and an operator that
+                        relates the key and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: |-
+                            operator represents a key's relationship to a set of values.
+                            Valid operators are In, NotIn, Exists and DoesNotExist.
+                          type: string
+                        values:
+                          description: |-
+                            values is an array of string values. If the operator is In or NotIn,
+                            the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                            the values array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: atomic
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                      map is equivalent to an element of matchExpressions, whose key field is "key", the
+                      operator is "In", and the values array contains only "value". The requirements are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+            type: object
+          status:
+            description: status defines the observed state of ColocationConfiguration
+            properties:
+              conditions:
+                description: |-
+                  conditions represent the current state of the ColocationConfiguration resource.
+                  Each condition has a unique type and reflects the status of a specific aspect of the resource.
+
+                  Standard condition types include:
+                  - "Available": the resource is fully functional
+                  - "Progressing": the resource is being created or updated
+                  - "Degraded": the resource failed to reach or maintain its desired state
+
+                  The status of each condition is one of True, False, or Unknown.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+            type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true
@@ -9881,9 +10768,11 @@ spec:
               maxRetry:
                 default: 3
                 format: int32
+                minimum: 0
                 type: integer
               minAvailable:
                 format: int32
+                minimum: 0
                 type: integer
               minSuccess:
                 format: int32
@@ -9892,8 +10781,12 @@ spec:
               networkTopology:
                 properties:
                   highestTierAllowed:
-                    default: 1
+                    minimum: 0
                     type: integer
+                  highestTierName:
+                    maxLength: 253
+                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                    type: string
                   mode:
                     default: hard
                     enum:
@@ -9950,12 +10843,18 @@ spec:
                   type: object
                 type: array
               priorityClassName:
+                maxLength: 253
+                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                 type: string
               queue:
+                default: default
+                maxLength: 253
+                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                 type: string
               runningEstimate:
                 type: string
               schedulerName:
+                maxLength: 63
                 type: string
               tasks:
                 items:
@@ -9971,12 +10870,51 @@ spec:
                       type: object
                     maxRetry:
                       format: int32
+                      minimum: 0
                       type: integer
                     minAvailable:
                       format: int32
+                      minimum: 0
                       type: integer
                     name:
+                      maxLength: 63
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                       type: string
+                    partitionPolicy:
+                      properties:
+                        minPartitions:
+                          default: 0
+                          format: int32
+                          minimum: 0
+                          type: integer
+                        networkTopology:
+                          properties:
+                            highestTierAllowed:
+                              minimum: 0
+                              type: integer
+                            highestTierName:
+                              maxLength: 253
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                              type: string
+                            mode:
+                              default: hard
+                              enum:
+                              - hard
+                              - soft
+                              type: string
+                          type: object
+                        partitionSize:
+                          format: int32
+                          minimum: 1
+                          type: integer
+                        totalPartitions:
+                          format: int32
+                          minimum: 1
+                          type: integer
+                      required:
+                      - partitionSize
+                      - totalPartitions
+                      type: object
                     policies:
                       items:
                         properties:
@@ -10021,6 +10959,7 @@ spec:
                       type: array
                     replicas:
                       format: int32
+                      minimum: 0
                       type: integer
                     template:
                       properties:
@@ -10534,6 +11473,23 @@ spec:
                                               - fieldPath
                                               type: object
                                               x-kubernetes-map-type: atomic
+                                            fileKeyRef:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                optional:
+                                                  default: false
+                                                  type: boolean
+                                                path:
+                                                  type: string
+                                                volumeName:
+                                                  type: string
+                                              required:
+                                              - key
+                                              - path
+                                              - volumeName
+                                              type: object
+                                              x-kubernetes-map-type: atomic
                                             resourceFieldRef:
                                               properties:
                                                 containerName:
@@ -10962,6 +11918,29 @@ spec:
                                     type: object
                                   restartPolicy:
                                     type: string
+                                  restartPolicyRules:
+                                    items:
+                                      properties:
+                                        action:
+                                          type: string
+                                        exitCodes:
+                                          properties:
+                                            operator:
+                                              type: string
+                                            values:
+                                              items:
+                                                format: int32
+                                                type: integer
+                                              type: array
+                                              x-kubernetes-list-type: set
+                                          required:
+                                          - operator
+                                          type: object
+                                      required:
+                                      - action
+                                      type: object
+                                    type: array
+                                    x-kubernetes-list-type: atomic
                                   securityContext:
                                     properties:
                                       allowPrivilegeEscalation:
@@ -11246,6 +12225,23 @@ spec:
                                               - fieldPath
                                               type: object
                                               x-kubernetes-map-type: atomic
+                                            fileKeyRef:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                optional:
+                                                  default: false
+                                                  type: boolean
+                                                path:
+                                                  type: string
+                                                volumeName:
+                                                  type: string
+                                              required:
+                                              - key
+                                              - path
+                                              - volumeName
+                                              type: object
+                                              x-kubernetes-map-type: atomic
                                             resourceFieldRef:
                                               properties:
                                                 containerName:
@@ -11674,6 +12670,29 @@ spec:
                                     type: object
                                   restartPolicy:
                                     type: string
+                                  restartPolicyRules:
+                                    items:
+                                      properties:
+                                        action:
+                                          type: string
+                                        exitCodes:
+                                          properties:
+                                            operator:
+                                              type: string
+                                            values:
+                                              items:
+                                                format: int32
+                                                type: integer
+                                              type: array
+                                              x-kubernetes-list-type: set
+                                          required:
+                                          - operator
+                                          type: object
+                                      required:
+                                      - action
+                                      type: object
+                                    type: array
+                                    x-kubernetes-list-type: atomic
                                   securityContext:
                                     properties:
                                       allowPrivilegeEscalation:
@@ -11915,6 +12934,8 @@ spec:
                               type: boolean
                             hostname:
                               type: string
+                            hostnameOverride:
+                              type: string
                             imagePullSecrets:
                               items:
                                 properties:
@@ -11970,6 +12991,23 @@ spec:
                                                   type: string
                                               required:
                                               - fieldPath
+                                              type: object
+                                              x-kubernetes-map-type: atomic
+                                            fileKeyRef:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                optional:
+                                                  default: false
+                                                  type: boolean
+                                                path:
+                                                  type: string
+                                                volumeName:
+                                                  type: string
+                                              required:
+                                              - key
+                                              - path
+                                              - volumeName
                                               type: object
                                               x-kubernetes-map-type: atomic
                                             resourceFieldRef:
@@ -12400,6 +13438,29 @@ spec:
                                     type: object
                                   restartPolicy:
                                     type: string
+                                  restartPolicyRules:
+                                    items:
+                                      properties:
+                                        action:
+                                          type: string
+                                        exitCodes:
+                                          properties:
+                                            operator:
+                                              type: string
+                                            values:
+                                              items:
+                                                format: int32
+                                                type: integer
+                                              type: array
+                                              x-kubernetes-list-type: set
+                                          required:
+                                          - operator
+                                          type: object
+                                      required:
+                                      - action
+                                      type: object
+                                    type: array
+                                    x-kubernetes-list-type: atomic
                                   securityContext:
                                     properties:
                                       allowPrivilegeEscalation:
@@ -13496,6 +14557,25 @@ spec:
                                                   type: array
                                                   x-kubernetes-list-type: atomic
                                               type: object
+                                            podCertificate:
+                                              properties:
+                                                certificateChainPath:
+                                                  type: string
+                                                credentialBundlePath:
+                                                  type: string
+                                                keyPath:
+                                                  type: string
+                                                keyType:
+                                                  type: string
+                                                maxExpirationSeconds:
+                                                  format: int32
+                                                  type: integer
+                                                signerName:
+                                                  type: string
+                                              required:
+                                              - keyType
+                                              - signerName
+                                              type: object
                                             secret:
                                               properties:
                                                 items:
@@ -13698,14 +14778,18 @@ spec:
                       - single-numa-node
                       type: string
                   type: object
+                minItems: 1
                 type: array
               ttlSecondsAfterFinished:
                 format: int32
+                minimum: 0
                 type: integer
               volumes:
                 items:
                   properties:
                     mountPath:
+                      minLength: 1
+                      pattern: ^[^:]+$
                       type: string
                     volumeClaim:
                       properties:
@@ -13796,6 +14880,7 @@ spec:
                           type: string
                       type: object
                     volumeClaimName:
+                      maxLength: 253
                       type: string
                   required:
                   - mountPath
@@ -13879,6 +14964,7 @@ spec:
                                     minimum: 0
                                     type: integer
                                   taskName:
+                                    maxLength: 253
                                     type: string
                                 type: object
                               type: array
@@ -13886,8 +14972,10 @@ spec:
                               items:
                                 properties:
                                   phase:
+                                    maxLength: 63
                                     type: string
                                   taskName:
+                                    maxLength: 253
                                     type: string
                                 type: object
                               type: array
@@ -13899,6 +14987,7 @@ spec:
                                     minimum: 0
                                     type: integer
                                   taskName:
+                                    maxLength: 253
                                     type: string
                                 required:
                                 - port
@@ -13920,9 +15009,11 @@ spec:
                             maxRetry:
                               default: 3
                               format: int32
+                              minimum: 0
                               type: integer
                             minAvailable:
                               format: int32
+                              minimum: 0
                               type: integer
                             minSuccess:
                               format: int32
@@ -13931,8 +15022,12 @@ spec:
                             networkTopology:
                               properties:
                                 highestTierAllowed:
-                                  default: 1
+                                  minimum: 0
                                   type: integer
+                                highestTierName:
+                                  maxLength: 253
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                  type: string
                                 mode:
                                   default: hard
                                   enum:
@@ -13989,12 +15084,18 @@ spec:
                                 type: object
                               type: array
                             priorityClassName:
+                              maxLength: 253
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                               type: string
                             queue:
+                              default: default
+                              maxLength: 253
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                               type: string
                             runningEstimate:
                               type: string
                             schedulerName:
+                              maxLength: 63
                               type: string
                             tasks:
                               items:
@@ -14010,12 +15111,51 @@ spec:
                                     type: object
                                   maxRetry:
                                     format: int32
+                                    minimum: 0
                                     type: integer
                                   minAvailable:
                                     format: int32
+                                    minimum: 0
                                     type: integer
                                   name:
+                                    maxLength: 63
+                                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                     type: string
+                                  partitionPolicy:
+                                    properties:
+                                      minPartitions:
+                                        default: 0
+                                        format: int32
+                                        minimum: 0
+                                        type: integer
+                                      networkTopology:
+                                        properties:
+                                          highestTierAllowed:
+                                            minimum: 0
+                                            type: integer
+                                          highestTierName:
+                                            maxLength: 253
+                                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                            type: string
+                                          mode:
+                                            default: hard
+                                            enum:
+                                            - hard
+                                            - soft
+                                            type: string
+                                        type: object
+                                      partitionSize:
+                                        format: int32
+                                        minimum: 1
+                                        type: integer
+                                      totalPartitions:
+                                        format: int32
+                                        minimum: 1
+                                        type: integer
+                                    required:
+                                    - partitionSize
+                                    - totalPartitions
+                                    type: object
                                   policies:
                                     items:
                                       properties:
@@ -14060,6 +15200,7 @@ spec:
                                     type: array
                                   replicas:
                                     format: int32
+                                    minimum: 0
                                     type: integer
                                   template:
                                     properties:
@@ -14573,6 +15714,23 @@ spec:
                                                             - fieldPath
                                                             type: object
                                                             x-kubernetes-map-type: atomic
+                                                          fileKeyRef:
+                                                            properties:
+                                                              key:
+                                                                type: string
+                                                              optional:
+                                                                default: false
+                                                                type: boolean
+                                                              path:
+                                                                type: string
+                                                              volumeName:
+                                                                type: string
+                                                            required:
+                                                            - key
+                                                            - path
+                                                            - volumeName
+                                                            type: object
+                                                            x-kubernetes-map-type: atomic
                                                           resourceFieldRef:
                                                             properties:
                                                               containerName:
@@ -15001,6 +16159,29 @@ spec:
                                                   type: object
                                                 restartPolicy:
                                                   type: string
+                                                restartPolicyRules:
+                                                  items:
+                                                    properties:
+                                                      action:
+                                                        type: string
+                                                      exitCodes:
+                                                        properties:
+                                                          operator:
+                                                            type: string
+                                                          values:
+                                                            items:
+                                                              format: int32
+                                                              type: integer
+                                                            type: array
+                                                            x-kubernetes-list-type: set
+                                                        required:
+                                                        - operator
+                                                        type: object
+                                                    required:
+                                                    - action
+                                                    type: object
+                                                  type: array
+                                                  x-kubernetes-list-type: atomic
                                                 securityContext:
                                                   properties:
                                                     allowPrivilegeEscalation:
@@ -15285,6 +16466,23 @@ spec:
                                                             - fieldPath
                                                             type: object
                                                             x-kubernetes-map-type: atomic
+                                                          fileKeyRef:
+                                                            properties:
+                                                              key:
+                                                                type: string
+                                                              optional:
+                                                                default: false
+                                                                type: boolean
+                                                              path:
+                                                                type: string
+                                                              volumeName:
+                                                                type: string
+                                                            required:
+                                                            - key
+                                                            - path
+                                                            - volumeName
+                                                            type: object
+                                                            x-kubernetes-map-type: atomic
                                                           resourceFieldRef:
                                                             properties:
                                                               containerName:
@@ -15713,6 +16911,29 @@ spec:
                                                   type: object
                                                 restartPolicy:
                                                   type: string
+                                                restartPolicyRules:
+                                                  items:
+                                                    properties:
+                                                      action:
+                                                        type: string
+                                                      exitCodes:
+                                                        properties:
+                                                          operator:
+                                                            type: string
+                                                          values:
+                                                            items:
+                                                              format: int32
+                                                              type: integer
+                                                            type: array
+                                                            x-kubernetes-list-type: set
+                                                        required:
+                                                        - operator
+                                                        type: object
+                                                    required:
+                                                    - action
+                                                    type: object
+                                                  type: array
+                                                  x-kubernetes-list-type: atomic
                                                 securityContext:
                                                   properties:
                                                     allowPrivilegeEscalation:
@@ -15954,6 +17175,8 @@ spec:
                                             type: boolean
                                           hostname:
                                             type: string
+                                          hostnameOverride:
+                                            type: string
                                           imagePullSecrets:
                                             items:
                                               properties:
@@ -16009,6 +17232,23 @@ spec:
                                                                 type: string
                                                             required:
                                                             - fieldPath
+                                                            type: object
+                                                            x-kubernetes-map-type: atomic
+                                                          fileKeyRef:
+                                                            properties:
+                                                              key:
+                                                                type: string
+                                                              optional:
+                                                                default: false
+                                                                type: boolean
+                                                              path:
+                                                                type: string
+                                                              volumeName:
+                                                                type: string
+                                                            required:
+                                                            - key
+                                                            - path
+                                                            - volumeName
                                                             type: object
                                                             x-kubernetes-map-type: atomic
                                                           resourceFieldRef:
@@ -16439,6 +17679,29 @@ spec:
                                                   type: object
                                                 restartPolicy:
                                                   type: string
+                                                restartPolicyRules:
+                                                  items:
+                                                    properties:
+                                                      action:
+                                                        type: string
+                                                      exitCodes:
+                                                        properties:
+                                                          operator:
+                                                            type: string
+                                                          values:
+                                                            items:
+                                                              format: int32
+                                                              type: integer
+                                                            type: array
+                                                            x-kubernetes-list-type: set
+                                                        required:
+                                                        - operator
+                                                        type: object
+                                                    required:
+                                                    - action
+                                                    type: object
+                                                  type: array
+                                                  x-kubernetes-list-type: atomic
                                                 securityContext:
                                                   properties:
                                                     allowPrivilegeEscalation:
@@ -17535,6 +18798,25 @@ spec:
                                                                 type: array
                                                                 x-kubernetes-list-type: atomic
                                                             type: object
+                                                          podCertificate:
+                                                            properties:
+                                                              certificateChainPath:
+                                                                type: string
+                                                              credentialBundlePath:
+                                                                type: string
+                                                              keyPath:
+                                                                type: string
+                                                              keyType:
+                                                                type: string
+                                                              maxExpirationSeconds:
+                                                                format: int32
+                                                                type: integer
+                                                              signerName:
+                                                                type: string
+                                                            required:
+                                                            - keyType
+                                                            - signerName
+                                                            type: object
                                                           secret:
                                                             properties:
                                                               items:
@@ -17737,14 +19019,18 @@ spec:
                                     - single-numa-node
                                     type: string
                                 type: object
+                              minItems: 1
                               type: array
                             ttlSecondsAfterFinished:
                               format: int32
+                              minimum: 0
                               type: integer
                             volumes:
                               items:
                                 properties:
                                   mountPath:
+                                    minLength: 1
+                                    pattern: ^[^:]+$
                                     type: string
                                   volumeClaim:
                                     properties:
@@ -17835,6 +19121,7 @@ spec:
                                         type: string
                                     type: object
                                   volumeClaimName:
+                                    maxLength: 253
                                     type: string
                                 required:
                                 - mountPath
@@ -17894,6 +19181,7 @@ spec:
                       type: string
                     restartCount:
                       format: int32
+                      minimum: 0
                       type: integer
                     runningHistories:
                       items:
@@ -17926,6 +19214,12 @@ spec:
               state:
                 properties:
                   phase:
+                    enum:
+                    - Succeed
+                    - Terminating
+                    - Failed
+                    - Running
+                    - Pending
                     type: string
                 type: object
               terminatedJobs:
