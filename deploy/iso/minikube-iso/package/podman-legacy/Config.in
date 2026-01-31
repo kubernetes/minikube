@@ -1,5 +1,5 @@
-config BR2_PACKAGE_PODMAN
-	bool "podman"
+config BR2_PACKAGE_PODMAN_LEGACY
+	bool "podman-legacy"
 	default y
 	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS
 	depends on BR2_PACKAGE_HOST_GO_TARGET_CGO_LINKING_SUPPORTS
