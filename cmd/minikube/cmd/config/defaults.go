@@ -33,8 +33,7 @@ var defaultsOutput string
 var configDefaultsCommand = &cobra.Command{
 	Use:   "defaults PROPERTY_NAME",
 	Short: "Lists all valid default values for PROPERTY_NAME",
-	Long: `list displays all valid default settings for PROPERTY_NAME
-Acceptable fields: ` + "\n\n" + fieldsWithDefaults(),
+	Long:  `list displays all valid default settings for PROPERTY_NAME. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/config/#minikube-config-defaults` + "\n\n" + `Acceptable fields: ` + "\n\n" + fieldsWithDefaults(),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			cmd.SilenceErrors = true
