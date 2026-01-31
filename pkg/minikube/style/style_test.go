@@ -43,6 +43,21 @@ func TestLowPrefix(t *testing.T) {
 			style:       Options{Prefix: "  foo"},
 			description: "prefix with spaces",
 		},
+		{
+			expected:    LowWarning,
+			style:       Config[Warning],
+			description: "Warning style",
+		},
+		{
+			expected:    LowWarning,
+			style:       Config[WarningRed],
+			description: "WarningRed style",
+		},
+		{
+			expected:    LowError,
+			style:       Config[Failure],
+			description: "Failure style",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
