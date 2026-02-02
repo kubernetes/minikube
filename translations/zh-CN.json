@@ -627,7 +627,6 @@
 	"Starting \"{{.node}}\" {{.role}} node in \"{{.cluster}}\" cluster": "在集群中 \"{{.cluster}}\" 启动节点 \"{{.node}}\" {{.role}}",
 	"Starting minikube without Kubernetes in cluster {{.cluster}}": "在集群 {{.cluster}} 中启动 minikube 但不使用 Kubernetes",
 	"Starting tunnel for service {{.service}}.": "为服务 {{.service}} 启动隧道。",
-	"Starting v1.39.0, minikube will default to \"containerd\" container runtime. See #21973 for more info.": "",
 	"Starts a local Kubernetes cluster": "启动本地 Kubernetes 集群",
 	"Starts a node.": "启动一个节点。",
 	"Starts an existing stopped node in a cluster.": "在集群中启动一个已停止的现有节点。",
