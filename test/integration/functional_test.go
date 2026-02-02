@@ -112,6 +112,7 @@ func testFunctionalInternal(t *testing.T, k8sVersion string) {
 			{"StartWithProxy", validateStartWithProxy},      // Set everything else up for success
 			{"AuditLog", validateAuditAfterStart},           // check audit feature works
 			{"SoftStart", validateSoftStart},                // do a soft start. ensure config didn't change.
+			{"PauseLogs", validatePauseLogs},                // check pause/unpause log rotation
 			{"KubeContext", validateKubeContext},            // Racy: must come immediately after "minikube start"
 			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
@@ -176,6 +177,7 @@ func testFunctionalInternal(t *testing.T, k8sVersion string) {
 			{"NonActiveRuntimeDisabled", validateNotActiveRuntimeDisabled},
 			{"Version", validateVersionCmd},
 			{"License", validateLicenseCmd},
+			{"LogRotation", validateLogRotationParallel},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -675,6 +677,7 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to soft start minikube. args %q: %v", rr.Command(), err)
 	}
 	t.Logf("soft start took %s for %q cluster.", time.Since(start), profile)
+	checkSpam(t, rr.Stdout.String(), rr.Stderr.String())
 
 	// docs: Make sure the configured node port is not changed
 	afterCfg, err := config.LoadProfile(profile)
@@ -2354,5 +2357,83 @@ func validateInvalidService(ctx context.Context, t *testing.T, profile string) {
 	rrService, err := Run(t, exec.CommandContext(ctx, Target(), "service", "invalid-svc", "-p", profile))
 	if err == nil || rrService.ExitCode == 0 {
 		t.Fatalf("%s should have failed: ", rrService.Command())
+	}
+}
+
+// validatePauseLogs validates log rotation for pause/unpause commands.
+// It executes these specific state-change commands multiple times to verify they adhere to the standard log rotation policy:
+// reusing log files when they are small and rotating them when they grow too large.
+// This prevents these frequent commands from consuming excessive disk space.
+func validatePauseLogs(ctx context.Context, t *testing.T, profile string) {
+	validateLogRotationForCommand(ctx, t, profile, "pause")
+	validateLogRotationForCommand(ctx, t, profile, "unpause")
+}
+
+// validateLogRotationParallel validates log rotation for parallel-safe commands
+func validateLogRotationParallel(ctx context.Context, t *testing.T, profile string) {
+	cmds := []struct {
+		cmd  string
+		args []string
+	}{
+		{"start", []string{"--dry-run"}},
+		{"status", []string{}},
+	}
+
+	for _, c := range cmds {
+		t.Run(c.cmd, func(t *testing.T) {
+			validateLogRotationForCommand(ctx, t, profile, c.cmd, c.args...)
+		})
+	}
+}
+
+// validateLogRotationForCommand verifies that minikube correctly rotates log files.
+// It tests two behaviors:
+// 1. Log consolidation: Running a command multiple times with small logs should result in a single log file (overwrite/reuse).
+// 2. Log rotation: If a log file exceeds the size threshold (simulated by truncation), a new log file should be created, preserving the old one.
+// This ensures we manage disk space effectively while keeping important logs.
+func validateLogRotationForCommand(ctx context.Context, t *testing.T, profile string, command string, extraArgs ...string) {
+	logDir := filepath.Join(os.TempDir(), profile+"_logs_"+command)
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		t.Fatalf("Unable to make logDir %s: %v", logDir, err)
+	}
+	defer os.RemoveAll(logDir)
+
+	args := []string{"-p", profile, "--log_dir", logDir, command}
+	args = append(args, extraArgs...)
+
+	// Run twice
+	for i := 0; i < 2; i++ {
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+		if err != nil {
+			t.Logf("%q failed: %v", rr.Command(), err)
+		}
+	}
+
+	if err := checkLogFileCount(command, logDir, 1); err != nil {
+		t.Error(err)
+	}
+
+	logFiles, err := getLogFiles(logDir, command)
+	if err != nil {
+		t.Errorf("failed to get log files: %v", err)
+		return
+	}
+	if len(logFiles) == 0 {
+		return
+	}
+
+	// Truncate/Grow
+	if err := os.Truncate(logFiles[0], 2e7); err != nil {
+		t.Errorf("failed to truncate file: %v", err)
+	}
+
+	// Run again
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Logf("%q failed: %v", rr.Command(), err)
+	}
+
+	if err := checkLogFileCount(command, logDir, 2); err != nil {
+		t.Error(err)
 	}
 }
