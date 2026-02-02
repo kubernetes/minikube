@@ -2112,7 +2112,7 @@ func startNerdctld(options *run.CommandOptions) {
 	if err != nil {
 		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to check root DOCKER_HOST: %s", rootDockerHostResult.Output()), err)
 	}
-	if !strings.Contains(dockerHostResult.Output(), "unix:///var/run/nerdctl.sock") {
+	if !strings.Contains(rootDockerHostResult.Output(), "unix:///var/run/nerdctl.sock") {
 		envSetupCommand := exec.Command("/bin/bash", "-c", "sudo sed -i '4i export DOCKER_HOST=unix:///var/run/nerdctl.sock' /root/.bashrc")
 		if rest, err := runner.RunCmd(envSetupCommand); err != nil {
 			exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s in /root/.bashrc", rest.Output()), err)
