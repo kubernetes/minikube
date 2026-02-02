@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.25.5'
+  GO_VERSION: '1.25.6'
 permissions:
   contents: read
 jobs:
