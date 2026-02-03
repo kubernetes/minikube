@@ -17,7 +17,6 @@ limitations under the License.
 package lock
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -185,7 +184,7 @@ func TestLockDirectoryStructure(t *testing.T) {
 	defer r.Release()
 
 	// 2. Verify the directory was created with the correct UID suffix
-	expectedDir := fmt.Sprintf("minikube-locks-%d", os.Getuid())
+	expectedDir := getUserSpecificDirName()
 	lockDir := filepath.Join(os.TempDir(), expectedDir)
 
 	info, err := os.Stat(lockDir)
