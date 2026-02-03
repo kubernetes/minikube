@@ -17,6 +17,8 @@ limitations under the License.
 package lock
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -171,4 +173,27 @@ func TestMutexConcurrency(t *testing.T) {
 		t.Fatalf("routine 2 failed to wait for lock: %v", err)
 	}
 	r2.Release()
+}
+
+func TestLockDirectoryStructure(t *testing.T) {
+	// 1. Acquire a lock
+	spec := PathMutexSpec("test-lock-structure")
+	r, err := Acquire(spec)
+	if err != nil {
+		t.Fatalf("Acquire failed: %v", err)
+	}
+	defer r.Release()
+
+	// 2. Verify the directory was created with the correct UID suffix
+	expectedDir := fmt.Sprintf("minikube-locks-%d", os.Getuid())
+	lockDir := filepath.Join(os.TempDir(), expectedDir)
+
+	info, err := os.Stat(lockDir)
+	if err != nil {
+		t.Fatalf("Expected lock directory %s does not exist", lockDir)
+	}
+
+	if !info.IsDir() {
+		t.Errorf("Expected %s to be a directory", lockDir)
+	}
 }
