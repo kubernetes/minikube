@@ -103,7 +103,7 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 	}
 }
 
-func TestUnparseableCIDR(t *testing.T) {
+func TestUnparsableCIDR(t *testing.T) {
 	cfg := config.ClusterConfig{
 		KubernetesConfig: config.KubernetesConfig{
 			ServiceCIDR: "bad.cidr.0.0/12",
