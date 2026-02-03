@@ -79,7 +79,7 @@ func saveFile(r io.Reader) (string, error) {
 var loadImageCmd = &cobra.Command{
 	Use:     "load IMAGE | ARCHIVE | -",
 	Short:   "Load an image into minikube",
-	Long:    "Load an image into minikube",
+	Long:    "Load an image into minikube. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/image",
 	Example: "minikube image load image\nminikube image load image.tar",
 	Run: func(_ *cobra.Command, args []string) {
 		if len(args) == 0 {
