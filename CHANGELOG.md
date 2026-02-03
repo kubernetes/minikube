@@ -106,6 +106,7 @@
 * inspektor-gadget addon: remove deleted asset (#21855)
 
 ## Base image versions
+
 * iso: bump to containerd/nerdctl 2.x (#21409)
 * ISO: Update docker-buildx from v0.17.1 to v0.30.1 (#22425)
 * iso: Use same Go version (1.25.5) (#22101)
@@ -127,6 +128,7 @@
 ## Infra Migration
 
 minikube infra structure is under heavy migration to k8s-infra here are some related PRs:
+
 * preload: download from github when gcs not available (#21605)
 * prow add docker-docker-linux-x86-64 integration test in prow (#21807)
 * prow: migrate  kubernetes bootcamp image to prow (#21904)

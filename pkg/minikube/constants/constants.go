@@ -67,6 +67,8 @@ const (
 	Docker = "docker"
 	// DefaultContainerRuntime is our default container runtime
 	DefaultContainerRuntime = ""
+	// DefaultContainerRuntimeChangeWarning is shown when the default runtime will change.
+	DefaultContainerRuntimeChangeWarning = `Starting v1.39.0, minikube will default to "containerd" container runtime. See #21973 for more info.`
 
 	// cgroup drivers
 	DefaultCgroupDriver  = "systemd"

@@ -348,7 +348,8 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 
 	rtime := getContainerRuntime(existing)
 	if rtime == constants.Docker && (existing == nil || viper.IsSet(containerRuntime)) {
-		out.WarningT(`Starting v1.39.0, minikube will default to "containerd" container runtime. See #21973 for more info.`)
+		// TODO: remove this warning in minikube v1.40
+		out.WarningT(constants.DefaultContainerRuntimeChangeWarning)
 	}
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName, options)
 	if err != nil {
