@@ -102,6 +102,8 @@ func PathMutexSpec(path string) Spec {
 // Acquire acquires the lock specified by spec
 func Acquire(spec Spec) (Releaser, error) {
 	tmpDir := os.TempDir()
+	// minikube-locks-<UID> ensures per-user isolation in shared temp dirs (like /tmp).
+	// The actual lock file is named mk<HASH>.lock (from spec.Name).
 	lockDir := filepath.Join(tmpDir, fmt.Sprintf("minikube-locks-%d", os.Getuid()))
 	if err := os.MkdirAll(lockDir, 0755); err != nil {
 		return nil, fmt.Errorf("creating lock dir: %w", err)
