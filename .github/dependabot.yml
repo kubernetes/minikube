@@ -62,14 +62,3 @@ updates:
       bump-dockerfiles:
         patterns:
           - "*"
-  # ---
-  # Below are images used for tooling/locally
-  # ---
-  - package-ecosystem: "docker"
-    directory: "/deploy/iso/minikube-iso"
-    schedule:
-      interval: "weekly"
-    groups:
-      bump-dockerfiles-build:
-        patterns:
-          - "*"
