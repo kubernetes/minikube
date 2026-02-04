@@ -54,7 +54,7 @@ Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/v1.28.0/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=docker --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100
+ExecStart=/var/lib/minikube/binaries/v1.28.0/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100
 
 [Install]
 `,
@@ -80,7 +80,7 @@ Wants=crio.service
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/v1.35.0/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=remote --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100
+ExecStart=/var/lib/minikube/binaries/v1.35.0/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100
 
 [Install]
 `,
@@ -106,7 +106,7 @@ Wants=containerd.service
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/v1.35.0/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=remote --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100
+ExecStart=/var/lib/minikube/binaries/v1.35.0/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100
 
 [Install]
 `,
@@ -139,7 +139,7 @@ Wants=containerd.service
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/v1.35.0/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=remote --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.200
+ExecStart=/var/lib/minikube/binaries/v1.35.0/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.200
 
 [Install]
 `,
@@ -166,7 +166,7 @@ Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/v1.35.0/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=docker --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100
+ExecStart=/var/lib/minikube/binaries/v1.35.0/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100
 
 [Install]
 `,
