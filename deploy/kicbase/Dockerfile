@@ -284,6 +284,7 @@ USER root
 # kind base-image entry-point expects a "kind" folder for product_name,product_uuid
 # https://github.com/kubernetes-sigs/kind/blob/master/images/base/files/usr/local/bin/entrypoint
 RUN mkdir -p /kind
+RUN mkdir -p /root/.ssh
 # Deleting leftovers
 RUN rm -rf \
   /usr/share/doc/* \

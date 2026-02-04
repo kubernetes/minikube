@@ -384,6 +384,11 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			sshAgentPID: co.Config.SSHAgentPID,
 		}
 
+		if sshHost == true {
+			ec.username = "root"
+			sshAdd = true
+		}
+
 		dockerPath, err := exec.LookPath("docker")
 		if err != nil {
 			klog.Warningf("Unable to find docker in path - skipping connectivity check: %v", err)
@@ -425,7 +430,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			}
 
 			// TODO: refactor to work with docker, temp fix to resolve regression
-			if cr == constants.Containerd {
+			if cr == constants.Containerd || cr == constants.Docker {
 				// eventually, run something similar to ssh --append-known
 				appendKnownHelper(nodeName, true)
 			}

@@ -227,18 +227,30 @@ func (d *Driver) prepareSSH() error {
 	}
 
 	cmder := command.NewKICRunner(d.NodeConfig.MachineName, d.NodeConfig.OCIBinary)
-	f, err := assets.NewFileAsset(d.GetSSHKeyPath()+".pub", "/home/docker/.ssh/", "authorized_keys", "0644")
+	f1, err := assets.NewFileAsset(d.GetSSHKeyPath()+".pub", "/home/docker/.ssh/", "authorized_keys", "0644")
 	if err != nil {
 		return fmt.Errorf("create pubkey assetfile : %w", err)
 	}
+
+	f2, err := assets.NewFileAsset(d.GetSSHKeyPath()+".pub", "/root/.ssh/", "authorized_keys", "0644")
+	if err != nil {
+		return fmt.Errorf("create pubkey assetfile : %w", err)
+	}
+
 	defer func() {
-		if err := f.Close(); err != nil {
-			klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+		if err := f1.Close(); err != nil {
+			klog.Warningf("error closing the file %s: %v", f1.GetSourcePath(), err)
+		}
+		if err := f2.Close(); err != nil {
+			klog.Warningf("error closing the file %s: %v", f2.GetSourcePath(), err)
 		}
 	}()
 
-	if err := cmder.Copy(f); err != nil {
-		return fmt.Errorf("copying pub key: %w", err)
+	if err := cmder.Copy(f1); err != nil {
+		return fmt.Errorf("copying pub key in /home/docker/.ssh/: %w", err)
+	}
+	if err := cmder.Copy(f2); err != nil {
+		return fmt.Errorf("copying pub key in /root/.ssh/: %w", err)
 	}
 
 	// Double-check that the container has not crashed so that we may give a better error message
@@ -253,6 +265,10 @@ func (d *Driver) prepareSSH() error {
 	}
 
 	if rr, err := cmder.RunCmd(exec.Command("chown", "docker:docker", "/home/docker/.ssh/authorized_keys")); err != nil {
+		return fmt.Errorf("apply authorized_keys file ownership, output %s: %w", rr.Output(), err)
+	}
+
+	if rr, err := cmder.RunCmd(exec.Command("chown", "root:root", "/root/.ssh/authorized_keys")); err != nil {
 		return fmt.Errorf("apply authorized_keys file ownership, output %s: %w", rr.Output(), err)
 	}
 
