@@ -35,6 +35,10 @@ func TestPreload(t *testing.T) {
 		t.Skipf("skipping %s - incompatible with none driver", t.Name())
 	}
 
+	if ContainerRuntime() == "crio" {
+		t.Skipf("skipping %s - user-pulled images not persisted across restarts with crio", t.Name())
+	}
+
 	profile := UniqueProfileName("test-preload")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer CleanupWithLogs(t, profile, cancel)

@@ -40,7 +40,7 @@ var bridgeConf = template.Must(template.New("bridge").Parse(`
   "plugins": [
     {
       "type": "bridge",
-      "bridge": "bridge",
+      "bridge": "cni0",
       "addIf": "true",
       "isDefaultGateway": true,
       "forceAddress": false,
