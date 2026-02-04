@@ -107,8 +107,11 @@ func getUserSpecificDirName() string {
 			// Fallback if home dir cannot be obtained
 			return "minikube-locks-windows-default"
 		}
+		// On Windows, os.Getuid() returns -1, so we cannot verify the user ID directly.
+		// Instead, we use the SHA1 hash of the user's home directory as a unique identifier.
+		// This ensures per-user isolation in shared temporary directories.
 		hash := sha1.Sum([]byte(homeDir))
-		return fmt.Sprintf("minikube-locks-windows-%x", hash[:8]) // Use first 8 bytes of hash
+		return fmt.Sprintf("minikube-locks-windows-%x", hash)
 	}
 	return fmt.Sprintf("minikube-locks-%d", os.Getuid())
 }
