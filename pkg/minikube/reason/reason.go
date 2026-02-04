@@ -102,6 +102,8 @@ var (
 	InternalCommandRunner = Kind{ID: "MK_COMMAND_RUNNER", ExitCode: ExProgramError}
 	// minikube failed to start nerdctld
 	StartNerdctld = Kind{ID: "MK_START_NERDCTLD", ExitCode: ExProgramError}
+	// minikube failed to start podmand
+	StartPodmand = Kind{ID: "MK_START_PODMAND", ExitCode: ExProgramError}
 	// minikube failed to generate shell command completion for a supported shell
 	InternalCompletion = Kind{ID: "MK_COMPLETION", ExitCode: ExProgramError}
 	// minikube failed to set an internal config value
