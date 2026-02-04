@@ -88,6 +88,13 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 		klog.Warningf("unable to remove /etc/cni/net.mk directory: %v", err)
 	}
 
+	// configure registries for proper local image resolution (fixes #21251)
+	// this ensures CRI-O can resolve locally built images (stored with localhost/ prefix)
+	// while maintaining compatibility with Docker runtime behavior
+	if err := configureRegistries(cr); err != nil {
+		return errors.Wrap(err, "configuring registries")
+	}
+
 	// add 'net.ipv4.ip_unprivileged_port_start=0' sysctl so that containers that run with non-root user can bind to otherwise privilege ports (like coredns v1.11.0+)
 	// note: 'net.ipv4.ip_unprivileged_port_start' sysctl was marked as safe since Kubernetes v1.22 (Aug 4, 2021) (ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#feature-9)
 	// note: cri-o supports 'default_sysctls' option since v1.12.0 (Oct 19, 2018) (ref: https://github.com/cri-o/cri-o/releases/tag/v1.12.0; https://github.com/cri-o/cri-o/pull/1721)
@@ -564,4 +571,41 @@ func crioImagesPreloaded(runner command.Runner, imgs []string) bool {
 // ImagesPreloaded returns true if all images have been preloaded
 func (r *CRIO) ImagesPreloaded(imgs []string) bool {
 	return crioImagesPreloaded(r.Runner, imgs)
+}
+
+// configureRegistries configures CRI-O to properly resolve unqualified image names
+// This fixes the issue where locally built images (stored with localhost/ prefix)
+// cannot be resolved by CRI-O, causing InvalidImageName errors (issue #21251)
+func configureRegistries(cr CommandRunner) error {
+	registriesPath := "/etc/containers/registries.conf"
+
+	// Check if registries.conf exists and create backup
+	backupCmd := fmt.Sprintf("sudo cp %s %s.bak 2>/dev/null || true", registriesPath, registriesPath)
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", backupCmd)); err != nil {
+		klog.Warningf("failed to backup registries.conf: %v", err)
+	}
+
+	// Configure registries.conf with proper unqualified search order
+	// This ensures locally built images (localhost/) are found before remote registries
+	registriesConfig := `[registries.search]
+registries = ['localhost', 'docker.io']
+
+[registries.insecure]
+registries = ['localhost']
+
+# Allow unqualified images to resolve to localhost first, then docker.io
+# This fixes CRI-O resolution of locally built podman images
+unqualified-search-registries = ['localhost', 'docker.io']
+`
+
+	// Write the new configuration
+	writeCmd := fmt.Sprintf("sudo tee %s > /dev/null", registriesPath)
+	cmd := exec.Command("sh", "-c", writeCmd)
+	cmd.Stdin = strings.NewReader(registriesConfig)
+	if _, err := cr.RunCmd(cmd); err != nil {
+		return errors.Wrap(err, "writing registries configuration")
+	}
+
+	klog.Infof("configured CRI-O registries for localhost image resolution")
+	return nil
 }
