@@ -288,13 +288,14 @@ func (d *Driver) setupIP(mac string) error {
 		return nil
 	}
 	// Implement a retry loop because IP address isn't added to dhcp leases file immediately
-	for i := 0; i < 60; i++ {
-		log.Debugf("Attempt %d", i)
+	const maxAttempts = 60
+	for i := 0; i < maxAttempts; i++ {
 		err = getIP()
 		if err == nil {
 			break
 		}
 		time.Sleep(2 * time.Second)
+		log.Debugf("Searching for %s in %s (attempt %d/%d)", d.MACAddress, common.LeasesPath, i+1, maxAttempts)
 	}
 
 	if err == nil {
