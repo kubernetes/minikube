@@ -44,6 +44,7 @@ etcd:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
+      listen-metrics-urls: "http://0.0.0.0:2381"
 kubernetesVersion: v1.30.0
 networking:
   dnsDomain: cluster.local
