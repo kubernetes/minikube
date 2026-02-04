@@ -477,6 +477,79 @@ func TestValidateRuntime(t *testing.T) {
 	}
 }
 
+func TestValidateWindowsOSVersion(t *testing.T) {
+	var tests = []struct {
+		osVersion string
+		errorMsg  string
+	}{
+		{
+			osVersion: "2025",
+			errorMsg:  "",
+		},
+		{
+			osVersion: "2023",
+			errorMsg:  "Invalid Windows Server OS Version: 2023. Valid OS version are: [2025]",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.osVersion, func(t *testing.T) {
+			got := validateWindowsOSVersion(test.osVersion)
+			gotError := ""
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("ValidateWindowsOSVersion(osVersion=%v): got %v, expected %v", test.osVersion, got, test.errorMsg)
+			}
+		})
+	}
+}
+
+func TestValidMultiNodeOS(t *testing.T) {
+	var tests = []struct {
+		osString string
+		errorMsg string
+	}{
+		{
+			osString: "[linux,windows]",
+			errorMsg: "",
+		},
+		{
+			osString: "[linux, windows]",
+			errorMsg: "",
+		},
+		{
+			osString: "[windows,linux]",
+			errorMsg: "invalid OS string format: must be [linux,windows]",
+		},
+		{
+			osString: "[linux]",
+			errorMsg: "invalid OS string format: must be [linux,windows]",
+		},
+		{
+			osString: "[linux,windows,mac]",
+			errorMsg: "invalid OS string format: must be [linux,windows]",
+		},
+		{
+			osString: "linux,windows",
+			errorMsg: "invalid OS string format: must be enclosed in [ ]",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.osString, func(t *testing.T) {
+			got := validMultiNodeOS(test.osString)
+			gotError := ""
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("validMultiNodeOS(osString=%v): got %v, expected %v", test.osString, gotError, test.errorMsg)
+			}
+		})
+	}
+}
+
 func TestIsTwoDigitSemver(t *testing.T) {
 	var tcs = []struct {
 		desc     string
