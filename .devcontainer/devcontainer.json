@@ -20,5 +20,16 @@
 			"version": "latest"
 		}
 	},
-	"postCreateCommand": "cat .devcontainer/.bashrc.sh >> $HOME/.bashrc"
+	"postCreateCommand": "cat .devcontainer/.bashrc.sh >> $HOME/.bashrc",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"workbench.startupEditor": "none",
+				"terminal.integrated.defaultProfile.linux": "bash"
+			}
+		},
+		"codespaces": {
+			"openFiles": []
+		}
+	}
 }
