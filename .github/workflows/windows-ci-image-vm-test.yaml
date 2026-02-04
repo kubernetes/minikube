@@ -1,0 +1,114 @@
+---
+# Creates Azure Virtual Machine (VM) based on VM image built using separate workflow.
+name: 'Windows CI Image: 4 - Test VM'
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        default: '0.0.1'
+        description: 'Version of VM image existing in SIG to use to create VM.'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    permissions:
+      id-token: write # Require write permission to Fetch an OIDC token.
+    runs-on: ubuntu-latest
+
+    env:
+      AZURE_DEFAULTS_LOCATION: "swedencentral"
+      MINIKUBE_AZ_SUBSCRIPTION_ID: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+      MINIKUBE_AZ_RESOURCE_GROUP: "SIG-CLUSTER-LIFECYCLE-MINIKUBE"
+      MINIKUBE_AZ_SIG_NAME: "minikube" # see https://learn.microsoft.com/en-us/azure/virtual-machines/shared-image-galleries
+      MINIKUBE_AZ_IMAGE_NAME: "minikube-ci-windows-11" # pre-existing VM image definition in SIG
+      MINIKUBE_AZ_IMAGE_VERSION: "${{ inputs.version }}" # VM image definition in SIG
+      MINIKUBE_AZ_VM_ADMIN_USERNAME: 'minikubeadmin'
+      MINIKUBE_AZ_VM_ADMIN_PASSWORD: ${{ secrets.MINIKUBE_AZ_VM_ADMIN_PASSWORD }}
+      MINIKUBE_AZ_VM_ADMIN_SSH_PUBLIC_KEY: ${{ secrets.MINIKUBE_AZ_VM_ADMIN_SSH_PUBLIC_KEY }}
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Check Bicep templates
+      run: |
+        make bicep-fmt && make bicep-lint
+
+    # Configured federated identity credential for GitHub Actionsa using:
+    # https://github.com/microsoftgraph/msgraph-bicep-types/tree/main/quickstart-templates/create-fic-for-github-actions
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.MINIKUBE_AZ_CLIENT_ID }}
+        subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+        tenant-id: ${{ secrets.MINIKUBE_AZ_TENANT_ID }}
+
+    # Equivalent of the vm-deploy target in the Makefile
+    - name: Deploy Azure Virtual Machine
+      id: create_vm
+      uses: azure/bicep-deploy@v2
+      with:
+        type: deploymentStack
+        operation: create
+        name: "gha-minikube-vm-${{ github.run_id }}"
+        scope: resourceGroup
+        resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
+        subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+        template-file: ./vm.bicep
+        parameters-file: ./vm.bicepparam
+        parameters: '{"vmName": "vm-${{ github.run_id }}"}'
+        action-on-unmanage-resources: delete
+        deny-settings-mode: none
+
+    - run: make vm-list
+
+    - name: Deploy admin SSH private key
+      run: |
+        echo "${{ secrets.MINIKUBE_AZ_VM_ADMIN_SSH_PRIVATE_KEY }}" | base64 -d > ./ssh.key
+        chmod 0600 ./ssh.key
+
+    - name: Wait for SSH
+      continue-on-error: true # ensure is always VM deleted
+      run: |
+        HOST="${{ steps.create_vm.outputs.vmPublicFqdn }}"
+        echo "Waiting for SSH on $HOST..."
+        for i in {1..30}; do
+          if ssh -i ./ssh.key -o StrictHostKeyChecking=no -o ConnectTimeout=5 "minikubeadmin@$HOST" 'echo "SSH connected to machine $([System.Net.Dns]::GetHostName())"'; then
+            echo "SSH is ready!"
+            exit 0
+          fi
+          echo "Waiting for SSH... ($i/30)"
+          sleep 10
+        done
+        echo "SSH failed to become ready."
+        exit 1
+
+    - name: Test
+      continue-on-error: true # ensure is always VM deleted
+      run: |
+        HOST="${{ steps.create_vm.outputs.vmPublicFqdn }}"
+        ssh -i ./ssh.key -o StrictHostKeyChecking=no -o ConnectTimeout=5 "minikubeadmin@$HOST" 'kubectl version --client'
+
+    # WARNING: This method very takes long time, 10 minutes, to delete VM with its child resources.
+    # Equivalent of the vm-undeploy target in the Makefile
+    # - name: Undeploy Azure Virtual Machine
+    #   uses: azure/bicep-deploy@v2
+    #   with:
+    #     type: deploymentStack
+    #     operation: delete
+    #     name: "gha-minikube-vm-${{ github.run_id }}"
+    #     scope: resourceGroup
+    #     resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
+    #     subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+    #     template-file: ./vm.bicep
+    #     parameters-file: ./vm.bicepparam
+    #     parameters: '{"vmName": "vm-${{ github.run_id }}"}'
+    #     action-on-unmanage-resources: delete
+    #     deny-settings-mode: none
+    #
+    # Lightspeed fast deletion
+    - run: make vm-delete vm="vm-${{ github.run_id }}"
+
+    # Check deletion was successful
+    - run: make vm-list

@@ -1,0 +1,53 @@
+---
+# Builds VM image and publishes it to already existing SIG created using separate workflow
+name: 'Windows CI Image: 2 - Build'
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        default: '0.0.1'
+        description: 'Version of VM image to build. Default version will run `make packer-build-and-overwrite` target.'
+        required: true
+        type: string
+
+jobs:
+  build:
+    permissions:
+      id-token: write # Require write permission to Fetch an OIDC token.
+    runs-on: ubuntu-latest
+
+    env:
+      AZURE_DEFAULTS_LOCATION: "swedencentral"
+      MINIKUBE_AZ_SUBSCRIPTION_ID: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+      MINIKUBE_AZ_RESOURCE_GROUP: "SIG-CLUSTER-LIFECYCLE-MINIKUBE"
+      MINIKUBE_AZ_SIG_NAME: "minikube" # see https://learn.microsoft.com/en-us/azure/virtual-machines/shared-image-galleries
+      MINIKUBE_AZ_IMAGE_NAME: "minikube-ci-windows-11" # pre-existing VM image definition in SIG
+      MINIKUBE_AZ_IMAGE_VERSION: "${{ inputs.version }}" # VM image definition in SIG
+      MINIKUBE_AZ_VM_ADMIN_USERNAME: 'minikubeadmin'
+      MINIKUBE_AZ_VM_ADMIN_PASSWORD: ${{ secrets.MINIKUBE_AZ_VM_ADMIN_PASSWORD }}
+      MINIKUBE_AZ_VM_ADMIN_SSH_PUBLIC_KEY: ${{ secrets.MINIKUBE_AZ_VM_ADMIN_SSH_PUBLIC_KEY }}
+
+    steps:
+    - uses: actions/checkout@v6
+
+    # Configured federated identity credential for GitHub Actionsa using:
+    # https://github.com/microsoftgraph/msgraph-bicep-types/tree/main/quickstart-templates/create-fic-for-github-actions
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.MINIKUBE_AZ_CLIENT_ID }}
+        subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+        tenant-id: ${{ secrets.MINIKUBE_AZ_TENANT_ID }}
+
+    - run: make packer-init
+    
+    - run: make packer-validate
+
+    - if: ${{ inputs.version == '0.0.1' }}
+      run: make packer-build-and-overwrite
+
+    - if: ${{ inputs.version != '0.0.1' }}
+      run: make packer-build-and-publish
+
+    - run: make sig-list-images
