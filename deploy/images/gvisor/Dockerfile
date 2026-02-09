@@ -14,7 +14,7 @@
 
 # Touching this file will trigger a new image build in Prow Staging https://testgrid.k8s.io/minikube-images
 # Last update Jan 16, 2026 3:19 PM
-FROM golang:1.25.5 AS builder
+FROM golang:1.25.6 AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
