@@ -95,11 +95,12 @@ RUN echo "Ensuring scripts are executable ..." \
     && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#' \
  && echo "Disabling udev" \
     && systemctl disable udev.service \
+ && echo "Masking systemd-binfmt to prevent host config corruption (covers all formats: python, qemu, rosetta, etc) - issue #17700" \
+    && systemctl mask systemd-binfmt.service \
  && echo "Modifying /etc/nsswitch.conf to prefer hosts" \
     && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#'
 
-# delete this file due to https://github.com/kubernetes/minikube/issues/17700
-RUN rm -f /usr/lib/binfmt.d/python3.10.conf
+
 
 ARG COMMIT_SHA
 # using base image created by kind https://github.com/kubernetes-sigs/kind/blob/b6bc1125/images/base/Dockerfile
