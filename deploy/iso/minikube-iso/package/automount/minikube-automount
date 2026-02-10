@@ -155,6 +155,10 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     chown -R docker:docker /home/docker/.ssh
     rm -f '/home/docker/boot2docker, please format-me'
 
+    tar xf /var/lib/boot2docker/userdata.tar -C /root/
+    chown -R root:root /root/.ssh
+    rm -f '/root/boot2docker, please format-me'
+
     mkdir -p /mnt/$PARTNAME/var/lib/minikube
     mkdir /var/lib/minikube
     mount --bind /mnt/$PARTNAME/var/lib/minikube /var/lib/minikube
