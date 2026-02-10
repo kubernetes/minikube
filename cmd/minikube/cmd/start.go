@@ -315,7 +315,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	virtualBoxMacOS13PlusWarning(driverName)
-	hyperkitDeprecationWarning(driverName)
+	warnDriverDeprecated(driverName)
 	validateFlags(cmd, driverName)
 	validateUser(driverName)
 	if driverName == oci.Docker {
@@ -424,17 +424,31 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
 `)
 }
 
-// hyperkitDeprecationWarning prints a deprecation warning for the hyperkit driver
-func hyperkitDeprecationWarning(driverName string) {
-	if !driver.IsHyperKit(driverName) {
+// warnDriverDeprecated prints a small deprecation warning if the selected driver is deprecated
+func warnDriverDeprecated(driverName string) {
+	if driverName == "" {
 		return
 	}
-	out.WarningT(`The 'hyperkit' driver is deprecated and will be removed in a future release.
-    You can use alternative drivers such as 'vfkit', 'qemu', or 'docker'.
-    https://minikube.sigs.k8s.io/docs/drivers/vfkit/
-    https://minikube.sigs.k8s.io/docs/drivers/qemu/
-    https://minikube.sigs.k8s.io/docs/drivers/docker/
-	`)
+
+	for _, d := range registry.List() {
+		if d.Priority != registry.Deprecated {
+			continue
+		}
+
+		// match driver name
+		if d.Name == driverName {
+			out.WarningT("The '{{.name}}' driver is deprecated and will be removed in a future release.\n    You can use alternative drivers: {{.drivers}}.", out.V{"name": d.Name, "drivers": strings.Join(driver.SupportedDrivers(), ", ")})
+			return
+		}
+
+		// match any alias
+		for _, a := range d.Alias {
+			if a == driverName {
+				out.WarningT("The '{{.name}}' driver is deprecated and will be removed in a future release.\n    You can use alternative drivers: {{.drivers}}.", out.V{"name": d.Name, "drivers": strings.Join(driver.SupportedDrivers(), ", ")})
+				return
+			}
+		}
+	}
 }
 
 func validateBuiltImageVersion(r command.Runner, driverName string) {
