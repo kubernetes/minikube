@@ -641,6 +641,55 @@ func isKubeadmCertValid(cmd command.Runner, certPath string) bool {
 	return err == nil
 }
 
+// EnsureCACertsEarly collects host-provided custom CA certs, copies them into the guest,
+// installs symlinks into the system trust store, and refreshes trust *before* HTTPS probes.
+func EnsureCACertsEarly(cr command.Runner) error {
+	caCerts, err := collectCACerts()
+	if err != nil {
+		return err
+	}
+	if len(caCerts) == 0 {
+		// Nothing to do.
+		return nil
+	}
+
+	// 1) Copy CA files from host → guest at the intended paths (e.g. /usr/share/ca-certificates/*.pem)
+	//    This mirrors how SetupCerts does file transfer for other certs.
+	copyable := []assets.CopyableFile{}
+	defer func() {
+		for _, f := range copyable {
+			_ = f.Close()
+		}
+	}()
+	for src, dst := range caCerts {
+		dir := path.Dir(dst)           // NOTE: use "path" (guest path), not "filepath"
+		base := path.Base(dst)
+		f, err := assets.NewFileAsset(src, dir, base, "0644")
+		if err != nil {
+			return errors.Wrapf(err, "create ca cert file asset for %s", src)
+		}
+		copyable = append(copyable, f)
+	}
+	for _, f := range copyable {
+		if err := cr.Copy(f); err != nil {
+			return errors.Wrapf(err, "copy %s", f.GetSourcePath())
+		}
+	}
+
+	// 2) Create/store symlinks + subject-hash links in /etc/ssl/certs (reuses existing helper)
+	if err := installCertSymlinks(cr, caCerts); err != nil {
+		return err
+	}
+
+	// 3) Refresh trust store for common distros; ignore if tools are absent.
+	_, _ = cr.RunCmd(exec.Command("/bin/sh", "-c",
+		"command -v update-ca-certificates >/dev/null 2>&1 && sudo update-ca-certificates || true"))
+	_, _ = cr.RunCmd(exec.Command("/bin/sh", "-c",
+		"command -v update-ca-trust >/dev/null 2>&1 && sudo update-ca-trust extract || true"))
+
+	return nil
+}
+
 // properPerms returns proper permissions for given cert file, based on its extension.
 func properPerms(cert string) string {
 	perms := "0644"
