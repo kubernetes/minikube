@@ -145,17 +145,14 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 	name = "GitHub"
 	url = "https://github.com/kubernetes/minikube"
 	icon = "fab fa-github"
-        desc = "Development takes place here!"
-[[params.links.developer]]
-	name = "minikube-dev mailing list"
-	url = "https://groups.google.com/forum/#!forum/minikube-dev"
-	icon = "fa fa-envelope"
-	desc = "Contact the minikube developers here"
+    desc = "Development takes place here!"
+
 [[params.links.developer]]
 	name = "Contributing Guide"
 	url = "https://minikube.sigs.k8s.io/docs/contrib/"
 	icon = "fas fa-external-link-alt"
 	desc = "Check out the contributing guide"
+	
 [[params.links.developer]]
 	name = "Project Roadmap"
 	url = "https://minikube.sigs.k8s.io/docs/contrib/roadmap/"
@@ -168,16 +165,25 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 	url = "https://tinyurl.com/minikube-oh"
 	icon = "fas fa-comments"
 	desc = "Bi-weekly office hours, Mondays @ 11am PST"
+	
 [[params.links.meetings]]
 	name = "Triage Party"
 	url = "https://minikube.sigs.k8s.io/docs/contrib/triage/"
 	icon = "fas fa-comments"
 	desc = "All community members are welcome and encouraged to join and help us triage minikube!"
+
 [[params.links.meetings]]
 	name = "Kanban board"
 	url = "http://tinyurl.com/minikube-kanban"
 	icon = "fas fa-comments"
 	desc = "Kanban visualization of the next milestone"
+
+# calendar rsvp 
+[params.rsvp]
+name = "RSVP"
+url = "https://groups.google.com/g/minikube-dev"
+icon = "fa-regular fa-calendar"
+desc = "Subscribe to the Minikube development calendar."
 
 
 # Related pages - does not appear to work yet
