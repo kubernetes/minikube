@@ -53,6 +53,9 @@ controlPlaneEndpoint: control-plane.minikube.internal:8443
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
+    extraArgs:
+      - name: "listen-metrics-urls"
+        value: "http://0.0.0.0:2381"
 kubernetesVersion: v1.32.0
 networking:
   dnsDomain: cluster.local
