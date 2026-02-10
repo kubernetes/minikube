@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"errors"
@@ -99,10 +100,28 @@ func PathMutexSpec(path string) Spec {
 	return s
 }
 
+func getUserSpecificDirName() string {
+	if runtime.GOOS == "windows" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			// Fallback if home dir cannot be obtained
+			return "minikube-locks-windows-default"
+		}
+		// On Windows, os.Getuid() returns -1, so we cannot verify the user ID directly.
+		// Instead, we use the SHA1 hash of the user's home directory as a unique identifier.
+		// This ensures per-user isolation in shared temporary directories.
+		hash := sha1.Sum([]byte(homeDir))
+		return fmt.Sprintf("minikube-locks-windows-%x", hash)
+	}
+	return fmt.Sprintf("minikube-locks-%d", os.Getuid())
+}
+
 // Acquire acquires the lock specified by spec
 func Acquire(spec Spec) (Releaser, error) {
 	tmpDir := os.TempDir()
-	lockDir := filepath.Join(tmpDir, "minikube-locks")
+	// minikube-locks-<UID> or minikube-locks-windows-<HASH> ensures per-user isolation.
+	userDirName := getUserSpecificDirName()
+	lockDir := filepath.Join(tmpDir, userDirName)
 	if err := os.MkdirAll(lockDir, 0755); err != nil {
 		return nil, fmt.Errorf("creating lock dir: %w", err)
 	}
