@@ -117,6 +117,7 @@ func downloadISO(isoURL string, skipChecksum bool) error {
 
 	// Lock before we check for existence to avoid thundering herd issues
 	dst := localISOPath(u)
+
 	if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
 		return fmt.Errorf("making cache image directory: %s: %w", dst, err)
 	}
