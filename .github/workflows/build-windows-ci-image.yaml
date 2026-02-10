@@ -1,0 +1,162 @@
+---
+name: 'build-windows-ci-image'
+
+# Steps:
+# 1. If does not exist, create Azure Shared Image Gallery (SIG) for VM images.
+# 2. Build Azure VM image based on Windows 11 and publish to the SIG.
+# 3. If does not exist, create Azure Virtual Network for build test VM and VMs created on PRs.
+# 4. Create Azure VM to test the image.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        default: '0.0.1'
+        description: 'Version of VM image to build. Default version will run `make packer-build-and-overwrite` target.'
+        required: true
+        type: string
+
+env:
+  AZURE_DEFAULTS_LOCATION: "swedencentral"
+  MINIKUBE_AZ_SUBSCRIPTION_ID: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+  MINIKUBE_AZ_RESOURCE_GROUP: "SIG-CLUSTER-LIFECYCLE-MINIKUBE"
+  MINIKUBE_AZ_SIG_NAME: "minikube" # see https://learn.microsoft.com/en-us/azure/virtual-machines/shared-image-galleries
+  MINIKUBE_AZ_IMAGE_NAME: "minikube-ci-windows-11" # VM image definition in SIG
+  MINIKUBE_AZ_IMAGE_VERSION: "${{ inputs.version }}" # VM image definition in SIG
+  MINIKUBE_AZ_VM_ADMIN_USERNAME: '${{ secrets.MINIKUBE_AZ_VM_ADMIN_USERNAME }}'
+  MINIKUBE_AZ_VM_ADMIN_PASSWORD: '${{ secrets.MINIKUBE_AZ_VM_ADMIN_PASSWORD }}'
+  MINIKUBE_AZ_VM_ADMIN_SSH_PUBLIC_KEY: ${{ secrets.MINIKUBE_AZ_VM_ADMIN_SSH_PUBLIC_KEY }}
+
+permissions:
+  id-token: write # Require write permission to Fetch an OIDC token.
+
+jobs:
+  check-bicep:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Check Bicep templates
+      run: |
+        make bicep-fmt && make bicep-lint
+
+  create-sig:
+    needs: [ check-bicep ]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Azure Login # https://github.com/microsoftgraph/msgraph-bicep-types/tree/main/quickstart-templates/create-fic-for-github-actions
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.MINIKUBE_AZ_CLIENT_ID }}
+        subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+        tenant-id: ${{ secrets.MINIKUBE_AZ_TENANT_ID }}
+    - name: Deploy Azure Shared Image Gallery # Equivalent of the sig-deploy target in the Makefile
+      uses: azure/bicep-deploy@v2
+      with:
+        type: deploymentStack
+        operation: create
+        name: "gha-minikube-sig"
+        scope: resourceGroup
+        resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
+        subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+        template-file: ./sig.bicep
+        parameters-file: ./sig.bicepparam
+        action-on-unmanage-resources: delete
+        deny-settings-mode: none
+  
+  build-image:
+    needs: [ create-sig ]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Azure Login # https://github.com/microsoftgraph/msgraph-bicep-types/tree/main/quickstart-templates/create-fic-for-github-actions
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.MINIKUBE_AZ_CLIENT_ID }}
+        subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+        tenant-id: ${{ secrets.MINIKUBE_AZ_TENANT_ID }}
+    - run: make packer-init
+    - run: make packer-validate
+    - if: ${{ inputs.version == '0.0.1' }}
+      run: make packer-build-and-overwrite
+    - if: ${{ inputs.version != '0.0.1' }}
+      run: make packer-build-and-publish
+    - run: make sig-list-images
+  
+  create-vnet:
+    needs: [ check-bicep ]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Azure Login # https://github.com/microsoftgraph/msgraph-bicep-types/tree/main/quickstart-templates/create-fic-for-github-actions
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.MINIKUBE_AZ_CLIENT_ID }}
+        subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+        tenant-id: ${{ secrets.MINIKUBE_AZ_TENANT_ID }}
+    - name: Deploy Azure Virtual Network # Equivalent of the vnet-deploy target in the Makefile
+      uses: azure/bicep-deploy@v2
+      with:
+        type: deploymentStack
+        operation: create
+        name: "gha-minikube-vnet" # this name will be referenced in any workflow creating VM
+        scope: resourceGroup
+        resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
+        subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+        template-file: ./vnet.bicep
+        parameters-file: ./vnet.bicepparam
+        action-on-unmanage-resources: delete
+        deny-settings-mode: none
+  test-image:
+    needs: [ build-image, create-vnet ]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Azure Login # https://github.com/microsoftgraph/msgraph-bicep-types/tree/main/quickstart-templates/create-fic-for-github-actions
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.MINIKUBE_AZ_CLIENT_ID }}
+        subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+        tenant-id: ${{ secrets.MINIKUBE_AZ_TENANT_ID }}
+    - name: Deploy Azure Virtual Machine # Equivalent of the vm-deploy target in the Makefile
+      id: create_vm
+      uses: azure/bicep-deploy@v2
+      with:
+        type: deploymentStack
+        operation: create
+        name: "gha-minikube-vm-${{ github.run_id }}"
+        scope: resourceGroup
+        resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
+        subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
+        template-file: ./vm.bicep
+        parameters-file: ./vm.bicepparam
+        parameters: '{"vmName": "vm-${{ github.run_id }}"}'
+        action-on-unmanage-resources: delete
+        deny-settings-mode: none
+    - run: make vm-list
+    - name: Deploy admin SSH private key
+      run: |
+        echo "${{ secrets.MINIKUBE_AZ_VM_ADMIN_SSH_PRIVATE_KEY }}" | base64 -d > ./ssh.key
+        chmod 0600 ./ssh.key
+    - name: Wait for SSH
+      continue-on-error: true # ensure is always VM deleted
+      run: |
+        HOST="${{ steps.create_vm.outputs.vmPublicFqdn }}"
+        echo "Waiting for SSH on $HOST..."
+        for i in {1..30}; do
+          if ssh -i ./ssh.key -o StrictHostKeyChecking=no -o ConnectTimeout=5 "minikubeadmin@$HOST" 'echo "SSH connected to machine $([System.Net.Dns]::GetHostName())"'; then
+            echo "SSH is ready!"
+            exit 0
+          fi
+          echo "Waiting for SSH... ($i/30)"
+          sleep 10
+        done
+        echo "SSH failed to become ready."
+        exit 1
+    - name: Test
+      continue-on-error: true # ensure is always VM deleted
+      run: |
+        HOST="${{ steps.create_vm.outputs.vmPublicFqdn }}"
+        ssh -i ./ssh.key -o StrictHostKeyChecking=no -o ConnectTimeout=5 "minikubeadmin@$HOST" 'kubectl version --client'
+    - run: make vm-delete vm="vm-${{ github.run_id }}" # Fast deletion of VM+DISK+NIC+PIP only. Do NOT run azure/bicep-deploy@v2 with delete operation as it takes 10 minutes to delete VM with its child resources.
+    - run: make vm-list # Check deletion was successful
