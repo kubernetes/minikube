@@ -32,7 +32,7 @@ installation instructions below.
 
 - Requires [vmnet-helper](https://github.com/nirs/vmnet-helper).
 
-### Install vment-helper
+### Install vmnet-helper
 
 ```shell
 curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | bash
@@ -99,7 +99,7 @@ brew upgrade vfkit
 
 ### Troubleshooting the vmnet-shared network
 
-Check for errors in vment-helper log:
+Check for errors in vmnet-helper log:
 
 ```shell
 $MINIKUBE_HOME/.minikube/machines/MACHINE-NAME/vmnet-helper.log
@@ -113,5 +113,5 @@ ps au | grep vmnet-helper | grep -v grep
 
 If the helper is not running restart the minikube cluster.
 
-For help with vment-helper please use the
+For help with vmnet-helper please use the
 [discussions](https://github.com/nirs/vmnet-helper/discussions).
