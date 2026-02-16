@@ -41,10 +41,9 @@ const (
 )
 
 var (
-	dockerStorageDriver   = "overlay2"
 	containerdSnapshotter = "overlayfs"
 	podmanStorageDriver   = "overlay"
-	containerRuntimes     = []string{"docker", "containerd", "cri-o"}
+	containerRuntimes     = []string{"containerd", "cri-o"}
 	k8sVersions           []string
 	k8sVersion            = flag.String("k8s-version", "", "desired Kubernetes version, for example `v1.17.2`")
 	noUpload              = flag.Bool("no-upload", false, "Do not upload tarballs to GCS")
@@ -161,21 +160,6 @@ func makePreload(cfg preloadCfg) error {
 	}
 	if err := uploadTarballToGCS(tf, kv); err != nil {
 		return fmt.Errorf("%s: %w", fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr), err)
-	}
-	return nil
-}
-
-var verifyDockerStorage = func() error {
-	cmd := exec.Command("docker", "exec", profile, "docker", "info", "-f", "{{.Info.Driver}}")
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	output, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("%v: %v:\n%s", cmd.Args, err, stderr.String())
-	}
-	driver := strings.Trim(string(output), " \n")
-	if driver != dockerStorageDriver {
-		return fmt.Errorf("docker storage driver %s does not match requested %s", driver, dockerStorageDriver)
 	}
 	return nil
 }
