@@ -181,7 +181,7 @@ func KindNet(repo string) string {
 	if repo == "" {
 		repo = "docker.io/kindest"
 	}
-	return path.Join(repo, "kindnetd:v20260131-0806d083")
+	return path.Join(repo, "kindnetd:v20260213-ea8e5717")
 }
 
 // all calico images are from https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
