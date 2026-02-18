@@ -24,6 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
+# NOTE: if wanna use same ISO for new patch of minikube, should be added to imageMatchesBinaryVersion func mapped images
 ISO_VERSION ?= v1.38.0
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
