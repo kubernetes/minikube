@@ -791,6 +791,8 @@ func TestImageMatchesBinaryVersion(t *testing.T) {
 		{"v1.17.0", "v1.20.0", false},
 		{"v1.31.0", "v1.31.1", true},
 		{"v1.31.1", "v1.31.0", false},
+		{"v1.38.0", "v1.38.1", true},
+		{"v1.38.1", "v1.38.0", false},
 	}
 
 	for _, tc := range tests {
