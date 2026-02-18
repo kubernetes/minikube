@@ -443,7 +443,7 @@ func getExtraOptions() config.ExtraOptionSlice {
 		if loggingFormat != "text" && loggingFormat != "json" {
 			exit.Message(reason.Usage, "--logging-format must be 'text' or 'json', got '{{.format}}'", out.V{"format": loggingFormat})
 		}
-		components := []string{"apiserver", "scheduler", "controller-manager", "kubelet"}
+		components := []string{"scheduler", "kubeadm", "kubelet", "apiserver", "controller-manager"}
 		for _, c := range components {
 			options = append(options, fmt.Sprintf("%s.logging-format=%s", c, loggingFormat))
 		}
