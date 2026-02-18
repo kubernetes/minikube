@@ -5,7 +5,7 @@ Desired=Unknown/Install/Remove/Purge/Hold
 +++-===============================-==============================-============-========================================================================================
 ii  adduser                         3.134                          all          add and remove users and groups
 ii  apt                             2.6.1                          amd64        commandline package manager
-ii  base-files                      12.4+deb12u12                  amd64        Debian base system miscellaneous files
+ii  base-files                      12.4+deb12u13                  amd64        Debian base system miscellaneous files
 ii  base-passwd                     3.6.1                          amd64        Debian base system master password and group files
 ii  bash                            5.2.15-2+b10                   amd64        GNU Bourne Again SHell
 ii  bind9-dnsutils                  1:9.18.44-1~deb12u1            amd64        Clients provided with BIND 9
@@ -144,10 +144,10 @@ ii  libnsl2:amd64                   1.3.0-2                        amd64        
 ii  libnvidia-container-tools       1.18.2-1                       amd64        NVIDIA container runtime library (command-line tools)
 ii  libnvidia-container1:amd64      1.18.2-1                       amd64        NVIDIA container runtime library
 ii  libp11-kit0:amd64               0.24.1-2                       amd64        library for loading and coordinating access to PKCS#11 modules - runtime
-ii  libpam-modules:amd64            1.5.2-6+deb12u1                amd64        Pluggable Authentication Modules for PAM
-ii  libpam-modules-bin              1.5.2-6+deb12u1                amd64        Pluggable Authentication Modules for PAM - helper binaries
-ii  libpam-runtime                  1.5.2-6+deb12u1                all          Runtime support for the PAM library
-ii  libpam0g:amd64                  1.5.2-6+deb12u1                amd64        Pluggable Authentication Modules library
+ii  libpam-modules:amd64            1.5.2-6+deb12u2                amd64        Pluggable Authentication Modules for PAM
+ii  libpam-modules-bin              1.5.2-6+deb12u2                amd64        Pluggable Authentication Modules for PAM - helper binaries
+ii  libpam-runtime                  1.5.2-6+deb12u2                all          Runtime support for the PAM library
+ii  libpam0g:amd64                  1.5.2-6+deb12u2                amd64        Pluggable Authentication Modules library
 ii  libpcre2-8-0:amd64              10.42-1                        amd64        New Perl Compatible Regular Expression Library- 8 bit runtime files
 ii  libpopt0:amd64                  1.19+dfsg-1                    amd64        lib for parsing cmdline parameters
 ii  libproc2-0:amd64                2:4.0.2-3                      amd64        library for accessing process information from /proc
