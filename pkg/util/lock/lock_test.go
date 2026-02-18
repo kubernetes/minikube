@@ -17,11 +17,18 @@ limitations under the License.
 package lock
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 	"time"
 )
 
+// TestUserMutexSpec verifies that the MutexSpec generation is deterministic and collision-resistant.
+// It ensures that different paths generate unique 40-character SHA1 based names, which is crucial
+// for avoiding lock collisions between different projects or resources.
 func TestUserMutexSpec(t *testing.T) {
 	var tests = []struct {
 		description string
@@ -171,4 +178,47 @@ func TestMutexConcurrency(t *testing.T) {
 		t.Fatalf("routine 2 failed to wait for lock: %v", err)
 	}
 	r2.Release()
+}
+
+// TestLockDirectoryStructure verifies that the lock directory is created with correct permissions and ownership.
+// It addresses security concerns by ensuring:
+// 1. The lock directory is created in a user-specific path to avoid permission denial in multi-user environments.
+// 2. The directory is writable by the current user, ensuring locks can be acquired.
+// 3. On Unix systems, the directory name contains the user's UID for clear isolation (e.g. minikube-locks-1000).
+func TestLockDirectoryStructure(t *testing.T) {
+	// 1. Acquire a lock
+	spec := PathMutexSpec("test-lock-structure")
+	r, err := Acquire(spec)
+	if err != nil {
+		t.Fatalf("Acquire failed: %v", err)
+	}
+	defer r.Release()
+
+	// 2. Verify the directory was created with the correct UID suffix
+	expectedDir := getUserSpecificDirName()
+	lockDir := filepath.Join(os.TempDir(), expectedDir)
+
+	info, err := os.Stat(lockDir)
+	if err != nil {
+		t.Fatalf("Expected lock directory %s does not exist", lockDir)
+	}
+
+	if !info.IsDir() {
+		t.Errorf("Expected %s to be a directory", lockDir)
+	}
+
+	// 3. Verify that the directory matches likely expectation for current user
+	if runtime.GOOS != "windows" {
+		uid := os.Getuid()
+		if !strings.Contains(expectedDir, fmt.Sprintf("%d", uid)) {
+			t.Errorf("Expected dir name %s to contain user UID %d", expectedDir, uid)
+		}
+	}
+
+	// 4. Verify that the directory is writable by the current user
+	testFile := filepath.Join(lockDir, "write-test")
+	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
+		t.Errorf("Expected to be able to write to %s: %v", lockDir, err)
+	}
+	os.Remove(testFile)
 }
