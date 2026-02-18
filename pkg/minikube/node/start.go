@@ -547,10 +547,6 @@ func pathExists(runner cruntime.CommandRunner, p string) (bool, error) {
 
 func waitForCRISocket(runner cruntime.CommandRunner, socket string, wait int, interval int) error {
 
-	if socket == "" || socket == "/var/run/dockershim.sock" {
-		return nil
-	}
-
 	klog.Infof("Will wait %ds for socket path %s", wait, socket)
 
 	chkPath := func() error {
@@ -567,10 +563,6 @@ func waitForCRISocket(runner cruntime.CommandRunner, socket string, wait int, in
 }
 
 func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, interval int) error {
-
-	if socket == "" || socket == "/var/run/dockershim.sock" {
-		return nil
-	}
 
 	klog.Infof("Will wait %ds for crictl version", wait)
 
