@@ -858,3 +858,126 @@ func TestValidateAutoPause(t *testing.T) {
 		}
 	}
 }
+
+func TestGetExtraOptionsLoggingFormat(t *testing.T) {
+	var tests = []struct {
+		description   string
+		loggingFormat string
+		extraConfig   []string
+		expectFlags   []string
+	}{
+		{
+			description:   "no logging-format set",
+			loggingFormat: "",
+			extraConfig:   []string{},
+			expectFlags:   []string{},
+		},
+		{
+			description:   "logging-format=json",
+			loggingFormat: "json",
+			extraConfig:   []string{},
+			expectFlags: []string{
+				"apiserver.logging-format=json",
+				"scheduler.logging-format=json",
+				"controller-manager.logging-format=json",
+				"kubelet.logging-format=json",
+			},
+		},
+		{
+			description:   "logging-format=text",
+			loggingFormat: "text",
+			extraConfig:   []string{},
+			expectFlags: []string{
+				"apiserver.logging-format=text",
+				"scheduler.logging-format=text",
+				"controller-manager.logging-format=text",
+				"kubelet.logging-format=text",
+			},
+		},
+		{
+			description:   "general=json, scheduler override=text",
+			loggingFormat: "json",
+			extraConfig:   []string{"scheduler.logging-format=text"},
+			expectFlags: []string{
+				"apiserver.logging-format=json",
+				"scheduler.logging-format=text",
+				"controller-manager.logging-format=json",
+				"kubelet.logging-format=json",
+			},
+		},
+		{
+			description:   "general=text, scheduler override=json",
+			loggingFormat: "text",
+			extraConfig:   []string{"scheduler.logging-format=json"},
+			expectFlags: []string{
+				"apiserver.logging-format=text",
+				"scheduler.logging-format=json",
+				"controller-manager.logging-format=text",
+				"kubelet.logging-format=text",
+			},
+		},
+		{
+			description:   "general=text, specific=text (no conflict)",
+			loggingFormat: "text",
+			extraConfig:   []string{"scheduler.logging-format=text"},
+			expectFlags: []string{
+				"apiserver.logging-format=text",
+				"scheduler.logging-format=text",
+				"controller-manager.logging-format=text",
+				"kubelet.logging-format=text",
+			},
+		},
+		{
+			description:   "general=json, specific=json (no conflict)",
+			loggingFormat: "json",
+			extraConfig:   []string{"scheduler.logging-format=json"},
+			expectFlags: []string{
+				"apiserver.logging-format=json",
+				"scheduler.logging-format=json",
+				"controller-manager.logging-format=json",
+				"kubelet.logging-format=json",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			// Reset global state
+			cfg.ExtraOptions = cfg.ExtraOptionSlice{}
+			viper.Set(loggingFormatFlag, "")
+
+			// Simulate --extra-config flags (these get set before getExtraOptions runs)
+			for _, ec := range test.extraConfig {
+				if err := cfg.ExtraOptions.Set(ec); err != nil {
+					t.Fatalf("failed to set extra-config %q: %v", ec, err)
+				}
+			}
+
+			viper.Set(loggingFormatFlag, test.loggingFormat)
+			opts := getExtraOptions()
+
+			for _, expected := range test.expectFlags {
+				found := false
+				for _, opt := range opts {
+					optStr := fmt.Sprintf("%s.%s=%s", opt.Component, opt.Key, opt.Value)
+					if optStr == expected {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected extra option %q not found in result", expected)
+				}
+			}
+
+			if len(test.expectFlags) == 0 {
+				for _, opt := range opts {
+					if opt.Key == "logging-format" {
+						t.Errorf("unexpected logging-format option found: %s.%s=%s", opt.Component, opt.Key, opt.Value)
+					}
+				}
+			}
+		})
+	}
+}
+
