@@ -34,7 +34,6 @@
 * CNI: Update flannel from v0.27.4 to v0.28.1 ([#22635](https://github.com/kubernetes/minikube/pull/22635))
 * CNI: Update kindnetd from v20251212-v0.29.0-alpha-105-g20ccfc88 to v20260131-0806d083 ([#22594](https://github.com/kubernetes/minikube/pull/22594))
 * CNI: Update kindnetd from v20260131-0806d083 to v20260213-ea8e5717 ([#22661](https://github.com/kubernetes/minikube/pull/22661))
-
 For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
 
 Thank you to our contributors for this release!
