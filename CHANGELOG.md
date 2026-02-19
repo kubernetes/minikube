@@ -3,14 +3,17 @@
 ## Version 1.38.1 - 2026-02-19
 
 ## Feature
+
 * Add Support for Kubernetes version v1.35.1 ([#22665](https://github.com/kubernetes/minikube/pull/22665))
 
 ## Bug fixes
+
 * Fix lock file regression by appending UID to the lock driectory ([#22623](https://github.com/kubernetes/minikube/pull/22623))
 * Fix regression cross-arch execution by masking systemd-binfmt ([#22621](https://github.com/kubernetes/minikube/pull/22621))
 * Fix: PowerShell curl alias on Windows to check resgistry.k8s.io connectivity ([#22659](https://github.com/kubernetes/minikube/pull/22659))
 
 ## Addons
+
 * Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from 1.5.47 to 1.5.49 ([#22637](https://github.com/kubernetes/minikube/pull/22637))
 * Addon Headlamp: Update Headlamp image from v0.39.0 to v0.40.0 ([#22640](https://github.com/kubernetes/minikube/pull/22640))
 * Addon ingress: Update ingress-nginx/controller image from v1.14.1 to v1.14.2 ([#22595](https://github.com/kubernetes/minikube/pull/22595))
@@ -23,16 +26,14 @@
 * Addon Volcano: Update volcano images from v1.13.1 to v1.14.0 ([#22597](https://github.com/kubernetes/minikube/pull/22597))
 * Addon Volcano: Update volcano images from v1.14.0 to v1.14.1 ([#22663](https://github.com/kubernetes/minikube/pull/22663))
 * Addon yakd: Update manusa/yakd image from 0.0.7 to 0.0.8 ([#22639](https://github.com/kubernetes/minikube/pull/22639))
+* HA (multi-control plane): Update kube-vip from v1.0.3 to v1.0.4 ([#22598](https://github.com/kubernetes/minikube/pull/22598))
 
 ## CNI
+
 * CNI: Update cilium from v1.18.6 to v1.19.0 ([#22636](https://github.com/kubernetes/minikube/pull/22636))
 * CNI: Update flannel from v0.27.4 to v0.28.1 ([#22635](https://github.com/kubernetes/minikube/pull/22635))
 * CNI: Update kindnetd from v20251212-v0.29.0-alpha-105-g20ccfc88 to v20260131-0806d083 ([#22594](https://github.com/kubernetes/minikube/pull/22594))
 * CNI: Update kindnetd from v20260131-0806d083 to v20260213-ea8e5717 ([#22661](https://github.com/kubernetes/minikube/pull/22661))
-
-
-## other
-* HA (multi-control plane): Update kube-vip from v1.0.3 to v1.0.4 ([#22598](https://github.com/kubernetes/minikube/pull/22598))
 
 
 For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
@@ -40,7 +41,6 @@ For a more detailed changelog, including changes occurring in pre-release versio
 Thank you to our contributors for this release!
 
 - Bob Sira
-- dependabot[bot]
 - Mateusz Łoskot
 - Medya Ghazizadeh
 - minikube-bot
@@ -48,7 +48,6 @@ Thank you to our contributors for this release!
 
 Thank you to our PR reviewers for this release!
 
-- Copilot (11 comments)
 - nirs (8 comments)
 - wt (5 comments)
 - medyagh (2 comments)
