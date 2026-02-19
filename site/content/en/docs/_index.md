@@ -11,7 +11,7 @@ minikube quickly sets up a local Kubernetes cluster on macOS, Linux, and Windows
 
 ![Screenshot](/images/screenshot.png)
 
-🎉 Latest Release: v1.38.0 - Jan 28, 2026 ([changelog](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md))
+🎉 Latest Release: v1.38.1 - Feb 19, 2026 ([changelog](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md))
 
 ## Highlights
 
