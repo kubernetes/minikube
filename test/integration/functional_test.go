@@ -769,11 +769,11 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 
 	start := time.Now()
 	// docs: The tests before this already created a profile
-	// docs: Soft-start minikube with `--components-logging-format` and `--extra-config` command line options
+	// docs: Soft-start minikube with `--child-logging-format` and `--extra-config` command line options
 	startArgs := []string{
 		"start",
 		"-p", profile,
-		"--components-logging-format=json",
+		"--child-logging-format=json",
 		"--extra-config=scheduler.logging-format=text",
 		"--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision",
 		"--wait=all",
@@ -791,7 +791,7 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("error reading cluster config after soft start: %v", err)
 	}
 
-	// docs: Make sure `--extra-config` and `--components-logging-format` are correctly returned in profile config
+	// docs: Make sure `--extra-config` and `--child-logging-format` are correctly returned in profile config
 	gotExtraOptions := afterCfg.Config.KubernetesConfig.ExtraOptions.String()
 	expectedExtraOptions := []string{
 		"apiserver.enable-admission-plugins=NamespaceAutoProvision",
@@ -806,7 +806,7 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 		}
 	}
 
-	// docs: Verify control-plane pods pick up logging-format flags from `--components-logging-format` and scheduler override
+	// docs: Verify control-plane pods pick up logging-format flags from `--child-logging-format` and scheduler override
 	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "po", "-l", "tier=control-plane", "-n", "kube-system", "-o=json"))
 	if err != nil {
 		t.Fatalf("failed to get control-plane pods. args %q: %v", rr.Command(), err)
