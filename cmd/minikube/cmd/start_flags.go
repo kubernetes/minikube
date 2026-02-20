@@ -147,7 +147,7 @@ const (
 	autoPauseInterval       = "auto-pause-interval"
 	preloadSrc              = "preload-source"
 	rosetta                 = "rosetta"
-	loggingFormatFlag       = "logging-format"
+	componentsLoggingFormatFlag = "components-logging-format"
 )
 
 var (
@@ -231,7 +231,7 @@ func initKubernetesFlags() {
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The authoritative apiserver hostname for apiserver certificates and connectivity. This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringSliceVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
-	startCmd.Flags().String(loggingFormatFlag, "", "Logging format for Kubernetes components. Options: [text,json]")
+	startCmd.Flags().String(componentsLoggingFormatFlag, "", "Logging format for Kubernetes components. Options: [text,json]")
 }
 
 // initDriverFlags inits the commandline flags for vm drivers
@@ -438,10 +438,10 @@ func getExtraOptions() config.ExtraOptionSlice {
 	if viper.GetBool(disableMetrics) {
 		options = append(options, "kubelet.housekeeping-interval=5m")
 	}
-	loggingFormat := viper.GetString(loggingFormatFlag)
+	loggingFormat := viper.GetString(componentsLoggingFormatFlag)
 	if loggingFormat != "" {
 		if loggingFormat != "text" && loggingFormat != "json" {
-			exit.Message(reason.Usage, "--logging-format must be 'text' or 'json', got '{{.format}}'", out.V{"format": loggingFormat})
+			exit.Message(reason.Usage, "--components-logging-format must be 'text' or 'json', got '{{.format}}'", out.V{"format": loggingFormat})
 		}
 		components := []string{bsutil.Apiserver, bsutil.Scheduler, bsutil.ControllerManager, bsutil.Kubelet}
 		for _, c := range components {

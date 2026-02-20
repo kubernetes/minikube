@@ -861,7 +861,7 @@ func TestValidateAutoPause(t *testing.T) {
 	}
 }
 
-func TestGetExtraOptionsLoggingFormat(t *testing.T) {
+func TestGetExtraOptionsComponentsLoggingFormat(t *testing.T) {
 	var tests = []struct {
 		description   string
 		loggingFormat string
@@ -869,13 +869,13 @@ func TestGetExtraOptionsLoggingFormat(t *testing.T) {
 		expectFlags   []string
 	}{
 		{
-			description:   "no logging-format set",
+			description:   "no components-logging-format set",
 			loggingFormat: "",
 			extraConfig:   []string{},
 			expectFlags:   []string{},
 		},
 		{
-			description:   "logging-format=json",
+			description:   "components-logging-format=json",
 			loggingFormat: "json",
 			extraConfig:   []string{},
 			expectFlags: []string{
@@ -886,7 +886,7 @@ func TestGetExtraOptionsLoggingFormat(t *testing.T) {
 			},
 		},
 		{
-			description:   "logging-format=text",
+			description:   "components-logging-format=text",
 			loggingFormat: "text",
 			extraConfig:   []string{},
 			expectFlags: []string{
@@ -946,7 +946,7 @@ func TestGetExtraOptionsLoggingFormat(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			// Reset global state
 			cfg.ExtraOptions = cfg.ExtraOptionSlice{}
-			viper.Set(loggingFormatFlag, "")
+			viper.Set(componentsLoggingFormatFlag, "")
 
 			// Simulate --extra-config flags (these get set before getExtraOptions runs)
 			for _, ec := range test.extraConfig {
@@ -955,7 +955,7 @@ func TestGetExtraOptionsLoggingFormat(t *testing.T) {
 				}
 			}
 
-			viper.Set(loggingFormatFlag, test.loggingFormat)
+			viper.Set(componentsLoggingFormatFlag, test.loggingFormat)
 			opts := getExtraOptions()
 
 			for _, expected := range test.expectFlags {
@@ -982,4 +982,3 @@ func TestGetExtraOptionsLoggingFormat(t *testing.T) {
 		})
 	}
 }
-
