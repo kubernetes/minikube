@@ -1,6 +1,9 @@
 name: Functional Extra
 
 on:
+  schedule:
+    - cron: "0 */12 * * *"
+  workflow_dispatch:
   # pull_request_target runs in the context of the base repo, allowing access to secrets
   # unlike pull_request which runs in the context of the merge commit
   # every commit needs re-labeling "ok-to-extra-test" label by OWNERS 
@@ -11,7 +14,12 @@ on:
 
 jobs:
   windows-hyperv:
-    if: github.repository == 'kubernetes/minikube' && contains(github.event.pull_request.labels.*.name, 'ok-to-extra-test')
+    if: |
+      github.repository == 'kubernetes/minikube' && (
+        (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'ok-to-extra-test')) ||
+        (github.event_name == 'schedule' && github.ref == 'refs/heads/master') ||
+        github.event_name == 'workflow_dispatch'
+      )
     runs-on: ubuntu-latest
     env:
       MINIKUBE_AZ_RESOURCE_GROUP: "SIG-CLUSTER-LIFECYCLE-MINIKUBE"
@@ -19,12 +27,14 @@ jobs:
       MINIKUBE_AZ_SIG_NAME: "minikube"
       MINIKUBE_AZ_IMAGE_NAME: "minikube-ci-windows-11"
       MINIKUBE_AZ_IMAGE_VERSION: "1.0.0"
+      VM_NAME: m-${{ github.event.pull_request.number || github.ref_name }}-${{ github.run_id }}
+      STACK_NAME: ${{ github.event.pull_request.number || github.ref_name }}-${{ github.run_id }}-stack
     steps:
       - uses: actions/checkout@v6
         with:
           # pull_request_target checks out the base branch by default
           # We need to explicitly checkout the PR's head commit to test the changes
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - name: Azure Login
         id: azlogin
         uses: azure/login@v2
@@ -48,13 +58,13 @@ jobs:
         with:
           type: deploymentStack
           operation: create
-          name: "${{ github.event.pull_request.number }}-${{ github.run_id }}-stack"
+          name: ${{ env.STACK_NAME }}
           scope: resourceGroup
           resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
           subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
           template-file: ./hack/windows-ci-image/vm.bicep
           parameters-file: ./hack/windows-ci-image/vm.bicepparam
-          parameters: '{"vmName": "m-${{ github.event.pull_request.number }}-${{ github.run_id }}"}'
+          parameters: '{"vmName": "${{ env.VM_NAME }}"}'
           action-on-unmanage-resources: delete
           deny-settings-mode: none
 
@@ -62,7 +72,7 @@ jobs:
         env:
           SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
         run: |
-          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          VM_NAME="${{ env.VM_NAME }}"
           HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
           echo "Waiting for SSH on $HOST..."
           for i in {1..30}; do
@@ -80,7 +90,7 @@ jobs:
         env:
           SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
         run: |
-          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          VM_NAME="${{ env.VM_NAME }}"
           HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
           USER="minikubeadmin"
           sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST" "powershell -Command \"if (-not (Get-Command kubectl.exe -ErrorAction SilentlyContinue)) { choco install kubernetes-cli --yes --no-prompt --ignore-package-exit-codes --ignore-detected-reboot }\""          
@@ -88,7 +98,7 @@ jobs:
         env:
           SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
         run: |
-          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          VM_NAME="${{ env.VM_NAME }}"
           HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
           USER="minikubeadmin"
           
@@ -102,7 +112,7 @@ jobs:
         env:
           SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
         run: |
-          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          VM_NAME="${{ env.VM_NAME }}"
           HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
           USER="minikubeadmin"
           
@@ -128,7 +138,7 @@ jobs:
         env:
           SSHPASS: ${{ secrets.MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD }}
         run: |
-          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          VM_NAME="${{ env.VM_NAME }}"
           HOST="${VM_NAME}.${AZURE_DEFAULTS_LOCATION}.cloudapp.azure.com"
           USER="minikubeadmin"
           
@@ -151,8 +161,8 @@ jobs:
       - name: Cleanup VM
         if: always() && steps.azlogin.outcome == 'success'
         run: |
-          STACK_NAME="${{ github.event.pull_request.number }}-${{ github.run_id }}-stack"
-          VM_NAME="m-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          STACK_NAME="${{ env.STACK_NAME }}"
+          VM_NAME="${{ env.VM_NAME }}"
           
           echo "Deleting Deployment Stack: $STACK_NAME"
           # Try deleting the stack first

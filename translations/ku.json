@@ -627,7 +627,6 @@
 	"Starting \"{{.node}}\" {{.role}} node in \"{{.cluster}}\" cluster": "\"{{.node}}\" {{.role}} node di \"{{.cluster}}\" cluster de dest pê dike",
 	"Starting minikube without Kubernetes in cluster {{.cluster}}": "Minikube bêyî Kubernetes di cluster {{.cluster}} de dest pê dike",
 	"Starting tunnel for service {{.service}}.": "Tunnel ji bo servîsa {{.service}} dest pê dike.",
-	"Starting v1.39.0, minikube will default to \"containerd\" container runtime. See #21973 for more info.": "Dest pê dike v1.39.0, minikube dê container runtime \"containerd\" wekî xwerû bikar bîne. Ji bo bêtir agahdarî li #21973 binêre.",
 	"Starts a local Kubernetes cluster": "Cluster-ek Kubernetes a herêmî dide destpêkirin",
 	"Starts a node.": "Node-ek dide destpêkirin.",
 	"Starts an existing stopped node in a cluster.": "Node-ek heyî ya rawestandî di cluster-ek de dide destpêkirin.",

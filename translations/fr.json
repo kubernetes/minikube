@@ -627,7 +627,6 @@
 	"Starting \"{{.node}}\" {{.role}} node in \"{{.cluster}}\" cluster": "Démarrage du nœud \"{{.node}}\" {{.role}} dans le cluster \"{{.cluster}}\"",
 	"Starting minikube without Kubernetes in cluster {{.cluster}}": "Démarrage de minikube sans Kubernetes dans le cluster {{.cluster}}",
 	"Starting tunnel for service {{.service}}.": "Tunnel de démarrage pour le service {{.service}}.",
-	"Starting v1.39.0, minikube will default to \"containerd\" container runtime. See #21973 for more info.": "À partir de la version 1.39.0, minikube utilisera par défaut l'environnement d'exécution de conteneurs \"containerd\". Voir #21973 pour plus d'informations.",
 	"Starts a local Kubernetes cluster": "Démarre un cluster Kubernetes local",
 	"Starts a node.": "Démarre un nœud.",
 	"Starts an existing stopped node in a cluster.": "Démarre un nœud arrêté existant dans un cluster.",

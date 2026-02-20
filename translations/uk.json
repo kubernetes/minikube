@@ -627,7 +627,6 @@
 	"Starting \"{{.node}}\" {{.role}} node in \"{{.cluster}}\" cluster": "Запуск вузла \"{{.node}}\" {{.role}} в кластері \"{{.cluster}}\"",
 	"Starting minikube without Kubernetes in cluster {{.cluster}}": "Запуск minikube без Kubernetes у кластері {{.cluster}}",
 	"Starting tunnel for service {{.service}}.": "Запуск тунелю для сервісу {{.service}}.",
-	"Starting v1.39.0, minikube will default to \"containerd\" container runtime. See #21973 for more info.": "",
 	"Starts a local Kubernetes cluster": "Запускає локальний кластер Kubernetes",
 	"Starts a node.": "Запускає вузол.",
 	"Starts an existing stopped node in a cluster.": "Запускає наявний зупинений вузол у кластері.",

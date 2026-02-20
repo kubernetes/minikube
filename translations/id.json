@@ -627,7 +627,6 @@
 	"Starting \"{{.node}}\" {{.role}} node in \"{{.cluster}}\" cluster": "Memulai node \"{{.node}}\" dengan peran {{.role}} dalam klaster \"{{.cluster}}\"",
 	"Starting minikube without Kubernetes in cluster {{.cluster}}": "Memulai minikube tanpa Kubernetes dalam klaster {{.cluster}}",
 	"Starting tunnel for service {{.service}}.": "Memulai tunnel untuk layanan {{.service}}",
-	"Starting v1.39.0, minikube will default to \"containerd\" container runtime. See #21973 for more info.": "",
 	"Starts a local Kubernetes cluster": "Memulai klaster Kubernetes lokal",
 	"Starts a node.": "Memulai sebuah node.",
 	"Starts an existing stopped node in a cluster.": "Memulai kembali node yang sudah ada dan dihentikan dalam klaster.",
