@@ -24,7 +24,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-github/v82/github"
+	"github.com/google/go-github/v83/github"
 	"golang.org/x/oauth2"
 )
 

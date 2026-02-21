@@ -24,7 +24,7 @@ import (
 
 	"golang.org/x/mod/semver"
 
-	"github.com/google/go-github/v82/github"
+	"github.com/google/go-github/v83/github"
 )
 
 const (
