@@ -240,11 +240,18 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 	cpuCfsPeriod := true
 	cpuCfsQuota := true
 	if runtime.GOOS == "linux" {
-		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_period_us"); os.IsNotExist(err) {
-			cpuCfsPeriod = false
-		}
-		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_quota_us"); os.IsNotExist(err) {
-			cpuCfsQuota = false
+		if isCgroupV2() {
+			if _, err := os.Stat("/sys/fs/cgroup/cpu.max"); os.IsNotExist(err) {
+				cpuCfsPeriod = false
+				cpuCfsQuota = false
+			}
+		} else {
+			if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_period_us"); os.IsNotExist(err) {
+				cpuCfsPeriod = false
+			}
+			if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_quota_us"); os.IsNotExist(err) {
+				cpuCfsQuota = false
+			}
 		}
 		if !cpuCfsPeriod || !cpuCfsQuota {
 			// requires CONFIG_CFS_BANDWIDTH
