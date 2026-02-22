@@ -123,7 +123,7 @@ STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE
 # Set the version information for the Kubernetes servers
 MINIKUBE_LDFLAGS_commit := -X k8s.io/minikube/pkg/version.gitCommitID=$(COMMIT)
 MINIKUBE_LDFLAGS_versions := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.storageProvisionerVersion=$(STORAGE_PROVISIONER_TAG)
-MINIKUBE_LDFLAGS := $(MINIKUBE_LDFLAGS_commit) $(MINIKUBE_LDFLAGS_versions)
+MINIKUBE_LDFLAGS := $(MINIKUBE_LDFLAGS_commit) $(MINIKUBE_LDFLAGS_versions) -s -w
 PROVISIONER_LDFLAGS := "-X k8s.io/minikube/pkg/storage.version=$(STORAGE_PROVISIONER_TAG) -s -w -extldflags '-static'"
 
 MINIKUBEFILES := ./cmd/minikube/
