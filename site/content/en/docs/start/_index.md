@@ -178,7 +178,7 @@ sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-a
 {{% quiz_instruction id="/Linux/x86-64/Stable/Debian package" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
-sudo dpkg -i minikube_latest_amd64.deb
+sudo dpkg -i minikube_latest_amd64.deb && rm minikube_latest_amd64.deb
 ```
 {{% /quiz_instruction %}}
 
@@ -223,7 +223,7 @@ sudo install minikube-linux-arm64 /usr/local/bin/minikube && rm minikube-linux-a
 {{% quiz_instruction id="/Linux/ARM64/Stable/Debian package" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_arm64.deb
-sudo dpkg -i minikube_latest_arm64.deb
+sudo dpkg -i minikube_latest_arm64.deb && rm minikube_latest_arm64.deb
 ```
 {{% /quiz_instruction %}}
 
@@ -268,7 +268,7 @@ sudo install minikube-linux-ppc64le /usr/local/bin/minikube && rm minikube-linux
 {{% quiz_instruction id="/Linux/ppc64/Stable/Debian package" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_ppc64le.deb
-sudo dpkg -i minikube_latest_ppc64le.deb
+sudo dpkg -i minikube_latest_ppc64le.deb && rm minikube_latest_ppc64le.deb
 ```
 {{% /quiz_instruction %}}
 
@@ -313,7 +313,7 @@ sudo install minikube-linux-s390x /usr/local/bin/minikube && rm minikube-linux-s
 {{% quiz_instruction id="/Linux/S390x/Stable/Debian package" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_s390x.deb
-sudo dpkg -i minikube_latest_s390x.deb
+sudo dpkg -i minikube_latest_s390x.deb && rm minikube_latest_s390x.deb
 ```
 {{% /quiz_instruction %}}
 
