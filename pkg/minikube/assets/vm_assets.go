@@ -247,7 +247,7 @@ func (f *FileAsset) Seek(offset int64, whence int) (int64, error) {
 	return f.reader.Seek(offset, whence)
 }
 
-// Close closes the opend file.
+// Close closes the opened file.
 func (f *FileAsset) Close() error {
 	if f.file == nil {
 		return nil

@@ -70,7 +70,7 @@ func main() {
 	apps := make(map[string]runs)
 
 	if err := readInCSV(*csvPath, apps); err != nil {
-		log.Fatalf("fail to readin cvs file with err %s", err)
+		log.Fatalf("fail to read in cvs file with err %s", err)
 	}
 
 	runningTime, cpuMdPlot, cpuChartPlot, totals, names := values(apps)

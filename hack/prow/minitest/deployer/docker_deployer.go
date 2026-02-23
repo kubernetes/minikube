@@ -164,8 +164,8 @@ func (m *MiniTestDockerDeployer) Up() error {
 
 	// check ssh connectivity
 	if err := sshConnectionCheck(m.ctx, m.remoteUserName, "localhost", m.sshAdditionalArgs()); err != nil {
-		klog.Errorf("Failed to conntect via ssh: %v", err)
-		return fmt.Errorf("Failed to conntect via ssh: %v", err)
+		klog.Errorf("Failed to connect via ssh: %v", err)
+		return fmt.Errorf("Failed to connect via ssh: %v", err)
 	}
 
 	m.isUp = true

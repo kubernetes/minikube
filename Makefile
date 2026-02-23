@@ -137,7 +137,7 @@ MARKDOWNLINT ?= markdownlint
 MINIKUBE_MARKDOWN_FILES := README.md CONTRIBUTING.md CHANGELOG.md
 
 # The `libvirt_dlopen` build tag is used only linux to avoid linking with
-# libvirt shared library. This is not documnted but can be found in the source.
+# libvirt shared library. This is not documented but can be found in the source.
 # https://gitlab.com/libvirt/libvirt-go-module/-/blob/f7cdeba9979dd248582901d2aaf7ab1f2d27cbe0/domain.go#L30
 MINIKUBE_BUILD_TAGS := libvirt_dlopen
 
@@ -1071,7 +1071,7 @@ update-portainer-version:
 
 # used by update- Targets to get before/after versions of tools it updates
 # example usage echo "OLD_VERSION=$(DEP=node make get-dependency-version)" >> "$GITHUB_OUTPUT"
-.PHONY: get-dependency-verison
+.PHONY: get-dependency-version
 get-dependency-version:
 	@(cd hack && go run update/get_version/get_version.go)
 

@@ -47,7 +47,7 @@ const (
 
 // The driver is implemented for amd64 and arm64, but we cannot build the arm64
 // version yet: https://github.com/kubernetes/minikube/issues/19959.
-var supportedArchictures = []string{"amd64"}
+var supportedArchitectures = []string{"amd64"}
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
@@ -105,10 +105,10 @@ func defaultURI() string {
 }
 
 func status(_ *run.CommandOptions) registry.State {
-	if !slices.Contains(supportedArchictures, runtime.GOARCH) {
+	if !slices.Contains(supportedArchitectures, runtime.GOARCH) {
 		rs := registry.State{
 			Error: fmt.Errorf("KVM is not supported on %q, contributions are welcome", runtime.GOARCH),
-			Fix:   fmt.Sprintf("you can use the KVM driver on %s", strings.Join(supportedArchictures, ",")),
+			Fix:   fmt.Sprintf("you can use the KVM driver on %s", strings.Join(supportedArchitectures, ",")),
 		}
 		// The driver is implemented but we cannot build it yet.
 		if runtime.GOARCH == "arm64" {

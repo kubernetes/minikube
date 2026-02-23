@@ -518,7 +518,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 		},
 		mcnflag.BoolFlag{
 			Name:  "parallels-nested-virtualization",
-			Usage: "Enable nested virutalization",
+			Usage: "Enable nested virtualization",
 		},
 	}
 }
