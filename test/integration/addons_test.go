@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -143,18 +144,19 @@ func TestAddons(t *testing.T) {
 	t.Run("parallel", func(t *testing.T) {
 		tests := []TestCase{
 			{"Registry", validateRegistryAddon},
-			{"RegistryCreds", validateRegistryCredsAddon},
-			{"Ingress", validateIngressAddon},
-			{"InspektorGadget", validateInspektorGadgetAddon},
-			{"MetricsServer", validateMetricsServerAddon},
-			{"Olm", validateOlmAddon},
-			{"CSI", validateCSIDriverAndSnapshots},
-			{"Headlamp", validateHeadlampAddon},
-			{"CloudSpanner", validateCloudSpannerAddon},
-			{"LocalPath", validateLocalPathAddon},
-			{"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
-			{"Yakd", validateYakdAddon},
-			{"AmdGpuDevicePlugin", validateAmdGpuDevicePlugin},
+            {"RegistryCreds", validateRegistryCredsAddon},
+            {"Ingress", validateIngressAddon},
+            {"InspektorGadget", validateInspektorGadgetAddon},
+            {"MetricsServer", validateMetricsServerAddon},
+            {"Olm", validateOlmAddon},
+            {"CSI", validateCSIDriverAndSnapshots},
+            {"Headlamp", validateHeadlampAddon},
+            {"CloudSpanner", validateCloudSpannerAddon},
+            {"LocalPath", validateLocalPathAddon},
+            {"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
+            {"Yakd", validateYakdAddon},
+            {"AmdGpuDevicePlugin", validateAmdGpuDevicePlugin},
+			{"MetalLB", validateMetalLBAddon},
 		}
 
 		for _, tc := range tests {
@@ -189,6 +191,295 @@ func TestAddons(t *testing.T) {
 			t.Errorf("failed to disable non-enabled addon: args %q : %v", rr.Command(), err)
 		}
 	})
+}
+
+// --- MetalLB helpers ---------------------------------------------------------
+
+// hasUsableMetalLBPool checks whether MetalLB has at least one non-empty address
+// range configured (CRD or legacy ConfigMap).
+func hasUsableMetalLBPool(ctx context.Context, t *testing.T, profile string, useCRD bool) bool {
+	if useCRD {
+		// If any item has a non-empty spec.addresses[0], we consider it usable.
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile,
+			"-n", "metallb-system", "get", "ipaddresspools",
+			"-o", "jsonpath={range .items[*]}{.spec.addresses[0]}{'\\n'}{end}"))
+		if err != nil {
+			return false
+		}
+		for _, line := range strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n") {
+			if s := strings.TrimSpace(line); s != "" && s != "[]" && !strings.EqualFold(s, "<no value>") {
+				t.Logf("MetalLB CRD pool present: %q", s)
+				return true
+			}
+		}
+		return false
+	}
+	// Legacy CM: parse the blob for a non-empty addresses list or at least one dash entry.
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile,
+		"-n", "metallb-system", "get", "cm", "config", "-o", "jsonpath={.data.config}"))
+	if err != nil {
+		return false
+	}
+	cfg := rr.Stdout.String()
+	// Look for: addresses: ["A-B"]  OR  addresses:\n  - A-B
+	rxNonEmptyInline := regexp.MustCompile(`(?m)addresses:\s*\[\s*("[^"\]]+"\s*(,\s*"[^"\]]+")*)\s*\]`)
+	rxDash := regexp.MustCompile(`(?m)^\s*-\s*[0-9a-fA-F:.]+(?:\s*-\s*[0-9a-fA-F:.]+)?\s*$`)
+	if rxNonEmptyInline.FindString(cfg) != "" || rxDash.FindString(cfg) != "" {
+		t.Logf("MetalLB CM appears configured")
+		return true
+	}
+	return false
+}
+
+// ensureMetalLBConfigured detects CRD vs legacy ConfigMap mode and applies
+// an address pool carved from the tail of the node's IPv4 subnet. This lets
+// MetalLB work on Hyper-V External switches where the node lives on the LAN.
+func ensureMetalLBConfigured(ctx context.Context, t *testing.T, profile string) {
+	t.Logf("configuring metallb address pool")
+
+	// Detect CRD mode
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile,
+		"api-resources", "--api-group=metallb.io", "-o", "name"))
+	useCRD := (err == nil) && strings.Contains(rr.Stdout.String(), "ipaddresspools.metallb.io")
+
+	// Already configured?
+	// Already configured with a usable (non-empty) pool?
+	if hasUsableMetalLBPool(ctx, t, profile, useCRD) {
+		return
+	}
+
+	// Work out the node's IPv4 CIDR (eth0 inside minikube)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile,
+		"ssh", "ip -4 -o addr show dev eth0 | awk '{print $4}'"))
+	if err != nil {
+		t.Fatalf("failed to get node CIDR: %v", err)
+	}
+	cidr := strings.TrimSpace(rr.Stdout.String())
+	_, ipNet, perr := net.ParseCIDR(cidr)
+	if perr != nil {
+		t.Fatalf("parse CIDR %q: %v", cidr, perr)
+	}
+
+	// Tail of subnet: broadcast-32 .. broadcast-4
+	dec := func(ip net.IP, n int) net.IP {
+		out := append(net.IP(nil), ip...)
+		for ; n > 0; n-- {
+			for j := len(out) - 1; j >= 0; j-- {
+				if out[j] > 0 {
+					out[j]--
+					break
+				}
+				out[j] = 255
+			}
+		}
+		return out
+	}
+	network := ipNet.IP.Mask(ipNet.Mask)
+	bcast := make(net.IP, len(network))
+	for i := range network {
+		bcast[i] = network[i] | ^ipNet.Mask[i]
+	}
+	start, end := dec(bcast, 32), dec(bcast, 4)
+
+	if useCRD {
+		manifest := fmt.Sprintf(`
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: itest-pool
+  namespace: metallb-system
+spec:
+  addresses: ["%s-%s"]
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: itest-l2
+  namespace: metallb-system
+`, start.String(), end.String())
+		cmd := exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", "-")
+		cmd.Stdin = bytes.NewBufferString(manifest)
+		if _, err := Run(t, cmd); err != nil {
+			t.Fatalf("apply MetalLB CRDs: %v", err)
+		}
+	} else {
+		manifest := fmt.Sprintf(`
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: metallb-system
+data:
+  config: |
+    address-pools:
+    - name: default
+      protocol: layer2
+      addresses: ["%s-%s"]
+`, start.String(), end.String())
+		cmd := exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", "-")
+		cmd.Stdin = bytes.NewBufferString(manifest)
+		if _, err := Run(t, cmd); err != nil {
+			t.Fatalf("apply MetalLB CM: %v", err)
+		}
+	}
+}
+
+// validateMetalLBAddon tests MetalLB by exposing a tiny HTTP pod via a LoadBalancer
+// and verifying it receives an external IP and is reachable from the host.
+func validateMetalLBAddon(ctx context.Context, t *testing.T, profile string) {
+	// MetalLB exercises host<->cluster L2/L3 path; skip where that’s not viable.
+	t.Logf("Running MetalLB e2e")
+
+	if NoneDriver() {
+		t.Skipf("skipping: metallb not supported on 'none' driver in this test")
+	}
+	if NeedsPortForward() {
+		t.Skipf("skipping metallb test: environment requires port-forwarding")
+	}
+	defer disableAddon(t, "metallb", profile)
+	defer PostMortemLogs(t, profile)
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("failed to get Kubernetes client: %v", err)
+	}
+
+	// Enable MetalLB
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "--alsologtostderr", "-v=1", "addons", "enable", "metallb", "-p", profile)); err != nil {
+		t.Fatalf("failed to enable metallb addon: args %q : %v", rr.Command(), err)
+	}
+
+	// Auto-configure an IP pool that matches the node's LAN subnet (CRD or legacy CM).
+	ensureMetalLBConfigured(ctx, t, profile)
+
+	// Wait for controller to stabilize. Name differs across versions:
+	// try "controller" first, fall back to "metallb-controller".
+	start := time.Now()
+	waitController := func(name string) error {
+		return kapi.WaitForDeploymentToStabilize(client, "metallb-system", name, Minutes(6))
+	}
+	if err := waitController("controller"); err != nil {
+		t.Logf("metallb deployment 'controller' not ready (%v); trying 'metallb-controller'", err)
+		if err2 := waitController("metallb-controller"); err2 != nil {
+			t.Fatalf("metallb controller failed to stabilize: %v / %v", err, err2)
+		}
+	}
+	// Also wait for the speaker DaemonSet to be ready to avoid LB IP allocation races.
+	if rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "-n", "metallb-system",
+		"rollout", "status", "ds/speaker", "--timeout=180s")); err != nil {
+		t.Fatalf("failed waiting for metallb speaker ds to be ready: args %q : %v", rr.Command(), err)
+	}
+	t.Logf("metallb controller stabilized in %s", time.Since(start))
+
+	// Create a tiny HTTP server pod (busybox httpd) with a unique label to avoid collisions.
+	// We avoid YAML here to keep the patch small and independent of other tests' resources.
+	if rr, err := Run(t, exec.CommandContext(
+		ctx, "kubectl", "--context", profile,
+		"run", "mlb-http",
+		"--image=gcr.io/k8s-minikube/busybox",
+		"--labels", "app=mlb-http",
+		"--restart=Never",
+		"--command", "--", "sh", "-c",
+		// create simple index and serve /www
+		"set -eu; mkdir -p /www; echo ok >/www/index.html; exec httpd -f -p 80 -h /www")); err != nil {
+		t.Fatalf("failed to create mlb-http pod: args %q : %v", rr.Command(), err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "default", "app=mlb-http", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for mlb-http pod: %v", err)
+	}
+
+	// Expose it as a LoadBalancer service.
+	if rr, err := Run(t, exec.CommandContext(
+		ctx, "kubectl", "--context", profile,
+		"expose", "pod", "mlb-http",
+		"--name", "mlb-http-lb",
+		"--type", "LoadBalancer",
+		"--port", "80",
+		"--target-port", "80")); err != nil {
+		t.Fatalf("failed to expose mlb-http-lb service: args %q : %v", rr.Command(), err)
+	}
+	t.Cleanup(func() {
+		// best-effort cleanup
+		Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "svc", "mlb-http-lb", "--now"))
+		Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pod", "mlb-http", "--now"))
+	})
+
+	// Ensure the Service has a ready backend before hitting the VIP.
+	waitEndpoints := func() error {
+		rr, err := Run(t, exec.CommandContext(
+			ctx, "kubectl", "--context", profile,
+			"-n", "default", "get", "endpoints", "mlb-http-lb",
+			"-o", "jsonpath={.subsets[0].addresses[0].ip}"))
+		if err != nil {
+			return err
+		}
+		if strings.TrimSpace(rr.Stdout.String()) == "" {
+			return fmt.Errorf("endpoints not populated yet")
+		}
+		return nil
+	}
+	if err := retry.Expo(waitEndpoints, 1*time.Second, Minutes(2)); err != nil {
+		t.Fatalf("endpoints for mlb-http-lb never became ready: %v", err)
+	}
+
+	// Wait for an external IP from MetalLB.
+	var lbIP string
+	waitExternalIP := func() error {
+		rr, err := Run(t, exec.CommandContext(
+			ctx, "kubectl", "--context", profile,
+			"-n", "default", "get", "svc", "mlb-http-lb",
+			"-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
+		if err != nil {
+			return err
+		}
+		ip := strings.TrimSpace(rr.Stdout.String())
+		if ip == "" || strings.EqualFold(ip, "<pending>") {
+			// Fallback: some environments surface 'hostname' instead of 'ip'
+			rr2, err2 := Run(t, exec.CommandContext(
+				ctx, "kubectl", "--context", profile,
+				"-n", "default", "get", "svc", "mlb-http-lb",
+				"-o", "jsonpath={.status.loadBalancer.ingress[0].hostname}"))
+			if err2 != nil {
+				return err2
+			}
+			host := strings.TrimSpace(rr2.Stdout.String())
+			if host == "" || strings.EqualFold(host, "<pending>") {
+				return fmt.Errorf("external address not allocated yet")
+			}
+			lbIP = host
+			return nil
+
+		}
+		lbIP = ip
+		return nil
+	}
+
+	if err := retry.Expo(waitExternalIP, 2*time.Second, Minutes(8)); err != nil {
+
+		t.Fatalf("failed waiting for LoadBalancer external IP: %v", err)
+	}
+
+	t.Logf("mlb-http-lb external IP: %s", lbIP)
+	// Small grace for ARP announcement to propagate on some networks.
+	time.Sleep(2 * time.Second)
+
+	// Verify it serves HTTP 200 from the host.
+
+	endpoint := fmt.Sprintf("http://%s", lbIP)
+	checkLB := func() error {
+		resp, err := retryablehttp.Get(endpoint)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("%s = status %d, want 200", endpoint, resp.StatusCode)
+		}
+		return nil
+	}
+	if err := retry.Expo(checkLB, 500*time.Millisecond, Minutes(3)); err != nil {
+		t.Errorf("failed reaching LoadBalancer %s: %v", endpoint, err)
+	}
 }
 
 // validateIngressAddon tests the ingress addon by deploying a default nginx pod
