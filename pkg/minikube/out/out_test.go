@@ -357,7 +357,7 @@ func TestBoxedWithConfig(t *testing.T) {
 			style.Tip,
 			// This case is to make sure newlines (\n) are removed before printing
 			// Otherwise box-cli-maker errors:
-			// https://github.com/box-cli-maker/box-cli-maker/blob/master/box.go#L294-L296
+			// https://github.com/box-cli-maker/box-cli-maker/blob/4291f909aeab1353356d9c98818de49f31bc8597/box.go#L294-L296
 			"Hello \nWorld",
 			"Boxed content with title inside",
 			nil,
