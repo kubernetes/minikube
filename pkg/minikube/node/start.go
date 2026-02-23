@@ -872,11 +872,17 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 
 	curlTarget := fmt.Sprintf("https://%s/", imageRepository)
 	opts = append(opts, curlTarget)
-	exe := "curl"
+
+	// Always use the 'curl' binary inside the guest. On Windows hosts,
+	// PowerShell exposes an alias which can interfere with the host check,
+	// so use 'curl.exe' for the host-run check only.
+	cmd := exec.Command("curl", opts...)
+	hostExe := "curl"
 	if runtime.GOOS == "windows" {
-		exe = "curl.exe"
+		hostExe = "curl.exe"
 	}
-	cmd := exec.Command(exe, opts...)
+	cmdHost := exec.Command(hostExe, opts...)
+
 	if rr, err := r.RunCmd(cmd); err != nil {
 		klog.Warningf("%s failed: %v", rr.Args, err)
 
@@ -895,7 +901,7 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 		// on the ssh driver is not helpful.
 		warning := "Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}"
 		if !driver.IsNone(driverName) && !driver.IsSSH(driverName) {
-			if err := cmd.Run(); err != nil {
+			if err := cmdHost.Run(); err != nil {
 				// both inside and outside failed
 				warning = "Failing to connect to {{.curlTarget}} from both inside the minikube {{.type}} and host machine"
 			}
