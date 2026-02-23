@@ -67,7 +67,7 @@ require (
 	golang.org/x/sys v0.41.0
 	golang.org/x/term v0.40.0
 	golang.org/x/text v0.34.0
-	google.golang.org/api v0.266.0
+	google.golang.org/api v0.268.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.35.1
 	k8s.io/apimachinery v0.35.1
