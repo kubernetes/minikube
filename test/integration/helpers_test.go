@@ -728,3 +728,32 @@ func FailFastDockerHubRateLimited(t *testing.T) {
 		t.Fatalf("failing fast: Docker Hub rate limit reached (remaining=%d)", remaining)
 	}
 }
+
+// Unset config setting
+func CleanupConfig(t *testing.T, ctx context.Context, config string) {
+	unsetConfigArgs := []string{Target(), "config", "unset", config}
+	rr, err := Run(t, exec.CommandContext(ctx, "/usr/bin/env", unsetConfigArgs...))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Command(), err)
+	}
+
+}
+
+// Set config setting
+func SetConfig(t *testing.T, ctx context.Context, config string, value string) {
+	setConfigArgs := []string{Target(), "config", "set", config, value}
+	rr, err := Run(t, exec.CommandContext(ctx, "/usr/bin/env", setConfigArgs...))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Command(), err)
+	}
+
+}
+
+// Stop cluster.
+func StopCluster(t *testing.T, ctx context.Context, profile string) {
+	stopArgs := []string{Target(), "stop", "-p", profile}
+	rr, err := Run(t, exec.CommandContext(ctx, "/usr/bin/env", stopArgs...))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Command(), err)
+	}
+}

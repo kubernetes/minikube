@@ -331,6 +331,7 @@ func setupViper() {
 	viper.SetDefault(config.WantVirtualBoxDriverWarning, true)
 	viper.SetDefault(config.MaxAuditEntries, 1000)
 	viper.SetDefault(config.SkipAuditFlag, false)
+	viper.SetDefault(config.DefaultDNSDomain, constants.DefaultDNSDomain)
 }
 
 func addToPath(dir string) {
