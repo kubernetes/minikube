@@ -30,7 +30,7 @@ import (
 var ipCmd = &cobra.Command{
 	Use:   "ip",
 	Short: "Retrieves the IP address of the specified node",
-	Long:  `Retrieves the IP address of the specified node, and writes it to STDOUT.`,
+	Long:  `Retrieves the IP address of the specified node, and writes it to STDOUT. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/ip`,
 	Run: func(_ *cobra.Command, _ []string) {
 		options := flags.CommandOptions()
 		co := mustload.Running(ClusterFlagValue(), options)

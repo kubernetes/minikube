@@ -36,7 +36,7 @@ import (
 var nodeDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Deletes a node from a cluster.",
-	Long:  "Deletes a node from a cluster.",
+	Long:  "Deletes a node from a cluster. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/node/#minikube-node-delete",
 	Run: func(_ *cobra.Command, args []string) {
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Usage: minikube node delete [name]")

@@ -41,7 +41,7 @@ var profileOutput string
 var serviceListCmd = &cobra.Command{
 	Use:   "list [flags]",
 	Short: "Lists the URLs for the services in your local cluster",
-	Long:  `Lists the URLs for the services in your local cluster`,
+	Long:  `Lists the URLs for the services in your local cluster. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/service/#minikube-service-list`,
 	Run: func(_ *cobra.Command, _ []string) {
 		options := flags.CommandOptions()
 		co := mustload.Healthy(ClusterFlagValue(), options)

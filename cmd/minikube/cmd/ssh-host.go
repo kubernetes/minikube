@@ -44,7 +44,7 @@ var (
 var sshHostCmd = &cobra.Command{
 	Use:   "ssh-host",
 	Short: "Retrieve the ssh host key of the specified node",
-	Long:  "Retrieve the ssh host key of the specified node.",
+	Long:  "Retrieve the ssh host key of the specified node. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/ssh-host",
 	Run: func(_ *cobra.Command, _ []string) {
 		appendKnownHelper(nodeName, appendKnown)
 	},

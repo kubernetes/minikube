@@ -47,7 +47,7 @@ var cpCmd = &cobra.Command{
 	Use:   "cp <source node name>:<source file path> <target node name>:<target file absolute path>",
 	Short: "Copy the specified file into minikube",
 	Long: `Copy the specified file into minikube, it will be saved at path <target file absolute path> in your minikube.
-Default target node controlplane and If <source node name> is omitted, It will trying to copy from host.
+Default target node controlplane and If <source node name> is omitted, It will trying to copy from host. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/cp
 
 Example Command : "minikube cp a.txt /home/docker/b.txt" +
                   "minikube cp a.txt minikube-m02:/home/docker/b.txt"

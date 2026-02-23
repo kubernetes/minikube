@@ -43,6 +43,7 @@ var unpauseCmd = &cobra.Command{
 	Use:     "unpause",
 	Aliases: []string{"resume"},
 	Short:   "unpause Kubernetes",
+	Long:    "unpause Kubernetes. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/unpause",
 	Run: func(_ *cobra.Command, _ []string) {
 		options := flags.CommandOptions()
 		cname := ClusterFlagValue()

@@ -90,7 +90,7 @@ var supportedFilesystems = map[string]bool{nineP: true}
 var mountCmd = &cobra.Command{
 	Use:   "mount [flags] <source directory>:<target directory>",
 	Short: "Mounts the specified directory into minikube",
-	Long:  `Mounts the specified directory into minikube.`,
+	Long:  `Mounts the specified directory into minikube. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/mount`,
 	Run: func(_ *cobra.Command, args []string) {
 		if isKill {
 			if err := killMountProcess(); err != nil {

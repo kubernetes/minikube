@@ -63,7 +63,7 @@ var (
 var logsCmd = &cobra.Command{
 	Use:   "logs",
 	Short: "Returns logs to debug a local Kubernetes cluster",
-	Long:  `Gets the logs of the running instance, used for debugging minikube, not user code.`,
+	Long:  `Gets the logs of the running instance, used for debugging minikube, not user code. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/logs`,
 	Run: func(_ *cobra.Command, _ []string) {
 		options := flags.CommandOptions()
 		logOutput := os.Stdout

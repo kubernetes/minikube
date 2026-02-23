@@ -27,7 +27,7 @@ import (
 var configUnsetCmd = &cobra.Command{
 	Use:   "unset PROPERTY_NAME",
 	Short: "unsets an individual value in a minikube config file",
-	Long:  "unsets PROPERTY_NAME from the minikube config file.  Can be overwritten by flags or environmental variables",
+	Long:  "unsets PROPERTY_NAME from the minikube config file. Can be overwritten by flags or environmental variables. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/config/#minikube-config-unset",
 	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube config unset PROPERTY_NAME")
