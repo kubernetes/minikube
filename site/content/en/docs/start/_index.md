@@ -186,7 +186,7 @@ sudo dpkg -i minikube_latest_amd64.deb && rm minikube_latest_amd64.deb
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 u=$(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube_.*_amd64.deb' | head -n1)
-curl -L $u > minikube_beta_amd64.deb && sudo dpkg -i minikube_beta_amd64.deb
+curl -L $u > minikube_beta_amd64.deb && sudo dpkg -i minikube_beta_amd64.deb && rm minikube_beta_amd64.deb
 ```
 {{% /quiz_instruction %}}
 
@@ -231,7 +231,7 @@ sudo dpkg -i minikube_latest_arm64.deb && rm minikube_latest_arm64.deb
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 u=$(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube_.*_arm64.deb' | head -n1)
-curl -L $u > minikube_beta_arm64.deb && sudo dpkg -i minikube_beta_arm64.deb
+curl -L $u > minikube_beta_arm64.deb && sudo dpkg -i minikube_beta_arm64.deb && rm minikube_beta_arm64.deb
 ```
 {{% /quiz_instruction %}}
 
@@ -276,7 +276,7 @@ sudo dpkg -i minikube_latest_ppc64le.deb && rm minikube_latest_ppc64le.deb
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 u=$(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube_.*_ppc64le.deb' | head -n1)
-curl -L $u > minikube_beta_ppc64le.deb && sudo dpkg -i minikube_beta_ppc64le.deb
+curl -L $u > minikube_beta_ppc64le.deb && sudo dpkg -i minikube_beta_ppc64le.deb && rm minikube_beta_ppc64le.deb
 ```
 {{% /quiz_instruction %}}
 
@@ -321,7 +321,7 @@ sudo dpkg -i minikube_latest_s390x.deb && rm minikube_latest_s390x.deb
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 u=$(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube_.*_s390x.deb' | head -n1)
-curl -L $u > minikube_beta_s390x.deb && sudo dpkg -i minikube_beta_s390x.deb
+curl -L $u > minikube_beta_s390x.deb && sudo dpkg -i minikube_beta_s390x.deb && rm minikube_beta_s390x.deb
 ```
 {{% /quiz_instruction %}}
 
