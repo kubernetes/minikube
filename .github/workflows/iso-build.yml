@@ -31,6 +31,8 @@ jobs:
           IV=$(grep -E "ISO_VERSION \?=" Makefile | cut -d " " -f 3 | cut -d "-" -f 1)
           echo "ISO_VERSION=${IV}-$(date +%s)-${{ github.event.number }}" >> $GITHUB_ENV
       - name: Generate Changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # The script uses a specific path for changelog based on arch
           # We need to map matrix.arch to the path expected by build_changelog.sh
