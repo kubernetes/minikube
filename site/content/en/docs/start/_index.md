@@ -201,7 +201,7 @@ sudo rpm -Uvh minikube-latest.x86_64.rpm && rm minikube-latest.x86_64.rpm
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 u=$(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-.*.x86_64.rpm' | head -n1)
-curl -L $u > minikube-beta.x86_64.rpm && sudo rpm -Uvh minikube-beta.x86_64.rpm
+curl -L $u > minikube-beta.x86_64.rpm && sudo rpm -Uvh minikube-beta.x86_64.rpm && rm minikube-beta.x86_64.rpm
 ```
 {{% /quiz_instruction %}}
 
@@ -246,7 +246,7 @@ sudo rpm -Uvh minikube-latest.aarch64.rpm && rm minikube-latest.aarch64.rpm
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 u=$(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-.*.aarch64.rpm' | head -n1)
-curl -L $u > minikube-beta.aarch64.rpm && sudo rpm -Uvh minikube-beta.aarch64.rpm
+curl -L $u > minikube-beta.aarch64.rpm && sudo rpm -Uvh minikube-beta.aarch64.rpm && rm minikube-beta.aarch64.rpm
 ```
 {{% /quiz_instruction %}}
 
@@ -291,7 +291,7 @@ sudo rpm -Uvh minikube-latest.ppc64el.rpm && rm minikube-latest.ppc64el.rpm
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 u=$(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-.*.ppc64el.rpm' | head -n1)
-curl -L $u > minikube-beta.ppc64el.rpm && sudo rpm -Uvh minikube-beta.ppc64el.rpm
+curl -L $u > minikube-beta.ppc64el.rpm && sudo rpm -Uvh minikube-beta.ppc64el.rpm && rm minikube-beta.ppc64el.rpm
 ```
 {{% /quiz_instruction %}}
 
@@ -336,7 +336,7 @@ sudo rpm -Uvh minikube-latest.s390x.rpm && rm minikube-latest.s390x.rpm
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 u=$(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-.*.s390x.rpm' | head -n1)
-curl -L $u > minikube-beta.s390x.rpm && sudo rpm -Uvh minikube-beta.s390x.rpm
+curl -L $u > minikube-beta.s390x.rpm && sudo rpm -Uvh minikube-beta.s390x.rpm && rm minikube-beta.s390x.rpm
 ```
 {{% /quiz_instruction %}}
 
