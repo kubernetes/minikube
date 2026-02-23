@@ -224,7 +224,7 @@ func New(c Config) (Manager, error) {
 		return &Docker{
 			Socket:            sp,
 			Runner:            c.Runner,
-			NetworkPlugin:     c.NetworkPlugin,
+			NetworkPlugin:     "cni",
 			ImageRepository:   c.ImageRepository,
 			KubernetesVersion: c.KubernetesVersion,
 			Init:              sm,

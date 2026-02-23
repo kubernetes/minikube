@@ -27,7 +27,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -36,7 +35,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/vmpath"
-	"k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -76,8 +74,7 @@ type tmplInput struct {
 // New returns a new CNI manager
 func New(cc *config.ClusterConfig) (Manager, error) {
 	if cc.KubernetesConfig.NetworkPlugin != "" && cc.KubernetesConfig.NetworkPlugin != "cni" {
-		klog.Infof("network plugin configured as %q, returning disabled", cc.KubernetesConfig.NetworkPlugin)
-		return Disabled{}, nil
+		return nil, fmt.Errorf("CNI is required, not %s", cc.KubernetesConfig.NetworkPlugin)
 	}
 
 	klog.Infof("Creating CNI manager for %q", cc.KubernetesConfig.CNI)
@@ -88,7 +85,7 @@ func New(cc *config.ClusterConfig) (Manager, error) {
 	case "", "auto":
 		cnm = chooseDefault(*cc)
 	case "false":
-		cnm = Disabled{cc: *cc}
+		err = fmt.Errorf("CNI is required")
 	case "kindnet", "true":
 		cnm = KindNet{cc: *cc}
 	case "bridge":
@@ -106,22 +103,6 @@ func New(cc *config.ClusterConfig) (Manager, error) {
 	return cnm, err
 }
 
-// IsDisabled checks if CNI is disabled
-func IsDisabled(cc config.ClusterConfig) bool {
-	if cc.KubernetesConfig.NetworkPlugin != "" && cc.KubernetesConfig.NetworkPlugin != "cni" {
-		return true
-	}
-
-	if cc.KubernetesConfig.CNI == "false" {
-		return true
-	}
-
-	if chooseDefault(cc).String() == "Disabled" {
-		return true
-	}
-	return false
-}
-
 func chooseDefault(cc config.ClusterConfig) Manager {
 	// For backwards compatibility with older profiles using --enable-default-cni
 	if cc.KubernetesConfig.EnableDefaultCNI {
@@ -136,30 +117,18 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 		return KindNet{cc: cc}
 	}
 
-	if cc.KubernetesConfig.ContainerRuntime != constants.Docker {
-		// Always use CNI when running with CRI (without dockershim)
-		if driver.IsKIC(cc.Driver) {
-			klog.Infof("%q driver + %q runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-			return KindNet{cc: cc}
-		}
-		klog.Infof("%q driver + %q runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-		return Bridge{cc: cc}
+	if driver.IsKIC(cc.Driver) && cc.KubernetesConfig.ContainerRuntime != constants.Docker {
+		klog.Infof("%q driver + %q runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+		return KindNet{cc: cc}
 	}
-
-	// for docker container runtime and k8s v1.24+ where dockershim and kubenet were removed, we fallback to bridge cni for cri-docker(d)
+	// for docker container runtime, we fallback to bridge cni for cri-docker(d)
 	// ref: https://github.com/Mirantis/cri-dockerd#important
 	// ref: https://github.com/Mirantis/cri-dockerd#to-use-with-kubernetes
 	// note: currently, default cni that we "distribute" (in /etc/cni/net.d) is based on cri-o bridge, and
 	// because it does not currently use portmap plugin, we pick "our" bridge instead (cri-o one will be disabled automatically)
 	// ref: https://github.com/cri-o/cri-o/blob/f317b267ddef21aee5ffc92d890a77112b006815/contrib/cni/10-crio-bridge.conflist
-	kv, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
-	if err == nil && kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
-		klog.Infof("%q driver + %q container runtime found on kubernetes v1.24+, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-		return Bridge{cc: cc}
-	}
-
-	klog.Infof("CNI unnecessary in this configuration, recommending no CNI")
-	return Disabled{cc: cc}
+	klog.Infof("%q driver + %q runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+	return Bridge{cc: cc}
 }
 
 // manifestPath returns the path to the CNI manifest
@@ -231,8 +200,6 @@ func ConfigureLoopbackCNI(r Runner, disable bool) error {
 }
 
 // ConfigureDefaultBridgeCNIs configures all default bridge CNIs on a node (designated by runner).
-// If network plugin is set (could be, eg "cni" or "kubenet"), it will disable all default bridges to avoid conflicts.
-// Otherwise, it will configure all default bridges to match DefaultPodCIDR subnet range.
 // It's usually called before deploying new CNI and on node restarts, to avoid conflicts and flip-flopping of pods' ip addresses.
 // It is caller's responsibility to restart container runtime for these changes to take effect.
 func ConfigureDefaultBridgeCNIs(r Runner, networkPlugin string) error {

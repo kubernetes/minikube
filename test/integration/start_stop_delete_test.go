@@ -58,7 +58,6 @@ func TestStartStop(t *testing.T) {
 				"--keep-context=false",
 			}},
 			{"newest-cni", constants.NewestKubernetesVersion, []string{
-				"--network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=10.42.0.0/16",
 			}},
 			{"default-k8s-diff-port", constants.DefaultKubernetesVersion, []string{
@@ -109,21 +108,6 @@ func TestStartStop(t *testing.T) {
 				startArgs := append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", waitFlag}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
-
-				version, err := util.ParseKubernetesVersion(tc.version)
-				if err != nil {
-					t.Errorf("failed to parse %s: %v", tc.version, err)
-				}
-				if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
-					args := []string{}
-					for _, arg := range startArgs {
-						if arg == "--extra-config=kubelet.network-plugin=cni" {
-							continue
-						}
-						args = append(args, arg)
-					}
-					startArgs = args
-				}
 
 				t.Run("serial", func(t *testing.T) {
 					serialTests := []struct {
