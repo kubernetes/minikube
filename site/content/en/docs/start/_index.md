@@ -193,7 +193,7 @@ curl -L $u > minikube_beta_amd64.deb && sudo dpkg -i minikube_beta_amd64.deb && 
 {{% quiz_instruction id="/Linux/x86-64/Stable/RPM package" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
-sudo rpm -Uvh minikube-latest.x86_64.rpm
+sudo rpm -Uvh minikube-latest.x86_64.rpm && rm minikube-latest.x86_64.rpm
 ```
 {{% /quiz_instruction %}}
 
@@ -238,7 +238,7 @@ curl -L $u > minikube_beta_arm64.deb && sudo dpkg -i minikube_beta_arm64.deb && 
 {{% quiz_instruction id="/Linux/ARM64/Stable/RPM package" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.aarch64.rpm
-sudo rpm -Uvh minikube-latest.aarch64.rpm
+sudo rpm -Uvh minikube-latest.aarch64.rpm && rm minikube-latest.aarch64.rpm
 ```
 {{% /quiz_instruction %}}
 
@@ -283,7 +283,7 @@ curl -L $u > minikube_beta_ppc64le.deb && sudo dpkg -i minikube_beta_ppc64le.deb
 {{% quiz_instruction id="/Linux/ppc64/Stable/RPM package" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.ppc64el.rpm
-sudo rpm -Uvh minikube-latest.ppc64el.rpm
+sudo rpm -Uvh minikube-latest.ppc64el.rpm && rm minikube-latest.ppc64el.rpm
 ```
 {{% /quiz_instruction %}}
 
@@ -328,7 +328,7 @@ curl -L $u > minikube_beta_s390x.deb && sudo dpkg -i minikube_beta_s390x.deb && 
 {{% quiz_instruction id="/Linux/S390x/Stable/RPM package" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.s390x.rpm
-sudo rpm -Uvh minikube-latest.s390x.rpm
+sudo rpm -Uvh minikube-latest.s390x.rpm && rm minikube-latest.s390x.rpm
 ```
 {{% /quiz_instruction %}}
 
