@@ -22,7 +22,9 @@ import (
 	"testing"
 
 	"github.com/blang/semver/v4"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/run"
@@ -172,6 +174,66 @@ func TestCheckDockerDesktopVersion(t *testing.T) {
 		if (err == nil && tt.shouldReturnError) || (err != nil && !tt.shouldReturnError) {
 			t.Errorf("checkDockerDesktopVersion(%q) = %+v; expected shouldReturnError = %t", tt.input, state, tt.shouldReturnError)
 		}
+	}
+}
+
+func TestConfigureDNSSearchEnv(t *testing.T) {
+	tests := []struct {
+		name      string
+		dnsSearch []string
+		wantEnv   string
+	}{
+		{
+			name:      "no dns search",
+			dnsSearch: nil,
+			wantEnv:   "",
+		},
+		{
+			name:      "single domain",
+			dnsSearch: []string{"corp.example.com"},
+			wantEnv:   "corp.example.com",
+		},
+		{
+			name:      "multiple domains",
+			dnsSearch: []string{"corp.example.com", "eng.example.com"},
+			wantEnv:   "corp.example.com eng.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cc := config.ClusterConfig{
+				Name:         "test",
+				KicBaseImage: "gcr.io/k8s-minikube/kicbase:test",
+				DNSSearch:    tt.dnsSearch,
+				Nodes: []config.Node{
+					{
+						Name:         "test",
+						Port:         8443,
+						ControlPlane: true,
+					},
+				},
+				KubernetesConfig: config.KubernetesConfig{
+					ContainerRuntime: "docker",
+				},
+			}
+			n := cc.Nodes[0]
+
+			result, err := configure(cc, n)
+			if err != nil {
+				t.Fatalf("configure() returned error: %v", err)
+			}
+
+			d, ok := result.(*kic.Driver)
+			if !ok {
+				t.Fatalf("configure() returned %T, want *kic.Driver", result)
+			}
+
+			gotEnv := d.NodeConfig.Envs["KIND_DNS_SEARCH"]
+			if gotEnv != tt.wantEnv {
+				t.Errorf("KIND_DNS_SEARCH = %q, want %q", gotEnv, tt.wantEnv)
+			}
+		})
 	}
 }
 

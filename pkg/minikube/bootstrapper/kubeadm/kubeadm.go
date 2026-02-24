@@ -1002,6 +1002,10 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return fmt.Errorf("resolv.conf: %w", err)
 	}
 
+	if err := k.configureDNSSearch(cfg); err != nil {
+		return fmt.Errorf("dns search: %w", err)
+	}
+
 	// add "control-plane.minikube.internal" dns alias
 	// note: needs to be called after APIServerHAVIP is set (in startPrimaryControlPlane()) and before kubeadm kicks off
 	cpIP := cfg.KubernetesConfig.APIServerHAVIP
@@ -1036,6 +1040,36 @@ func (k *Bootstrapper) copyResolvConf(cfg config.ClusterConfig) error {
 	}
 	if _, err := k.c.RunCmd(exec.Command("sudo", "sed", "-i", "-e", "s/^search .$//", "/etc/kubelet-resolv.conf")); err != nil {
 		return fmt.Errorf("sed: %w", err)
+	}
+
+	return nil
+}
+
+// configureDNSSearch configures DNS search domains in /etc/resolv.conf inside the node.
+func (k *Bootstrapper) configureDNSSearch(cfg config.ClusterConfig) error {
+	if len(cfg.DNSSearch) == 0 {
+		return nil
+	}
+
+	searchLine := "search " + strings.Join(cfg.DNSSearch, " ")
+	klog.Infof("Configuring DNS search domains: %v", cfg.DNSSearch)
+
+	// Remove existing search lines and prepend the new one
+	if _, err := k.c.RunCmd(exec.Command("sudo", "sed", "-i", "/^search /d", "/etc/resolv.conf")); err != nil {
+		return fmt.Errorf("removing existing search lines: %w", err)
+	}
+	if _, err := k.c.RunCmd(exec.Command("sudo", "sed", "-i", "1i"+searchLine, "/etc/resolv.conf")); err != nil {
+		return fmt.Errorf("inserting search line: %w", err)
+	}
+
+	// Also update kubelet-resolv.conf if it exists (K8s v1.25 regression workaround)
+	if bsutil.HasResolvConfSearchRegression(cfg.KubernetesConfig.KubernetesVersion) {
+		if _, err := k.c.RunCmd(exec.Command("sudo", "sed", "-i", "/^search /d", "/etc/kubelet-resolv.conf")); err != nil {
+			return fmt.Errorf("removing existing search lines from kubelet-resolv.conf: %w", err)
+		}
+		if _, err := k.c.RunCmd(exec.Command("sudo", "sed", "-i", "1i"+searchLine, "/etc/kubelet-resolv.conf")); err != nil {
+			return fmt.Errorf("inserting search line into kubelet-resolv.conf: %w", err)
+		}
 	}
 
 	return nil

@@ -76,6 +76,11 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		extraArgs = append(extraArgs, "-p", port)
 	}
 
+	envs := map[string]string{}
+	if len(cc.DNSSearch) > 0 {
+		envs["KIND_DNS_SEARCH"] = strings.Join(cc.DNSSearch, " ")
+	}
+
 	return kic.NewDriver(kic.Config{
 		ClusterName:       cc.Name,
 		MachineName:       config.MachineName(cc, n),
@@ -94,6 +99,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		StaticIP:          cc.StaticIP,
 		ListenAddress:     cc.ListenAddress,
 		GPUs:              cc.GPUs,
+		Envs:              envs,
 	}), nil
 }
 
