@@ -17,7 +17,6 @@ limitations under the License.
 package qemu2
 
 import (
-	"crypto/rand"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,6 +26,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/drivers/qemu"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
@@ -161,7 +161,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	mac, err := generateMACAddress()
+	mac, err := common.GenerateMACAddress()
 	if err != nil {
 		return nil, fmt.Errorf("generating MAC address: %v", err)
 	}
@@ -215,15 +215,4 @@ func status(_ *run.CommandOptions) registry.State {
 	}
 
 	return registry.State{Installed: true, Healthy: true, Running: true}
-}
-
-func generateMACAddress() (string, error) {
-	buf := make([]byte, 6)
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
-	}
-	// Set local bit, ensure unicast address, socket_vmnet doesn't support multicast
-	buf[0] = (buf[0] | 2) & 0xfe
-	mac := fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5])
-	return mac, nil
 }

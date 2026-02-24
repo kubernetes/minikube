@@ -53,6 +53,9 @@ const (
 	installPath = "/opt/vmnet-helper/bin/vmnet-helper"
 	// Installed via Homebrew (macOS 26+ only).
 	brewInstallPath = "/opt/homebrew/opt/vmnet-helper/libexec/vmnet-helper"
+
+	// vmnet-broker launchd plist path.
+	brokerPlistPath = "/Library/LaunchDaemons/com.github.nirs.vmnet-broker.plist"
 )
 
 // Helper manages the vmnet-helper process.
@@ -63,6 +66,11 @@ type Helper struct {
 	// InterfaceID is a random UUID for the vmnet interface. Using the same UUID
 	// will obtain the same MAC address from vmnet.
 	InterfaceID string
+
+	// NetworkName specifies the vmnet network. Format is "vmnet:name" where name
+	// is passed to vmnet-helper --network option when using broker mode. Empty
+	// value is treated as "vmnet:shared" for backward compatibility.
+	NetworkName string
 
 	// Offloading is required for krunkit, does not work with vfkit.
 	Offloading bool
@@ -84,10 +92,12 @@ type helperVersion struct {
 
 // helperInfo contains cached information about vmnet-helper.
 type helperInfo struct {
-	Path      string
-	Version   helperVersion
-	NeedsSudo bool
-	Err       error
+	Path            string
+	Version         helperVersion
+	NeedsSudo       bool
+	SupportsNetwork bool // true if helper supports --network option
+	BrokerInstalled bool // true if vmnet-broker launchd plist exists
+	Err             error
 }
 
 var (
@@ -113,12 +123,27 @@ func getHelperInfo() (helperInfo, error) {
 			return
 		}
 		cached.NeedsSudo, cached.Err = helperNeedsSudo(cached.Version, macosVersion)
+		if cached.Err != nil {
+			return
+		}
+		cached.SupportsNetwork = helperSupportsNetwork(cached.Path)
+		cached.BrokerInstalled = brokerInstalled()
 	})
 	return cached, cached.Err
 }
 
-type interfaceInfo struct {
-	MACAddress string `json:"vmnet_mac_address"`
+// helperResponse is the JSON response from vmnet-helper.
+// Fields vary by mode: interface-id mode returns vmnet_* fields,
+// network mode returns net_* fields.
+type helperResponse struct {
+	// Interface-id mode fields
+	MACAddress   string `json:"vmnet_mac_address"`
+	StartAddress string `json:"vmnet_start_address"`
+	EndAddress   string `json:"vmnet_end_address"`
+	SubnetMask   string `json:"vmnet_subnet_mask"`
+	// Network mode fields
+	IPv4Subnet string `json:"net_ipv4_subnet"`
+	IPv4Mask   string `json:"net_ipv4_mask"`
 }
 
 // ValidateHelper validates that vmnet-helper is installed and configured
@@ -150,8 +175,8 @@ func ValidateHelper(options *run.CommandOptions) error {
 		}
 	}
 
-	log.Debugf("Validated vmnet-helper (path=%q, version=%q, commit=%q, needsSudo=%v)",
-		helper.Path, helper.Version.Version, helper.Version.Commit, helper.NeedsSudo)
+	log.Debugf("Validated vmnet-helper (path=%q, version=%q, commit=%q, needsSudo=%v, supportsNetwork=%v, brokerInstalled=%v)",
+		helper.Path, helper.Version.Version, helper.Version.Commit, helper.NeedsSudo, helper.SupportsNetwork, helper.BrokerInstalled)
 
 	return nil
 }
@@ -178,7 +203,15 @@ func (h *Helper) Start(socketPath string) error {
 		executable = helper.Path
 	}
 
-	args = append(args, "--socket", socketPath, "--interface-id", h.InterfaceID)
+	args = append(args, "--socket", socketPath)
+
+	// Use network mode if vmnet-helper supports it and broker is installed.
+	networkMode := helper.SupportsNetwork && helper.BrokerInstalled
+	if networkMode {
+		args = append(args, "--network", mapNetworkName(h.NetworkName))
+	} else {
+		args = append(args, "--interface-id", h.InterfaceID)
+	}
 
 	if h.Offloading {
 		args = append(args, "--enable-tso", "--enable-checksum-offload")
@@ -207,24 +240,31 @@ func (h *Helper) Start(socketPath string) error {
 		return fmt.Errorf("failed to start vmnet-helper: %w", err)
 	}
 
-	log.Infof("Started vmnet-helper (pid=%v)", cmd.Process.Pid)
+	log.Infof("Started %s (pid=%v)", cmd, cmd.Process.Pid)
 
 	if err := process.WritePidfile(h.pidfilePath(), cmd.Process.Pid); err != nil {
 		return fmt.Errorf("failed to write vmnet-helper pidfile: %w", err)
 	}
 
-	var info interfaceInfo
+	var info helperResponse
 	if err := json.NewDecoder(stdout).Decode(&info); err != nil {
 		if data, err := os.ReadFile(logfile.Name()); err == nil {
 			log.Infof("vmnet-helper logfile %q content:\n%s", logfile.Name(), string(data))
 		} else {
 			log.Infof("failed to read vmnet-helper logfile %q: %s", logfile.Name(), err)
 		}
-		return fmt.Errorf("failed to decode vmnet interface info: %w", err)
+		return fmt.Errorf("failed to decode helper response: %w", err)
 	}
 
-	log.Infof("Got mac address %q", info.MACAddress)
-	h.macAddress = info.MACAddress
+	if networkMode {
+		// Network mode: log network info (MAC is set by driver).
+		log.Infof("Network: subnet=%s, mask=%s", info.IPv4Subnet, info.IPv4Mask)
+	} else {
+		// Interface-id mode: get MAC from response, log interface info.
+		h.macAddress = info.MACAddress
+		log.Infof("Interface: mac=%s, range=%s-%s, mask=%s",
+			info.MACAddress, info.StartAddress, info.EndAddress, info.SubnetMask)
+	}
 
 	return nil
 }
@@ -437,6 +477,41 @@ func findHelper() (string, error) {
 	}
 	err := fmt.Errorf("failed to find vmnet-helper at %q", paths)
 	return "", &Error{Kind: reason.NotFoundVmnetHelper, Err: err}
+}
+
+// brokerInstalled returns true if the vmnet-broker launchd plist is installed.
+func brokerInstalled() bool {
+	_, err := os.Stat(brokerPlistPath)
+	return err == nil
+}
+
+// mapNetworkName extracts the network name from NetworkName field.
+// "vmnet:shared" -> "shared", "" -> "shared" (backward compatibility).
+func mapNetworkName(networkName string) string {
+	if networkName == "" {
+		return "shared"
+	}
+	_, name, _ := strings.Cut(networkName, ":")
+	return name
+}
+
+// GeneratesMACAddress returns true if vmnet generates the MAC address
+// (interface-id mode). Returns false when the driver should generate the MAC
+// (network mode with vmnet-broker).
+func GeneratesMACAddress() bool {
+	helper, err := getHelperInfo()
+	if err != nil {
+		return true // fallback to interface-id mode
+	}
+	return !(helper.SupportsNetwork && helper.BrokerInstalled)
+}
+
+// helperSupportsNetwork returns true if vmnet-helper supports the --network option.
+func helperSupportsNetwork(path string) bool {
+	// Use CombinedOutput since help may go to stderr.
+	out, _ := exec.Command(path, "--help").CombinedOutput()
+	// Check for the specific option format to avoid false positives.
+	return strings.Contains(string(out), "[--network NAME]")
 }
 
 // helperNeedsSudo returns true if vmnet-helper needs sudo to run based on the
