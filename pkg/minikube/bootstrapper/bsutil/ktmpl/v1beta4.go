@@ -63,7 +63,8 @@ controlPlaneEndpoint: {{.ControlPlaneAddress}}:{{.APIServerPort}}
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}
-{{- if .EtcdExtraArgs}}    extraArgs:
+{{- if .EtcdExtraArgs}}
+    extraArgs:
 {{- range $key, $val := .EtcdExtraArgs }}
       - name: "{{$key}}"
         value: "{{$val}}"
