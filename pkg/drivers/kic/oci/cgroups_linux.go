@@ -80,3 +80,21 @@ func hasMemorySwapCgroup() bool {
 	}
 	return true
 }
+
+// IsCgroupV2 returns true if the host is using cgroup v2
+func IsCgroupV2() bool {
+	_, err := os.Stat("/sys/fs/cgroup/cgroup.controllers")
+	return err == nil
+}
+
+// WarnIfCgroupV1 prints a warning if host is using cgroup v1
+func WarnIfCgroupV1() {
+	if !IsCgroupV2() {
+		klog.Warning(
+			"Host system is using cgroup v1. " +
+				"Minikube will not enable cgroup v2. " +
+				"Some features may not work as expected.",
+		)
+	}
+}
+
