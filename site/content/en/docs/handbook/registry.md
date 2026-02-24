@@ -47,7 +47,7 @@ with TLS certificates. Because the default service cluster IP is known to be ava
 deployed inside the cluster by creating the cluster with `minikube start --insecure-registry "10.0.0.0/24"`. Ensure the cluster
 is deleted using `minikube delete` before starting with the `--insecure-registry` flag.
 
-### docker on macOS
+### Docker on macOS
 
 Quick guide for configuring minikube and docker on macOS, enabling docker to push images to minikube's registry.
 
