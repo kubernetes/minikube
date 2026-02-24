@@ -1,0 +1,50 @@
+Description: Optimize file descriptor closing
+ Closing all the fds is a severe performance issue in containers when
+ ulimit is high. We fixed that in APT a long time ago, time to apply
+ the same fix here.
+Author: Julian Andres Klode <juliank@ubuntu.com>
+
+diff --git a/faked.c b/faked.c
+index d6e1b50..c9008cd 100644
+--- a/faked.c
++++ b/faked.c
+@@ -114,6 +114,7 @@
+ #ifdef HAVE_SYS_XATTR_H
+ #include <sys/xattr.h>
+ #endif
++#include <dirent.h>
+ #include <fcntl.h>
+ #include <ctype.h>
+ #include <stdio.h>
+@@ -1555,6 +1556,23 @@ int main(int argc, char **argv){
+     /* literally copied from the linux klogd code, go to background */
+     if ((pid=fork()) == 0){
+       int fl;
++      DIR *dir;
++
++      dir = opendir("/proc/self/fd");
++      if (dir != NULL) {
++        struct dirent *ent;
++        int dfd = dirfd(dir);
++        while (ent = readdir(dir)) {
++          fl = atoi(ent->d_name);
++          if (fl >= 0 && fl != dfd)
++#ifdef FAKEROOT_FAKENET
++            if (fl != sd)
++#endif /* FAKEROOT_FAKENET */
++              close(fl);
++        }
++        closedir(dir);
++      }
++      else {
+       int num_fds = getdtablesize();
+ 
+       fflush(stdout);
+@@ -1579,6 +1597,7 @@ int main(int argc, char **argv){
+ #ifdef HAVE_CLOSE_RANGE
+      }
+ #endif /* HAVE_CLOSE_RANGE */
++      }
+ 
+       setsid();
+     } else {
