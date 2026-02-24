@@ -1057,21 +1057,20 @@ func (k *Bootstrapper) configureDNSSearch(cfg config.ClusterConfig) error {
 	searchLine := "search " + strings.Join(cfg.DNSSearch, " ")
 	klog.Infof("Configuring DNS search domains: %v", cfg.DNSSearch)
 
-	// Remove existing search lines and prepend the new one
-	if _, err := k.c.RunCmd(exec.Command("sudo", "sed", "-i", "/^search /d", "/etc/resolv.conf")); err != nil {
-		return fmt.Errorf("removing existing search lines: %w", err)
-	}
-	if _, err := k.c.RunCmd(exec.Command("sudo", "sed", "-i", "1i"+searchLine, "/etc/resolv.conf")); err != nil {
-		return fmt.Errorf("inserting search line: %w", err)
+	// Remove existing search lines and prepend the new one.
+	// Use cp instead of sed -i because /etc/resolv.conf is a bind mount in
+	// Docker/Podman containers and sed -i fails with "Device or resource busy"
+	// when it tries to rename a temp file onto the mount point.
+	resolvScript := fmt.Sprintf(`{ echo '%s'; sed '/^search /d' /etc/resolv.conf; } > /tmp/resolv.tmp && cp /tmp/resolv.tmp /etc/resolv.conf && rm /tmp/resolv.tmp`, searchLine)
+	if _, err := k.c.RunCmd(exec.Command("sudo", "sh", "-c", resolvScript)); err != nil {
+		return fmt.Errorf("updating /etc/resolv.conf: %w", err)
 	}
 
 	// Also update kubelet-resolv.conf if it exists (K8s v1.25 regression workaround)
 	if bsutil.HasResolvConfSearchRegression(cfg.KubernetesConfig.KubernetesVersion) {
-		if _, err := k.c.RunCmd(exec.Command("sudo", "sed", "-i", "/^search /d", "/etc/kubelet-resolv.conf")); err != nil {
-			return fmt.Errorf("removing existing search lines from kubelet-resolv.conf: %w", err)
-		}
-		if _, err := k.c.RunCmd(exec.Command("sudo", "sed", "-i", "1i"+searchLine, "/etc/kubelet-resolv.conf")); err != nil {
-			return fmt.Errorf("inserting search line into kubelet-resolv.conf: %w", err)
+		kubeletScript := fmt.Sprintf(`{ echo '%s'; sed '/^search /d' /etc/kubelet-resolv.conf; } > /tmp/kubelet-resolv.tmp && cp /tmp/kubelet-resolv.tmp /etc/kubelet-resolv.conf && rm /tmp/kubelet-resolv.tmp`, searchLine)
+		if _, err := k.c.RunCmd(exec.Command("sudo", "sh", "-c", kubeletScript)); err != nil {
+			return fmt.Errorf("updating /etc/kubelet-resolv.conf: %w", err)
 		}
 	}
 

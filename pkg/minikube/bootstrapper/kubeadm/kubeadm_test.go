@@ -40,8 +40,7 @@ func TestConfigureDNSSearch_Empty(t *testing.T) {
 func TestConfigureDNSSearch_SingleDomain(t *testing.T) {
 	fcr := command.NewFakeCommandRunner()
 	fcr.SetCommandToOutput(map[string]string{
-		`sudo sed -i "/^search /d" /etc/resolv.conf`:               "",
-		`sudo sed -i "1isearch corp.example.com" /etc/resolv.conf`: "",
+		`sudo sh -c "{ echo 'search corp.example.com'; sed '/^search /d' /etc/resolv.conf; } > /tmp/resolv.tmp && cp /tmp/resolv.tmp /etc/resolv.conf && rm /tmp/resolv.tmp"`: "",
 	})
 
 	k := &Bootstrapper{c: fcr}
@@ -60,8 +59,7 @@ func TestConfigureDNSSearch_SingleDomain(t *testing.T) {
 func TestConfigureDNSSearch_MultipleDomains(t *testing.T) {
 	fcr := command.NewFakeCommandRunner()
 	fcr.SetCommandToOutput(map[string]string{
-		`sudo sed -i "/^search /d" /etc/resolv.conf`:                               "",
-		`sudo sed -i "1isearch corp.example.com eng.example.com" /etc/resolv.conf`: "",
+		`sudo sh -c "{ echo 'search corp.example.com eng.example.com'; sed '/^search /d' /etc/resolv.conf; } > /tmp/resolv.tmp && cp /tmp/resolv.tmp /etc/resolv.conf && rm /tmp/resolv.tmp"`: "",
 	})
 
 	k := &Bootstrapper{c: fcr}
@@ -82,10 +80,8 @@ func TestConfigureDNSSearch_K8s125Regression(t *testing.T) {
 	// should also update /etc/kubelet-resolv.conf
 	fcr := command.NewFakeCommandRunner()
 	fcr.SetCommandToOutput(map[string]string{
-		`sudo sed -i "/^search /d" /etc/resolv.conf`:                       "",
-		`sudo sed -i "1isearch corp.example.com" /etc/resolv.conf`:         "",
-		`sudo sed -i "/^search /d" /etc/kubelet-resolv.conf`:               "",
-		`sudo sed -i "1isearch corp.example.com" /etc/kubelet-resolv.conf`: "",
+		`sudo sh -c "{ echo 'search corp.example.com'; sed '/^search /d' /etc/resolv.conf; } > /tmp/resolv.tmp && cp /tmp/resolv.tmp /etc/resolv.conf && rm /tmp/resolv.tmp"`:                         "",
+		`sudo sh -c "{ echo 'search corp.example.com'; sed '/^search /d' /etc/kubelet-resolv.conf; } > /tmp/kubelet-resolv.tmp && cp /tmp/kubelet-resolv.tmp /etc/kubelet-resolv.conf && rm /tmp/kubelet-resolv.tmp"`: "",
 	})
 
 	k := &Bootstrapper{c: fcr}
@@ -106,8 +102,7 @@ func TestConfigureDNSSearch_K8s125NotAffected(t *testing.T) {
 	// If kubelet-resolv.conf commands are called, the fake runner will error on unknown commands.
 	fcr := command.NewFakeCommandRunner()
 	fcr.SetCommandToOutput(map[string]string{
-		`sudo sed -i "/^search /d" /etc/resolv.conf`:               "",
-		`sudo sed -i "1isearch corp.example.com" /etc/resolv.conf`: "",
+		`sudo sh -c "{ echo 'search corp.example.com'; sed '/^search /d' /etc/resolv.conf; } > /tmp/resolv.tmp && cp /tmp/resolv.tmp /etc/resolv.conf && rm /tmp/resolv.tmp"`: "",
 	})
 
 	k := &Bootstrapper{c: fcr}
@@ -139,9 +134,8 @@ func TestConfigureDNSSearch_NoneDriverUnsupported(t *testing.T) {
 	}
 }
 
-func TestConfigureDNSSearch_SedDeleteError(t *testing.T) {
-	// Only register the delete command with an error-causing setup:
-	// Don't register the first command so it fails
+func TestConfigureDNSSearch_ShellError(t *testing.T) {
+	// Don't register any commands so the shell command fails
 	fcr := command.NewFakeCommandRunner()
 	k := &Bootstrapper{c: fcr}
 	cfg := config.ClusterConfig{
@@ -153,6 +147,6 @@ func TestConfigureDNSSearch_SedDeleteError(t *testing.T) {
 
 	err := k.configureDNSSearch(cfg)
 	if err == nil {
-		t.Error("configureDNSSearch() should have returned error when sed fails")
+		t.Error("configureDNSSearch() should have returned error when command fails")
 	}
 }
