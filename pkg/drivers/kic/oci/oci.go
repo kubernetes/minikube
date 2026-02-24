@@ -632,6 +632,15 @@ func ContainerStatus(ociBin string, name string, warnSlow ...bool) (state.State,
 	cmd := exec.Command(ociBin, "container", "inspect", name, "--format={{.State.Status}}")
 	rr, err := runCmd(cmd, warnSlow...)
 	o := strings.TrimSpace(rr.Stdout.String())
+
+	// If the command failed and stderr contains "No such container", the container doesn't exist
+	if err != nil {
+		stderr := rr.Stderr.String()
+		if strings.Contains(stderr, "No such container") || strings.Contains(stderr, "no such container") {
+			return state.None, nil
+		}
+	}
+
 	switch o {
 	case "configured":
 		return state.Stopped, nil
