@@ -69,7 +69,7 @@ docker run --rm -it --network=host alpine ash -c "apk add socat && socat TCP-LIS
 Once socat is running it's possible to push images to the minikube registry:
 
 ```shell
-docker tag my/image localhost:5000/myimage
+docker tag myimage localhost:5000/myimage
 docker push localhost:5000/myimage
 ```
 
