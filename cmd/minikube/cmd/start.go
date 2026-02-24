@@ -1168,12 +1168,10 @@ func validateRequestedMemorySize(req int, drvName string) {
 
 	// Detect if their system doesn't have enough memory to work with.
 	if driver.IsKIC(drvName) && containerLimit < minUsableMem {
-		if driver.IsDockerDesktop(drvName) {
-			if runtime.GOOS == "darwin" {
-				exitIfNotForced(reason.RsrcInsufficientDarwinDockerMemory, "Docker Desktop only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
-			} else {
-				exitIfNotForced(reason.RsrcInsufficientWindowsDockerMemory, "Docker Desktop only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
-			}
+		if runtime.GOOS == "darwin" {
+			exitIfNotForced(reason.RsrcInsufficientDarwinDockerMemory, "Docker runtime only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
+		} else {
+			exitIfNotForced(reason.RsrcInsufficientWindowsDockerMemory, "Docker runtime only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
 		}
 		exitIfNotForced(reason.RsrcInsufficientContainerMemory, "{{.driver}} only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "driver": drvName, "req": minUsableMem})
 	}
@@ -1191,13 +1189,12 @@ func validateRequestedMemorySize(req int, drvName string) {
 		exitIfNotForced(reason.RsrcInsufficientReqMemory, "Requested memory allocation {{.requested}}MiB is less than the usable minimum of {{.minimum_memory}}MB", out.V{"requested": req, "minimum_memory": minUsableMem})
 	}
 	if req < minRecommendedMem {
-		if driver.IsDockerDesktop(drvName) {
-			if runtime.GOOS == "darwin" {
-				out.WarnReason(reason.RsrcInsufficientDarwinDockerMemory, "Docker Desktop only has {{.size}}MiB available, you may encounter application deployment failures.", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
-			} else {
-				out.WarnReason(reason.RsrcInsufficientWindowsDockerMemory, "Docker Desktop only has {{.size}}MiB available, you may encounter application deployment failures.", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
-			}
-		} else {
+		switch runtime.GOOS {
+		case "darwin":
+			out.WarnReason(reason.RsrcInsufficientDarwinDockerMemory, "{{.driver}} only has {{.size}}MiB available, you may encounter application deployment failures.", out.V{"driver": driver.FullName(drvName), "size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
+		case "windows":
+			out.WarnReason(reason.RsrcInsufficientWindowsDockerMemory, "{{.driver}} only has {{.size}}MiB available, you may encounter application deployment failures.", out.V{"driver": driver.FullName(drvName), "size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
+		default:
 			out.WarnReason(reason.RsrcInsufficientReqMemory, "Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommend}}MB. Deployments may fail.", out.V{"requested": req, "recommend": minRecommendedMem})
 		}
 	}
@@ -1250,9 +1247,9 @@ func validateCPUCount(drvName string) {
 	case availableCPUs < 2:
 		switch {
 		case drvName == oci.Docker && runtime.GOOS == "darwin":
-			exitIfNotForced(reason.RsrcInsufficientDarwinDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
+			exitIfNotForced(reason.RsrcInsufficientDarwinDockerCores, "Docker runtime has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
 		case drvName == oci.Docker && runtime.GOOS == "windows":
-			exitIfNotForced(reason.RsrcInsufficientWindowsDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
+			exitIfNotForced(reason.RsrcInsufficientWindowsDockerCores, "Docker runtime has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
 		default:
 			exitIfNotForced(reason.RsrcInsufficientCores, "{{.driver_name}} has less than 2 CPUs available, but Kubernetes requires at least 2 to be available", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
 		}
@@ -1268,15 +1265,12 @@ func validateCPUCount(drvName string) {
 	}
 
 	if availableCPUs < cpuCount {
-		if driver.IsDockerDesktop(drvName) {
-			out.Styled(style.Empty, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": drvName})
-			if runtime.GOOS == "darwin" {
-				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-mac/#resources`)
-			}
+		if driver.IsKIC(drvName) && (runtime.GOOS == "darwin" || runtime.GOOS == "windows") {
+			out.Styled(style.Empty, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": driver.FullName(drvName)})
 			if runtime.GOOS == "windows" {
 				out.String("\n\t")
-				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-windows/#resources`)
 			}
+			out.Styled(style.Empty, `- Docs https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources`)
 		}
 
 		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": availableCPUs})
