@@ -63,7 +63,8 @@ When enabled, the registry addon exposes its port 5000 on the minikube's virtual
 In order to make docker accept pushing images to this registry, we have to redirect port 5000 on the docker virtual machine over to port 5000 on the minikube machine. We can (ab)use docker's network configuration to instantiate a container on the docker's host, and run socat there:
 
 ```shell
-docker run --rm -it --network=host alpine ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000"
+docker run --rm -d --name=minikube-registry-socat --network=host alpine \
+    ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000"
 ```
 
 Once socat is running it's possible to push images to the minikube registry:
