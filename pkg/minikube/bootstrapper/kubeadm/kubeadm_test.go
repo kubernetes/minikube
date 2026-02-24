@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 func TestConfigureDNSSearch_Empty(t *testing.T) {
@@ -119,6 +120,22 @@ func TestConfigureDNSSearch_K8s125NotAffected(t *testing.T) {
 
 	if err := k.configureDNSSearch(cfg); err != nil {
 		t.Errorf("configureDNSSearch() with K8s v1.25.3 returned error: %v", err)
+	}
+}
+
+func TestConfigureDNSSearch_NoneDriverUnsupported(t *testing.T) {
+	fcr := command.NewFakeCommandRunner()
+	k := &Bootstrapper{c: fcr}
+	cfg := config.ClusterConfig{
+		Driver:    driver.None,
+		DNSSearch: []string{"corp.example.com"},
+		KubernetesConfig: config.KubernetesConfig{
+			KubernetesVersion: "v1.28.0",
+		},
+	}
+
+	if err := k.configureDNSSearch(cfg); err == nil {
+		t.Error("configureDNSSearch() should fail for none driver")
 	}
 }
 

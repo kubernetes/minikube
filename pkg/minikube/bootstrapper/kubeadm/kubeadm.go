@@ -1050,6 +1050,9 @@ func (k *Bootstrapper) configureDNSSearch(cfg config.ClusterConfig) error {
 	if len(cfg.DNSSearch) == 0 {
 		return nil
 	}
+	if driver.IsNone(cfg.Driver) {
+		return fmt.Errorf("dns search is not supported with the none driver")
+	}
 
 	searchLine := "search " + strings.Join(cfg.DNSSearch, " ")
 	klog.Infof("Configuring DNS search domains: %v", cfg.DNSSearch)
