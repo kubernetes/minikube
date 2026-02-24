@@ -36,8 +36,8 @@ import (
 
 	"errors"
 
-	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/blang/semver/v4"
+	"github.com/box-cli-maker/box-cli-maker/v3"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -584,7 +584,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, rtime, machineName st
 		out.Step(style.Ready, "Done! minikube is ready without Kubernetes!")
 
 		// Runtime message.
-		boxConfig := box.Config{Py: 1, Px: 4, Type: "Round", Color: "Green"}
+		boxConfig := box.NewBox().Padding(4, 1).Style(box.Round).Color(box.Green)
 		switch rtime {
 		case constants.Docker:
 			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
