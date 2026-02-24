@@ -26,7 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
-// Error shows an an error reason
+// Error shows an error reason
 func Error(k reason.Kind, format string, a ...V) {
 	if JSON {
 		msg := Fmt(format, a...)
