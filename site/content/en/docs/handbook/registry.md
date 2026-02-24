@@ -73,7 +73,7 @@ docker tag myimage localhost:5000/myimage
 docker push localhost:5000/myimage
 ```
 
-After the image is pushed, refer to it by `localhost:5000/{name}` in kubectl specs.
+After the image is pushed, refer to it by `localhost:5000/myimage` in kubectl specs.
 
 ### Docker on Windows
 
