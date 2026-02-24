@@ -132,6 +132,7 @@ func (r *Docker) Active() bool {
 
 // Enable idempotently enables Docker on a host
 func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
+	storageDriver := r.getStorageDriver()
 	if inUserNamespace {
 		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
 			// For using overlayfs
@@ -162,8 +163,9 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 	if err := r.Init.Enable("docker.socket"); err != nil {
 		klog.ErrorS(err, "Failed to enable", "service", "docker.socket")
 	}
+	klog.Infof("Configuring docker service ...")
 
-	if err := r.configureDocker(cgroupDriver); err != nil {
+	if err := r.configureDocker(cgroupDriver, storageDriver); err != nil {
 		return err
 	}
 
@@ -556,9 +558,13 @@ type dockerDaemonConfig struct {
 	StorageDriver  string                `json:"storage-driver"`
 	DefaultRuntime string                `json:"default-runtime,omitempty"`
 	Runtimes       *dockerDaemonRuntimes `json:"runtimes,omitempty"`
+	Features       dockerDaemonFeatures  `json:"features"`
 }
 type dockerDaemonLogOpts struct {
 	MaxSize string `json:"max-size"`
+}
+type dockerDaemonFeatures struct {
+	ContainerdSnapshotter bool `json:"containerd-snapshotter"`
 }
 type dockerDaemonRuntimes struct {
 	Nvidia struct {
@@ -569,19 +575,30 @@ type dockerDaemonRuntimes struct {
 
 // configureDocker configures the docker daemon to use driver as cgroup manager
 // ref: https://docs.docker.com/engine/reference/commandline/dockerd/#options-for-the-runtime
-func (r *Docker) configureDocker(driver string) error {
+func (r *Docker) configureDocker(driver string, storageDriver string) error {
 	if driver == constants.UnknownCgroupDriver {
 		return fmt.Errorf("unable to configure docker to use unknown cgroup driver")
 	}
 
 	klog.Infof("configuring docker to use %q as cgroup driver...", driver)
+
+	var isOverlayfs bool
+	if storageDriver == "overlayfs" {
+		isOverlayfs = true
+	} else {
+		isOverlayfs = false
+	}
+
 	daemonConfig := dockerDaemonConfig{
 		ExecOpts:  []string{"native.cgroupdriver=" + driver},
 		LogDriver: "json-file",
 		LogOpts: dockerDaemonLogOpts{
 			MaxSize: "100m",
 		},
-		StorageDriver: "overlay2",
+		StorageDriver: storageDriver,
+		Features: dockerDaemonFeatures{
+			ContainerdSnapshotter: isOverlayfs,
+		},
 	}
 
 	switch r.GPUs {
@@ -601,6 +618,17 @@ func (r *Docker) configureDocker(driver string) error {
 	}
 	ma := assets.NewMemoryAsset(daemonConfigBytes, "/etc/docker", "daemon.json", "0644")
 	return r.Runner.Copy(ma)
+}
+
+func (r *Docker) getStorageDriver() string {
+	ver, err := r.Version()
+
+	if err == nil {
+		if v, err := semver.Make(ver); err == nil && v.GTE(semver.Version{Major: 29}) {
+			return "overlayfs"
+		}
+	}
+	return "overlay2"
 }
 
 // Preload preloads docker with k8s images:
