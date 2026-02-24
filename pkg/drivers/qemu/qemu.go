@@ -57,8 +57,7 @@ const (
 	isoFilename        = "boot2docker.iso"
 	serialFileName     = "serial.log"
 	privateNetworkName = "docker-machines"
-
-	defaultSSHUser = "docker"
+	defaultSSHUser     = "docker"
 )
 
 type Driver struct {
@@ -525,13 +524,15 @@ func (d *Driver) Start() error {
 		if detect.NestedVM() {
 			multiplier = 3 // will help with running in Free github action Macos VMs (takes 112+ retries on average)
 		}
-		for i := 0; i < 60*multiplier; i++ {
-			log.Debugf("Attempt %d", i)
+
+		maxAttempts := 60 * multiplier
+		for i := 0; i < maxAttempts; i++ {
 			err = getIP()
 			if err == nil {
 				break
 			}
 			time.Sleep(2 * time.Second)
+			log.Debugf("Searching for %s in %s (attempt %d/%d)", d.MACAddress, common.LeasesPath, i+1, maxAttempts)
 		}
 
 		if err == nil {

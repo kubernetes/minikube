@@ -213,8 +213,6 @@ func getIPAddressFromFile(mac, path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	log.Debugf("Searching for %s in %s ...", mac, path)
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err
