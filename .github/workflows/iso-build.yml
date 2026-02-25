@@ -46,9 +46,24 @@ jobs:
             ARCH_DIR="x86_64"
           fi
           ./hack/jenkins/build_changelog.sh deploy/iso/minikube-iso/board/minikube/${ARCH_DIR}/rootfs-overlay/CHANGELOG
+      - name: Cache build directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildroot-ccache
+            ~/.cache/go-build
+            out/buildroot/output-${{ matrix.arch }}/dl
+            out/buildroot/output-${{ matrix.arch }}/share/host-go-cache
+          key: ${{ runner.os }}-${{ matrix.arch }}-iso-build-${{ hashFiles('deploy/iso/minikube-iso/package/Config.in') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-iso-build-
       - name: Build ISO
         run: |
-          make minikube-iso-${{ matrix.arch }}
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            make minikube-iso-aarch64
+          else
+            make minikube-iso-x86_64
+          fi
       - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
