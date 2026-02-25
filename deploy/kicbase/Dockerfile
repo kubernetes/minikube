@@ -24,7 +24,7 @@ ARG KICBASE_IMAGE="debian:bookworm-20260202-slim"
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${KICBASE_IMAGE} AS kicbase
 
-ARG BUILDKIT_VERSION="v0.26.3"
+ARG BUILDKIT_VERSION="v0.27.1"
 ARG CRIO_VERSION="v1.35"
 ARG CRICTL_VERSION="v1.35.0"
 ARG CRI_DOCKERD_VERSION="v0.4.1"
