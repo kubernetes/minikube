@@ -861,7 +861,7 @@ func TestValidateAutoPause(t *testing.T) {
 	}
 }
 
-func TestGetExtraOptionsChildLoggingFormat(t *testing.T) {
+func TestGetExtraOptionsK8sLoggingFormat(t *testing.T) {
 	var tests = []struct {
 		description   string
 		loggingFormat string
@@ -869,13 +869,13 @@ func TestGetExtraOptionsChildLoggingFormat(t *testing.T) {
 		expectFlags   []string
 	}{
 		{
-			description:   "no child-logging-format set",
+			description:   "no k8s-logging-format set",
 			loggingFormat: "",
 			extraConfig:   []string{},
 			expectFlags:   []string{},
 		},
 		{
-			description:   "child-logging-format=json",
+			description:   "k8s-logging-format=json",
 			loggingFormat: "json",
 			extraConfig:   []string{},
 			expectFlags: []string{
@@ -886,7 +886,7 @@ func TestGetExtraOptionsChildLoggingFormat(t *testing.T) {
 			},
 		},
 		{
-			description:   "child-logging-format=text",
+			description:   "k8s-logging-format=text",
 			loggingFormat: "text",
 			extraConfig:   []string{},
 			expectFlags: []string{
@@ -946,7 +946,7 @@ func TestGetExtraOptionsChildLoggingFormat(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			// Reset global state
 			cfg.ExtraOptions = cfg.ExtraOptionSlice{}
-			viper.Set(childLoggingFormatFlag, "")
+			viper.Set(k8sLoggingFormatFlag, "")
 
 			// Simulate --extra-config flags (these get set before getExtraOptions runs)
 			for _, ec := range test.extraConfig {
@@ -955,7 +955,7 @@ func TestGetExtraOptionsChildLoggingFormat(t *testing.T) {
 				}
 			}
 
-			viper.Set(childLoggingFormatFlag, test.loggingFormat)
+			viper.Set(k8sLoggingFormatFlag, test.loggingFormat)
 			opts := getExtraOptions()
 
 			for _, expected := range test.expectFlags {
