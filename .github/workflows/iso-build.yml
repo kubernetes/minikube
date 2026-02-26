@@ -1,0 +1,77 @@
+name: "ISO Build"
+on:
+  pull_request:
+    types: [labeled, synchronize, reopened]
+
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: '1.25.5'
+
+jobs:
+  build-iso:
+    if: contains(github.event.pull_request.labels.*.name, 'ok-to-build-iso')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            os: ubuntu-latest
+          - arch: arm64
+            os: ubuntu-24.04-arm
+    steps:
+      - uses: medyagh/info-block@v1
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{env.GO_VERSION}}
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential unzip rsync bc python3 p7zip-full cmake
+      - name: Setup ISO Version
+        id: iso-version
+        run: |
+          IV=$(grep -E "ISO_VERSION \?=" Makefile | cut -d " " -f 3 | cut -d "-" -f 1)
+          echo "ISO_VERSION=${IV}-$(date +%s)-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+      - name: Generate Changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The script uses a specific path for changelog based on arch
+          # We need to map matrix.arch to the path expected by build_changelog.sh
+          # build_iso.sh calls:
+          # ./hack/jenkins/build_changelog.sh deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/CHANGELOG
+          # ./hack/jenkins/build_changelog.sh deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/CHANGELOG
+          
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            ARCH_DIR="aarch64"
+          else
+            ARCH_DIR="x86_64"
+          fi
+          ./hack/jenkins/build_changelog.sh deploy/iso/minikube-iso/board/minikube/${ARCH_DIR}/rootfs-overlay/CHANGELOG
+      - name: Cache build directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildroot-ccache
+            ~/.cache/go-build
+            out/buildroot/output-${{ matrix.arch }}/dl
+            out/buildroot/output-${{ matrix.arch }}/share/host-go-cache
+          key: ${{ runner.os }}-${{ matrix.arch }}-iso-build-${{ hashFiles('deploy/iso/minikube-iso/package/Config.in') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-iso-build-
+      - uses: medyagh/info-block@v1
+      - name: Build ISO
+        run: |
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            make minikube-iso-aarch64
+          else
+            make minikube-iso-x86_64
+          fi
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: minikube-${{ matrix.arch }}.iso
+          path: out/minikube-${{ matrix.arch }}.iso
