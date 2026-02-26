@@ -10,11 +10,16 @@ env:
 jobs:
   build-iso:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-build-iso')
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            os: ubuntu-latest
+          - arch: arm64
+            os: ubuntu-24.04-arm
     steps:
+      - uses: medyagh/info-block@v1
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
