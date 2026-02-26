@@ -19,7 +19,6 @@ jobs:
           - arch: arm64
             os: ubuntu-24.04-arm
     steps:
-      - uses: medyagh/info-block@v1
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -62,6 +61,7 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.arch }}-iso-build-${{ hashFiles('deploy/iso/minikube-iso/package/Config.in') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.arch }}-iso-build-
+      - uses: medyagh/info-block@v1
       - name: Build ISO
         run: |
           if [ "${{ matrix.arch }}" == "arm64" ]; then
