@@ -34,7 +34,7 @@ jobs:
         id: iso-version
         run: |
           IV=$(grep -E "ISO_VERSION \?=" Makefile | cut -d " " -f 3 | cut -d "-" -f 1)
-          echo "ISO_VERSION=${IV}-$(date +%s)-${{ github.event.number }}" >> $GITHUB_ENV
+          echo "ISO_VERSION=${IV}-$(date +%s)-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
       - name: Generate Changelog
         env:
           GH_TOKEN: ${{ github.token }}
