@@ -133,7 +133,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 		}
 	}
 
-	if serr != constants.ErrMachineMissing {
+	if serr != nil && serr != constants.ErrMachineMissing {
 		klog.Warningf("unexpected machine state, will restart: %v", serr)
 	}
 

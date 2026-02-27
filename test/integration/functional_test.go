@@ -230,7 +230,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// docs: Get the node labels from the cluster with `kubectl get nodes`
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "nodes", "--output=go-template", "--template='{{range $k, $v := (index .items 0).metadata.labels}}{{$k}} {{end}}'"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "nodes", "--output=go-template", "--template='{{range $k, $v := (index .items 0).metadata.labels}}{{$k}} {{end}}'"))
 	if err != nil {
 		t.Errorf("failed to 'kubectl get nodes' with args %q: %v", rr.Command(), err)
 	}
@@ -692,7 +692,7 @@ func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// docs: Run `kubectl config current-context`
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "config", "current-context"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "config", "current-context"))
 	if err != nil {
 		t.Errorf("failed to get current-context. args %q : %v", rr.Command(), err)
 	}
@@ -707,7 +707,7 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// docs: Run `kubectl get po -A` to get all pods in the current minikube profile
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-A"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "po", "-A"))
 	if err != nil {
 		t.Errorf("failed to get kubectl pods: args %q : %v", rr.Command(), err)
 	}
@@ -734,7 +734,8 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 	}
 }
 
-// validateMinikubeKubectlDirectCall validates that calling minikube's kubectl
+// validateMinikubeKubectlDirectCall validates that calling the minikube binary linked as "kubectl" acts as a kubectl wrapper.
+// This tests the feature where minikube behaves like kubectl when invoked via a binary named "kubectl".
 func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 	dir := filepath.Dir(Target())
@@ -742,8 +743,11 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 	if runtime.GOOS == "windows" {
 		newName += ".exe"
 	}
-	dstfn := filepath.Join(dir, newName)
-	err := os.Link(Target(), dstfn)
+	dstfn, err := filepath.Abs(filepath.Join(dir, newName))
+	if err != nil {
+		t.Fatalf("failed to get absolute path check kubectl binary: %v", err)
+	}
+	err = os.Link(Target(), dstfn)
 
 	if err != nil {
 		t.Fatalf("failed to link kubectl binary from %s to %s: %v", Target(), dstfn, err)
@@ -821,7 +825,7 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 	}
 
 	// docs: Run `kubectl get po po -l tier=control-plane -n kube-system -o=json` to get all the Kubernetes conponents
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-l", "tier=control-plane", "-n", "kube-system", "-o=json"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "po", "-l", "tier=control-plane", "-n", "kube-system", "-o=json"))
 	if err != nil {
 		t.Fatalf("failed to get components. args %q: %v", rr.Command(), err)
 	}
@@ -1418,19 +1422,19 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 			t.Logf("-----------------------service failure post-mortem--------------------------------")
 			ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
 			defer cancel()
-			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "po", "hello-node"))
+			rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "describe", "po", "hello-node"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
 			}
 			t.Logf("hello-node pod describe:\n%s", rr.Stdout)
 
-			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "-l", "app=hello-node"))
+			rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "logs", "-l", "app=hello-node"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
 			}
 			t.Logf("hello-node logs:\n%s", rr.Stdout)
 
-			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "svc", "hello-node"))
+			rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "describe", "svc", "hello-node"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
 			}
@@ -1452,11 +1456,11 @@ func validateServiceCmdDeployApp(ctx context.Context, t *testing.T, profile stri
 		var rr *RunResult
 		var err error
 
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image", echoServerImage))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "deployment", "hello-node", "--image", echoServerImage))
 		if err != nil {
 			t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 		}
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
 		if err != nil {
 			t.Fatalf("failed to expose hello-node deployment: %q : %v", rr.Command(), err)
 		}
@@ -1613,19 +1617,19 @@ func validateServiceCmdConnect(ctx context.Context, t *testing.T, profile string
 			t.Logf("-----------------------service failure post-mortem--------------------------------")
 			ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
 			defer cancel()
-			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "po", "hello-node-connect"))
+			rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "describe", "po", "hello-node-connect"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
 			}
 			t.Logf("hello-node pod describe:\n%s", rr.Stdout)
 
-			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "-l", "app=hello-node-connect"))
+			rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "logs", "-l", "app=hello-node-connect"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
 			}
 			t.Logf("hello-node logs:\n%s", rr.Stdout)
 
-			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "svc", "hello-node-connect"))
+			rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "describe", "svc", "hello-node-connect"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
 			}
@@ -1637,11 +1641,11 @@ func validateServiceCmdConnect(ctx context.Context, t *testing.T, profile string
 	var err error
 
 	// docs: Create a new `kickbase/echo-server` deployment
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node-connect", "--image", echoServerImage))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "deployment", "hello-node-connect", "--image", echoServerImage))
 	if err != nil {
 		t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 	}
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node-connect", "--type=NodePort", "--port=8080"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "expose", "deployment", "hello-node-connect", "--type=NodePort", "--port=8080"))
 	if err != nil {
 		t.Fatalf("failed to expose hello-node deployment: %q : %v", rr.Command(), err)
 	}
@@ -1791,15 +1795,10 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
-	// docs(skip): Skips for ARM64 architecture since it's not supported by MySQL
-	if arm64Platform() {
-		t.Skip("arm64 is not supported by mysql. Skip the test. See https://github.com/kubernetes/minikube/issues/10144")
-	}
-
 	defer PostMortemLogs(t, profile)
 
 	// docs: Run `kubectl replace --force -f testdata/mysql/yaml`
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
 	if err != nil {
 		t.Fatalf("failed to kubectl replace mysql: args %q failed: %v", rr.Command(), err)
 	}
@@ -1813,7 +1812,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 	// docs: Run `mysql -e show databases;` inside the MySQL pod to verify MySQL is up and running
 	// docs: Retry with exponential backoff if failed, as `mysqld` first comes up without users configured. Scan for names in case of a reschedule.
 	mysql := func() error {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
 		return err
 	}
 	if err = retry.Expo(mysql, 1*time.Second, Minutes(5)); err != nil {
@@ -1858,10 +1857,18 @@ func localEmptyCertPath() string {
 	return filepath.Join(localpath.MiniPath(), "/certs", fmt.Sprintf("%d_empty.pem", os.Getpid()))
 }
 
-// Copy extra file into minikube home folder for file sync test
+// setupFileSync copies files to the Minikube home directory to verify that they are correctly synced to the VM.
+// It tests two main sync mechanisms:
+// 1. Generic file sync: Files placed in $MINIKUBE_HOME/files/<path> should be synced to /<path> in the VM.
+//   - sync.test -> /etc/test/nested/copy/... (verified by validateFileSync)
+//   - minikube_test2.pem -> /etc/ssl/certs/... (verified by validateCertSync)
+//
+// 2. Certificate sync: Files placed in $MINIKUBE_HOME/certs should be installed as system certificates in the VM.
+//   - minikube_test.pem -> /etc/ssl/certs/... (verified by validateCertSync)
 func setupFileSync(_ context.Context, t *testing.T, _ string) {
 	p := localSyncTestPath()
 	t.Logf("local sync path: %s", p)
+	// This file is tested by validateFileSync to ensure generic file sync works
 	syncFile := filepath.Join(*testdataDir, "sync.test")
 	err := cp.Copy(syncFile, p)
 	if err != nil {
@@ -1870,7 +1877,8 @@ func setupFileSync(_ context.Context, t *testing.T, _ string) {
 
 	testPem := filepath.Join(*testdataDir, "minikube_test.pem")
 
-	// Write to a temp file for an atomic write
+	// Write to a temp file for an atomic write to $MINIKUBE_HOME/certs
+	// This tests that certs in this dir are installed to /etc/ssl/certs and /usr/share/ca-certificates in the VM
 	tmpPem := localTestCertPath() + ".pem"
 	if err := cp.Copy(testPem, tmpPem); err != nil {
 		t.Fatalf("failed to copy %s: %v", testPem, err)
@@ -1895,6 +1903,7 @@ func setupFileSync(_ context.Context, t *testing.T, _ string) {
 	}
 
 	testPem2 := filepath.Join(*testdataDir, "minikube_test2.pem")
+	// This tests that certs placed in $MINIKUBE_HOME/files/etc/ssl/certs are also processed correctly
 	tmpPem2 := localTestCertFilesPath() + ".pem"
 	if err := cp.Copy(testPem2, tmpPem2); err != nil {
 		t.Fatalf("failed to copy %s: %v", testPem2, err)
@@ -1918,7 +1927,8 @@ func setupFileSync(_ context.Context, t *testing.T, _ string) {
 		t.Errorf("%s size=%d, want %d", localTestCertFilesPath(), got.Size(), want.Size())
 	}
 
-	// Create an empty file just to mess with people
+	// Create an empty file just to mess with people.
+	// This tests that empty files or garbage files in these directories don't crash the sync process.
 	if _, err := os.Create(localEmptyCertPath()); err != nil {
 		t.Fatalf("create failed: %v", err)
 	}
@@ -2327,13 +2337,13 @@ func validateLicenseCmd(ctx context.Context, t *testing.T, _ string) {
 func validateInvalidService(ctx context.Context, t *testing.T, profile string) {
 
 	// try to start an invalid service. This service is linked to a pod whose image name is invalid, so this pod will never become running
-	rrApply, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "invalidsvc.yaml")))
+	rrApply, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "invalidsvc.yaml")))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rrApply.Command(), err)
 	}
 	defer func() {
 		// Cleanup test configurations in advance of future tests
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "-f", filepath.Join(*testdataDir, "invalidsvc.yaml")))
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "delete", "-f", filepath.Join(*testdataDir, "invalidsvc.yaml")))
 		if err != nil {
 			t.Fatalf("clean up %s failed: %v", rr.Command(), err)
 		}

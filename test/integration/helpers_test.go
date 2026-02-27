@@ -32,6 +32,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -46,6 +47,14 @@ import (
 	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/detect"
 )
+
+// KubectlBinary returns the name of the kubectl binary for the current OS
+func KubectlBinary() string {
+	if runtime.GOOS == "windows" {
+		return "kubectl.exe"
+	}
+	return "kubectl"
+}
 
 // RunResult stores the result of an cmd.Run call
 type RunResult struct {
@@ -267,7 +276,7 @@ func PostMortemLogs(t *testing.T, profile string, multinode ...bool) {
 		}
 
 		// Get non-running pods. NOTE: This does not yet contain pods which are "running", but not "ready"
-		rr, rerr := Run(t, exec.Command("kubectl", "--context", profile, "get", "po", "-o=jsonpath={.items[*].metadata.name}", "-A", "--field-selector=status.phase!=Running"))
+		rr, rerr := Run(t, exec.Command(KubectlBinary(), "--context", profile, "get", "po", "-o=jsonpath={.items[*].metadata.name}", "-A", "--field-selector=status.phase!=Running"))
 		if rerr != nil {
 			t.Logf("%s: %v", rr.Command(), rerr)
 			return
@@ -283,7 +292,7 @@ func PostMortemLogs(t *testing.T, profile string, multinode ...bool) {
 		t.Logf("======> post-mortem[%s]: describe non-running pods <======", t.Name())
 
 		args := append([]string{"--context", profile, "describe", "pod"}, notRunning...)
-		rr, rerr = Run(t, exec.Command("kubectl", args...))
+		rr, rerr = Run(t, exec.Command(KubectlBinary(), args...))
 		if rerr != nil {
 			t.Logf("%s: %v", rr.Command(), rerr)
 			return
@@ -400,7 +409,7 @@ func PVCWait(ctx context.Context, t *testing.T, profile string, ns string, name 
 	t.Logf("(dbg) %s: waiting %s for pvc %q in namespace %q ...", t.Name(), timeout, name, ns)
 
 	f := func(ctx context.Context) (bool, error) {
-		ret, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "pvc", name, "-o", "jsonpath={.status.phase}", "-n", ns))
+		ret, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "pvc", name, "-o", "jsonpath={.status.phase}", "-n", ns))
 		if err != nil {
 			t.Logf("%s: WARNING: PVC get for %q %q returned: %v", t.Name(), ns, name, err)
 			return false, nil
@@ -425,7 +434,7 @@ func VolumeSnapshotWait(ctx context.Context, t *testing.T, profile string, ns st
 	t.Logf("(dbg) %s: waiting %s for volume snapshot %q in namespace %q ...", t.Name(), timeout, name, ns)
 
 	f := func(ctx context.Context) (bool, error) {
-		res, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "volumesnapshot", name, "-o", "jsonpath={.status.readyToUse}", "-n", ns))
+		res, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "volumesnapshot", name, "-o", "jsonpath={.status.readyToUse}", "-n", ns))
 		if err != nil {
 			t.Logf("%s: WARNING: volume snapshot get for %q %q returned: %v", t.Name(), ns, name, err)
 			return false, nil
@@ -475,14 +484,14 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 	t.Logf("%s: showing logs for failed pods as of %s", t.Name(), time.Now())
 
 	for _, name := range names {
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "po", name, "-n", ns))
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "describe", "po", name, "-n", ns))
 		if err != nil {
 			t.Logf("%s: %v", rr.Command(), err)
 		} else {
 			t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 		}
 
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", name, "-n", ns))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "logs", name, "-n", ns))
 		if err != nil {
 			t.Logf("%s: %v", rr.Command(), err)
 		} else {

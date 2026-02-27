@@ -245,7 +245,7 @@ func TestKubernetesUpgrade(t *testing.T) {
 		t.Errorf("failed to upgrade with newest k8s version. args: %s : %v", rr.Command(), err)
 	}
 
-	s, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "version", "--output=json"))
+	s, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "version", "--output=json"))
 	if err != nil {
 		t.Fatalf("error running kubectl: %v", err)
 	}

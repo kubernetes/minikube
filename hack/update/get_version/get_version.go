@@ -68,6 +68,7 @@ var dependencies = map[string]dependency{
 	"kube-registry-proxy":     {addonsFile, `"k8s-minikube/kube-registry-proxy:(.*)@`},
 	"kube-vip":                {"pkg/minikube/cluster/ha/kube-vip/kube-vip.go", `image: ghcr.io/kube-vip/kube-vip:(.*)`},
 	"kubectl":                 {addonsFile, `bitnami/kubectl:(.*)@`},
+	"kubevirt":                {"deploy/addons/kubevirt/pod.yaml.tmpl", `KUBEVIRT_VERSION="(.*)"`},
 	"metrics-server":          {addonsFile, `metrics-server/metrics-server:(.*)@`},
 	"nerdctl":                 {"deploy/kicbase/Dockerfile", `NERDCTL_VERSION="(.*)"`},
 	"nerdctld":                {"deploy/kicbase/Dockerfile", `NERDCTLD_VERSION="(.*)"`},

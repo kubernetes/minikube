@@ -1,5 +1,311 @@
 # Release Notes
 
+## Version 1.38.1 - 2026-02-19
+
+## Feature
+
+* Add Support for Kubernetes version v1.35.1 ([#22665](https://github.com/kubernetes/minikube/pull/22665))
+
+## Bug fixes
+
+* Fix lock file regression by appending UID to the lock driectory ([#22623](https://github.com/kubernetes/minikube/pull/22623))
+* Fix regression cross-arch execution by masking systemd-binfmt ([#22621](https://github.com/kubernetes/minikube/pull/22621))
+* Fix: PowerShell curl alias on Windows to check resgistry.k8s.io connectivity ([#22659](https://github.com/kubernetes/minikube/pull/22659))
+
+## Addons
+
+* Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from 1.5.47 to 1.5.49 ([#22637](https://github.com/kubernetes/minikube/pull/22637))
+* Addon Headlamp: Update Headlamp image from v0.39.0 to v0.40.0 ([#22640](https://github.com/kubernetes/minikube/pull/22640))
+* Addon ingress: Update ingress-nginx/controller image from v1.14.1 to v1.14.2 ([#22595](https://github.com/kubernetes/minikube/pull/22595))
+* Addon ingress: Update ingress-nginx/controller image from v1.14.2 to v1.14.3 ([#22638](https://github.com/kubernetes/minikube/pull/22638))
+* Addon inspektor-gadget: Update inspektor-gadget image from v0.48.0 to v0.48.1 ([#22592](https://github.com/kubernetes/minikube/pull/22592))
+* Addon inspektor-gadget: Update inspektor-gadget image from v0.48.1 to v0.49.1 ([#22634](https://github.com/kubernetes/minikube/pull/22634))
+* Addon metrics-server: Update metrics-server/metrics-server image from v0.8.0 to v0.8.1 ([#22596](https://github.com/kubernetes/minikube/pull/22596))
+* Addon nvidia-device-plugin: Update nvidia/k8s-device-plugin image from v0.18.1 to v0.18.2 ([#22531](https://github.com/kubernetes/minikube/pull/22531))
+* Addon registry: Update registry image from 3.0.0 to 3.0.0 ([#22593](https://github.com/kubernetes/minikube/pull/22593))
+* Addon Volcano: Update volcano images from v1.13.1 to v1.14.0 ([#22597](https://github.com/kubernetes/minikube/pull/22597))
+* Addon Volcano: Update volcano images from v1.14.0 to v1.14.1 ([#22663](https://github.com/kubernetes/minikube/pull/22663))
+* Addon yakd: Update manusa/yakd image from 0.0.7 to 0.0.8 ([#22639](https://github.com/kubernetes/minikube/pull/22639))
+* HA (multi-control plane): Update kube-vip from v1.0.3 to v1.0.4 ([#22598](https://github.com/kubernetes/minikube/pull/22598))
+
+## CNI
+
+* CNI: Update cilium from v1.18.6 to v1.19.0 ([#22636](https://github.com/kubernetes/minikube/pull/22636))
+* CNI: Update flannel from v0.27.4 to v0.28.1 ([#22635](https://github.com/kubernetes/minikube/pull/22635))
+* CNI: Update kindnetd from v20251212-v0.29.0-alpha-105-g20ccfc88 to v20260131-0806d083 ([#22594](https://github.com/kubernetes/minikube/pull/22594))
+* CNI: Update kindnetd from v20260131-0806d083 to v20260213-ea8e5717 ([#22661](https://github.com/kubernetes/minikube/pull/22661))
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Bob Sira
+- Mateusz Łoskot
+- Medya Ghazizadeh
+- minikube-bot
+- Rachel Rice
+
+Thank you to our PR reviewers for this release!
+
+- nirs (8 comments)
+- wt (5 comments)
+- medyagh (2 comments)
+- mloskot (2 comments)
+
+Thank you to our triage members for this release!
+
+- nirs (8 comments)
+- sleonov (5 comments)
+- afbjorklund (4 comments)
+- medyagh (4 comments)
+- saschpe (3 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.38.1/) for this release!
+
+## Version 1.38.0 - 2026-01-28
+
+## Higlight
+
+* No Sudo required for with vfkit/krunkit on macOS 26+ (requires latest vmnet-helper)
+* No Sudo required to run [AI Playground on Macos GPUs using minikube](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
+* vfkit: Add Rosetta support for deploying amd64 images on Apple silicon (#22140)
+
+## Features
+
+* Add support for Kubernetes v1.35.0 v1.34.1 (#21650)(#22015)(#22119)(#22328)
+* VM Drivers: add support for NVMe-oF/TCP block devices (#22464)
+* VM Drivers: Enable BTF debug symbols to support eBPF tooling in iso (#21800)
+* Add option to download preloads from github instead of GCS through  --preload-source (#22221)
+* Vfkit/Krunkit drivers: add ability to Run vmnet-helper as unprivileged user on macOS 26+ (#22501)
+* add option to add helm-based addons (#21847)
+* preload: download from github when gcs not available (#21605)
+
+## Warnings & Deprications
+
+* UI: Add a warning on changing default runtime to "containerd" in the next version (v1.39.0) (#22508)
+* hyperkit: remove driver builds & warn users to switch (#21946)
+* Remove minikube support for 32-bit architectures (#22401)
+
+## Improvements
+
+* UI: colorful based on status (profile list, addons list) (#22418)
+* Skip caching binaries when --no-kubernetes is set (#21139)
+* improve retry logs to print less duplicate lines (#22232)
+* improve ssh runner copying cert files (#21923)
+* vmnet: Skip validation in download-only mode (#21635)
+* Improve windows cert in kubeconfig: normalize generated cert paths to forward slashes (#21845)
+* Add cgroup v2 freezer check for API server status (#22249)
+* Set  `FailCgroupV1` kubelet option for kubenetes 1.35+ if cgroup v1 (#22319)
+* containerd: retry on transient EOF errors for image load (#22310)
+* cri: increase default 2s timeout for crictl commands (#22214)
+* crio: verify images are deleted after "image rm" (#22243)
+* docker runtime: Use CRI for ListImages function (#22263)
+* image save: Add retry logic for local image in case of EOF (#22072)
+* HA (multi-control plane): Update kube-vip from v1.0.0 to v1.0.3  (#21699)(#21960)(#22258)
+
+## Drivers
+
+* drivers: Introduce WaitForSSHAccess and fix macos smoke tests (#22179)
+* hyperkit driver: Fix file descriptor leaks in status (#22524)
+* kvm: fix minikube on Fedora/RHEL with SELinux (#21550)
+* kvm: remove dependency on external driver (#21625)
+* Mark the legacy parallels driver as deprecated (#22379)
+* none driver: Fix "stop"  with containerd runtime (#22275)
+* Update minikube-machine drivers (#22369)
+* verify aux drivers installed correctly and exit nicely if not (#21576)
+* vfkit: Add Rosetta support for deploying amd64 images on Apple silicon (#22140)
+* VM: Enable cgroup v2 by using "systemd cgroup driver"  for Kubernetes… (#22320)
+
+## Bug fixes
+
+* KIC Drivers: fix docker driver with crio runtime: install dbus (#21724)
+* fix: correctly detect nested VMs on macOS and remove timeout multiplier (#22277)
+* fix: Increase timeout for containerd image list  (#22558)
+* fix: kubevirt addon by removing curl dependency (#22557)
+* fix: return non-zero exit code when status unavailable (#22494)
+* crio: fix ingress by enabling hostNetwork and ClusterFirstWithHostNet (#22239)
+* crio: fix preload overwriting user images (#22246)
+* Fix Podman mount on macOS by adding host.containers.internal support (#22451)
+* Fix the cri-dockerd version upgrade script (#22358)
+* fix kubelet config option FailCgroupV1 to failCgroupV1 (#22325)
+* addon registry-creds: Fix segfault without config file (#21786)
+
+## UI
+
+* Add support for Kurdish language through LANGUAGE=ku  (#22512)
+* Add support for Ukrainian language through LANGUAGE=uk (#21624)
+* Improve french translation (#21559)(#21849)(#22155)(#22386)(#22515)(#22114)
+* Improve  Chinese translations (#22082)
+
+* UI: improve warning message for proxy (#21980)
+* ui: fix correct formatting in tunnel service output (#22400)
+* align command paramaters for the ai playground fix (#21583)
+
+## CNI
+
+* CNI: Update calico from v3.30.3 to v3.31.3 (#21835)(#21961)(#22259)
+* CNI: Update cilium from v1.18.1 to v1.18.6 (#21655)(#21794)(#21953)(#22253)(#22487)
+* CNI: Update flannel from v0.27.3 to v0.27.4 (#21700)
+* CNI: Update kindnetd from v20250512-df8de77b to v20251212-v0.29.0-alpha-105-g20ccfc88 (#22127)
+
+## Addons
+
+* Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from 1.5.41 to 1.5.47 (#21709)(#21832)(#21956)(#22255)(#22489)
+* Addon Headlamp: Update Headlamp image from v0.35.0 to v0.36.0 (#21706)(#21958)(#22256)
+* Addon ingress: Update ingress-nginx/controller image from v1.13.2 to v1.13.3 (#21701)(#21865)(#22049)
+* Addon inspektor-gadget: Update inspektor-gadget image from v0.44.1 to v0.45.0 (#21708)(#22427)(#21843)(#22047)
+* Addon kong: Update kong image 3.9.1(#21698)(#21830)(#21952)(#22486)
+* Addon kong: Update kong/kubernetes-ingress-controller image from 3.5.1 to 3.5.3 (#21657)(#22000)
+* Addon nvidia-device-plugin: Update nvidia/k8s-device-plugin image from v0.17.3 to v0.18.1  (#21652)(#21796)(#22126)
+* Addon portainer: Update portainer from 2.15.1 to 2.27.7 (#20956)
+* Addon registry: Update registry image from 3.0.0 (#21735)
+* Addon Volcano: Update volcano images from v1.12.2 to v1.13.1  (#21656)(#22344)
+* Addon yakd: migrate image registry from Docker Hub to GHCR (#22250)
+* Addon yakd: Update manusa/yakd image from 0.0.5 to 0.0.7 (#22343)(#22128)
+* addon: auto-pause fix github link (#22433)
+* addon: bump kube-regsitry-proxy image (#22551)
+* addon: fix registry-proxy alpine-slim to use wget (#22550)
+* inspektor-gadget addon: remove deleted asset (#21855)
+
+## Base image versions
+
+* iso: bump to containerd/nerdctl 2.x (#21409)
+* ISO: Update docker-buildx from v0.17.1 to v0.30.1 (#22425)
+* iso: Use same Go version (1.25.5) (#22101)
+* Kicbase/iso: bump crio to v1.35 (#22332)
+* Kicbase/ISO: Update buildkit from v0.18.1 to v0.26.3 (#22186)
+* Kicbase/ISO: Update cni-plugins from v1.8.0 to v1.9.0 (#22351)
+* Kicbase/ISO: Update containerd from 2.1.4 to 2.2.1 (#22141)(#22353)
+* Kicbase/ISO: Update cri-dockerd from v0.4.0 to v0.4.0 (#21797)(#21834)(#21899)
+* Kicbase/ISO: Update crictl from v1.28.0 to v1.34.0 (#21924)
+* Kicbase/ISO: Update crun from 1.23.1 to 1.26 (#22316)
+* Kicbase/ISO: Update docker from 28.4.0 to 28.5.2 (#21757)
+* Kicbase/ISO: Update nerdctl from 1.7.7 to 2.2.1 (#22117)(#22376)
+* Kicbase/ISO: Update runc from v1.3.0 to v1.4.0 (#22083)
+* Kicbase: Bump debian:bookworm from 20250908 to 20251229 (#21837)(#22005)(#22260)(#22402)
+* kicbase: Clean up the nerdctld installation (#22438)
+* Kicbase: Switch ubuntu jammy to debian bookworm (#21643)
+* Kicbase: Update nerdctld from 0.6.1 to 0.7.0 (#21703)
+
+## Infra Migration
+
+minikube infra structure is under heavy migration to k8s-infra here are some related PRs:
+
+* preload: download from github when gcs not available (#21605)
+* prow add docker-docker-linux-x86-64 integration test in prow (#21807)
+* prow: migrate  kubernetes bootcamp image to prow (#21904)
+* ci: migrate kube-registry-proxy and gvisor to registry.k8s.io (#22544)
+* ci: move gvisor addon to registry.k8s.io (#22484)
+* ci: add configs needed to push gvisor image to k8s-infra using prow (#22406)
+* ci: Add kube-registry-proxy image to k8s.io infra (#22448)
+* add building kicbase in prow in registry.k8s.io (#22518)
+* ci: rename prowjobs to be shorter and easier to read (#22218)
+* ci: rename prow tests (#22223)
+* CI: delete prow images not needed anymore (#21756)
+* ci: prow fix errors in cloudbuild.yaml (#22007)
+* prow: migrate kubernetes bootcamp image to prow (#21904)
+* prow: run macos functional tests in prow (#22034)
+* prow: images build for all other archs (linux/ppc64le,linux/s390x) (#22471)
+* ci: update prow gvisor image jobs (#22411)
+* prow: add docker-docker-linux-x86-64 integration test in prow (#21807)
+* CI: add kvm-docker-linux-x86-64 integration test in prow (#21556)
+* ci: add kvm containerd to prow test (#22006)
+* ci: add kvm crio to prow (#22009)
+* ci: add docker crio prow (#22011)
+* ci: add docker docker test with arm64 arch to prow (#22039)
+* ci: Added docker-containerd-linux-x86-64 tests to prow (#21974)
+* ci: add None Contained X86 tests to Prow (#22235)
+ci: remove preload scripts from minikube repo and point to external (#22079)
+* build deps: Move hyperv and virtualbox drivers to minikube (#21966)
+* rename flag to to --perload-source (#22236)
+* copy the external vmware driver to internal (#21969)
+* add building kicbase in prow in registry.k8s.io (#22518)
+* Internalize github.com/docker/machine/libmachine (#21647)
+* Upgrade buildroot image to ubuntu:22.04 (#22187)
+* Always build the auto-pause binary on the host (#22354)
+* cleanup: Replace go-difflib with go-cmp in bsutil tests and add missing coverage (#22456)
+* Codespace: add golang and kvm device (#22217)
+* config: Use slices.Contains (#21681)
+* preload: download from github when gcs not available (#21605)
+* preload: verify storage type after container runtime is enabled (#22042)
+* prow: images build for all other archs (linux/ppc64le,linux/s390x) (#22471)
+* prow: run macos functional tests in prow (#22034)
+* Refactor Invoking Kubeadm command to prepare for debian 12 (#21642)
+* Release: Update kicbase to v0.0.49 (#22572)
+* Remove old obsolete Podman kubic repository (#21773)
+* Remove the cnitool package from iso (#22349)
+* remove unmaintained storage-provisioner-gluster addon (#20370)
+* RPM package: Add vendor info (#21759)
+* set sysctl params for inotify, to avoid 'too many open files' errors (#21599)
+* Test(shell): accept bash/sh/wsl as valid grandparent on Windows (#22525)
+* tests: Bump timeout tests TestISOImage/PersistentMounts//data (#22289)
+* ci: remove free gha macos functioanl tests (#22109)
+* ci: remove preload scripts from minikube repo and point to external (#22079)
+* ci: rename prow tests (#22223)
+
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- 上学上够了
+- Aaron Dewes
+- Abhigyan Shekhar
+- Adil Ansari
+- Aguacero 🌧️
+- Alban Crequy
+- Anders F Björklund
+- Andrii Holovin
+- Bob Sira
+- Byounguk Lee
+- caesarsage
+- coderrick
+- ComradeProgrammer
+- Copilot
+- Daniel
+- developowl
+- divanshu-go
+- Divy Singhvi
+- Henry Chen
+- Jeff MAURY
+- Marc Nuri
+- Mario Kahlhofer
+- Mateusz Łoskot
+- Medya Ghazizadeh
+- Michael Adam
+- minikube-bot
+- Nepomuk Crhonek
+- Niels de Vos
+- Nir Soffer
+- Predrag Rogic
+- Raj Bhargav
+- Riaan Nolan
+- Riker
+- self-sasi
+- Søren Howe Gersager
+- Sumesh P
+- thc1006
+- VerlorenerReisender
+- Vlado Djerek
+- XiaWuSharve
+- zhengtianbao
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (152 comments)
+- nirs (128 comments)
+- Copilot (121 comments)
+- afbjorklund (10 comments)
+- cfergeau (4 comments)
+- divysinghvi (4 comments)
+- obnoxxx (3 comments)
+- prezha (3 comments)
+- mloskot (2 comments)
+- bobsira (1 comments)
+- ComradeProgrammer (1 comments)
+- divanshu-go (1 comments)
+- OdedViner (1 comments)
+
+Thank you to our triage members for this release!
+
 ## Version 1.37.0 - 2025-09-09
 
 ## Highlight

@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 37
-VERSION_BUILD ?= 0
+VERSION_MINOR ?= 38
+VERSION_BUILD ?= 1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.37.0-1768831230-22464
+ISO_VERSION ?= v1.38.0
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -71,7 +71,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v2.8.0
+GOLINT_VERSION ?= v2.10.1
 # see https://golangci-lint.run/docs/configuration/file/ for config details
 GOLINT_CONFIG ?= .golangci.min.yaml
 # Set this to --verbose to see details about the linters and formatters used
@@ -939,6 +939,10 @@ update-crun-version:
 update-metrics-server-version:
 	cd hack && go run update/metrics_server_version/metrics_server_version.go
 
+.PHONY: update-kubevirt-version
+update-kubevirt-version:
+	cd hack && go run update/kubevirt_version/kubevirt_version.go
+
 .PHONY: update-runc-version
 update-runc-version:
 	cd hack && go run update/runc_version/runc_version.go
@@ -1052,10 +1056,6 @@ update-cilium-version:
 .PHONY: update-yakd-version
 update-yakd-version:
 	cd hack && go run update/yakd_version/yakd_version.go
-
-.PHONY: update-kube-registry-proxy-version
-update-kube-registry-proxy-version:
-	cd hack && go run update/kube_registry_proxy_version/kube_registry_proxy_version.go
 
 .PHONY: update-headlamp-version
 update-headlamp-version:

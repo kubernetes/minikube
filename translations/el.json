@@ -627,7 +627,6 @@
 	"Starting \"{{.node}}\" {{.role}} node in \"{{.cluster}}\" cluster": "Εκκίνηση κόμβου \"{{.node}}\" {{.role}} στο σύμπλεγμα \"{{.cluster}}\"",
 	"Starting minikube without Kubernetes in cluster {{.cluster}}": "Εκκίνηση minikube χωρίς Kubernetes στο σύμπλεγμα {{.cluster}}",
 	"Starting tunnel for service {{.service}}.": "Εκκίνηση σήραγγας για την υπηρεσία {{.service}}.",
-	"Starting v1.39.0, minikube will default to \"containerd\" container runtime. See #21973 for more info.": "",
 	"Starts a local Kubernetes cluster": "Εκκινεί ένα τοπικό σύμπλεγμα Kubernetes",
 	"Starts a node.": "Εκκινεί έναν κόμβο.",
 	"Starts an existing stopped node in a cluster.": "Εκκινεί έναν υπάρχοντα σταματημένο κόμβο σε ένα σύμπλεγμα.",

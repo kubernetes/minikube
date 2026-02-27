@@ -26,15 +26,26 @@ spec:
       containers:
       - image: public.ecr.aws/docker/library/mysql:8.4
         name: mysql
+        args:
+          # 1. Existing optimization
+          - "--performance-schema=OFF"
+          # 2. CRITICAL: Reduce buffer pool to fit in 384Mi limit
+          # 64M is safe for dev; allows room for OS + connections
+          - "--innodb-buffer-pool-size=64M"
+          # 3. Disable binary logging (saves I/O and CPU)
+          - "--disable-log-bin"
+          # 4. Limit connections to save per-thread memory
+          - "--max-connections=50"
+          # 5. Skip DNS lookups (saves a tiny bit of CPU/latency on connect)
+          - "--skip-name-resolve"
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "600m"           
+            memory: "256Mi"
+            cpu: "100m"
           limits:
-            memory: "700Mi"
-            cpu: "700m"
+            memory: "384Mi"
+            cpu: "500m"
         env:
-          # Use secret in real usage
         - name: MYSQL_ROOT_PASSWORD
           value: password
         ports:

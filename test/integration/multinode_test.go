@@ -218,7 +218,7 @@ func validateCopyFileWithMultiNode(ctx context.Context, t *testing.T, profile st
 // validateMultiNodeLabels check if all node labels were configured correctly
 func validateMultiNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	// docs: Get the node labels from the cluster with `kubectl get nodes`
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "nodes", "-o", "jsonpath=[{range .items[*]}{.metadata.labels},{end}]"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "nodes", "-o", "jsonpath=[{range .items[*]}{.metadata.labels},{end}]"))
 	if err != nil {
 		t.Errorf("failed to 'kubectl get nodes' with args %q: %v", rr.Command(), err)
 	}
@@ -303,7 +303,7 @@ func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile strin
 	}
 
 	// Make sure kubectl can connect correctly
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "get", "nodes"))
 	if err != nil {
 		t.Fatalf("failed to kubectl get nodes. args %q : %v", rr.Command(), err)
 	}
@@ -393,7 +393,7 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 	}
 
 	// Make sure kubectl reports that all nodes are ready
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "get", "nodes"))
 	if err != nil {
 		t.Fatalf("failed to run kubectl get nodes. args %q : %v", rr.Command(), err)
 	}
@@ -401,7 +401,7 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 		t.Errorf("expected 2 nodes to be Ready, got %v", rr.Output())
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes", "-o", `go-template='{{range .items}}{{range .status.conditions}}{{if eq .type "Ready"}} {{.status}}{{"\n"}}{{end}}{{end}}{{end}}'`))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "get", "nodes", "-o", `go-template='{{range .items}}{{range .status.conditions}}{{if eq .type "Ready"}} {{.status}}{{"\n"}}{{end}}{{end}}{{end}}'`))
 	if err != nil {
 		t.Fatalf("failed to run kubectl get nodes. args %q : %v", rr.Command(), err)
 	}
@@ -433,7 +433,7 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 	}
 
 	// Make sure kubectl knows the node is gone
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "get", "nodes"))
 	if err != nil {
 		t.Fatalf("failed to run kubectl get nodes. args %q : %v", rr.Command(), err)
 	}
@@ -441,7 +441,7 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 		t.Errorf("expected 2 nodes to be Ready, got %v", rr.Output())
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes", "-o", `go-template='{{range .items}}{{range .status.conditions}}{{if eq .type "Ready"}} {{.status}}{{"\n"}}{{end}}{{end}}{{end}}'`))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "get", "nodes", "-o", `go-template='{{range .items}}{{range .status.conditions}}{{if eq .type "Ready"}} {{.status}}{{"\n"}}{{end}}{{end}}{{end}}'`))
 	if err != nil {
 		t.Fatalf("failed to run kubectl get nodes. args %q : %v", rr.Command(), err)
 	}

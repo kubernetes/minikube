@@ -85,7 +85,7 @@ func TestCertOptions(t *testing.T) {
 			t.Errorf("expected to get a non-zero forwarded port but got %d", port)
 		}
 	} else {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "config", "view"))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "config", "view"))
 		if err != nil {
 			t.Errorf("failed to get kubectl config. args %q : %v", rr.Command(), err)
 		}

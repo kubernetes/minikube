@@ -208,7 +208,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	// avoid timeouts like:
 	// Error from server (InternalError): Internal error occurred: failed calling webhook "validate.nginx.ingress.kubernetes.io": Post "https://ingress-nginx-controller-admission.ingress-nginx.svc:443/networking/v1/ingresses?timeout=10s": dial tcp 10.107.218.58:443: i/o timeout
 	// Error from server (InternalError): Internal error occurred: failed calling webhook "validate.nginx.ingress.kubernetes.io": Post "https://ingress-nginx-controller-admission.ingress-nginx.svc:443/networking/v1/ingresses?timeout=10s": context deadline exceeded
-	if _, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=ingress-nginx", "pod", "--selector=app.kubernetes.io/component=controller", "--timeout=90s")); err != nil {
+	if _, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "wait", "--for=condition=ready", "--namespace=ingress-nginx", "pod", "--selector=app.kubernetes.io/component=controller", "--timeout=90s")); err != nil {
 		t.Fatalf("failed waiting for ingress-nginx-controller : %v", err)
 	}
 
@@ -233,7 +233,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	// create networking.k8s.io/v1 ingress
 	createv1Ingress := func() error {
 		// apply networking.k8s.io/v1 ingress
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, ingressYaml)))
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, ingressYaml)))
 		if err != nil {
 			return err
 		}
@@ -246,7 +246,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to create ingress: %v", err)
 	}
 
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml")))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml")))
 	if err != nil {
 		t.Errorf("failed to kubectl replace nginx-pod-svc. args %q. %v", rr.Command(), err)
 	}
@@ -287,7 +287,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// check the ingress-dns addon here as well
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, ingressDNSYaml)))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, ingressDNSYaml)))
 	if err != nil {
 		t.Errorf("failed to kubectl replace ingress-dns-example. args %q. %v", rr.Command(), err)
 	}
@@ -331,7 +331,7 @@ func validateRegistryCredsAddon(ctx context.Context, t *testing.T, profile strin
 
 	// Check a few secrets exists that match our test data
 	// In our test aws and gcp are set, docker and acr are disabled - so they will be set to "changeme"
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "-n", "kube-system", "get", "secret", "-o", "yaml"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "-n", "kube-system", "get", "secret", "-o", "yaml"))
 	if err != nil {
 		t.Errorf("failed to get secrets. args %q : %v", rr.Command(), err)
 	}
@@ -391,12 +391,12 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Test from inside the cluster (no curl available on busybox)
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "po", "-l", "run=registry-test", "--now"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "delete", "po", "-l", "run=registry-test", "--now"))
 	if err != nil {
 		t.Logf("pre-cleanup %s failed: %v (not a problem)", rr.Command(), err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=gcr.io/k8s-minikube/busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=gcr.io/k8s-minikube/busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local"))
 	if err != nil {
 		t.Errorf("failed to hit registry.kube-system.svc.cluster.local. args %q failed: %v", rr.Command(), err)
 	}
@@ -462,7 +462,7 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 
 	want := "CPU(cores)"
 	checkMetricsServer := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "top", "pods", "-n", "kube-system"))
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "top", "pods", "-n", "kube-system"))
 		if err != nil {
 			return err
 		}
@@ -487,35 +487,35 @@ func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 	start := time.Now()
 
-	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=catalog-operator", "--timeout=90s")); err != nil {
+	if _, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=catalog-operator", "--timeout=90s")); err != nil {
 		t.Fatalf("failed waiting for pod catalog-operator: %v", err)
 	}
 	t.Logf("catalog-operator stabilized in %s", time.Since(start))
 
-	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=olm-operator", "--timeout=90s")); err != nil {
+	if _, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=olm-operator", "--timeout=90s")); err != nil {
 		t.Fatalf("failed waiting for pod olm-operator: %v", err)
 	}
 	t.Logf("olm-operator stabilized in %s", time.Since(start))
 
-	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=packageserver", "--timeout=90s")); err != nil {
+	if _, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=packageserver", "--timeout=90s")); err != nil {
 		t.Fatalf("failed waiting for pod olm-operator: %v", err)
 	}
 	t.Logf("packageserver stabilized in %s", time.Since(start))
 
-	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=olm.catalogSource=operatorhubio-catalog", "--timeout=90s")); err != nil {
+	if _, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=olm.catalogSource=operatorhubio-catalog", "--timeout=90s")); err != nil {
 		t.Fatalf("failed waiting for pod operatorhubio-catalog: %v", err)
 	}
 	t.Logf("operatorhubio-catalog stabilized in %s", time.Since(start))
 
 	// Install one sample Operator such as etcd
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "etcd.yaml")))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "-f", filepath.Join(*testdataDir, "etcd.yaml")))
 	if err != nil {
 		t.Logf("etcd operator installation with %s failed: %v", rr.Command(), err)
 	}
 
 	want := "Succeeded"
 	checkOperatorInstalled := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "csv", "-n", "my-etcd"))
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "csv", "-n", "my-etcd"))
 		if err != nil {
 			return err
 		}
@@ -551,7 +551,7 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 	t.Logf("csi-hostpath-driver pods stabilized in %s", time.Since(start))
 
 	// create sample PVC
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "pvc.yaml")))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "pvc.yaml")))
 	if err != nil {
 		t.Logf("creating sample PVC with %s failed: %v", rr.Command(), err)
 	}
@@ -561,7 +561,7 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 	}
 
 	// create sample pod with the PVC
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "pv-pod.yaml")))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "pv-pod.yaml")))
 	if err != nil {
 		t.Logf("creating pod with %s failed: %v", rr.Command(), err)
 	}
@@ -571,7 +571,7 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 	}
 
 	// create volume snapshot
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "snapshot.yaml")))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "snapshot.yaml")))
 	if err != nil {
 		t.Logf("creating pod with %s failed: %v", rr.Command(), err)
 	}
@@ -581,19 +581,19 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 	}
 
 	// delete pod
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pod", "task-pv-pod"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "delete", "pod", "task-pv-pod"))
 	if err != nil {
 		t.Logf("deleting pod with %s failed: %v", rr.Command(), err)
 	}
 
 	// delete pvc
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pvc", "hpvc"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "delete", "pvc", "hpvc"))
 	if err != nil {
 		t.Logf("deleting pod with %s failed: %v", rr.Command(), err)
 	}
 
 	// restore pv from snapshot
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "pvc-restore.yaml")))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "pvc-restore.yaml")))
 	if err != nil {
 		t.Logf("creating pvc with %s failed: %v", rr.Command(), err)
 	}
@@ -603,7 +603,7 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 	}
 
 	// create pod from restored snapshot
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "pv-pod-restore.yaml")))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "pv-pod-restore.yaml")))
 	if err != nil {
 		t.Logf("creating pod with %s failed: %v", rr.Command(), err)
 	}
@@ -613,15 +613,15 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 	}
 
 	// CLEANUP
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pod", "task-pv-pod-restore"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "delete", "pod", "task-pv-pod-restore"))
 	if err != nil {
 		t.Logf("cleanup with %s failed: %v", rr.Command(), err)
 	}
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pvc", "hpvc-restore"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "delete", "pvc", "hpvc-restore"))
 	if err != nil {
 		t.Logf("cleanup with %s failed: %v", rr.Command(), err)
 	}
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "volumesnapshot", "new-snapshot-demo"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "delete", "volumesnapshot", "new-snapshot-demo"))
 	if err != nil {
 		t.Logf("cleanup with %s failed: %v", rr.Command(), err)
 	}
@@ -629,13 +629,13 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 
 // validateGCPAuthNamespaces validates that newly created namespaces contain the gcp-auth secret.
 func validateGCPAuthNamespaces(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "ns", "new-namespace"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "ns", "new-namespace"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
 	logsAsError := func() error {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "-l", "app=gcp-auth", "-n", "gcp-auth"))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "logs", "-l", "app=gcp-auth", "-n", "gcp-auth"))
 		if err != nil {
 			return err
 		}
@@ -643,7 +643,7 @@ func validateGCPAuthNamespaces(ctx context.Context, t *testing.T, profile string
 	}
 
 	getSecret := func() error {
-		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "secret", "gcp-auth", "-n", "new-namespace"))
+		_, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "secret", "gcp-auth", "-n", "new-namespace"))
 		if err != nil {
 			err = fmt.Errorf("%w: gcp-auth container logs: %v", err, logsAsError())
 		}
@@ -674,14 +674,14 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 	t.Run("FakeCredentials", func(t *testing.T) {
 		// schedule a pod to check environment variables
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
 		if err != nil {
 			t.Fatalf("%s failed: %v", rr.Command(), err)
 		}
 
 		serviceAccountName := "gcp-auth-test"
 		// create a dummy service account so we know the pull secret got added
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "sa", serviceAccountName))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "sa", serviceAccountName))
 		if err != nil {
 			t.Fatalf("%s failed: %v", rr.Command(), err)
 		}
@@ -693,7 +693,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		// Use this pod to confirm that the env vars are set correctly
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "printenv GOOGLE_APPLICATION_CREDENTIALS"))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "printenv GOOGLE_APPLICATION_CREDENTIALS"))
 		if err != nil {
 			t.Fatalf("printenv creds: %v", err)
 		}
@@ -705,7 +705,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		// Now check the service account and make sure the "gcp-auth" image pull secret is present
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "sa", serviceAccountName))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "describe", "sa", serviceAccountName))
 		if err != nil {
 			t.Fatalf("%s failed: %v", rr.Command(), err)
 		}
@@ -719,7 +719,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 		if !detect.IsOnGCE() || detect.IsCloudShell() {
 			// Make sure the file contents are correct
-			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "cat /google-app-creds.json"))
+			rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "cat /google-app-creds.json"))
 			if err != nil {
 				t.Fatalf("cat creds: %v", err)
 			}
@@ -743,7 +743,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		// Check the GOOGLE_CLOUD_PROJECT env var as well
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "printenv GOOGLE_CLOUD_PROJECT"))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "printenv GOOGLE_CLOUD_PROJECT"))
 		if err != nil {
 			t.Fatalf("print env project: %v", err)
 		}
@@ -778,7 +778,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		} else if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
 			t.Errorf("Unexpected error message: %v", rr.Output())
 		}
-		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
+		_, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
 		if err != nil {
 			t.Fatalf("print env project: %v", err)
 		}
@@ -791,7 +791,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		// Try it with a European mirror as well
-		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image-eu.yaml")))
+		_, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image-eu.yaml")))
 		if err != nil {
 			t.Fatalf("print env project: %v", err)
 		}
@@ -902,13 +902,13 @@ func validateVolcanoAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// When the volcano deployment is complete, delete the volcano-admission-init job, it will affect the tests
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "-n", volcanoNamespace, "job", "volcano-admission-init"))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "delete", "-n", volcanoNamespace, "job", "volcano-admission-init"))
 	if err != nil {
 		t.Logf("vcjob creation with %s failed: %v", rr.Command(), err)
 	}
 
 	// Create a vcjob
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "vcjob.yaml")))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "create", "-f", filepath.Join(*testdataDir, "vcjob.yaml")))
 	if err != nil {
 		t.Logf("vcjob creation with %s failed: %v", rr.Command(), err)
 	}
@@ -916,7 +916,7 @@ func validateVolcanoAddon(ctx context.Context, t *testing.T, profile string) {
 	want := "test-job"
 	checkVolcano := func() error {
 		// check the vcjob
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "vcjob", "-n", "my-volcano"))
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "vcjob", "-n", "my-volcano"))
 		if err != nil {
 			return err
 		}
@@ -948,13 +948,13 @@ func validateLocalPathAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// Create a test PVC
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "storage-provisioner-rancher", "pvc.yaml")))
+	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "storage-provisioner-rancher", "pvc.yaml")))
 	if err != nil {
 		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
 	}
 
 	// Deploy a simple pod with PVC
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "storage-provisioner-rancher", "pod.yaml")))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "storage-provisioner-rancher", "pod.yaml")))
 	if err != nil {
 		t.Fatalf("kubectl apply pod.yaml failed: args %q: %v", rr.Command(), err)
 	}
@@ -966,7 +966,7 @@ func validateLocalPathAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Get info about PVC
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "pvc", "test-pvc", "-o=json"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "pvc", "test-pvc", "-o=json"))
 	if err != nil {
 		t.Fatalf("kubectl get pvc with %s failed: %v", rr.Command(), err)
 	}
@@ -987,11 +987,11 @@ func validateLocalPathAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Cleanup
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pod", "test-local-path"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "delete", "pod", "test-local-path"))
 	if err != nil {
 		t.Logf("cleanup with %s failed: %v", rr.Command(), err)
 	}
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pvc", "test-pvc"))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "delete", "pvc", "test-pvc"))
 	if err != nil {
 		t.Logf("cleanup with %s failed: %v", rr.Command(), err)
 	}

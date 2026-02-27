@@ -146,7 +146,7 @@ func TestNetworkPlugins(t *testing.T) {
 
 				if !t.Failed() {
 					t.Run("NetCatPod", func(t *testing.T) {
-						_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "netcat-deployment.yaml")))
+						_, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "netcat-deployment.yaml")))
 						if err != nil {
 							t.Errorf("failed to apply netcat manifest: %v", err)
 						}
@@ -172,7 +172,7 @@ func TestNetworkPlugins(t *testing.T) {
 						var err error
 
 						nslookup := func() error {
-							rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "nslookup", "kubernetes.default"))
+							rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "nslookup", "kubernetes.default"))
 							return err
 						}
 
@@ -191,7 +191,7 @@ func TestNetworkPlugins(t *testing.T) {
 				if !t.Failed() {
 					t.Run("Localhost", func(t *testing.T) {
 						tryLocal := func() error {
-							_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z localhost 8080"))
+							_, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z localhost 8080"))
 							return err
 						}
 
@@ -261,7 +261,7 @@ func validateFalseCNI(ctx context.Context, t *testing.T, profile string) {
 // should fail if hairpinMode is off
 func validateHairpinMode(ctx context.Context, t *testing.T, profile string, hairpin bool) {
 	tryHairPin := func() error {
-		_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z netcat 8080"))
+		_, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z netcat 8080"))
 		return err
 	}
 	if hairpin {
@@ -305,47 +305,47 @@ func debugLogs(t *testing.T, profile string) {
 	output.WriteString(fmt.Sprintf("----------------------- debugLogs start: %s [pass: %v] --------------------------------", profile, !t.Failed()))
 
 	// basic nslookup
-	cmd := exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "nslookup", "-timeout=5", "kubernetes.default")
+	cmd := exec.Command(KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "nslookup", "-timeout=5", "kubernetes.default")
 	out, err := cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> netcat: nslookup kubernetes.default:\n%s\n", out))
 	// skip some checks if no issues or lower-level connectivity issues
 	if err == nil && !strings.Contains(string(out), "10.96.0.1") || err != nil && !strings.Contains(string(out), ";; connection timed out; no servers could be reached") { // for both nslookup and dig
 		// nslookup trace search
-		cmd = exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "nslookup", "-timeout=5", "-debug", "-type=a", "kubernetes.default")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "nslookup", "-timeout=5", "-debug", "-type=a", "kubernetes.default")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> netcat: nslookup debug kubernetes.default a-records:\n%s\n", out))
 
 		// dig trace search udp
-		cmd = exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "dig", "+timeout=5", "+search", "+showsearch", "kubernetes.default")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "dig", "+timeout=5", "+search", "+showsearch", "kubernetes.default")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> netcat: dig search kubernetes.default:\n%s\n", out))
 		// dig trace direct udp
-		cmd = exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "dig", "+timeout=5", "@10.96.0.10", "kubernetes.default.svc.cluster.local")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "dig", "+timeout=5", "@10.96.0.10", "kubernetes.default.svc.cluster.local")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> netcat: dig @10.96.0.10 kubernetes.default.svc.cluster.local udp/53:\n%s\n", out))
 		// dig trace direct tcp
-		cmd = exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "dig", "+timeout=5", "@10.96.0.10", "+tcp", "kubernetes.default.svc.cluster.local")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "dig", "+timeout=5", "@10.96.0.10", "+tcp", "kubernetes.default.svc.cluster.local")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> netcat: dig @10.96.0.10 kubernetes.default.svc.cluster.local tcp/53:\n%s\n", out))
 	}
 
 	// check udp connectivity
-	cmd = exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "nc", "-w", "5", "-z", "-n", "-v", "-u", "10.96.0.10", "53")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "nc", "-w", "5", "-z", "-n", "-v", "-u", "10.96.0.10", "53")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> netcat: nc 10.96.0.10 udp/53:\n%s\n", out))
 	// check tcp connectivity
-	cmd = exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "nc", "-w", "5", "-z", "-n", "-v", "10.96.0.10", "53")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "nc", "-w", "5", "-z", "-n", "-v", "10.96.0.10", "53")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> netcat: nc 10.96.0.10 tcp/53:\n%s\n", out))
 
 	// pod's dns env
-	cmd = exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "cat", "/etc/nsswitch.conf")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "cat", "/etc/nsswitch.conf")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> netcat: /etc/nsswitch.conf:\n%s\n", out))
-	cmd = exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "cat", "/etc/hosts")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "cat", "/etc/hosts")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> netcat: /etc/hosts:\n%s\n", out))
-	cmd = exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "cat", "/etc/resolv.conf")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "exec", "deployment/netcat", "--", "cat", "/etc/resolv.conf")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> netcat: /etc/resolv.conf:\n%s\n", out))
 
@@ -361,7 +361,7 @@ func debugLogs(t *testing.T, profile string) {
 	output.WriteString(fmt.Sprintf("\n>>> host: /etc/resolv.conf:\n%s\n", out))
 
 	// k8s resources overview
-	cmd = exec.Command("kubectl", "--context", profile, "get", "node,svc,ep,ds,deploy,pods", "-A", "-owide")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "get", "node,svc,ep,ds,deploy,pods", "-A", "-owide")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: nodes, services, endpoints, daemon sets, deployments and pods, :\n%s\n", out))
 
@@ -374,35 +374,35 @@ func debugLogs(t *testing.T, profile string) {
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: crictl containers:\n%s\n", out))
 
-	cmd = exec.Command("kubectl", "--context", profile, "describe", "deployment", "-n", "default", "--selector=app=netcat")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "deployment", "-n", "default", "--selector=app=netcat")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: describe netcat deployment:\n%s\n", out))
 
-	cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-n", "default", "--selector=app=netcat")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "pods", "-n", "default", "--selector=app=netcat")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: describe netcat pod(s):\n%s\n", out))
 
-	cmd = exec.Command("kubectl", "--context", profile, "logs", "-n", "default", "--selector=app=netcat", "--tail=-1")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "-n", "default", "--selector=app=netcat", "--tail=-1")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: netcat logs:\n%s\n", out))
 
-	cmd = exec.Command("kubectl", "--context", profile, "describe", "deployment", "-n", "kube-system", "--selector=k8s-app=kube-dns")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "deployment", "-n", "kube-system", "--selector=k8s-app=kube-dns")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: describe coredns deployment:\n%s\n", out))
 
-	cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-n", "kube-system", "--selector=k8s-app=kube-dns")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "pods", "-n", "kube-system", "--selector=k8s-app=kube-dns")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: describe coredns pods:\n%s\n", out))
 
-	cmd = exec.Command("kubectl", "--context", profile, "logs", "-n", "kube-system", "--selector=k8s-app=kube-dns", "--tail=-1")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "-n", "kube-system", "--selector=k8s-app=kube-dns", "--tail=-1")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: coredns logs:\n%s\n", out))
 
-	cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-n", "kube-system", "--selector=component=kube-apiserver")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "pods", "-n", "kube-system", "--selector=component=kube-apiserver")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: describe api server pod(s):\n%s\n", out))
 
-	cmd = exec.Command("kubectl", "--context", profile, "logs", "-n", "kube-system", "--selector=component=kube-apiserver", "--tail=-1")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "-n", "kube-system", "--selector=component=kube-apiserver", "--tail=-1")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: api server logs:\n%s\n", out))
 
@@ -427,19 +427,19 @@ func debugLogs(t *testing.T, profile string) {
 	output.WriteString(fmt.Sprintf("\n>>> host: iptables table nat:\n%s\n", out))
 
 	if strings.Contains(profile, "flannel") {
-		cmd = exec.Command("kubectl", "--context", profile, "describe", "ds", "-A", "--selector=app=flannel")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "ds", "-A", "--selector=app=flannel")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe flannel daemon set:\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-A", "--selector=app=flannel")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "pods", "-A", "--selector=app=flannel")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe flannel pod(s):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-flannel", "--selector=app=flannel", "--all-containers", "--prefix", "--ignore-errors")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "--namespace=kube-flannel", "--selector=app=flannel", "--all-containers", "--prefix", "--ignore-errors")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: flannel container(s) logs (current):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-flannel", "--selector=app=flannel", "--all-containers", "--prefix", "--ignore-errors", "--previous")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "--namespace=kube-flannel", "--selector=app=flannel", "--all-containers", "--prefix", "--ignore-errors", "--previous")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: flannel container(s) logs (previous):\n%s\n", out))
 
@@ -453,100 +453,100 @@ func debugLogs(t *testing.T, profile string) {
 	}
 
 	if strings.Contains(profile, "calico") {
-		cmd = exec.Command("kubectl", "--context", profile, "describe", "ds", "-A", "--selector=k8s-app=calico-node")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "ds", "-A", "--selector=k8s-app=calico-node")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe calico daemon set:\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-A", "--selector=k8s-app=calico-node")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "pods", "-A", "--selector=k8s-app=calico-node")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe calico daemon set pod(s):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=calico-node", "--all-containers", "--prefix", "--ignore-errors")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=calico-node", "--all-containers", "--prefix", "--ignore-errors")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: calico daemon set container(s) logs (current):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=calico-node", "--all-containers", "--prefix", "--ignore-errors", "--previous")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=calico-node", "--all-containers", "--prefix", "--ignore-errors", "--previous")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: calico daemon set container(s) logs (previous):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "describe", "deploy", "-A", "--selector=k8s-app=calico-kube-controllers")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "deploy", "-A", "--selector=k8s-app=calico-kube-controllers")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe calico deployment:\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-A", "--selector=k8s-app=calico-kube-controllers")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "pods", "-A", "--selector=k8s-app=calico-kube-controllers")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe calico deployment pod(s):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=calico-kube-controllers", "--all-containers", "--prefix", "--ignore-errors")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=calico-kube-controllers", "--all-containers", "--prefix", "--ignore-errors")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: calico deployment container(s) logs (current):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=calico-kube-controllers", "--all-containers", "--prefix", "--ignore-errors", "--previous")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=calico-kube-controllers", "--all-containers", "--prefix", "--ignore-errors", "--previous")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: calico deployment container(s) logs (previous):\n%s\n", out))
 	}
 
 	if strings.Contains(profile, "cilium") {
-		cmd = exec.Command("kubectl", "--context", profile, "describe", "ds", "-A", "--selector=k8s-app=cilium")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "ds", "-A", "--selector=k8s-app=cilium")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe cilium daemon set:\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-A", "--selector=k8s-app=cilium")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "pods", "-A", "--selector=k8s-app=cilium")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe cilium daemon set pod(s):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=cilium", "--all-containers", "--prefix", "--ignore-errors")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=cilium", "--all-containers", "--prefix", "--ignore-errors")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: cilium daemon set container(s) logs (current):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=cilium", "--all-containers", "--prefix", "--ignore-errors", "--previous")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=cilium", "--all-containers", "--prefix", "--ignore-errors", "--previous")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: cilium daemon set container(s) logs (previous):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "describe", "deploy", "-A", "--selector=name=cilium-operator")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "deploy", "-A", "--selector=name=cilium-operator")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe cilium deployment:\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-A", "--selector=name=cilium-operator")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "pods", "-A", "--selector=name=cilium-operator")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe cilium deployment pod(s):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=name=cilium-operator", "--all-containers", "--prefix", "--ignore-errors")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "--namespace=kube-system", "--selector=name=cilium-operator", "--all-containers", "--prefix", "--ignore-errors")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: cilium deployment container(s) logs (current):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=name=cilium-operator", "--all-containers", "--prefix", "--ignore-errors", "--previous")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "--namespace=kube-system", "--selector=name=cilium-operator", "--all-containers", "--prefix", "--ignore-errors", "--previous")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: cilium deployment container(s) logs (previous):\n%s\n", out))
 	}
 
 	if strings.Contains(profile, "kindnet") {
-		cmd = exec.Command("kubectl", "--context", profile, "describe", "ds", "-A", "--selector=app=kindnet")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "ds", "-A", "--selector=app=kindnet")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe kindnet daemon set:\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-A", "--selector=app=kindnet")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "pods", "-A", "--selector=app=kindnet")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe kindnet pod(s):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=app=kindnet", "--all-containers", "--prefix", "--ignore-errors")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "--namespace=kube-system", "--selector=app=kindnet", "--all-containers", "--prefix", "--ignore-errors")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: kindnet container(s) logs (current):\n%s\n", out))
 
-		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=app=kindnet", "--all-containers", "--prefix", "--ignore-errors", "--previous")
+		cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "--namespace=kube-system", "--selector=app=kindnet", "--all-containers", "--prefix", "--ignore-errors", "--previous")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: kindnet container(s) logs (previous):\n%s\n", out))
 	}
 
-	cmd = exec.Command("kubectl", "--context", profile, "describe", "ds", "-n", "kube-system", "--selector=k8s-app=kube-proxy")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "ds", "-n", "kube-system", "--selector=k8s-app=kube-proxy")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: describe kube-proxy daemon set:\n%s\n", out))
 
-	cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-n", "kube-system", "--selector=k8s-app=kube-proxy")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "describe", "pods", "-n", "kube-system", "--selector=k8s-app=kube-proxy")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: describe kube-proxy pod(s):\n%s\n", out))
 
-	cmd = exec.Command("kubectl", "--context", profile, "logs", "-n", "kube-system", "--selector=k8s-app=kube-proxy", "--tail=-1")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "logs", "-n", "kube-system", "--selector=k8s-app=kube-proxy", "--tail=-1")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: kube-proxy logs:\n%s\n", out))
 
@@ -570,11 +570,11 @@ func debugLogs(t *testing.T, profile string) {
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: /var/lib/kubelet/config.yaml:\n%s\n", out))
 
-	cmd = exec.Command("kubectl", "config", "view")
+	cmd = exec.Command(KubectlBinary(), "config", "view")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: kubectl config:\n%s\n", out))
 
-	cmd = exec.Command("kubectl", "--context", profile, "get", "cm", "-A", "-oyaml")
+	cmd = exec.Command(KubectlBinary(), "--context", profile, "get", "cm", "-A", "-oyaml")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: cms:\n%s\n", out))
 

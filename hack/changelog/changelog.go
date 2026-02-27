@@ -28,7 +28,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/go-github/v81/github"
+	"github.com/google/go-github/v83/github"
 	"golang.org/x/oauth2"
 )
 
@@ -255,7 +255,7 @@ func printGroups(groups map[string][]*github.PullRequest) {
 			return ti < tj
 		})
 		for _, pr := range prs {
-			fmt.Printf("* %s (#%d)\n", pr.GetTitle(), pr.GetNumber())
+			fmt.Printf("* %s ([#%d](https://github.com/kubernetes/minikube/pull/%d))\n", pr.GetTitle(), pr.GetNumber(), pr.GetNumber())
 		}
 		fmt.Println()
 	}

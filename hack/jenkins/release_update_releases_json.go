@@ -122,7 +122,7 @@ func createBareRelease(name string) release {
 	return release{
 		Checksums: checksums{
 			AMD64:   &operatingSystems{},
-			ARM:     &operatingSystems{},
+
 			ARM64:   &operatingSystems{},
 			PPC64LE: &operatingSystems{},
 			S390X:   &operatingSystems{},
@@ -139,7 +139,7 @@ func getSHAMap(c *checksums) map[string]map[string][]*string {
 		},
 		"linux": {
 			"amd64":   {&c.AMD64.Linux, &c.Linux},
-			"arm":     {&c.ARM.Linux},
+
 			"arm64":   {&c.ARM64.Linux},
 			"ppc64le": {&c.PPC64LE.Linux},
 			"s390x":   {&c.S390X.Linux},
