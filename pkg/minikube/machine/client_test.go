@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"k8s.io/minikube/pkg/libmachine/drivers/plugin/localbinary"
+	"k8s.io/minikube/pkg/libmachine/host"
 
 	"k8s.io/minikube/pkg/minikube/driver"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
@@ -71,19 +72,30 @@ func TestLocalClientNewHost(t *testing.T) {
 	var tests = []struct {
 		description string
 		driver      string
+		guest       host.Guest
 		rawDriver   []byte
 		err         bool
 	}{
 		{
 			description: "host vbox correct",
 			driver:      driver.VirtualBox,
-			rawDriver:   []byte(vboxConfig),
+			guest: host.Guest{
+				Name:    "linux",
+				Version: "1.0.0",
+				URL:     "https://example.com/linux.iso",
+			},
+			rawDriver: []byte(vboxConfig),
 		},
 		{
 			description: "host vbox incorrect",
 			driver:      driver.VirtualBox,
-			rawDriver:   []byte("?"),
-			err:         true,
+			guest: host.Guest{
+				Name:    "linux",
+				Version: "1.0.0",
+				URL:     "https://example.com/linux.iso",
+			},
+			rawDriver: []byte("?"),
+			err:       true,
 		},
 	}
 
@@ -91,7 +103,7 @@ func TestLocalClientNewHost(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			host, err := c.NewHost(test.driver, test.rawDriver)
+			host, err := c.NewHost(test.driver, test.guest, test.rawDriver)
 			// A few sanity checks that we can do on the host
 			if host != nil {
 				if host.DriverName != test.driver {
@@ -99,6 +111,9 @@ func TestLocalClientNewHost(t *testing.T) {
 				}
 				if host.Name != host.Driver.GetMachineName() {
 					t.Errorf("Host name is not correct.  Expected :%s, got: %s", host.Driver.GetMachineName(), host.Name)
+				}
+				if host.Guest.Name != test.guest.Name {
+					t.Errorf("Host's guest os is not correct.  Expected :%s, got: %s", test.guest.Name, host.Guest.Name)
 				}
 			}
 			if err != nil && !test.err {

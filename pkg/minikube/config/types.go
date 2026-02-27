@@ -109,6 +109,7 @@ type ClusterConfig struct {
 	SSHAgentPID             int
 	GPUs                    string
 	AutoPauseInterval       time.Duration // Specifies interval of time to wait before checking if cluster should be paused
+	WindowsNodeVersion      string        // OS version of windows node
 	Rosetta                 bool          // Only used by vfkit driver
 }
 
@@ -149,6 +150,7 @@ type Node struct {
 	ContainerRuntime  string
 	ControlPlane      bool
 	Worker            bool
+	Guest             Guest
 }
 
 // VersionedExtraOption holds information on flags to apply to a specific range
@@ -181,4 +183,10 @@ type VersionedExtraOption struct {
 type ScheduledStopConfig struct {
 	InitiationTime int64
 	Duration       time.Duration
+}
+
+type Guest struct {
+	Name    string
+	Version string
+	URL     string
 }

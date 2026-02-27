@@ -25,7 +25,41 @@ import (
 	"runtime"
 	"strconv"
 	"time"
+
+	"k8s.io/minikube/pkg/libmachine/log"
 )
+
+type GuestUtil struct {
+	os     string
+	vhdUrl string
+}
+
+// ConfigGuest is the package-level singleton for GuestUtil
+var ConfigGuest *GuestUtil
+
+func SetGuestUtil(guestOS, vhdUrl string) {
+	ConfigGuest = &GuestUtil{
+		os:     guestOS,
+		vhdUrl: vhdUrl,
+	}
+	log.Debugf("SetGuestUtil: os=%s, vhdUrl=%s", guestOS, vhdUrl)
+}
+
+func (g *GuestUtil) GetGuestOS() string {
+	if g == nil {
+		log.Debugf("GuestUtil is not initialized")
+		return "unknown"
+	}
+	return g.os
+}
+
+func (g *GuestUtil) GetVHDUrl() string {
+	if g == nil {
+		log.Debugf("GuestUtil is not initialized")
+		return ""
+	}
+	return g.vhdUrl
+}
 
 type MultiError struct {
 	Errs []error

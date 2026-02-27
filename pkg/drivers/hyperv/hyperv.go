@@ -18,14 +18,16 @@ package hyperv
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
-
-	"errors"
 
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/log"
@@ -38,6 +40,7 @@ import (
 type Driver struct {
 	*drivers.BaseDriver
 	Boot2DockerURL       string
+	WindowsVHDUrl        string
 	VSwitch              string
 	DiskSize             int
 	MemSize              int
@@ -45,6 +48,7 @@ type Driver struct {
 	MacAddr              string
 	VLanID               int
 	DisableDynamicMemory bool
+	OS                   string
 }
 
 const (
@@ -54,6 +58,7 @@ const (
 	defaultVLanID               = 0
 	defaultDisableDynamicMemory = false
 	defaultSwitchID             = "c08cb7b8-9b3c-408e-8e30-5e16a3aeb444"
+	defaultServerImageFilename  = "hybrid-minikube-windows-server.vhdx"
 )
 
 // NewDriver creates a new Hyper-v driver with default settings.
@@ -62,6 +67,7 @@ func NewDriver(hostName, storePath string) *Driver {
 		DiskSize:             defaultDiskSize,
 		MemSize:              defaultMemory,
 		CPU:                  defaultCPU,
+		WindowsVHDUrl:        mcnutils.ConfigGuest.GetVHDUrl(),
 		DisableDynamicMemory: defaultDisableDynamicMemory,
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: hostName,
@@ -205,17 +211,28 @@ func (d *Driver) PreCreateCheck() error {
 		return err
 	}
 
-	// Downloading boot2docker to cache should be done here to make sure
+	// Downloading boot2docker/windows-server to cache should be done here to make sure
 	// that a download failure will not leave a machine half created.
 	b2dutils := mcnutils.NewB2dUtils(d.StorePath)
-	err = b2dutils.UpdateISOCache(d.Boot2DockerURL)
+	if mcnutils.ConfigGuest.GetGuestOS() != "windows" {
+		err = b2dutils.UpdateISOCache(d.Boot2DockerURL)
+	} else {
+		err = b2dutils.UpdateVHDCache(d.WindowsVHDUrl)
+	}
 	return err
 }
 
 func (d *Driver) Create() error {
 	b2dutils := mcnutils.NewB2dUtils(d.StorePath)
-	if err := b2dutils.CopyIsoToMachineDir(d.Boot2DockerURL, d.MachineName); err != nil {
-		return err
+	if mcnutils.ConfigGuest.GetGuestOS() == "windows" {
+		d.SSHUser = "Administrator"
+		if err := b2dutils.CopyWindowsVHDToMachineDir(d.WindowsVHDUrl, d.MachineName); err != nil {
+			return err
+		}
+	} else {
+		if err := b2dutils.CopyIsoToMachineDir(d.Boot2DockerURL, d.MachineName); err != nil {
+			return err
+		}
 	}
 
 	log.Infof("Creating SSH key...")
@@ -233,15 +250,33 @@ func (d *Driver) Create() error {
 	}
 	log.Infof("Using switch %q", d.VSwitch)
 
-	diskImage, err := d.generateDiskImage()
+	if mcnutils.ConfigGuest.GetGuestOS() == "windows" {
+		log.Infof("Adding SSH key to the VHDX...")
+		if err := writeSSHKeyToVHDX(d.ResolveStorePath(defaultServerImageFilename), d.publicSSHKeyPath()); err != nil {
+			log.Errorf("Error creating disk image: %s", err)
+			return err
+		}
+	}
+
+	var diskImage string
+	var err error
+	if mcnutils.ConfigGuest.GetGuestOS() != "windows" {
+		diskImage, err = d.generateDiskImage()
+	}
 	if err != nil {
 		return err
+	}
+
+	vmGeneration := "1"
+	if mcnutils.ConfigGuest.GetGuestOS() == "windows" {
+		vmGeneration = "2"
 	}
 
 	if err := cmd("Hyper-V\\New-VM",
 		d.MachineName,
 		"-Path", fmt.Sprintf("'%s'", d.ResolveStorePath(".")),
 		"-SwitchName", quote(d.VSwitch),
+		"-Generation", quote(vmGeneration),
 		"-MemoryStartupBytes", toMb(d.MemSize)); err != nil {
 		return err
 	}
@@ -256,7 +291,8 @@ func (d *Driver) Create() error {
 	if d.CPU > 1 {
 		if err := cmd("Hyper-V\\Set-VMProcessor",
 			d.MachineName,
-			"-Count", fmt.Sprintf("%d", d.CPU)); err != nil {
+			"-Count", fmt.Sprintf("%d", d.CPU),
+			"-ExposeVirtualizationExtensions", "$true"); err != nil {
 			return err
 		}
 	}
@@ -278,16 +314,28 @@ func (d *Driver) Create() error {
 		}
 	}
 
-	if err := cmd("Hyper-V\\Set-VMDvdDrive",
-		"-VMName", d.MachineName,
-		"-Path", quote(d.ResolveStorePath("boot2docker.iso"))); err != nil {
-		return err
+	if mcnutils.ConfigGuest.GetGuestOS() != "windows" {
+		log.Infof("Attaching ISO and disk...")
+		if err := cmd("Hyper-V\\Set-VMDvdDrive",
+			"-VMName", d.MachineName,
+			"-Path", quote(d.ResolveStorePath("boot2docker.iso"))); err != nil {
+			return err
+		}
 	}
 
-	if err := cmd("Hyper-V\\Add-VMHardDiskDrive",
-		"-VMName", d.MachineName,
-		"-Path", quote(diskImage)); err != nil {
-		return err
+	if mcnutils.ConfigGuest.GetGuestOS() == "windows" {
+		if err := cmd("Hyper-V\\Add-VMHardDiskDrive",
+			"-VMName", d.MachineName,
+			"-Path", quote(d.ResolveStorePath("hybrid-minikube-windows-server.vhdx")),
+			"-ControllerType", "SCSI"); err != nil {
+			return err
+		}
+	} else {
+		if err := cmd("Hyper-V\\Add-VMHardDiskDrive",
+			"-VMName", d.MachineName,
+			"-Path", quote(diskImage)); err != nil {
+			return err
+		}
 	}
 
 	log.Infof("Starting VM...")
@@ -528,4 +576,59 @@ func (d *Driver) generateDiskImage() (string, error) {
 	}
 
 	return diskImage, nil
+}
+
+func writeSSHKeyToVHDX(vhdxPath, publicSSHKeyPath string) (retErr error) {
+	output, err := cmdOut(
+		"-Command",
+		"(Get-DiskImage -ImagePath", quote(vhdxPath), "| Mount-DiskImage -PassThru) | Out-Null;",
+		"$diskNumber = (Get-DiskImage -ImagePath", quote(vhdxPath), "| Get-Disk).Number;",
+		"Set-Disk -Number $diskNumber -IsReadOnly $false;",
+		"(Get-Disk -Number $diskNumber | Get-Partition | Get-Volume).DriveLetter",
+	)
+	if err != nil {
+		return fmt.Errorf("failed to mount VHDX and retrieve mount directory: %w", err)
+	}
+
+	regex := regexp.MustCompile(`\s+|\r|\n`)
+	driveLetter := regex.ReplaceAllString(output, "")
+
+	if driveLetter == "" {
+		log.Debugf("No drive letter assigned to VHDX")
+		return errors.New("no drive letter assigned to VHDX")
+	}
+
+	mountDir := strings.TrimSpace(driveLetter) + ":" + string(os.PathSeparator)
+
+	defer func() {
+		if unmountErr := cmd("Dismount-DiskImage", "-ImagePath", quote(vhdxPath)); unmountErr != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("failed to unmount VHDX: %w", unmountErr))
+		}
+	}()
+
+	sshDir := filepath.Join(mountDir, "ProgramData", "ssh")
+	adminAuthKeys := filepath.Join(sshDir, "administrators_authorized_keys")
+
+	pubKey, err := os.ReadFile(publicSSHKeyPath)
+	if err != nil {
+		return fmt.Errorf("failed to read public SSH key from %s: %w", publicSSHKeyPath, err)
+	}
+
+	if _, err := os.Stat(mountDir); os.IsNotExist(err) {
+		return fmt.Errorf("mount point %s does not exist", mountDir)
+	}
+
+	if err := os.MkdirAll(sshDir, 0755); err != nil {
+		return fmt.Errorf("failed to create SSH directory: %w", err)
+	}
+
+	if err := ioutil.WriteFile(adminAuthKeys, pubKey, 0644); err != nil {
+		return fmt.Errorf("failed to write public key: %w", err)
+	}
+
+	if err := cmd("icacls.exe", quote(adminAuthKeys), "/inheritance:r", "/grant", "Administrators:F", "/grant", "SYSTEM:F"); err != nil {
+		return fmt.Errorf("failed to set permissions on %s: %w", adminAuthKeys, err)
+	}
+
+	return nil
 }
