@@ -24,7 +24,7 @@ import (
 
 	"k8s.io/minikube/hack/update"
 
-	"github.com/google/go-github/v83/github"
+	"github.com/google/go-github/v84/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 )
