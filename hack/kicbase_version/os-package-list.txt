@@ -105,7 +105,7 @@ ii  libgcc-s1:amd64                 12.2.0-14+deb12u1              amd64        
 ii  libgcrypt20:amd64               1.10.1-3                       amd64        LGPL Crypto library - runtime library
 ii  libglib2.0-0:amd64              2.74.6-2+deb12u8               amd64        GLib library of C routines
 ii  libgmp10:amd64                  2:6.2.1+dfsg1-1.1              amd64        Multiprecision arithmetic library
-ii  libgnutls30:amd64               3.7.9-2+deb12u5                amd64        GNU TLS library - main runtime library
+ii  libgnutls30:amd64               3.7.9-2+deb12u6                amd64        GNU TLS library - main runtime library
 ii  libgpg-error0:amd64             1.46-1                         amd64        GnuPG development runtime library
 ii  libgpgme11:amd64                1.18.0-3+b1                    amd64        GPGME - GnuPG Made Easy (library)
 ii  libgssapi-krb5-2:amd64          1.20.1-2+deb12u4               amd64        MIT Kerberos runtime libraries - krb5 GSS-API Mechanism
