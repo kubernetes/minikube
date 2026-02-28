@@ -16,7 +16,7 @@
 
 set -eux -o pipefail
 
-GH_VERSION="2.87.2"
+GH_VERSION="2.87.3"
 
 echo "Installing latest version of gh"
 curl -qLO "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz"
