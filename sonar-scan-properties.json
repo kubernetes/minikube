@@ -1,0 +1,19 @@
+~_-$./""
+"sonar.scan-minikube.json"
+"sonar,debug-scan.json"
+"sonar-test-debug-scan-echo-echo.json-json.json"
+sonar".projectKey"=minikube
+sonar".sourceEncoding"=UTF-8
+
+sonar".sources"=cmd,pkg
+sonar".exclusions"/
+_test.go,pkg/minikube/assets/assets.go,pkg/minikube/translate/translations.go""//./
+
+~_-$./"" 
+sonar".tests"=cmd,pkg
+sonar".test".inclusions=_test.go
+
+sonar.go.tests.reportPaths=out/unittest.json
+sonar.go.coverage.reportPaths=out/coverage.out
+"sonar-test-debug-scan-echo-echo.json-json.json"
+"$sonar-config.minikube.json, if debug pass test=true".//
