@@ -48,11 +48,22 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	command := exec.Command("route", "ADD", destinationIP, "MASK", destinationMask, gatewayIP)
 	klog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()
+	message := string(stdInAndOut)
+	
 	if err != nil {
-		message := string(stdInAndOut)
-		klog.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
-		return fmt.Errorf("error adding route: %s, %w", message, err)
+		// Windows route command returns exit code 0 even when route exists, so check message
+		if !strings.Contains(strings.ToLower(message), "already exists") {
+			klog.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
+			return fmt.Errorf("error adding route: %s, %w", message, err)
+		}
 	}
+	
+	// If message indicates route already exists, treat as success (idempotent)
+	if strings.Contains(strings.ToLower(message), "already exists") || strings.Contains(strings.ToLower(message), "already") {
+		klog.Infof("Route already exists: %s", serviceCIDR)
+		return nil
+	}
+	
 	klog.Infof("%s", stdInAndOut)
 	return nil
 }
