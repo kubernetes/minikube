@@ -2,11 +2,15 @@ name: "ISO Build"
 on:
   pull_request:
     types: [labeled, synchronize, reopened]
-
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # One job Per PR and cancel preivous commit jobs
+  cancel-in-progress: true
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.25.5'
-
+permissions:
+  contents: read
 jobs:
   build-iso:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-build-iso')
@@ -14,10 +18,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - arch: x86_64
+          - name: build-iso-x86
+            arch: x86_64
             goarch: amd64
-            os: ubuntu-latest
-          - arch: aarch64
+            os: ubuntu-24.04
+          - name: build-iso-arm64
+            arch: aarch64
             goarch: arm64
             os: ubuntu-24.04-arm
     steps:
