@@ -15,6 +15,7 @@ jobs:
   build-iso:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-build-iso')
     runs-on: ${{ matrix.os }}
+    name: ${{ matrix.name }} 
     strategy:
       matrix:
         include:
@@ -25,7 +26,7 @@ jobs:
           - name: build-iso-arm64
             arch: aarch64
             goarch: arm64
-            os: ubuntu-24.04-arm
+            os: ubuntu-24.04-arm   
     steps:
       - uses: medyagh/info-block@v1
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
