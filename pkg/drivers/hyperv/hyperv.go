@@ -219,6 +219,60 @@ func (d *Driver) PreCreateCheck() error {
 	} else {
 		err = b2dutils.UpdateVHDCache(d.WindowsVHDUrl)
 	}
+
+	if mcnutils.ConfigGuest.GetGuestOS() == "windows" {
+		vhdxPath := filepath.Join(b2dutils.GetImgCachePath(), defaultServerImageFilename)
+
+		mounted := false
+		defer func() {
+			if mounted {
+				if err := cmd("Hyper-V\\Dismount-VHD", "-Path", quote(vhdxPath)); err != nil {
+					log.Errorf("failed to dismount VHDX %s: %v", vhdxPath, err)
+				}
+			}
+		}()
+
+		if err := cmd("Hyper-V\\Mount-VHD", "-Path", quote(vhdxPath), "-ReadOnly"); err != nil {
+			return fmt.Errorf("failed to mount VHDX: %w", err)
+		}
+		mounted = true
+
+		diskNumOut, err := cmdOut("-Command", fmt.Sprintf(
+			"$d=(Get-VHD -Path %s | Get-Disk).Number; if($d -ne $null){$d}else{''}",
+			quote(vhdxPath),
+		))
+		if err != nil {
+			return fmt.Errorf("failed to determine disk number for VHDX: %w", err)
+		}
+
+		diskNumber := strings.TrimSpace(diskNumOut)
+		if diskNumber == "" {
+			return fmt.Errorf("could not determine disk number for mounted VHDX")
+		}
+
+		avail, err := cmdOut("-Command",
+			"$used=(Get-PSDrive -PSProvider FileSystem).Name; "+
+				"$letters='DEFGHIJKLMNOPQRSTUVWXYZ'.ToCharArray(); "+
+				"$free=$letters | Where-Object { $used -notcontains $_ }; "+
+				"if ($free) { $free[0] } else { '' }",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to determine available drive letter: %w", err)
+		}
+
+		freeLetter := strings.TrimSpace(avail)
+		if freeLetter == "" {
+			return fmt.Errorf("no available drive letters to assign to VHDX")
+		}
+
+		if err := cmd("Set-Partition",
+			"-DiskNumber", diskNumber,
+			"-PartitionNumber", "4",
+			"-NewDriveLetter", freeLetter,
+		); err != nil {
+			return fmt.Errorf("failed to set partition on VHDX: %w", err)
+		}
+	}
 	return err
 }
 

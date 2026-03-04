@@ -160,11 +160,8 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	klog.Infof("libmachine.API.Create for %q (driver=%q)", cfg.Name, cfg.Driver)
 
 	if cfg.StartHostTimeout == 0 {
-		cfg.StartHostTimeout = 6 * time.Minute
-		// windows nodes take longer to start, so we increase the timeout
-		if n.Guest.Name == "windows" {
-			cfg.StartHostTimeout = 10 * time.Minute
-		}
+		// increase default wait to accommodate slower hosts and Windows nodes
+		cfg.StartHostTimeout = 12 * time.Minute
 	}
 	if err := timedCreateHost(h, api, cfg.StartHostTimeout); err != nil {
 		return nil, fmt.Errorf("creating host: %w", err)

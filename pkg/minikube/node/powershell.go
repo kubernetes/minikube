@@ -78,9 +78,3 @@ func CmdOutSSH(client *ssh.Client, script string) (string, error) {
 	klog.Infof("[stderr =====>] : %s", stderr.String())
 	return stdout.String(), err
 }
-
-func cmdSSH(client *ssh.Client, args ...string) error {
-	script := strings.Join(args, " ")
-	_, err := CmdOutSSH(client, script)
-	return err
-}
