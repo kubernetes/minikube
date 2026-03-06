@@ -65,7 +65,7 @@ var (
 var serviceCmd = &cobra.Command{
 	Use:   "service [flags] SERVICE",
 	Short: "Returns a URL to connect to a service",
-	Long:  `Returns the Kubernetes URL(s) for service(s) in your local cluster. In the case of multiple URLs they will be printed one at a time.`,
+	Long:  `Returns the Kubernetes URL(s) for service(s) in your local cluster. In the case of multiple URLs they will be printed one at a time. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/service`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		t, err := template.New("serviceURL").Parse(serviceURLFormat)
 		if err != nil {

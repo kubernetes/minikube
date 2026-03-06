@@ -52,7 +52,7 @@ var (
 var profileListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Lists all minikube profiles.",
-	Long:  "Lists all valid minikube profiles and detects all possible invalid profiles.",
+	Long:  "Lists all valid minikube profiles and detects all possible invalid profiles. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/profile/#minikube-profile-list",
 	Run: func(_ *cobra.Command, _ []string) {
 		options := flags.CommandOptions()
 		output := strings.ToLower(profileOutput)
