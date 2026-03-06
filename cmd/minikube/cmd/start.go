@@ -537,10 +537,6 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 	return configInfo, nil
 }
 
-func warnAboutMultiNodeCNI() {
-	out.WarningT("Cluster was created without any CNI, adding a node to it might cause broken networking.")
-}
-
 func updateDriver(driverName string) {
 	if err := auxdriver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), viper.GetBool(flags.Interactive), viper.GetBool(autoUpdate)); err != nil {
 		if errors.Is(err, auxdriver.ErrAuxDriverVersionCommandFailed) {
