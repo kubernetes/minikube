@@ -41,7 +41,7 @@ const (
 )
 
 var (
-	dockerStorageDriver   = "overlay2"
+	dockerStorageDrivers  = []string{"overlay2", "overlayfs"}
 	containerdSnapshotter = "overlayfs"
 	podmanStorageDriver   = "overlay"
 	containerRuntimes     = []string{"docker", "containerd", "cri-o"}
@@ -174,8 +174,8 @@ var verifyDockerStorage = func() error {
 		return fmt.Errorf("%v: %v:\n%s", cmd.Args, err, stderr.String())
 	}
 	driver := strings.Trim(string(output), " \n")
-	if driver != dockerStorageDriver {
-		return fmt.Errorf("docker storage driver %s does not match requested %s", driver, dockerStorageDriver)
+	if driver != dockerStorageDrivers[0] && driver != dockerStorageDrivers[1] {
+		return fmt.Errorf("docker storage driver %s does not match requested %v", driver, dockerStorageDrivers)
 	}
 	return nil
 }

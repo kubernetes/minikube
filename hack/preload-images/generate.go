@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"errors"
+	"github.com/blang/semver/v4"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
@@ -95,6 +96,11 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		return fmt.Errorf("enable container runtime: %w", err)
 	}
 
+	containerRuntimeVersion, err := cr.Version();
+	if err != nil {
+		return fmt.Errorf("can't get the container runtime version: %w", err)
+	}
+
 	// Verify storage driver/snapshotter after the runtime has been configured.
 	if err := verifyStorage(containerRuntime); err != nil {
 		return fmt.Errorf("verifying storage: %w", err)
@@ -129,7 +135,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		return fmt.Errorf("transferring k8s binaries: %w", err)
 	}
 	// Create image tarball
-	if err := createImageTarball(tarballFilename, containerRuntime); err != nil {
+	if err := createImageTarball(tarballFilename, containerRuntime, containerRuntimeVersion); err != nil {
 		return fmt.Errorf("create tarball: %w", err)
 	}
 
@@ -171,14 +177,18 @@ func imagePullCommand(containerRuntime, img string) *exec.Cmd {
 	return nil
 }
 
-func createImageTarball(tarballFilename, containerRuntime string) error {
+func createImageTarball(tarballFilename, containerRuntime, containerRuntimeVersion string) error {
 	// directories to save into tarball
 	dirs := []string{
 		"./lib/minikube/binaries",
 	}
 
 	if containerRuntime == "docker" {
-		dirs = append(dirs, fmt.Sprintf("./lib/docker/%s", dockerStorageDriver), "./lib/docker/image")
+		if v, err := semver.Make(containerRuntimeVersion); err == nil && v.GTE(semver.Version{Major: 29}) {
+			dirs = append(dirs, "./lib/docker/", "./lib/containerd")
+		} else {
+			dirs = append(dirs, fmt.Sprintf("./lib/docker/%s", dockerStorageDrivers[0]), "./lib/docker/image")
+		}
 	}
 
 	if containerRuntime == "containerd" {
