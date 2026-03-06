@@ -15,6 +15,9 @@
 {{ with index $links "developer"}}
 {{ template "community-links-list"  . }}
 {{ end }}
+
+{{ partial "rsvp_button.html" . }}
+
 <p>You can find out how to contribute to these docs in our <a href="/docs/contribution-guidelines/">Contribution Guidelines</a>.
 <h2>Join our meetings</h2>
 {{ with index $links "meetings"}}
