@@ -119,6 +119,64 @@ func TestGetKubernetesVersion(t *testing.T) {
 
 var checkRepoMock = func(_ semver.Version, _ string) error { return nil }
 
+func TestGenerateClusterConfigDNSSearch(t *testing.T) {
+	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
+	checkRepository = checkRepoMock
+	k8sVersion := constants.DefaultKubernetesVersion
+	rtime := constants.DefaultContainerRuntime
+
+	tests := []struct {
+		description string
+		dnsSearch   []string
+		wantSearch  []string
+	}{
+		{
+			description: "no dns search flags",
+			dnsSearch:   nil,
+			wantSearch:  nil,
+		},
+		{
+			description: "single dns search domain",
+			dnsSearch:   []string{"corp.example.com"},
+			wantSearch:  []string{"corp.example.com"},
+		},
+		{
+			description: "multiple dns search domains",
+			dnsSearch:   []string{"corp.example.com", "eng.example.com"},
+			wantSearch:  []string{"corp.example.com", "eng.example.com"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			viper.SetDefault(kvmNUMACount, 1)
+			viper.SetDefault(autoDNSSearch, false)
+
+			// Set the module-level variable directly (same pattern as registryMirror)
+			dnsSearchDomains = tt.dnsSearch
+
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, rtime, driver.Mock, &run.CommandOptions{})
+			if err != nil {
+				t.Fatalf("Got unexpected error %v during config generation", err)
+			}
+
+			if len(config.DNSSearch) != len(tt.wantSearch) {
+				t.Errorf("DNSSearch = %v, want %v", config.DNSSearch, tt.wantSearch)
+				return
+			}
+			for i, d := range config.DNSSearch {
+				if d != tt.wantSearch[i] {
+					t.Errorf("DNSSearch[%d] = %q, want %q", i, d, tt.wantSearch[i])
+				}
+			}
+		})
+	}
+
+	// Reset module-level variable
+	dnsSearchDomains = nil
+}
+
 func TestMirrorCountry(t *testing.T) {
 	// Set default disk size value in lieu of flag init
 	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
