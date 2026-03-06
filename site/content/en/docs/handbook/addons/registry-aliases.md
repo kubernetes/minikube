@@ -7,7 +7,7 @@ date: 2020-03-07
 
 ## Registry Aliases Addon
 
-An addon to minikube that can help push and pull from the minikube registry using custom domain names. The custom domain names will be made resolveable from with in cluster and at minikube node.
+An addon to minikube that can help push and pull from the minikube registry using custom domain names. The custom domain names will be made resolvable from with in cluster and at minikube node.
 
 ## How to use ?
 

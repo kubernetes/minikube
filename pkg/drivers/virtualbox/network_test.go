@@ -161,7 +161,7 @@ func TestGetHostOnlyNetworkNotFound(t *testing.T) {
 }
 
 // Tests a special case where Virtualbox creates the host only network
-// successfully but mis-reports the netmask.
+// successfully but miss-reports the netmask.
 func TestGetHostOnlyNetworkWindows10Bug(t *testing.T) {
 	cidr := "192.168.99.0/24"
 	ip, ipnet, err := net.ParseCIDR(cidr)
