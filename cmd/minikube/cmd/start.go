@@ -274,6 +274,10 @@ func runStart(cmd *cobra.Command, _ []string) {
 
 	validateBuiltImageVersion(starter.Runner, ds.Name)
 
+	if viper.GetBool(createMount) {
+		warnAboutMountFlag()
+	}
+
 	if existing != nil && driver.IsKIC(existing.Driver) && viper.GetString(mountString) != "" {
 		old := ""
 		if len(existing.ContainerVolumeMounts) > 0 {
@@ -2101,5 +2105,24 @@ func startNerdctld(options *run.CommandOptions) {
 	envSetupCommand := exec.Command("/bin/bash", "-c", "sed -i '4i export DOCKER_HOST=unix:///var/run/nerdctl.sock' .bashrc")
 	if rest, err := runner.RunCmd(envSetupCommand); err != nil {
 		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s", rest.Output()), err)
+	}
+}
+
+func warnAboutMountFlag() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		out.WarningT("Failed to get home directory: {{.err}}", out.V{"err": err})
+	}
+
+	// Detect usage of --mount without --mount-string
+	if viper.Get(mountString) == "" {
+		out.WarningT("The --mount flag is ignored.")
+		out.Styled(style.Tip, "To mount a host folder, please use the --mount-string flag.")
+		out.Styled(style.Option, "Example: minikube start --mount-string=\"{{.home}}/shared:/mnt/shared\"", out.V{"home": homeDir})
+	}
+
+	// Detect usage of --mount with --mount-string
+	if viper.Get(mountString) != "" {
+		out.WarningT("The --mount flag is ignored when --mount-string is specified and is not needed.")
 	}
 }
