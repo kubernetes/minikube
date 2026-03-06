@@ -513,23 +513,10 @@ func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("etcd operator installation with %s failed: %v", rr.Command(), err)
 	}
 
-	want := "Succeeded"
-	checkOperatorInstalled := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "csv", "-n", "my-etcd"))
-		if err != nil {
-			return err
-		}
-		if rr.Stderr.String() != "" {
-			t.Logf("%v: unexpected stderr: %s", rr.Command(), rr.Stderr)
-		}
-		if !strings.Contains(rr.Stdout.String(), want) {
-			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), rr.Stdout, want)
-		}
-		return nil
-	}
+
 	// Operator installation takes a while
-	if err := retry.Expo(checkOperatorInstalled, time.Second*3, Minutes(10)); err != nil {
-		t.Errorf("failed checking operator installed: %v", err.Error())
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "csv", "--all", "-n", "my-etcd", "--for=jsonpath={.status.phase}=Succeeded", "--timeout=10m")); err != nil {
+		t.Errorf("failed waiting for etcd operator to be installed: %v", err)
 	}
 }
 
