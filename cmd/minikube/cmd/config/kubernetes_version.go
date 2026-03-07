@@ -19,9 +19,11 @@ package config
 import (
 	"context"
 	"net/http"
+	"os"
 
 	"github.com/google/go-github/v84/github"
 	"golang.org/x/mod/semver"
+	"golang.org/x/oauth2"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -39,11 +41,22 @@ func supportedKubernetesVersions() (releases []string) {
 	return releases
 }
 
+// newGitHubClient creates a GitHub client, using GITHUB_TOKEN for authentication when available.
+var newGitHubClient = func(ctx context.Context) *github.Client {
+	var httpClient *http.Client
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+		httpClient = oauth2.NewClient(ctx, ts)
+	}
+	return github.NewClient(httpClient)
+}
+
 // IsInGitHubKubernetesVersions checks whether ver is in the GitHub list of K8s versions
 func IsInGitHubKubernetesVersions(ver string) (bool, error) {
-	ghc := github.NewClient(nil)
+	ctx := context.Background()
+	ghc := newGitHubClient(ctx)
 
-	_, resp, err := ghc.Repositories.GetReleaseByTag(context.Background(), "kubernetes", "kubernetes", ver)
+	_, resp, err := ghc.Repositories.GetReleaseByTag(ctx, "kubernetes", "kubernetes", ver)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return false, nil
