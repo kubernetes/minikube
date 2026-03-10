@@ -68,9 +68,8 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		return fmt.Errorf("kubeadm images: %w", err)
 	}
 
-	if containerRuntime != "docker" { // kic overlay image is only needed by containerd and cri-o https://github.com/kubernetes/minikube/issues/7428
-		imgs = append(imgs, images.KindNet(""))
-	}
+	// kic overlay image is needed by containerd and cri-o https://github.com/kubernetes/minikube/issues/7428
+	imgs = append(imgs, images.KindNet(""))
 
 	runner := command.NewKICRunner(profile, driver.OCIBinary)
 
@@ -137,11 +136,6 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 }
 
 func verifyStorage(containerRuntime string) error {
-	if containerRuntime == "docker" {
-		if err := retry.Expo(verifyDockerStorage, 100*time.Microsecond, time.Minute*2); err != nil {
-			return fmt.Errorf("Docker storage type is incompatible: %w", err)
-		}
-	}
 	if containerRuntime == "containerd" {
 		if err := retry.Expo(verifyContainerdStorage, 100*time.Microsecond, time.Minute*2); err != nil {
 			return fmt.Errorf("containerd storage type is incompatible: %w", err)
@@ -157,10 +151,6 @@ func verifyStorage(containerRuntime string) error {
 
 // returns the right command to pull image for a specific runtime
 func imagePullCommand(containerRuntime, img string) *exec.Cmd {
-	if containerRuntime == "docker" {
-		return exec.Command("docker", "exec", profile, "docker", "pull", img)
-	}
-
 	if containerRuntime == "containerd" {
 		return exec.Command("docker", "exec", profile, "sudo", "crictl", "pull", img)
 	}
@@ -175,10 +165,6 @@ func createImageTarball(tarballFilename, containerRuntime string) error {
 	// directories to save into tarball
 	dirs := []string{
 		"./lib/minikube/binaries",
-	}
-
-	if containerRuntime == "docker" {
-		dirs = append(dirs, fmt.Sprintf("./lib/docker/%s", dockerStorageDriver), "./lib/docker/image")
 	}
 
 	if containerRuntime == "containerd" {
