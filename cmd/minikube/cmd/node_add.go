@@ -17,6 +17,9 @@ limitations under the License.
 package cmd
 
 import (
+	"strings"
+
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -37,6 +40,14 @@ var (
 	cpNode              bool
 	workerNode          bool
 	deleteNodeOnFailure bool
+	osType              string
+
+	osTypeLong = "This flag should only be used when adding a windows node to a cluster.\n\n" +
+		"Specify the OS of the node to add in the format 'os=OS_TYPE,version=VERSION'.\n" +
+		"This means that the node to be added will be a Windows node and the version of Windows OS to use for that node is Windows Server 2022.\n" +
+		"Example: $ minikube node add --os='os=windows,version=2022'\n" +
+		"Valid options for OS_TYPE are: linux, windows. If not specified, the default value is linux.\n" +
+		"You do not need to specify the --os flag if you are adding a linux node."
 )
 
 var nodeAddCmd = &cobra.Command{
@@ -44,6 +55,20 @@ var nodeAddCmd = &cobra.Command{
 	Short: "Adds a node to the given cluster.",
 	Long:  "Adds a node to the given cluster config, and starts it.",
 	Run: func(cmd *cobra.Command, _ []string) {
+
+		osType, windowsVersion, err := parseOSFlag(osType)
+		if err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+
+		if err := validateOSandVersion(osType, windowsVersion); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+
+		if osType == "windows" && cpNode {
+			exit.Message(reason.Usage, "Windows node cannot be used as control-plane nodes.")
+		}
+
 		options := flags.CommandOptions()
 
 		co := mustload.Healthy(ClusterFlagValue(), options)
@@ -112,6 +137,42 @@ func init() {
 	nodeAddCmd.Flags().BoolVar(&cpNode, "control-plane", false, "If set, added node will become a control-plane. Defaults to false. Currently only supported for existing HA (multi-control plane) clusters.")
 	nodeAddCmd.Flags().BoolVar(&workerNode, "worker", true, "If set, added node will be available as worker. Defaults to true.")
 	nodeAddCmd.Flags().BoolVar(&deleteNodeOnFailure, "delete-on-failure", false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
+	nodeAddCmd.Flags().StringVar(&osType, "os", "linux", osTypeLong)
 
 	nodeCmd.AddCommand(nodeAddCmd)
+}
+
+// parseOSFlag parses the --os flag value , 'os=OS_TYPE,version=VERSION', and returns the os type and version
+// For example, 'os=windows,version=2022' The output will be os: 'windows' and version: '2022' respectively
+func parseOSFlag(osFlagValue string) (string, string, error) {
+	// Remove all spaces from the input string
+	osFlagValue = strings.ReplaceAll(osFlagValue, " ", "")
+	parts := strings.Split(osFlagValue, ",")
+	osInfo := map[string]string{
+		"os":      "linux", // default value
+		"version": "",
+	}
+
+	for _, part := range parts {
+		kv := strings.Split(part, "=")
+		if len(kv) != 2 {
+			return "", "", errors.Errorf("Invalid format for --os flag: %s", osFlagValue)
+		}
+		osInfo[kv[0]] = kv[1]
+	}
+
+	// if os is specified to linux, set the version to empty string as it is not required
+	if osInfo["os"] == "linux" {
+		if osInfo["version"] != "" {
+			out.WarningT("Ignoring version flag for linux os. You do not need to specify the version for linux os.")
+		}
+		osInfo["version"] = ""
+	}
+
+	// if os is specified to windows and version is not specified, set the default version to 2022(Windows Server 2022)
+	if osInfo["os"] == "windows" && osInfo["version"] == "" {
+		osInfo["version"] = "2022"
+	}
+
+	return osInfo["os"], osInfo["version"], nil
 }
