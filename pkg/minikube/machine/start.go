@@ -98,7 +98,7 @@ func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*
 	if err != nil {
 		return h, exists, err
 	}
-	return h, exists, ensureSyncedGuestClock(h, cfg.Driver)
+	return h, exists, ensureSyncedGuestClock(h, cfg.Driver, n.Guest.Name)
 }
 
 // engineOptions returns docker engine options for the dockerd running inside minikube
