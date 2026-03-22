@@ -234,13 +234,14 @@ jobs:
       - name: Run TestWindowsNode
         env:
           HYPERV_VIRTUAL_SWITCH: InternalSwitch
+        working-directory: test/integration
         run: |
           $env:Path += ';C:\Program Files\Go\bin;C:\ProgramData\chocolatey\bin'
           $OutputEncoding = [System.Text.Encoding]::UTF8
 
-          ./out/e2e-windows-amd64.exe `
+          ..\..\out\e2e-windows-amd64.exe `
             --minikube-start-args='--driver=hyperv' `
-            --binary=./out/minikube-windows-amd64.exe `
+            --binary=..\..\out\minikube-windows-amd64.exe `
             '-test.run' TestWindowsNode `
             '-test.v' `
             '-test.timeout=90m' | Tee-Object -FilePath testout.txt
@@ -254,5 +255,5 @@ jobs:
         if: always()
         with:
           name: windows-node-selfhosted-results
-          path: testout.txt
+          path: test/integration/testout.txt
       # TODO: add Gopogh HTML report once install-gopogh action supports Windows
