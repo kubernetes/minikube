@@ -231,7 +231,17 @@ jobs:
           make e2e-windows-amd64.exe
           make minikube-windows-amd64.exe
 
+      - name: Install Gopogh (Windows)
+        shell: powershell
+        run: |
+          $version = "v0.29.0"
+          $url = "https://github.com/medyagh/gopogh/releases/download/$version/gopogh-windows-amd64.exe"
+          Invoke-WebRequest -Uri $url -OutFile "$env:GITHUB_WORKSPACE\gopogh.exe"
+          echo "$env:GITHUB_WORKSPACE" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
+
       - name: Run TestWindowsNode
+        id: run_tests
+        continue-on-error: true
         env:
           HYPERV_VIRTUAL_SWITCH: InternalSwitch
         working-directory: test/integration
@@ -250,10 +260,52 @@ jobs:
           if ($env:result -eq 0) { echo 'minikube: SUCCESS' } else { echo 'minikube: FAIL' }
           exit $env:result
 
-      - name: Upload test output
+      - name: Generate Gopogh report
+        if: always()
+        shell: powershell
+        run: |
+          $env:Path += ';C:\Program Files\Go\bin'
+          $OutputEncoding = [System.Text.Encoding]::UTF8
+          $txtPath = "test\integration\testout.txt"
+          $jsonPath = "test\integration\testout.json"
+          $htmlPath = "test\integration\testout.html"
+          $summaryPath = "test\integration\testout_summary.json"
+
+          # Convert text output to JSON using test2json
+          Get-Content $txtPath | go tool test2json -t | Out-File -Encoding UTF8 $jsonPath
+
+          # Generate HTML and summary with gopogh
+          $stat = gopogh.exe -in $jsonPath -out_html $htmlPath -out_summary $summaryPath `
+            -name "WindowsNode $env:GITHUB_REF" `
+            -repo "$env:GITHUB_REPOSITORY" `
+            -details "$env:GITHUB_SHA" 2>&1
+
+          # Print summary to job summary
+          $passNum  = ($stat | ConvertFrom-Json).NumberOfPass
+          $failNum  = ($stat | ConvertFrom-Json).NumberOfFail
+          $totalNum = ($stat | ConvertFrom-Json).NumberOfTests
+          $icon = if ($failNum -eq 0 -and $passNum -gt 0) { "✓" } else { "✗" }
+          $resultLine = "$icon Completed with $failNum / $totalNum failures"
+          Write-Output $resultLine
+          Add-Content $env:GITHUB_STEP_SUMMARY $resultLine
+
+          # List failed tests in job summary
+          $failed = ($stat | ConvertFrom-Json).FailedTests
+          if ($failed) {
+            Add-Content $env:GITHUB_STEP_SUMMARY "### Failed Tests"
+            $failed | ForEach-Object { Add-Content $env:GITHUB_STEP_SUMMARY "- ✗ $_" }
+          }
+
+      - name: Upload test results
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         if: always()
         with:
           name: windows-node-selfhosted-results
-          path: test/integration/testout.txt
-      # TODO: add Gopogh HTML report once install-gopogh action supports Windows
+          path: |
+            test/integration/testout.txt
+            test/integration/testout.json
+            test/integration/testout.html
+
+      - name: Fail if tests failed
+        if: always() && steps.run_tests.outcome == 'failure'
+        run: exit 1
