@@ -235,7 +235,7 @@ jobs:
         shell: powershell
         run: |
           $version = "v0.29.0"
-          $url = "https://github.com/medyagh/gopogh/releases/download/$version/gopogh-windows-amd64.exe"
+          $url = "https://github.com/medyagh/gopogh/releases/download/$version/gopogh.exe"
           Invoke-WebRequest -Uri $url -OutFile "$env:GITHUB_WORKSPACE\gopogh.exe"
           echo "$env:GITHUB_WORKSPACE" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
 
@@ -270,6 +270,11 @@ jobs:
           $jsonPath = "test\integration\testout.json"
           $htmlPath = "test\integration\testout.html"
           $summaryPath = "test\integration\testout_summary.json"
+
+          if (-not (Test-Path $txtPath)) {
+            Write-Output "testout.txt not found, skipping report generation"
+            exit 0
+          }
 
           # Convert text output to JSON using test2json
           Get-Content $txtPath | go tool test2json -t | Out-File -Encoding UTF8 $jsonPath
