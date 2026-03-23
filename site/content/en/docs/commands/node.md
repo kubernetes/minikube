@@ -94,7 +94,13 @@ Deletes a node from a cluster.
 Deletes a node from a cluster.
 
 ```shell
-minikube node delete [flags]
+minikube node delete NODE_NAME [flags]
+```
+
+### Examples
+
+```
+minikube node delete m02
 ```
 
 ### Options inherited from parent commands
@@ -203,7 +209,13 @@ Starts a node.
 Starts an existing stopped node in a cluster.
 
 ```shell
-minikube node start [flags]
+minikube node start NODE_NAME [flags]
+```
+
+### Examples
+
+```
+minikube node start m02
 ```
 
 ### Options
@@ -245,7 +257,13 @@ Stops a node in a cluster.
 Stops a node in a cluster.
 
 ```shell
-minikube node stop [flags]
+minikube node stop NODE_NAME [flags]
+```
+
+### Examples
+
+```
+minikube node stop m02
 ```
 
 ### Options inherited from parent commands
