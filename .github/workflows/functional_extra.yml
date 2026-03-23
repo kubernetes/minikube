@@ -284,7 +284,9 @@ jobs:
           $passNum  = ($stat | ConvertFrom-Json).NumberOfPass
           $failNum  = ($stat | ConvertFrom-Json).NumberOfFail
           $totalNum = ($stat | ConvertFrom-Json).NumberOfTests
-          $icon = if ($failNum -eq 0 -and $passNum -gt 0) { "✓" } else { "✗" }
+          $checkMark = [char]0x2713
+          $crossMark = [char]0x2717
+          $icon = if ($failNum -eq 0 -and $passNum -gt 0) { $checkMark } else { $crossMark }
           $resultLine = "$icon Completed with $failNum / $totalNum failures"
           Write-Output $resultLine
           Add-Content $env:GITHUB_STEP_SUMMARY $resultLine
@@ -293,7 +295,7 @@ jobs:
           $failed = ($stat | ConvertFrom-Json).FailedTests
           if ($failed) {
             Add-Content $env:GITHUB_STEP_SUMMARY "### Failed Tests"
-            $failed | ForEach-Object { Add-Content $env:GITHUB_STEP_SUMMARY "- ✗ $_" }
+            $failed | ForEach-Object { Add-Content $env:GITHUB_STEP_SUMMARY "- $crossMark $_" }
           }
 
       - name: Upload test results
