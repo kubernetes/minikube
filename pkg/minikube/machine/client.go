@@ -232,7 +232,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 					return nil
 				}
 				// Skipped because we don't reconfigure Docker for Windows Host
-				if h.Guest.Name == "windows" {
+				if h.Guest.IsWindows() {
 					return nil
 				}
 				return provisionDockerMachine(h)

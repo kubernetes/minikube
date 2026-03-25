@@ -64,7 +64,7 @@ type sharedCACerts struct {
 // SetupCerts gets the generated credentials required to talk to the APIServer.
 func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, cmd command.Runner) error {
 	// no need to setup certs for windows worker nodes as the master node already took care of this
-	if n.Guest.Name == "windows" {
+	if n.Guest.IsWindows() {
 		return nil
 	}
 

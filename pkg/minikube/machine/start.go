@@ -304,7 +304,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	}
 
 	// skip postStartSetup for windows guest os
-	if h.Guest.Name == "windows" {
+	if h.Guest.IsWindows() {
 		klog.Infof("skipping postStartSetup for windows guest os")
 		return nil
 	}

@@ -508,7 +508,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	// regardless if waiting is set or not, we will make sure kubelet is not stopped
 	// to solve corner cases when a container is hibernated and once coming back kubelet not running.
 	// Windows nodes use Windows services (not systemd), so skip sysinit-based kubelet management.
-	if n.Guest.Name != "windows" {
+	if !n.Guest.IsWindows() {
 		if err := sysinit.New(k.c).Start("kubelet"); err != nil {
 			klog.Warningf("Couldn't ensure kubelet is started this might cause issues: %v", err)
 		}
@@ -582,7 +582,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	// Windows nodes use Windows services (not systemd); systemctl is unavailable so skip.
-	if cfg.VerifyComponents[kverify.KubeletKey] && n.Guest.Name != "windows" {
+	if cfg.VerifyComponents[kverify.KubeletKey] && !n.Guest.IsWindows() {
 		if err := kverify.WaitForService(k.c, "kubelet", timeout); err != nil {
 			return fmt.Errorf("waiting for kubelet: %w", err)
 		}
@@ -1036,7 +1036,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 // UpdateNode updates new or existing node.
 func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cruntime.Manager) error {
 	// skip if the node is a windows node
-	if n.Guest.Name == "windows" {
+	if n.Guest.IsWindows() {
 		klog.Infof("skipping node %v update, as it is a windows node", n)
 		return nil
 	}

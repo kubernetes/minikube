@@ -51,7 +51,7 @@ func stop(h *host.Host) error {
 	start := time.Now()
 
 	// Windows guests don't have sudo/rsync/poweroff; skip Linux-only SSH operations.
-	if driver.IsVM(h.DriverName) && h.Guest.Name != "windows" {
+	if driver.IsVM(h.DriverName) && !h.Guest.IsWindows() {
 		if err := backup(*h, []string{"/etc/cni", "/etc/kubernetes"}); err != nil {
 			klog.Warningf("failed to complete vm config backup (will continue): %v", err)
 		}
@@ -69,7 +69,7 @@ func stop(h *host.Host) error {
 	// and returns 0x8007045B. Use Kill (Stop-VM -TurnOff) instead — it succeeds
 	// regardless of OS state and is safe since shutdown is already underway.
 	stopVM := h.Stop
-	if h.Guest.Name == "windows" && driver.NeedsShutdown(h.DriverName) {
+	if h.Guest.IsWindows() && driver.NeedsShutdown(h.DriverName) {
 		stopVM = h.Kill
 	}
 	if err := stopVM(); err != nil {
@@ -104,7 +104,7 @@ func trySSHPowerOff(h *host.Host) error {
 	if driver.IsKIC(h.DriverName) {
 		err := oci.ShutDown(h.DriverName, h.Name)
 		klog.Infof("shutdown container: err=%v", err)
-	} else if h.Guest.Name == "windows" {
+	} else if h.Guest.IsWindows() {
 		// Windows doesn't have sudo/poweroff; use the Windows shutdown command instead.
 		// shutdown /s /t 0 triggers an immediate graceful OS shutdown, so Stop-VM
 		// finds the VM already off rather than waiting 30+ seconds for ACPI shutdown.

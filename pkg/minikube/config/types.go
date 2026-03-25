@@ -185,8 +185,16 @@ type ScheduledStopConfig struct {
 	Duration       time.Duration
 }
 
+// GuestOSWindows is the Guest.Name value for Windows worker nodes.
+const GuestOSWindows = "windows"
+
 type Guest struct {
 	Name    string
 	Version string
 	URL     string
 }
+
+// IsWindows reports whether the guest is a Windows VM.
+// Linux/default nodes have an empty Guest.Name, so all OS-specific guards
+// should use IsWindows() rather than checking for a specific Linux value.
+func (g Guest) IsWindows() bool { return g.Name == GuestOSWindows }
