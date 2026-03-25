@@ -60,7 +60,7 @@ jobs:
           make ${{ matrix.make-targets }}
           cp -r test/integration/testdata ./out
       - name: Upload Test Binaries
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: binaries-${{ matrix.arch }}
           path: out
@@ -258,7 +258,7 @@ jobs:
           echo "=== podman ps ==="
           podman ps || true
       - name: Install kubectl
-        uses: azure/setup-kubectl@v5
+        uses: azure/setup-kubectl@v4
       - name: Install qemu and socket_vmnet (macos)
         if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
         run: |
@@ -270,7 +270,7 @@ jobs:
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
       - name: Download Test Binaries
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: binaries-${{ matrix.arch }}
       - name: Disable AppArmor for MySQL
