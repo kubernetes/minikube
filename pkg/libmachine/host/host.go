@@ -78,6 +78,9 @@ type Guest struct {
 	URL     string
 }
 
+// IsWindows reports whether the guest is a Windows VM.
+func (g Guest) IsWindows() bool { return g.Name == "windows" }
+
 type Metadata struct {
 	ConfigVersion int
 	DriverName    string

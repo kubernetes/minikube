@@ -191,7 +191,7 @@ func ensureSyncedGuestClock(h hostRunner, drv string, guestOS string) error {
 		return nil
 	}
 	// Windows guests don't support the Linux "date +%s.%N" command.
-	if guestOS == "windows" {
+	if guestOS == config.GuestOSWindows {
 		return nil
 	}
 	d, err := guestClockDelta(h, time.Now())
