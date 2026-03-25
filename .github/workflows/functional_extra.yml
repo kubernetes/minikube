@@ -203,12 +203,11 @@ jobs:
 
   windows-node-selfhosted:
     if: |
-      (github.repository == 'kubernetes/minikube' && (
+      github.repository == 'kubernetes/minikube' && (
         (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'ok-to-extra-test')) ||
         (github.event_name == 'schedule' && github.ref == 'refs/heads/master') ||
         github.event_name == 'workflow_dispatch'
-      )) ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/ci/windows-self-hosted-runner')
+      )
     runs-on: [self-hosted, windows, hyper-v]
     steps:
       - uses: actions/checkout@v6
