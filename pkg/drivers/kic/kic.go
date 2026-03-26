@@ -39,7 +39,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -110,14 +109,11 @@ func (d *Driver) Create() error {
 		params.IP = staticIP
 	} else if gateway != nil {
 		params.Network = networkName
-		ip := gateway.To4()
-		// calculate the container IP based on guessing the machine index
-		index := driver.IndexFromMachineName(d.NodeConfig.MachineName)
-		if int(ip[3])+index > 253 { // reserve last client ip address for multi-control-plane loadbalancer vip address in ha cluster
-			return fmt.Errorf("too many machines to calculate an IP")
+		ip, err := oci.AllocateFreeContainerIP(d.OCIBinary, networkName, gateway)
+		if err != nil {
+			return fmt.Errorf("allocate IP in network %s: %w", networkName, err)
 		}
-		ip[3] += byte(index)
-		klog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
+		klog.Infof("allocated IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
 		params.IP = ip.String()
 	}
 	drv := d.DriverName()
