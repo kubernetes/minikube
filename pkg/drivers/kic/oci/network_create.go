@@ -120,6 +120,38 @@ func CreateNetwork(ociBin, networkName, subnet, staticIP string) (net.IP, error)
 	return info.gateway, fmt.Errorf("failed to create %s network %s: %w", ociBin, networkName, err)
 }
 
+// AllocateFreeContainerIP returns the first IP address within the network's
+// subnet (starting just above the gateway) that is not already assigned to an
+// existing container. This allows multiple minikube profiles to share the same
+// docker network without IP collisions.
+func AllocateFreeContainerIP(ociBin, networkName string, gateway net.IP) (net.IP, error) {
+	info, err := containerNetworkInspect(ociBin, networkName)
+	if err != nil {
+		return nil, fmt.Errorf("inspect network %s: %w", networkName, err)
+	}
+
+	used := make(map[string]bool, len(info.containerIPs))
+	for _, ip := range info.containerIPs {
+		used[ip.String()] = true
+	}
+
+	base := gateway.To4()
+	if base == nil {
+		return nil, fmt.Errorf("gateway %s is not an IPv4 address", gateway)
+	}
+	baseOctet := int(base[3])
+	for i := 1; baseOctet+i <= 253; i++ {
+		candidate := make(net.IP, 4)
+		copy(candidate, base)
+		candidate[3] = byte(baseOctet + i)
+		if !used[candidate.String()] {
+			klog.Infof("allocated free IP %q in network %q", candidate.String(), networkName)
+			return candidate, nil
+		}
+	}
+	return nil, fmt.Errorf("no free IP available in network %s", networkName)
+}
+
 func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, name string) (net.IP, error) {
 	gateway := net.ParseIP(subnet.Gateway)
 	klog.Infof("attempt to create %s network %s %s with gateway %s and MTU of %d ...", ociBin, name, subnet.CIDR, subnet.Gateway, mtu)
@@ -168,10 +200,11 @@ func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, 
 
 // netInfo holds part of a docker or podman network information relevant to kic drivers
 type netInfo struct {
-	name    string
-	subnet  *net.IPNet
-	gateway net.IP
-	mtu     int
+	name         string
+	subnet       *net.IPNet
+	gateway      net.IP
+	mtu          int
+	containerIPs []net.IP // IP addresses of containers already connected to this network
 }
 
 func containerNetworkInspect(ociBin string, name string) (netInfo, error) {
@@ -229,6 +262,15 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 	_, info.subnet, err = net.ParseCIDR(vals.Subnet)
 	if err != nil {
 		return info, fmt.Errorf("parse subnet for %s: %w", name, err)
+	}
+
+	for _, cidr := range vals.ContainerIPs {
+		ip, _, err := net.ParseCIDR(cidr)
+		if err != nil {
+			klog.Warningf("skipping unparseable container IP %q in network %s: %v", cidr, name, err)
+			continue
+		}
+		info.containerIPs = append(info.containerIPs, ip)
 	}
 
 	return info, nil
