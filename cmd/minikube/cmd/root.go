@@ -209,6 +209,9 @@ func usageTemplate() string {
 
 func init() {
 	klog.InitFlags(nil)
+	// Opt into fixed stderrthreshold behavior (kubernetes/klog#212).
+	_ = flag.Set("legacy_stderr_threshold_behavior", "false")
+	_ = flag.Set("stderrthreshold", "INFO")
 	// preset logtostderr and alsologtostderr only for test runs, for normal runs consider flags in main()
 	if strings.HasPrefix(filepath.Base(os.Args[0]), "e2e-") || strings.HasSuffix(os.Args[0], "test") {
 		if err := flag.Set("logtostderr", "false"); err != nil {

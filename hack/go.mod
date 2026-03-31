@@ -18,7 +18,7 @@ require (
 	golang.org/x/mod v0.33.0
 	golang.org/x/oauth2 v0.35.0
 	gonum.org/v1/plot v0.16.0
-	k8s.io/klog/v2 v2.130.1
+	k8s.io/klog/v2 v2.140.0
 	k8s.io/minikube v1.36.0
 )
 
