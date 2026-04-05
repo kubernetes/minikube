@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -35,7 +36,8 @@ var sshKeyCmd = &cobra.Command{
 	Short: "Retrieve the ssh identity key path of the specified node",
 	Long:  "Retrieve the ssh identity key path of the specified node, and writes it to STDOUT.",
 	Run: func(_ *cobra.Command, _ []string) {
-		_, cc := mustload.Partial(ClusterFlagValue())
+		options := flags.CommandOptions()
+		_, cc := mustload.Partial(ClusterFlagValue(), options)
 		n, _, err := node.Retrieve(*cc, nodeName)
 		if err != nil {
 			exit.Error(reason.GuestNodeRetrieve, "retrieving node", err)

@@ -19,9 +19,9 @@ package kverify
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -49,7 +49,7 @@ func WaitForDefaultSA(cs *kubernetes.Clientset, timeout time.Duration) error {
 		return false, nil
 	}
 	if err := wait.PollUntilContextTimeout(context.Background(), kconst.APICallRetryInterval, timeout, true, saReady); err != nil {
-		return errors.Wrapf(err, "waited %s for SA", time.Since(start))
+		return fmt.Errorf("waited %s for SA: %w", time.Since(start), err)
 	}
 
 	klog.Infof("duration metric: took %s for default service account to be created ...", time.Since(start))

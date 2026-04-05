@@ -30,7 +30,6 @@ import (
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/download/gh"
@@ -173,6 +172,11 @@ func PreloadExistsGH(k8sVersion, containerRuntime string) bool {
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload ...bool) bool {
+	// Prevent preload logic in --no-kubernetes mode
+	if viper.GetBool("no-kubernetes") {
+		klog.Infof("Skipping preload logic due to --no-kubernetes flag")
+		return false
+	}
 	// TODO (#8166): Get rid of the need for this and viper at all
 	force := false
 	if len(forcePreload) > 0 {
@@ -200,14 +204,27 @@ func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload
 		return true
 	}
 
-	if PreloadExistsGCS(k8sVersion, containerRuntime) {
-		setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGCS})
-		return true
-	}
-
-	if PreloadExistsGH(k8sVersion, containerRuntime) {
-		setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGitHub})
-		return true
+	switch viper.GetString("preload-source") {
+	case "github":
+		if PreloadExistsGH(k8sVersion, containerRuntime) {
+			setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGitHub})
+			return true
+		}
+	case "gcs":
+		if PreloadExistsGCS(k8sVersion, containerRuntime) {
+			setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGCS})
+			return true
+		}
+	default:
+		// auto or unknown - try both
+		if PreloadExistsGCS(k8sVersion, containerRuntime) {
+			setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGCS})
+			return true
+		}
+		if PreloadExistsGH(k8sVersion, containerRuntime) {
+			setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGitHub})
+			return true
+		}
 	}
 
 	setPreloadState(k8sVersion, containerRuntime, preloadState{exists: false, source: preloadSourceNone})
@@ -243,10 +260,12 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	out.Step(style.FileDownload, "Downloading Kubernetes {{.version}} preload ...", out.V{"version": k8sVersion})
 	state, ok := getPreloadState(k8sVersion, containerRuntime)
 	source := preloadSourceNone
+	// check if one of the sources are set to be used
 	if ok && state.source != preloadSourceNone {
 		source = state.source
 	}
 	url := remoteTarballURL(k8sVersion, containerRuntime, source)
+	klog.Infof("Downloading preload from %s", url)
 	var checksum []byte
 	var chksErr error
 	checksum, chksErr = getChecksum(source, k8sVersion, containerRuntime)
@@ -257,15 +276,18 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 		realPath = targetPath
 		tmp, err := os.CreateTemp(targetDir(), TarballName(k8sVersion, containerRuntime)+".*")
 		if err != nil {
-			return errors.Wrap(err, "tempfile")
+			return fmt.Errorf("tempfile: %w", err)
 		}
 		targetPath = tmp.Name()
+		if err := tmp.Close(); err != nil {
+			return fmt.Errorf("tempfile close: %w", err)
+		}
 	} else if checksum != nil { // add URL parameter for go-getter to automatically verify the checksum
 		url = addChecksumToURL(url, source, checksum)
 	}
 
 	if err := download(url, targetPath); err != nil {
-		return errors.Wrapf(err, "download failed: %s", url)
+		return fmt.Errorf("download failed: %s: %w", url, err)
 	}
 
 	//  to avoid partial/corrupt files in final dest. only rename tmp if download didn't error out.
@@ -273,7 +295,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 		klog.Infof("renaming tempfile to %s ...", TarballName(k8sVersion, containerRuntime))
 		err := os.Rename(targetPath, realPath)
 		if err != nil {
-			return errors.Wrap(err, "rename")
+			return fmt.Errorf("rename: %w", err)
 		}
 	}
 
@@ -299,11 +321,11 @@ func getStorageAttrs(name string) (*storage.ObjectAttrs, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
 	if err != nil {
-		return nil, errors.Wrap(err, "getting storage client")
+		return nil, fmt.Errorf("getting storage client: %w", err)
 	}
 	attrs, err := client.Bucket(PreloadBucket).Object(name).Attrs(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting storage object")
+		return nil, fmt.Errorf("getting storage object: %w", err)
 	}
 	return attrs, nil
 }
@@ -322,7 +344,7 @@ var getChecksumGCS = func(k8sVersion, containerRuntime string) ([]byte, error) {
 // getChecksumGithub returns the SHA256 checksum of the preload tarball
 var getChecksumGithub = func(k8sVersion, containerRuntime string) ([]byte, error) {
 	klog.Infof("getting checksum for %s from github api...", TarballName(k8sVersion, containerRuntime))
-	assets, err := gh.ReleaseAssets(PreloadGitHubRepo, PreloadGitHubRepo, PreloadVersion)
+	assets, err := gh.ReleaseAssets(PreloadGitHubOrg, PreloadGitHubRepo, PreloadVersion)
 	if err != nil { // could not find release or rate limited
 		return nil, err
 	}

@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
@@ -60,7 +61,7 @@ func TestIsAddonAlreadySet(t *testing.T) {
 		Nodes: []config.Node{{ControlPlane: true}},
 	}
 
-	if err := Set(cc, "registry", "true"); err != nil {
+	if err := Set(cc, "registry", "true", &run.CommandOptions{}); err != nil {
 		t.Errorf("unable to set registry true: %v", err)
 	}
 	if !assets.Addons["registry"].IsEnabled(cc) {
@@ -79,7 +80,7 @@ func TestDisableUnknownAddon(t *testing.T) {
 		Nodes: []config.Node{{ControlPlane: true}},
 	}
 
-	if err := Set(cc, "InvalidAddon", "false"); err == nil {
+	if err := Set(cc, "InvalidAddon", "false", &run.CommandOptions{}); err == nil {
 		t.Fatalf("Disable did not return error for unknown addon")
 	}
 }
@@ -90,7 +91,7 @@ func TestEnableUnknownAddon(t *testing.T) {
 		Nodes: []config.Node{{ControlPlane: true}},
 	}
 
-	if err := Set(cc, "InvalidAddon", "true"); err == nil {
+	if err := Set(cc, "InvalidAddon", "true", &run.CommandOptions{}); err == nil {
 		t.Fatalf("Enable did not return error for unknown addon")
 	}
 }
@@ -99,7 +100,7 @@ func TestSetAndSave(t *testing.T) {
 	profile := createTestProfile(t)
 
 	// enable
-	if err := SetAndSave(profile, "dashboard", "true"); err != nil {
+	if err := SetAndSave(profile, "dashboard", "true", &run.CommandOptions{}); err != nil {
 		t.Errorf("Disable returned unexpected error: %v", err)
 	}
 
@@ -112,7 +113,7 @@ func TestSetAndSave(t *testing.T) {
 	}
 
 	// disable
-	if err := SetAndSave(profile, "dashboard", "false"); err != nil {
+	if err := SetAndSave(profile, "dashboard", "false", &run.CommandOptions{}); err != nil {
 		t.Errorf("Disable returned unexpected error: %v", err)
 	}
 
@@ -136,15 +137,15 @@ func TestStartWithAddonsEnabled(t *testing.T) {
 		KubernetesConfig: config.KubernetesConfig{},
 		Nodes:            []config.Node{{ControlPlane: true}},
 	}
-
+	options := &run.CommandOptions{}
 	toEnable := ToEnable(cc, map[string]bool{}, []string{"dashboard"})
 	enabled := make(chan []string, 1)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go Enable(&wg, cc, toEnable, enabled)
+	go Enable(&wg, cc, toEnable, enabled, options)
 	wg.Wait()
 	if ea, ok := <-enabled; ok {
-		UpdateConfigToEnable(cc, ea)
+		UpdateConfigToEnable(cc, ea, options)
 	}
 
 	if !assets.Addons["dashboard"].IsEnabled(cc) {
@@ -164,7 +165,7 @@ func TestStartWithAllAddonsDisabled(t *testing.T) {
 		Nodes:            []config.Node{{ControlPlane: true}},
 	}
 
-	UpdateConfigToDisable(cc)
+	UpdateConfigToDisable(cc, &run.CommandOptions{})
 
 	for name := range assets.Addons {
 		if assets.Addons[name].IsEnabled(cc) {

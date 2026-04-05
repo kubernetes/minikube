@@ -23,51 +23,51 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // KillExisting will kill existing scheduled stops
-func KillExisting(profiles []string) {
+func KillExisting(profiles []string, options *run.CommandOptions) {
 	for _, profile := range profiles {
-		if err := killExisting(profile); err != nil {
+		if err := killExisting(profile, options); err != nil {
 			klog.Errorf("error terminating scheduled stop for profile %s: %v", profile, err)
 		}
 	}
 }
 
-func killExisting(profile string) error {
+func killExisting(profile string, options *run.CommandOptions) error {
 	klog.Infof("trying to kill existing schedule stop for profile %s...", profile)
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
-		return errors.Wrapf(err, "getting api client for profile %s", profile)
+		return fmt.Errorf("getting api client for profile %s: %w", profile, err)
 	}
 	h, err := api.Load(profile)
 	if err != nil {
-		return errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
+		return fmt.Errorf("Error loading existing host. Please try running [minikube delete], then run [minikube start] again.: %w", err)
 	}
 	runner, err := machine.CommandRunner(h)
 	if err != nil {
-		return errors.Wrap(err, "getting command runner")
+		return fmt.Errorf("getting command runner: %w", err)
 	}
 	// restart scheduled stop service in container
 	sysManger := sysinit.New(runner)
 	if err := sysManger.Stop(constants.ScheduledStopSystemdService); err != nil {
-		return errors.Wrapf(err, "stopping schedule-stop service for profile %s", profile)
+		return fmt.Errorf("stopping schedule-stop service for profile %s: %w", profile, err)
 	}
 	return nil
 }
 
 // to daemonize on windows, we schedule the stop within minikube itself
 // starting the minikube-scheduled-stop systemd service kicks off the scheduled stop
-func daemonize(profiles []string, duration time.Duration) error {
+func daemonize(profiles []string, duration time.Duration, options *run.CommandOptions) error {
 	for _, profile := range profiles {
-		if err := startSystemdService(profile, duration); err != nil {
-			return errors.Wrapf(err, "implementing scheduled stop for %s", profile)
+		if err := startSystemdService(profile, duration, options); err != nil {
+			return fmt.Errorf("implementing scheduled stop for %s: %w", profile, err)
 		}
 	}
 	return nil
@@ -77,27 +77,27 @@ func daemonize(profiles []string, duration time.Duration) error {
 // before shutting down minikube from within
 // we do this by setting the SLEEP environment variable in the environment file to the users
 // requested duration
-func startSystemdService(profile string, duration time.Duration) error {
+func startSystemdService(profile string, duration time.Duration, options *run.CommandOptions) error {
 	// get ssh runner
 	klog.Infof("starting systemd service for profile %s...", profile)
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
-		return errors.Wrapf(err, "getting api client for profile %s", profile)
+		return fmt.Errorf("getting api client for profile %s: %w", profile, err)
 	}
 	h, err := api.Load(profile)
 	if err != nil {
-		return errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
+		return fmt.Errorf("Error loading existing host. Please try running [minikube delete], then run [minikube start] again.: %w", err)
 	}
 	runner, err := machine.CommandRunner(h)
 	if err != nil {
-		return errors.Wrap(err, "getting command runner")
+		return fmt.Errorf("getting command runner: %w", err)
 	}
 	if rr, err := runner.RunCmd(exec.Command("sudo", "mkdir", "-p", "/var/lib/minikube/scheduled-stop")); err != nil {
-		return errors.Wrapf(err, "creating dirs: %v", rr.Output())
+		return fmt.Errorf("creating dirs: %v: %w", rr.Output(), err)
 	}
 	// update environment file to include duration
 	if err := runner.Copy(environmentFile(duration)); err != nil {
-		return errors.Wrap(err, "copying scheduled stop env file")
+		return fmt.Errorf("copying scheduled stop env file: %w", err)
 	}
 	// restart scheduled stop service in container
 	sysManager := sysinit.New(runner)

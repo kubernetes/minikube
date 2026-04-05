@@ -19,7 +19,7 @@ package tests
 import (
 	"errors"
 
-	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 )
 
 // MockHost used for testing. When commands are run, the output from CommandOutput

@@ -26,9 +26,9 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/qemu"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
@@ -46,9 +47,11 @@ func init() {
 		priority = registry.Experimental
 	}
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.QEMU2,
-		Alias:    []string{driver.AliasQEMU},
-		Init:     func() drivers.Driver { return qemu.NewDriver("", "") },
+		Name:  driver.QEMU2,
+		Alias: []string{driver.AliasQEMU},
+		Init: func(options *run.CommandOptions) drivers.Driver {
+			return qemu.NewDriver("", "", options)
+		},
 		Config:   configure,
 		Status:   status,
 		Default:  true,
@@ -192,7 +195,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func status() registry.State {
+func status(_ *run.CommandOptions) registry.State {
 	qemuSystem, err := qemuSystemProgram()
 	if err != nil {
 		return registry.State{Error: err, Doc: docURL}

@@ -21,6 +21,7 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -57,10 +58,12 @@ var addonsOpenCmd = &cobra.Command{
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube addons open ADDON_NAME")
 		}
+
+		options := flags.CommandOptions()
 		addonName := args[0]
 
 		cname := ClusterFlagValue()
-		co := mustload.Healthy(cname)
+		co := mustload.Healthy(cname, options)
 
 		addon, ok := assets.Addons[addonName] // validate addon input
 		if !ok {
@@ -88,7 +91,7 @@ minikube addons enable {{.name}}`, out.V{"name": addonName})
 You can add one by annotating a service with the label {{.labelName}}:{{.addonName}}`, out.V{"labelName": key, "addonName": addonName})
 		}
 		for i := range serviceList.Items {
-			svc := serviceList.Items[i].ObjectMeta.Name
+			svc := serviceList.Items[i].Name
 			var urlString []string
 
 			if urlString, err = service.WaitForService(co.API, co.Config.Name, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {

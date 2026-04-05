@@ -102,9 +102,6 @@ makes sure the MINIKUBE_FORCE_SYSTEMD environment variable works just as well as
 ## TestDockerEnvContainerd
 makes sure that minikube docker-env command works when the runtime is containerd
 
-## TestKVMDriverInstallOrUpdate
-makes sure our docker-machine-driver-kvm2 binary can be installed properly
-
 ## TestHyperKitDriverInstallOrUpdate
 makes sure our docker-machine-driver-hyperkit binary can be installed properly
 
@@ -147,7 +144,7 @@ Steps:
 
 Skips:
 - Skips on `none` driver as image loading is not supported
-- Skips on GitHub Actions and macOS as this test case requires a running docker daemon
+- Skips on GitHub Actions / prow environment and macOS as this test case requires a running docker daemon
 
 #### validateDockerEnv
 check functionality of minikube after evaluating docker-env
@@ -228,7 +225,8 @@ Steps:
 - Make sure the command doesn't raise any error
 
 #### validateMinikubeKubectlDirectCall
-validates that calling minikube's kubectl
+validates that calling the minikube binary linked as "kubectl" acts as a kubectl wrapper.
+This tests the feature where minikube behaves like kubectl when invoked via a binary named "kubectl".
 
 Steps:
 - Run `kubectl get pods` by calling the minikube's `kubectl` binary file directly
@@ -387,9 +385,6 @@ Steps:
 - Run `mysql -e show databases;` inside the MySQL pod to verify MySQL is up and running
 - Retry with exponential backoff if failed, as `mysqld` first comes up without users configured. Scan for names in case of a reschedule.
 
-Skips:
-- Skips for ARM64 architecture since it's not supported by MySQL
-
 #### validateFileSync
 to check existence of the test file
 
@@ -479,9 +474,6 @@ NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook
 #### validateTunnelDelete
 stops `minikube tunnel`
 
-## TestGuestEnvironment
-verifies files and packages installed inside minikube ISO/Base image
-
 ## TestGvisorAddon
 tests the functionality of the gVisor addon
 
@@ -558,6 +550,9 @@ is a test case building with --build-env
 
 #### validateImageBuildWithDockerIgnore
 is a test case building with .dockerignore
+
+## TestISOImage
+verifies files and packages installed inside minikube ISO/Base image
 
 ## TestJSONOutput
 makes sure json output works properly for the start, pause, unpause, and stop commands
@@ -739,7 +734,9 @@ makes sure no left over left after deleting a profile such as containers or volu
 makes sure paused clusters show up in minikube status correctly
 
 ## TestPreload
-verifies the preload tarballs get pulled in properly by minikube
+verifies that disabling the initial preload, pulling a specific image,
+and restarting the cluster preserves the image across restarts.
+also tests --preload-source should work for both github and gcs
 
 ## TestScheduledStopWindows
 tests the schedule stop functionality on Windows

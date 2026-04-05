@@ -1,0 +1,24 @@
+{
+	"name": "Kubernetes - Minikube-in-Docker",
+	"image": "mcr.microsoft.com/devcontainers/base:bullseye",
+	"runArgs": [
+		"--privileged",
+		"--device",
+		"/dev/kvm"
+	],
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {
+			"enableNonRootDocker": "true",
+			"moby": "true"
+		},
+		"ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+			"version": "latest",
+			"helm": "latest",
+			"minikube": "latest"
+		},
+		"ghcr.io/devcontainers/features/go:1": {
+			"version": "latest"
+		}
+	},
+	"postCreateCommand": "cat .devcontainer/.bashrc.sh >> $HOME/.bashrc"
+}

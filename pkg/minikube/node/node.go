@@ -24,8 +24,9 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,13 +37,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 // Add adds a new node config to an existing cluster.
-func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
+func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool, options *run.CommandOptions) error {
 	profiles, err := config.ListValidProfiles()
 	if err != nil {
 		return err
@@ -56,7 +58,7 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 
 		for _, existNode := range p.Config.Nodes {
 			if machineName == config.MachineName(*p.Config, existNode) {
-				return errors.Errorf("Node %s already exists in %s profile", machineName, p.Name)
+				return fmt.Errorf("Node %s already exists in %s profile", machineName, p.Name)
 			}
 		}
 	}
@@ -66,10 +68,10 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 	}
 
 	if err := config.SaveNode(cc, &n); err != nil {
-		return errors.Wrap(err, "save node")
+		return fmt.Errorf("save node: %w", err)
 	}
 
-	r, p, m, h, err := Provision(cc, &n, delOnFail)
+	r, p, m, h, err := Provision(cc, &n, delOnFail, options)
 	if err != nil {
 		return err
 	}
@@ -83,37 +85,37 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 		ExistingAddons: nil,
 	}
 
-	_, err = Start(s)
+	_, err = Start(s, options)
 	return err
 }
 
 // teardown drains, then resets and finally deletes node from cluster.
 // ref: https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#tear-down
-func teardown(cc config.ClusterConfig, name string) (*config.Node, error) {
+func teardown(cc config.ClusterConfig, name string, options *run.CommandOptions) (*config.Node, error) {
 	// get runner for named node - has to be done before node is drained
 	n, _, err := Retrieve(cc, name)
 	if err != nil {
-		return n, errors.Wrap(err, "retrieve node")
+		return n, fmt.Errorf("retrieve node: %w", err)
 	}
 	m := config.MachineName(cc, *n)
 
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
-		return n, errors.Wrap(err, "get api client")
+		return n, fmt.Errorf("get api client: %w", err)
 	}
 
 	h, err := machine.LoadHost(api, m)
 	if err != nil {
-		return n, errors.Wrap(err, "load host")
+		return n, fmt.Errorf("load host: %w", err)
 	}
 
 	r, err := machine.CommandRunner(h)
 	if err != nil {
-		return n, errors.Wrap(err, "get command runner")
+		return n, fmt.Errorf("get command runner: %w", err)
 	}
 
 	// get runner for healthy control-plane node
-	cpr := mustload.Healthy(cc.Name).CP.Runner
+	cpr := mustload.Healthy(cc.Name, options).CP.Runner
 
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 
@@ -183,14 +185,14 @@ func teardown(cc config.ClusterConfig, name string) (*config.Node, error) {
 }
 
 // Delete calls teardownNode to remove node from cluster and deletes the host.
-func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
-	n, err := teardown(cc, name)
+func Delete(cc config.ClusterConfig, name string, options *run.CommandOptions) (*config.Node, error) {
+	n, err := teardown(cc, name, options)
 	if err != nil {
 		return n, err
 	}
 
 	m := config.MachineName(cc, *n)
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(options)
 	if err != nil {
 		return n, err
 	}
@@ -202,7 +204,7 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 
 	_, index, err := Retrieve(cc, name)
 	if err != nil {
-		return n, errors.Wrap(err, "retrieve")
+		return n, fmt.Errorf("retrieve: %w", err)
 	}
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)

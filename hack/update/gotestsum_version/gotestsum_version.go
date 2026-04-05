@@ -42,6 +42,11 @@ var (
 				`gotest.tools/gotestsum@.*`: `gotest.tools/gotestsum@{{.StableVersion}}`,
 			},
 		},
+		"hack/prow/installer/check_install_gotestsum.sh": {
+			Replace: map[string]string{
+				`gotest.tools/gotestsum@.*`: `gotest.tools/gotestsum@{{.StableVersion}}`,
+			},
+		},
 	}
 )
 
@@ -63,5 +68,7 @@ func main() {
 	data := Data{StableVersion: stable}
 	klog.Infof("gotestsum stable version: %s", data.StableVersion)
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }

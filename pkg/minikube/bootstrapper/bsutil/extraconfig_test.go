@@ -57,3 +57,47 @@ func TestFindInvalidExtraConfigFlags(t *testing.T) {
 		})
 	}
 }
+
+// TestCreateFlagsFromExtraArgs checks that CreateFlagsFromExtraArgs correctly filters and formats
+// extra args into kubeadm command line flags.
+// This is important because kubeadm has strict rules about which flags can be combined with --config;
+// passing config-file parameters as flags will cause kubeadm initialization to fail.
+func TestCreateFlagsFromExtraArgs(t *testing.T) {
+	tests := []struct {
+		name string
+		opts config.ExtraOptionSlice
+		want string
+	}{
+		{
+			name: "allowed command line args",
+			opts: config.ExtraOptionSlice{
+				{Component: Kubeadm, Key: "ignore-preflight-errors", Value: "all"},
+				{Component: Kubeadm, Key: "dry-run", Value: "true"},
+			},
+			want: "--dry-run=true --ignore-preflight-errors=all",
+		},
+		{
+			name: "filtered config file args",
+			opts: config.ExtraOptionSlice{
+				{Component: Kubeadm, Key: "pod-network-cidr", Value: "10.0.0.0/24"}, // Should be filtered out
+				{Component: Kubeadm, Key: "ignore-preflight-errors", Value: "SystemVerification"},
+			},
+			want: "--ignore-preflight-errors=SystemVerification",
+		},
+		{
+			name: "mixed components",
+			opts: config.ExtraOptionSlice{
+				{Component: Kubeadm, Key: "kubeconfig", Value: "/tmp/conf"},
+				{Component: Kubelet, Key: "v", Value: "4"}, // Should be ignored by this function
+			},
+			want: "--kubeconfig=/tmp/conf",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CreateFlagsFromExtraArgs(tt.opts); got != tt.want {
+				t.Errorf("CreateFlagsFromExtraArgs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

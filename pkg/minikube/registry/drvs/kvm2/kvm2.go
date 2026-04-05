@@ -26,26 +26,34 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 
+	"k8s.io/minikube/pkg/drivers/kvm"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
 	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/"
 )
 
+// The driver is implemented for amd64 and arm64, but we cannot build the arm64
+// version yet: https://github.com/kubernetes/minikube/issues/19959.
+var supportedArchictures = []string{"amd64"}
+
 func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.KVM2,
 		Alias:    []string{driver.AliasKVM},
+		Init:     func(_ *run.CommandOptions) drivers.Driver { return kvm.NewDriver("", "") },
 		Config:   configure,
 		Status:   status,
 		Default:  true,
@@ -55,28 +63,9 @@ func init() {
 	}
 }
 
-// This is duplicate of kvm.Driver. Avoids importing the kvm2 driver, which requires cgo & libvirt.
-type kvmDriver struct {
-	*drivers.BaseDriver
-
-	Memory         int
-	DiskSize       int
-	CPU            int
-	Network        string
-	PrivateNetwork string
-	ISO            string
-	Boot2DockerURL string
-	DiskPath       string
-	GPU            bool
-	Hidden         bool
-	ConnectionURI  string
-	NUMANodeCount  int
-	ExtraDisks     int
-}
-
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	name := config.MachineName(cc, n)
-	return kvmDriver{
+	return kvm.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
 			StorePath:   localpath.MiniPath(),
@@ -115,7 +104,19 @@ func defaultURI() string {
 	return "qemu:///system"
 }
 
-func status() registry.State {
+func status(_ *run.CommandOptions) registry.State {
+	if !slices.Contains(supportedArchictures, runtime.GOARCH) {
+		rs := registry.State{
+			Error: fmt.Errorf("KVM is not supported on %q, contributions are welcome", runtime.GOARCH),
+			Fix:   fmt.Sprintf("you can use the KVM driver on %s", strings.Join(supportedArchictures, ",")),
+		}
+		// The driver is implemented but we cannot build it yet.
+		if runtime.GOARCH == "arm64" {
+			rs.Doc = "https://github.com/kubernetes/minikube/issues/19959"
+		}
+		return rs
+	}
+
 	// Allow no more than 6 seconds for querying state
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
@@ -165,17 +166,6 @@ func status() registry.State {
 			Fix:       "Check that the libvirtd service is running and the socket is ready",
 			Doc:       docURL,
 		}
-	}
-
-	if runtime.GOARCH == "arm64" {
-		return registry.State{
-			Installed: true,
-			Running:   true,
-			Error:     fmt.Errorf("KVM is not supported on arm64 due to a gcc build error, contributions are welcome"),
-			Fix:       "follow the github issue for possible fix",
-			Doc:       "https://github.com/kubernetes/minikube/issues/19959",
-		}
-
 	}
 
 	if err != nil {

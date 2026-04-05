@@ -25,8 +25,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-getter"
-	"github.com/juju/mutex/v2"
-	"github.com/pkg/errors"
+
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -56,12 +55,18 @@ func SetAliyunMirror() {
 
 // CreateDstDownloadMock is the default mock implementation of download.
 func CreateDstDownloadMock(_, dst string) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return errors.Wrap(err, "mkdir")
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return fmt.Errorf("mkdir: %w", err)
 	}
 
-	_, err := os.Create(dst)
-	return err
+	f, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // download is a well-configured atomic download function
@@ -92,7 +97,7 @@ func download(src, dst string, options ...getter.ClientOption) error {
 	}
 
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return errors.Wrap(err, "mkdir")
+		return fmt.Errorf("mkdir: %w", err)
 	}
 
 	if DownloadMock != nil {
@@ -107,7 +112,7 @@ func download(src, dst string, options ...getter.ClientOption) error {
 
 	klog.Infof("Downloading: %s -> %s", src, dst)
 	if err := client.Get(); err != nil {
-		return errors.Wrapf(err, "getter: %+v", client)
+		return fmt.Errorf("getter: %+v: %w", client, err)
 	}
 	return os.Rename(tmpDst, dst)
 }
@@ -123,9 +128,9 @@ func withinUnitTest() bool {
 }
 
 // lockDownload locks `file` if possible and returns a releaser that must be called to release the lock.
-func lockDownload(file string) (mutex.Releaser, error) {
+func lockDownload(file string) (lock.Releaser, error) {
 	type retPair struct {
-		mutex.Releaser
+		lock.Releaser
 		error
 	}
 	lockChannel := make(chan retPair)
@@ -133,9 +138,9 @@ func lockDownload(file string) (mutex.Releaser, error) {
 	go func() {
 		spec := lock.PathMutexSpec(file)
 		spec.Timeout = 5 * time.Minute
-		releaser, err := mutex.Acquire(spec)
+		releaser, err := lock.Acquire(spec)
 		if err != nil {
-			lockChannel <- retPair{nil, errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", file, spec)}
+			lockChannel <- retPair{nil, fmt.Errorf("failed to acquire lock \"%s\": %+v: %w", file, spec, err)}
 			return
 		}
 		lockChannel <- retPair{releaser, err}

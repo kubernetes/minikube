@@ -28,7 +28,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/audit"
@@ -105,7 +104,7 @@ func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	cmd.Stdout = logOutput
 	cmd.Stderr = logOutput
 	if _, err := cr.RunCmd(cmd); err != nil {
-		return errors.Wrapf(err, "log follow")
+		return fmt.Errorf("log follow: %w", err)
 	}
 	return nil
 }

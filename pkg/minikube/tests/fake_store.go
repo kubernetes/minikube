@@ -19,8 +19,8 @@ package tests
 import (
 	"testing"
 
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/mcnerror"
+	"k8s.io/minikube/pkg/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/mcnerror"
 )
 
 // FakeStore implements persist.Store from libmachine

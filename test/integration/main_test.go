@@ -178,12 +178,15 @@ func HyperkitDriver() bool {
 
 // NeedsAuxDriver Returns true if the driver needs an auxiliary driver (kvm, hyperkit,..)
 func NeedsAuxDriver() bool {
-	return HyperkitDriver() || KVMDriver()
+	return HyperkitDriver()
 }
 
 // VMDriver checks if the driver is a VM
 func VMDriver() bool {
 	return !KicDriver() && !NoneDriver()
+}
+func VFKitDriver() bool {
+	return matchDriverFlag("vfkit")
 }
 
 // ContainerRuntime returns the name of a specific container runtime if it was specified

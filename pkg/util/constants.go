@@ -17,9 +17,8 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"net"
-
-	"github.com/pkg/errors"
 )
 
 // DefaultAdmissionControllers are admission controllers we default to
@@ -39,7 +38,7 @@ var DefaultAdmissionControllers = []string{
 func ServiceClusterIP(serviceCIDR string) (net.IP, error) {
 	ip, _, err := net.ParseCIDR(serviceCIDR)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing default service cidr")
+		return nil, fmt.Errorf("parsing default service cidr: %w", err)
 	}
 	ip = ip.To4()
 	ip[3]++
@@ -50,7 +49,7 @@ func ServiceClusterIP(serviceCIDR string) (net.IP, error) {
 func DNSIP(serviceCIDR string) (net.IP, error) {
 	ip, _, err := net.ParseCIDR(serviceCIDR)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing default service cidr")
+		return nil, fmt.Errorf("parsing default service cidr: %w", err)
 	}
 	ip = ip.To4()
 	ip[3] = 10

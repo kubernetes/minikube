@@ -27,15 +27,16 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 var docURL = "https://minikube.sigs.k8s.io/docs/drivers/podman/"
@@ -57,7 +58,7 @@ func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Podman,
 		Config:   configure,
-		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Podman}) },
+		Init:     func(_ *run.CommandOptions) drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Podman}) },
 		Status:   status,
 		Default:  true,
 		Priority: priority,
@@ -100,7 +101,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}), nil
 }
 
-func status() registry.State {
+func status(_ *run.CommandOptions) registry.State {
 	podman, err := exec.LookPath(oci.Podman)
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Podman", Doc: docURL}

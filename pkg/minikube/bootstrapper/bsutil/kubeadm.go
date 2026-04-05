@@ -24,7 +24,6 @@ import (
 	"slices"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
@@ -44,13 +43,13 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	k8s := cc.KubernetesConfig
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing Kubernetes version")
+		return nil, fmt.Errorf("parsing Kubernetes version: %w", err)
 	}
 
 	// parses a map of the feature gates for kubeadm and component
 	kubeadmFeatureArgs, componentFeatureArgs, err := parseFeatureArgs(k8s.FeatureGates)
 	if err != nil {
-		return nil, errors.Wrap(err, "parses feature gate config for kubeadm and component")
+		return nil, fmt.Errorf("parses feature gate config for kubeadm and component: %w", err)
 	}
 
 	// In case of no port assigned, use default
@@ -64,17 +63,17 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		if !r.Active() {
 			return nil, cruntime.ErrContainerRuntimeNotRunning
 		}
-		return nil, errors.Wrap(err, "getting cgroup driver")
+		return nil, fmt.Errorf("getting cgroup driver: %w", err)
 	}
 
 	componentOpts, err := createExtraComponentConfig(k8s.ExtraOptions, version, componentFeatureArgs, n)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
+		return nil, fmt.Errorf("generating extra component config for kubeadm: %w", err)
 	}
 
 	cnm, err := cni.New(&cc)
 	if err != nil {
-		return nil, errors.Wrap(err, "cni")
+		return nil, fmt.Errorf("cni: %w", err)
 	}
 
 	podCIDR := cnm.CIDR()
@@ -106,6 +105,13 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	kubeletConfigOpts["runtimeRequestTimeout"] = k8s.ExtraOptions.Get("runtime-request-timeout", Kubelet)
 	if kubeletConfigOpts["runtimeRequestTimeout"] == "" {
 		kubeletConfigOpts["runtimeRequestTimeout"] = "15m"
+	}
+
+	// Disable cgroup v2 requirement for k8s 1.35+ if using cgroupfs
+	// TODO: remove this when minikube supports cgroup v2 for containerd and cri-o #22318
+	if version.GTE(semver.MustParse("1.35.0-alpha.0")) && cgroupDriver != constants.SystemdCgroupDriver {
+		// https://github.com/kubernetes/kubernetes/blob/15673d04e30c711a7bb0f0efe6abf4baead1463b/staging/src/k8s.io/kubelet/config/v1beta1/types.go#L923
+		kubeletConfigOpts["failCgroupV1"] = "false"
 	}
 
 	opts := struct {

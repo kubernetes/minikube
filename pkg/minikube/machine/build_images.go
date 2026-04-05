@@ -17,6 +17,7 @@ limitations under the License.
 package machine
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 	"os/exec"
@@ -27,14 +28,14 @@ import (
 
 	dockerref "github.com/distribution/reference"
 
-	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -42,10 +43,10 @@ import (
 var buildRoot = path.Join(vmpath.GuestPersistentDir, "build")
 
 // BuildImage builds image to all profiles
-func BuildImage(srcPath string, file string, tag string, push bool, env []string, opt []string, profiles []*config.Profile, allNodes bool, nodeName string) error {
-	api, err := NewAPIClient()
+func BuildImage(srcPath string, file string, tag string, push bool, env []string, opt []string, profiles []*config.Profile, allNodes bool, nodeName string, options *run.CommandOptions) error {
+	api, err := NewAPIClient(options)
 	if err != nil {
-		return errors.Wrap(err, "api")
+		return fmt.Errorf("api: %w", err)
 	}
 	defer api.Close()
 
@@ -64,7 +65,7 @@ func BuildImage(srcPath string, file string, tag string, push bool, env []string
 	if tag != "" {
 		named, err := dockerref.ParseNormalizedNamed(tag)
 		if err != nil {
-			return errors.Wrapf(err, "couldn't parse image reference %q", tag)
+			return fmt.Errorf("couldn't parse image reference %q: %w", tag, err)
 		}
 		tag = named.String()
 	}
@@ -139,13 +140,13 @@ func BuildImage(srcPath string, file string, tag string, push bool, env []string
 func buildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file string, tag string, push bool, env []string, opt []string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
-		return errors.Wrap(err, "runtime")
+		return fmt.Errorf("runtime: %w", err)
 	}
 	klog.Infof("Building image from url: %s", src)
 
 	err = r.BuildImage(src, file, tag, push, env, opt)
 	if err != nil {
-		return errors.Wrapf(err, "%s build %s", r.Name(), src)
+		return fmt.Errorf("%s build %s: %w", r.Name(), src, err)
 	}
 
 	klog.Infof("Built %s from %s", tag, src)
@@ -156,7 +157,7 @@ func buildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file
 func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file string, tag string, push bool, env []string, opt []string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
-		return errors.Wrap(err, "runtime")
+		return fmt.Errorf("runtime: %w", err)
 	}
 	klog.Infof("Building image from path: %s", src)
 
@@ -175,7 +176,7 @@ func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src s
 	dst := path.Join(buildRoot, filename)
 	f, err := assets.NewFileAsset(src, buildRoot, filename, "0644")
 	if err != nil {
-		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
+		return fmt.Errorf("creating copyable file asset: %s: %w", filename, err)
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
@@ -184,7 +185,7 @@ func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src s
 	}()
 
 	if err := cr.Copy(f); err != nil {
-		return errors.Wrap(err, "transferring cached image")
+		return fmt.Errorf("transferring cached image: %w", err)
 	}
 
 	context := path.Join(buildRoot, ".", strings.TrimSuffix(filename, filepath.Ext(filename)))
@@ -202,7 +203,7 @@ func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src s
 	}
 	err = r.BuildImage(context, file, tag, push, env, opt)
 	if err != nil {
-		return errors.Wrapf(err, "%s build %s", r.Name(), dst)
+		return fmt.Errorf("%s build %s: %w", r.Name(), dst, err)
 	}
 
 	args = append([]string{"rm", "-rf"}, context)

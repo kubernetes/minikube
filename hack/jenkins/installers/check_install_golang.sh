@@ -22,7 +22,7 @@ if (($# < 1)); then
   exit 1
 fi
 
-VERSION_TO_INSTALL=1.24.6
+VERSION_TO_INSTALL=1.25.5
 INSTALL_PATH=${1}
 
 function current_arch() {
@@ -84,7 +84,7 @@ function install_golang() {
   # using sudo because previously installed versions might have been installed by a different user.
   # as it was the case on jenkins VM.
   sudo rm -rf "$GO_TGZ"
-  curl -qL -O "https://storage.googleapis.com/golang/$GO_TGZ"
+  curl -qL -O "https://go.dev/dl/$GO_TGZ"
   sudo rm -rf "$GO_DIR"
   sudo mkdir -p "$GO_DIR"
   sudo tar -C "$GO_DIR" --strip-components=1 -xzf "$GO_TGZ"

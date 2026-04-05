@@ -23,10 +23,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"k8s.io/minikube/pkg/libmachine/drivers/plugin/localbinary"
 
 	"k8s.io/minikube/pkg/minikube/driver"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
+	"k8s.io/minikube/pkg/minikube/run"
 	testutil "k8s.io/minikube/pkg/minikube/tests"
 )
 
@@ -62,7 +63,7 @@ const vboxConfig = `
 `
 
 func TestLocalClientNewHost(t *testing.T) {
-	c, err := NewAPIClient()
+	c, err := NewAPIClient(&run.CommandOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +113,7 @@ func TestLocalClientNewHost(t *testing.T) {
 
 func TestRunNotDriver(t *testing.T) {
 	testutil.MakeTempDir(t)
-	StartDriver()
+	StartDriver(&run.CommandOptions{})
 	if !localbinary.CurrentBinaryIsDockerMachine {
 		t.Fatal("CurrentBinaryIsDockerMachine not set. This will break driver initialization.")
 	}
@@ -135,7 +136,7 @@ func TestRunDriver(t *testing.T) {
 	}()
 
 	// Run the command asynchronously. It should listen on a port for connections.
-	go StartDriver()
+	go StartDriver(&run.CommandOptions{})
 
 	// The command will write out what port it's listening on over stdout.
 	reader := bufio.NewReader(r)

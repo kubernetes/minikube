@@ -17,9 +17,9 @@ limitations under the License.
 package machine
 
 import (
+	"fmt"
 	"runtime"
 
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -50,7 +50,7 @@ func CacheBinariesForBootstrapper(version string, excludeBinaries []string, bina
 		bin := bin // https://go.dev/doc/faq#closures_and_goroutines
 		g.Go(func() error {
 			if _, err := download.Binary(bin, version, "linux", runtime.GOARCH, binariesURL); err != nil {
-				return errors.Wrapf(err, "caching binary %s", bin)
+				return fmt.Errorf("caching binary %s: %w", bin, err)
 			}
 			return nil
 		})

@@ -29,7 +29,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -50,11 +49,11 @@ func TestDocs(docPath string, pathToCheck string) error {
 		fset := token.NewFileSet()
 		r, e := os.ReadFile(path)
 		if e != nil {
-			return errors.Wrap(e, fmt.Sprintf("error reading file %s", path))
+			return fmt.Errorf("%s: %w", fmt.Sprintf("error reading file %s", path), e)
 		}
 		file, e := parser.ParseFile(fset, "", r, parser.ParseComments)
 		if e != nil {
-			return errors.Wrap(e, fmt.Sprintf("error parsing file %s", path))
+			return fmt.Errorf("%s: %w", fmt.Sprintf("error parsing file %s", path), e)
 		}
 
 		ast.Inspect(file, func(x ast.Node) bool {

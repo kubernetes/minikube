@@ -17,17 +17,18 @@ limitations under the License.
 package schedule
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // Daemonize daemonizes minikube so that scheduled stop happens as expected
-func Daemonize(profiles []string, duration time.Duration) error {
+func Daemonize(profiles []string, duration time.Duration, options *run.CommandOptions) error {
 	// save current time and expected duration in config
 	scheduledStop := &config.ScheduledStopConfig{
 		InitiationTime: time.Now().Unix(),
@@ -35,7 +36,7 @@ func Daemonize(profiles []string, duration time.Duration) error {
 	}
 	var daemonizeProfiles []string
 	for _, p := range profiles {
-		_, cc := mustload.Partial(p)
+		_, cc := mustload.Partial(p, options)
 		if driver.BareMetal(cc.Driver) {
 			out.WarningT("scheduled stop is not supported on the none driver, skipping scheduling")
 			continue
@@ -43,16 +44,16 @@ func Daemonize(profiles []string, duration time.Duration) error {
 		daemonizeProfiles = append(daemonizeProfiles, p)
 	}
 
-	if err := daemonize(daemonizeProfiles, duration); err != nil {
-		return errors.Wrap(err, "daemonizing")
+	if err := daemonize(daemonizeProfiles, duration, options); err != nil {
+		return fmt.Errorf("daemonizing: %w", err)
 	}
 
 	// save scheduled stop config if daemonize was successful
 	for _, d := range daemonizeProfiles {
-		_, cc := mustload.Partial(d)
+		_, cc := mustload.Partial(d, options)
 		cc.ScheduledStop = scheduledStop
 		if err := config.SaveProfile(d, cc); err != nil {
-			return errors.Wrap(err, "saving profile")
+			return fmt.Errorf("saving profile: %w", err)
 		}
 	}
 	return nil

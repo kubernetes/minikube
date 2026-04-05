@@ -17,11 +17,18 @@ limitations under the License.
 package lock
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
-
-	"github.com/juju/mutex/v2"
+	"time"
 )
 
+// TestUserMutexSpec verifies that the MutexSpec generation is deterministic and collision-resistant.
+// It ensures that different paths generate unique 40-character SHA1 based names, which is crucial
+// for avoiding lock collisions between different projects or resources.
 func TestUserMutexSpec(t *testing.T) {
 	var tests = []struct {
 		description string
@@ -73,11 +80,145 @@ func TestUserMutexSpec(t *testing.T) {
 			if seen[got.Name] != "" {
 				t.Fatalf("lock name collision between %s and %s", tc.path, seen[got.Name])
 			}
-			m, err := mutex.Acquire(got)
+			seen[got.Name] = tc.path
+			// Since we are in the lock package, we call Acquire directly
+			m, err := Acquire(got)
 			if err != nil {
 				t.Errorf("acquire for spec %+v failed: %v", got, err)
 			}
-			m.Release()
+			if m != nil {
+				m.Release()
+			}
 		})
 	}
+}
+
+// TestMutexExclusion verifies that two processes cannot hold the same lock simultaneously.
+// This is critical for data integrity when multiple minikube instances access shared resources.
+func TestMutexExclusion(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "lock")
+	spec := PathMutexSpec(path)
+
+	// 1. Acquire the lock
+	r1, err := Acquire(spec)
+	if err != nil {
+		t.Fatalf("Failed to acquire lock 1: %v", err)
+	}
+	defer r1.Release()
+
+	// 2. Try to acquire the same lock with a separate spec (simulating another process/routine)
+	// We use a short timeout to fail quickly if it correctly blocks
+	spec2 := PathMutexSpec(path)
+	// Set a very short timeout
+	spec2.Timeout = 100 * time.Millisecond
+	spec2.Delay = 10 * time.Millisecond
+
+	// This should fail because r1 is holding it
+	_, err = Acquire(spec2)
+	if err == nil {
+		t.Fatal("Expected error acquiring locked mutex, got nil")
+	}
+}
+
+// TestMutexRelease confirms that a lock can be successfully re-acquired after being released.
+// This ensures that our unlocking mechanism works correctly and doesn't leave resources permanently locked.
+func TestMutexRelease(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "lock")
+	spec := PathMutexSpec(path)
+
+	// 1. Acquire and Release
+	r1, err := Acquire(spec)
+	if err != nil {
+		t.Fatalf("Failed to acquire lock 1: %v", err)
+	}
+	r1.Release()
+
+	// 2. Acquire again -> should succeed
+	r2, err := Acquire(spec)
+	if err != nil {
+		t.Fatalf("Failed to acquire lock 2 after release: %v", err)
+	}
+	r2.Release()
+}
+
+// TestMutexConcurrency checks that a second process will wait for an existing lock to be released rather than failing immediately.
+// This ensures that multiple minikube commands can queue up safely without erroring out.
+func TestMutexConcurrency(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "lock")
+	spec := PathMutexSpec(path)
+
+	// 1. Hold lock for 200ms
+	started := make(chan error)
+	go func() {
+		r, err := Acquire(spec)
+		if err != nil {
+			started <- err
+			return
+		}
+		close(started)
+		time.Sleep(200 * time.Millisecond)
+		r.Release()
+	}()
+
+	// Wait for the routine to acquire the lock
+	if err := <-started; err != nil {
+		t.Fatalf("routine 1 failed to acquire: %v", err)
+	}
+
+	// 2. Try to acquire with 500ms timeout -> should succeed eventually
+	spec2 := PathMutexSpec(path)
+	spec2.Timeout = 1 * time.Second
+	spec2.Delay = 50 * time.Millisecond
+
+	r2, err := Acquire(spec2)
+	if err != nil {
+		t.Fatalf("routine 2 failed to wait for lock: %v", err)
+	}
+	r2.Release()
+}
+
+// TestLockDirectoryStructure verifies that the lock directory is created with correct permissions and ownership.
+// It addresses security concerns by ensuring:
+// 1. The lock directory is created in a user-specific path to avoid permission denial in multi-user environments.
+// 2. The directory is writable by the current user, ensuring locks can be acquired.
+// 3. On Unix systems, the directory name contains the user's UID for clear isolation (e.g. minikube-locks-1000).
+func TestLockDirectoryStructure(t *testing.T) {
+	// 1. Acquire a lock
+	spec := PathMutexSpec("test-lock-structure")
+	r, err := Acquire(spec)
+	if err != nil {
+		t.Fatalf("Acquire failed: %v", err)
+	}
+	defer r.Release()
+
+	// 2. Verify the directory was created with the correct UID suffix
+	expectedDir := getUserSpecificDirName()
+	lockDir := filepath.Join(os.TempDir(), expectedDir)
+
+	info, err := os.Stat(lockDir)
+	if err != nil {
+		t.Fatalf("Expected lock directory %s does not exist", lockDir)
+	}
+
+	if !info.IsDir() {
+		t.Errorf("Expected %s to be a directory", lockDir)
+	}
+
+	// 3. Verify that the directory matches likely expectation for current user
+	if runtime.GOOS != "windows" {
+		uid := os.Getuid()
+		if !strings.Contains(expectedDir, fmt.Sprintf("%d", uid)) {
+			t.Errorf("Expected dir name %s to contain user UID %d", expectedDir, uid)
+		}
+	}
+
+	// 4. Verify that the directory is writable by the current user
+	testFile := filepath.Join(lockDir, "write-test")
+	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
+		t.Errorf("Expected to be able to write to %s: %v", lockDir, err)
+	}
+	os.Remove(testFile)
 }

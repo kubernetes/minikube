@@ -22,7 +22,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/spf13/viper"
 
 	"k8s.io/klog/v2"
@@ -213,7 +214,7 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 		if os.IsNotExist(err) {
 			return nil, &ErrNotExist{fmt.Sprintf("cluster %q does not exist", profileName)}
 		}
-		return nil, errors.Wrap(err, "stat")
+		return nil, fmt.Errorf("stat: %w", err)
 	}
 
 	data, err := os.ReadFile(path)
@@ -221,11 +222,11 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 		if os.IsPermission(err) {
 			return nil, &ErrPermissionDenied{err.Error()}
 		}
-		return nil, errors.Wrap(err, "read")
+		return nil, fmt.Errorf("read: %w", err)
 	}
 
 	if err := json.Unmarshal(data, &cc); err != nil {
-		return nil, errors.Wrap(err, "unmarshal")
+		return nil, fmt.Errorf("unmarshal: %w", err)
 	}
 	return &cc, nil
 }

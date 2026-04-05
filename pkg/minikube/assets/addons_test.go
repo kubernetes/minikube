@@ -45,7 +45,7 @@ func mapsEqual(a, b map[string]string) bool {
 
 func TestParseMapString(t *testing.T) {
 	cases := map[string]map[string]string{
-		"Aardvark=1,B=2,Cantaloupe=3":         {"Aardvark": "1", "B": "2", "Cantaloupe": "3"},
+		"Aardvark=1,B=2,Cantaloupe=3":        {"Aardvark": "1", "B": "2", "Cantaloupe": "3"},
 		"A=,B=2,C=":                          {"A": "", "B": "2", "C": ""},
 		"":                                   {},
 		"malformed,good=howdy,manyequals==,": {"good": "howdy"},

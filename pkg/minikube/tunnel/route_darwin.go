@@ -25,8 +25,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"k8s.io/klog/v2"
 )
 
@@ -188,20 +186,20 @@ func writeResolverFile(route *Route) error {
 	// write resolver content into tf, then copy it to /etc/resolver/clusterDomain
 	tf, err := os.CreateTemp("", "minikube-tunnel-resolver-")
 	if err != nil {
-		return errors.Wrap(err, "tempfile")
+		return fmt.Errorf("tempfile: %w", err)
 	}
 	defer os.Remove(tf.Name())
 
 	if _, err = tf.WriteString(content); err != nil {
-		return errors.Wrap(err, "write")
+		return fmt.Errorf("write: %w", err)
 	}
 
 	if err = tf.Close(); err != nil {
-		return errors.Wrap(err, "close")
+		return fmt.Errorf("close: %w", err)
 	}
 
 	if err = os.Chmod(tf.Name(), 0644); err != nil {
-		return errors.Wrap(err, "chmod")
+		return fmt.Errorf("chmod: %w", err)
 	}
 
 	cmd := exec.Command("sudo", "mkdir", "-p", filepath.Dir(resolverFile))
@@ -210,7 +208,7 @@ func writeResolverFile(route *Route) error {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			return fmt.Errorf("%q failed: %v: %q", strings.Join(cmd.Args, " "), exitErr, exitErr.Stderr)
 		}
-		return errors.Wrap(err, "mkdir")
+		return fmt.Errorf("mkdir: %w", err)
 	}
 
 	cmd = exec.Command("sudo", "cp", "-fp", tf.Name(), resolverFile)
@@ -220,7 +218,7 @@ func writeResolverFile(route *Route) error {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			return fmt.Errorf("%q failed: %v: %q", strings.Join(cmd.Args, " "), exitErr, exitErr.Stderr)
 		}
-		return errors.Wrap(err, "copy")
+		return fmt.Errorf("copy: %w", err)
 	}
 	klog.Infof("DNS forwarding now configured in %q", resolverFile)
 	return nil

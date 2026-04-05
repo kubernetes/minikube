@@ -39,7 +39,7 @@ func TestGvisorAddon(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(60))
 	defer func() {
 		if t.Failed() {
-			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "gvisor", "-n", "kube-system"))
+			rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "logs", "gvisor", "-n", "kube-system"))
 			if err != nil {
 				t.Logf("failed to get gvisor post-mortem logs: %v", err)
 			}
@@ -70,7 +70,7 @@ func TestGvisorAddon(t *testing.T) {
 	}
 
 	// Create gvisor workload
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-gvisor.yaml")))
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-gvisor.yaml")))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}

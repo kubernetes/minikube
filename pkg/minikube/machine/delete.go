@@ -18,16 +18,16 @@ package machine
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"time"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/mcnerror"
-	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/mcnerror"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -108,12 +108,12 @@ func deleteHost(api libmachine.API, h *host.Host, machineName string) error {
 
 		nerr := h.Driver.Remove()
 		if nerr != nil {
-			return errors.Wrap(nerr, "host remove retry")
+			return fmt.Errorf("host remove retry: %w", nerr)
 		}
 	}
 
 	if err := api.Remove(machineName); err != nil {
-		return errors.Wrap(err, "api remove")
+		return fmt.Errorf("api remove: %w", err)
 	}
 	return nil
 }

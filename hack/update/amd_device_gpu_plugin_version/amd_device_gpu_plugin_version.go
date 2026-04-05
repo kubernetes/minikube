@@ -54,5 +54,7 @@ func main() {
 
 	data := Data{Version: stable.Tag, SHA: sha}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 }

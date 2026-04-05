@@ -25,21 +25,21 @@ import (
 	"time"
 
 	"github.com/VividCortex/godaemon"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // KillExisting kills existing scheduled stops by looking up the PID
 // of the scheduled stop from the PID file saved for the profile and killing the process
-func KillExisting(profiles []string) {
+func KillExisting(profiles []string, options *run.CommandOptions) {
 	for _, profile := range profiles {
 		if err := killPIDForProfile(profile); err != nil {
 			klog.Warningf("error killng PID for profile %s: %v", profile, err)
 		}
-		_, cc := mustload.Partial(profile)
+		_, cc := mustload.Partial(profile, options)
 		cc.ScheduledStop = nil
 		if err := config.SaveProfile(profile, cc); err != nil {
 			klog.Errorf("error saving profile for profile %s: %v", profile, err)
@@ -59,24 +59,24 @@ func killPIDForProfile(profile string) error {
 		}
 	}()
 	if err != nil {
-		return errors.Wrapf(err, "reading %s", file)
+		return fmt.Errorf("reading %s: %w", file, err)
 	}
 	pid, err := strconv.Atoi(string(f))
 	if err != nil {
-		return errors.Wrapf(err, "converting %s to int", f)
+		return fmt.Errorf("converting %s to int: %w", f, err)
 	}
 	p, err := os.FindProcess(pid)
 	if err != nil {
-		return errors.Wrap(err, "finding process")
+		return fmt.Errorf("finding process: %w", err)
 	}
 	klog.Infof("killing process %v as it is an old scheduled stop", pid)
 	if err := p.Kill(); err != nil {
-		return errors.Wrapf(err, "killing %v", pid)
+		return fmt.Errorf("killing %v: %w", pid, err)
 	}
 	return nil
 }
 
-func daemonize(profiles []string, _ time.Duration) error {
+func daemonize(profiles []string, _ time.Duration, _ *run.CommandOptions) error {
 	_, _, err := godaemon.MakeDaemon(&godaemon.DaemonAttr{})
 	if err != nil {
 		return err

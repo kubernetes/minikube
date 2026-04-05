@@ -24,7 +24,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -33,12 +32,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/docker/machine/libmachine/ssh"
-	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
+	"errors"
+
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
+	"k8s.io/minikube/pkg/libmachine/ssh"
+	"k8s.io/minikube/pkg/libmachine/state"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"
@@ -49,6 +49,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -81,14 +82,16 @@ type Driver struct {
 var _ drivers.Driver = &Driver{}
 
 // NewDriver returns a new krunkit.Driver.
-func NewDriver(hostName, storePath string) drivers.Driver {
+func NewDriver(hostName, storePath string, options *run.CommandOptions) drivers.Driver {
 	return &Driver{
 		BaseDriver: &drivers.BaseDriver{
 			SSHUser:     defaultSSHUser,
 			MachineName: hostName,
 			StorePath:   storePath,
 		},
-		CommonDriver: &common.CommonDriver{},
+		CommonDriver: &common.CommonDriver{
+			CommandOptions: *options,
+		},
 	}
 }
 
@@ -208,8 +211,7 @@ func (d *Driver) Start() error {
 		return err
 	}
 
-	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
-	if err := WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second); err != nil {
+	if err := common.WaitForSSHAccess(d); err != nil {
 		return err
 	}
 
@@ -281,7 +283,7 @@ func (d *Driver) setupIP(mac string) error {
 	getIP := func() error {
 		d.IPAddress, err = common.GetIPAddressByMACAddress(mac)
 		if err != nil {
-			return errors.Wrap(err, "failed to get IP address")
+			return fmt.Errorf("failed to get IP address: %w", err)
 		}
 		return nil
 	}
@@ -300,9 +302,9 @@ func (d *Driver) setupIP(mac string) error {
 		return nil
 	}
 	if !isBootpdError(err) {
-		return errors.Wrap(err, "IP address never found in dhcp leases file")
+		return fmt.Errorf("IP address never found in dhcp leases file: %w", err)
 	}
-	if unblockErr := firewall.UnblockBootpd(); unblockErr != nil {
+	if unblockErr := firewall.UnblockBootpd(&d.CommandOptions); unblockErr != nil {
 		klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
 		exit.Error(reason.IfBootpdFirewall, "ip not found", err)
 	}
@@ -331,11 +333,11 @@ func (d *Driver) Kill() error {
 func (d *Driver) Remove() error {
 	s, err := d.GetState()
 	if err != nil {
-		return errors.Wrap(err, "get state")
+		return fmt.Errorf("get state: %w", err)
 	}
 	if s == state.Running {
 		if err := d.Kill(); err != nil {
-			return errors.Wrap(err, "kill")
+			return fmt.Errorf("kill: %w", err)
 		}
 	}
 	return nil
@@ -560,23 +562,6 @@ func (d *Driver) setKrunkitState(desired string) error {
 	_, err = httpc.Post(d.vmStateURI(), "application/json", bytes.NewReader(data))
 	if err != nil {
 		return err
-	}
-	return nil
-}
-
-// TODO: duplicate from vfkit and qemu: https://github.com/kubernetes/minikube/issues/21091
-func WaitForTCPWithDelay(addr string, duration time.Duration) error {
-	for {
-		conn, err := net.Dial("tcp", addr)
-		if err != nil {
-			continue
-		}
-		defer conn.Close()
-		if _, err := conn.Read(make([]byte, 1)); err != nil && err != io.EOF {
-			time.Sleep(duration)
-			continue
-		}
-		break
 	}
 	return nil
 }

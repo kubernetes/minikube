@@ -21,12 +21,14 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/mcnerror"
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/mcnerror"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -36,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/schedule"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/retry"
@@ -70,6 +73,7 @@ func init() {
 
 // runStop handles the executes the flow of "minikube stop"
 func runStop(_ *cobra.Command, _ []string) {
+	options := flags.CommandOptions()
 	out.SetJSON(outputFormat == "json")
 	register.Reg.SetStep(register.Stopping)
 
@@ -94,7 +98,7 @@ func runStop(_ *cobra.Command, _ []string) {
 	}
 
 	// Kill any existing scheduled stops
-	schedule.KillExisting(profilesToStop)
+	schedule.KillExisting(profilesToStop, options)
 	if cancelScheduledStop {
 		register.Reg.SetStep(register.Done)
 		out.Step(style.Stopped, `All existing scheduled stops cancelled`)
@@ -102,7 +106,7 @@ func runStop(_ *cobra.Command, _ []string) {
 	}
 
 	if scheduledStopDuration != 0 {
-		if err := schedule.Daemonize(profilesToStop, scheduledStopDuration); err != nil {
+		if err := schedule.Daemonize(profilesToStop, scheduledStopDuration, options); err != nil {
 			exit.Message(reason.DaemonizeError, "unable to daemonize: {{.err}}", out.V{"err": err.Error()})
 		}
 		// if OS is windows, scheduled stop is now being handled within minikube, so return
@@ -115,19 +119,19 @@ func runStop(_ *cobra.Command, _ []string) {
 
 	stoppedNodes := 0
 	for _, profile := range profilesToStop {
-		stoppedNodes = stopProfile(profile)
+		stoppedNodes = stopProfile(profile, options)
 	}
 
 	register.Reg.SetStep(register.Done)
 	out.Step(style.Stopped, `{{.count}} node{{if gt .count 1}}s{{end}} stopped.`, out.V{"count": stoppedNodes})
 }
 
-func stopProfile(profile string) int {
+func stopProfile(profile string, options *run.CommandOptions) int {
 	stoppedNodes := 0
 	register.Reg.SetStep(register.Stopping)
 
 	// end new code
-	api, cc := mustload.Partial(profile)
+	api, cc := mustload.Partial(profile, options)
 	defer api.Close()
 
 	if err := killMountProcess(); err != nil {
@@ -164,14 +168,15 @@ func stop(api libmachine.API, machineName string) bool {
 		}
 		klog.Warningf("stop host returned error: %v", err)
 
-		switch err := errors.Cause(err).(type) {
-		case mcnerror.ErrHostDoesNotExist:
+		klog.Warningf("stop host returned error: %v", err)
+
+		var e mcnerror.ErrHostDoesNotExist
+		if errors.As(err, &e) {
 			out.Styled(style.Meh, `"{{.machineName}}" does not exist, nothing to stop`, out.V{"machineName": machineName})
 			nonexistent = true
 			return nil
-		default:
-			return err
 		}
+		return err
 	}
 
 	if err := retry.Expo(tryStop, 1*time.Second, 120*time.Second, 5); err != nil {

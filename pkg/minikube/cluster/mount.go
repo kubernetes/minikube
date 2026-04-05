@@ -24,7 +24,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -82,11 +81,11 @@ func (m *MountError) Error() string {
 // Mount runs the mount command from the 9p client on the VM to the 9p server on the host
 func Mount(r mountRunner, source string, target string, c *MountConfig, pid int) error {
 	if err := Unmount(r, target); err != nil {
-		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "umount")}
+		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: fmt.Errorf("umount: %w", err)}
 	}
 
 	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s", target))); err != nil {
-		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "create folder pre-mount")}
+		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: fmt.Errorf("create folder pre-mount: %w", err)}
 	}
 
 	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c", mntCmd(source, target, c)))
@@ -94,7 +93,7 @@ func Mount(r mountRunner, source string, target string, c *MountConfig, pid int)
 		if strings.Contains(rr.Stderr.String(), "Connection timed out") {
 			return &MountError{ErrorType: MountErrorConnect, UnderlyingError: err}
 		}
-		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrapf(err, "mount with cmd %s ", rr.Command())}
+		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: fmt.Errorf("mount with cmd %s : %w", rr.Command(), err)}
 	}
 
 	profile := viper.GetString("profile")
@@ -175,7 +174,7 @@ func Unmount(r mountRunner, target string) error {
 	// grep because findmnt will also display the parent!
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f -l %s || echo ", target, target, target))
 	if _, err := r.RunCmd(c); err != nil {
-		return errors.Wrap(err, "unmount")
+		return fmt.Errorf("unmount: %w", err)
 	}
 	klog.Infof("unmount for %s ran successfully", target)
 	return nil

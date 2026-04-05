@@ -19,50 +19,33 @@
 
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
-ARG KICBASE_IMAGE="debian:bookworm-20250908-slim"
-# multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.24.6 AS auto-pause
-WORKDIR /src
-# auto-pause depends on core minikube code so we need to pass the whole source code as the context
-# copy in the minimal amount of source code possible
-COPY pkg/ ./pkg
-COPY cmd/ ./cmd
-COPY deploy/addons ./deploy/addons
-COPY translations/ ./translations
-COPY third_party/ ./third_party
-COPY go.mod go.sum ./
-
-ARG TARGETARCH
-ENV GOARCH=${TARGETARCH}
-ARG PREBUILT_AUTO_PAUSE
-RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go build -o auto-pause-${TARGETARCH}; fi
-
+ARG KICBASE_IMAGE="debian:bookworm-20260223-slim"
 # start from debin 12, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${KICBASE_IMAGE} AS kicbase
 
-ARG BUILDKIT_VERSION="v0.18.1"
-ARG CRIO_VERSION="v1.34"
-ARG CRICTL_VERSION="v1.34.0"
-ARG CRI_DOCKERD_VERSION="v0.4.0"
-ARG CRI_DOCKERD_COMMIT="b9b889355f3002c01db294427964e454dfbc3feb"
-ARG CNI_PLUGINS_VERSION="v1.4.0"
+ARG BUILDKIT_VERSION="v0.26.3"
+ARG CRIO_VERSION="v1.35"
+ARG CRICTL_VERSION="v1.35.0"
+ARG CRI_DOCKERD_VERSION="v0.4.1"
+ARG CRI_DOCKERD_COMMIT="55d6e1a1d6f2ee58949e13a0c66afe7d779ac942"
+ARG CNI_PLUGINS_VERSION="v1.9.0"
 ARG TARGETARCH
-ARG NERDCTL_VERSION="1.7.7"
+ARG NERDCTL_VERSION="2.2.1"
 ARG NERDCTLD_VERSION="0.7.0"
 
 # copy in static files (configs, scripts)
-COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
-COPY deploy/kicbase/11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
-COPY deploy/kicbase/02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
-COPY deploy/kicbase/containerd.toml /etc/containerd/config.toml
-COPY deploy/kicbase/containerd_docker_io_hosts.toml /etc/containerd/certs.d/docker.io/hosts.toml
-COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
-COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
-COPY deploy/kicbase/CHANGELOG ./CHANGELOG
-COPY deploy/kicbase/nerdctld/nerdctld.socket  /etc/systemd/system/nerdctld.socket
-COPY deploy/kicbase/nerdctld/nerdctld.service  /etc/systemd/system/nerdctld.service
-COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
+COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
+COPY 11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
+COPY 02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
+COPY containerd.toml /etc/containerd/config.toml
+COPY containerd_docker_io_hosts.toml /etc/containerd/certs.d/docker.io/hosts.toml
+COPY clean-install /usr/local/bin/clean-install
+COPY entrypoint /usr/local/bin/entrypoint
+COPY CHANGELOG ./CHANGELOG
+COPY nerdctld/nerdctl.socket /usr/local/lib/systemd/system/nerdctl.socket
+COPY nerdctld/nerdctl.service /usr/local/lib/systemd/system/nerdctl.service
+COPY auto-pause-${TARGETARCH} /bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -91,7 +74,7 @@ RUN echo "Ensuring scripts are executable ..." \
     && chmod +x /usr/local/bin/clean-install /usr/local/bin/entrypoint \
  && echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
-      systemd \
+      systemd dbus \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
       libseccomp2 pigz \
       bash ca-certificates curl rsync \
@@ -112,11 +95,12 @@ RUN echo "Ensuring scripts are executable ..." \
     && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#' \
  && echo "Disabling udev" \
     && systemctl disable udev.service \
+ && echo "Masking systemd-binfmt to prevent host config corruption (covers all formats: python, qemu, rosetta, etc) - issue #17700" \
+    && systemctl mask systemd-binfmt.service \
  && echo "Modifying /etc/nsswitch.conf to prefer hosts" \
     && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#'
 
-# delete this file due to https://github.com/kubernetes/minikube/issues/17700
-RUN rm -f /usr/lib/binfmt.d/python3.10.conf
+
 
 ARG COMMIT_SHA
 # using base image created by kind https://github.com/kubernetes-sigs/kind/blob/b6bc1125/images/base/Dockerfile
@@ -137,9 +121,7 @@ RUN clean-install \
     gnupg \
     sudo \
     openssh-server \
-    dnsutils \
-    # libglib2.0-0 is required for conmon, which is required for podman
-    libglib2.0-0
+    dnsutils
 
 # Add support for rsa1 in sshd
 # modern debian-based OSs dont support rsa1 by default, so we need to enable it to support older ssh clients
@@ -152,16 +134,21 @@ PasswordAuthentication no
 EOF
 
 # Install nerdctl and nerdctld
-RUN export ARCH=$(dpkg --print-architecture) \
-    && if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ]; then \
-        echo "Installing nerdctl and nerdctld ..." && \
-        curl -L --retry 5 --output /tmp/nerdctl.tgz "https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VERSION}/nerdctl-${NERDCTL_VERSION}-linux-$ARCH.tar.gz" &&\
-        tar -C /usr/local/bin -xzvf /tmp/nerdctl.tgz &&\
-        curl -L --retry 5 --output /tmp/nerdctld.tgz "https://github.com/afbjorklund/nerdctld/releases/download/v${NERDCTLD_VERSION}/nerdctld-${NERDCTLD_VERSION}-linux-$ARCH.tar.gz" &&\
-        tar -C /usr/local/bin -xzvf /tmp/nerdctld.tgz &&\
-        chmod 777  /usr/local/bin/nerdctl &&\
-        chmod 777 /usr/local/bin/nerdctld; \
-    fi
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    echo "Installing nerdctl and nerdctld ..." &&\
+    addgroup --system nerdctl &&\
+    mkdir -p /etc/systemd/system/nerdctl.socket.d && \
+    printf "[Socket]\nSocketMode=0660\nSocketGroup=nerdctl\n" \
+           > /etc/systemd/system/nerdctl.socket.d/override.conf && \
+    mkdir -p /etc/systemd/system/nerdctl.service.d && \
+    printf "[Service]\nEnvironment=CONTAINERD_NAMESPACE=k8s.io\n" \
+           > /etc/systemd/system/nerdctl.service.d/override.conf && \
+    curl -L --retry 5 --output /tmp/nerdctl.tgz "https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VERSION}/nerdctl-${NERDCTL_VERSION}-linux-$ARCH.tar.gz" &&\
+    tar -C /usr/local/bin -xzvf /tmp/nerdctl.tgz &&\
+    curl -L --retry 5 --output /tmp/nerdctld.tgz "https://github.com/afbjorklund/nerdctld/releases/download/v${NERDCTLD_VERSION}/nerdctld-${NERDCTLD_VERSION}-linux-$ARCH.tar.gz" &&\
+    tar -C /usr/local/bin -xzvf /tmp/nerdctld.tgz &&\
+    chmod 755 /usr/local/bin/nerdctl &&\
+    chmod 755 /usr/local/bin/nerdctld
 
 # install docker
 ## ref: https://docs.docker.com/engine/install/debian/#install-using-the-repository
@@ -174,8 +161,12 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     tee /etc/apt/sources.list.d/docker.list > /dev/null \
     && clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 
+# Set ulimit for containerd to match docker's default-ulimit setting
+# This ensures consistent file descriptor limits (1048576) across container runtimes
+RUN sed -i '/^\[Service\]/a LimitNOFILE=1048576' /lib/systemd/system/containerd.service
+
 # install buildkit
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
  && echo "Installing buildkit ..." \
     && addgroup --system buildkit \
     && export BUILDKIT_BASE_URL="https://github.com/moby/buildkit/releases/download/${BUILDKIT_VERSION}" \
@@ -194,7 +185,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && systemctl enable buildkit.socket
 
 # install podman
-RUN clean-install podman && \
+RUN clean-install podman catatonit crun && \
     addgroup --system podman && \
     mkdir -p /etc/systemd/system/podman.socket.d && \
     printf "[Socket]\nSocketMode=0660\nSocketUser=root\nSocketGroup=podman\n" \
@@ -208,41 +199,25 @@ RUN export ARCH=$(dpkg --print-architecture) && \
     case "$ARCH" in \
       amd64) CRICTL_ARCH="amd64" ;; \
       arm64) CRICTL_ARCH="arm64" ;; \
-      armhf) CRICTL_ARCH="armhf" ;; \
       ppc64el) CRICTL_ARCH="ppc64le" ;; \
       s390x) CRICTL_ARCH="s390x" ;; \
       *) echo "Unsupported architecture for crictl: $ARCH" && exit 1 ;; \
     esac && \
-    if [ "$CRICTL_ARCH" != "armhf" ]; then \
-      curl -fsSL --retry 5 --output /tmp/crictl.tgz "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${CRICTL_ARCH}.tar.gz" && \
-      tar -C /usr/local/bin -xzvf /tmp/crictl.tgz && \
-      rm -f /tmp/crictl.tgz && \
-      chmod +x /usr/local/bin/crictl && \
-      if [ -f /usr/local/bin/critest ]; then chmod +x /usr/local/bin/critest; fi; \
-    else \
-      echo "Skipping crictl install for armhf: No asset available in v1.34.0"; \
-    fi   
-# install cri-o dependencies:
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/Release.key | \
-        gpg --dearmor --yes -o /etc/apt/keyrings/libcontainers-archive-keyring.gpg && \
-    sh -c "echo 'deb [signed-by=/etc/apt/keyrings/libcontainers-archive-keyring.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    if [ "$ARCH" != "ppc64le" ]; then \
-        clean-install catatonit crun; \
-    else \
-        clean-install crun; \
-    fi
+    curl -fsSL --retry 5 --output /tmp/crictl.tgz "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${CRICTL_ARCH}.tar.gz" && \
+    tar -C /usr/local/bin -xzvf /tmp/crictl.tgz && \
+    rm -f /tmp/crictl.tgz && \
+    chmod +x /usr/local/bin/crictl && \
+    if [ -f /usr/local/bin/critest ]; then chmod +x /usr/local/bin/critest; fi
 # install containernetworking-plugins
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') && \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     curl -LO "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" && \
     mkdir -p /opt/cni/bin && \
     tar -xf "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" -C /opt/cni/bin && \
     rm "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz"
 
 # install cri-o from the OBS repositories
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    if [ "$ARCH" != "ppc64le" ]; then \
         mkdir -p /etc/apt/sources.list.d /etc/apt/trusted.gpg.d && \
         echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/ /' \
             > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list && \
@@ -269,21 +244,21 @@ ARG VERSION_JSON
 RUN echo "${VERSION_JSON}" > /version.json
 
 # automount service
-COPY deploy/kicbase/automount/minikube-automount /usr/sbin/minikube-automount
-COPY deploy/kicbase/automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
+COPY automount/minikube-automount /usr/sbin/minikube-automount
+COPY automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
 RUN ln -fs /usr/lib/systemd/system/minikube-automount.service \
     /etc/systemd/system/multi-user.target.wants/minikube-automount.service
 
 # scheduled stop service
-COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
-COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
+COPY scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
+COPY scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
 RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
 # disable non-docker runtimes by default (since cri-dockerd is default in minikube)
 RUN systemctl disable containerd
 # disable crio for archs that support it
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then systemctl disable crio && rm -f /etc/crictl.yaml; fi
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    if [ "$ARCH" != "ppc64le" ]; then systemctl disable crio && rm -f /etc/crictl.yaml; fi
 # enable podman socket on archs that support it
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then systemctl enable podman.socket; fi
 # enable docker which is default
@@ -302,6 +277,7 @@ RUN usermod -p '*' docker && passwd -u docker && passwd -d docker
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/20-passwordless-sudo \
     && chmod 0440 /etc/sudoers.d/20-passwordless-sudo
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then adduser docker podman; fi
+RUN adduser docker nerdctl
 RUN adduser docker buildkit
 USER docker
 RUN mkdir /home/docker/.ssh

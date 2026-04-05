@@ -28,12 +28,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/kballard/go-shellquote"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util/retry"
@@ -109,7 +108,7 @@ func (s *SSHRunner) client() (*ssh.Client, error) {
 
 	c, err := sshutil.NewSSHClient(s.d)
 	if err != nil {
-		return nil, errors.Wrap(err, "new client")
+		return nil, fmt.Errorf("new client: %w", err)
 	}
 	s.c = c
 	return s.c, nil
@@ -121,7 +120,7 @@ func (s *SSHRunner) session() (*ssh.Session, error) {
 	getSession := func() (err error) {
 		client, err := s.client()
 		if err != nil {
-			return errors.Wrap(err, "new client")
+			return fmt.Errorf("new client: %w", err)
 		}
 
 		sess, err = client.NewSession()
@@ -147,7 +146,7 @@ func (s *SSHRunner) Remove(f assets.CopyableFile) error {
 
 	sess, err := s.session()
 	if err != nil {
-		return errors.Wrap(err, "getting ssh session")
+		return fmt.Errorf("getting ssh session: %w", err)
 	}
 
 	defer sess.Close()
@@ -158,12 +157,12 @@ func (s *SSHRunner) Remove(f assets.CopyableFile) error {
 func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	outPipe, err := s.StdoutPipe()
 	if err != nil {
-		return errors.Wrap(err, "stdout")
+		return fmt.Errorf("stdout: %w", err)
 	}
 
 	errPipe, err := s.StderrPipe()
 	if err != nil {
-		return errors.Wrap(err, "stderr")
+		return fmt.Errorf("stderr: %w", err)
 	}
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -213,7 +212,7 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 	sess, err := s.session()
 	if err != nil {
-		return rr, errors.Wrap(err, "NewSession")
+		return rr, fmt.Errorf("NewSession: %w", err)
 	}
 
 	defer func() {
@@ -245,12 +244,12 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 func teeSSHStart(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer, wg *sync.WaitGroup) error {
 	outPipe, err := s.StdoutPipe()
 	if err != nil {
-		return errors.Wrap(err, "stdout")
+		return fmt.Errorf("stdout: %w", err)
 	}
 
 	errPipe, err := s.StderrPipe()
 	if err != nil {
-		return errors.Wrap(err, "stderr")
+		return fmt.Errorf("stderr: %w", err)
 	}
 
 	go func() {
@@ -303,7 +302,7 @@ func (s *SSHRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 
 	sess, err := s.session()
 	if err != nil {
-		return sc, errors.Wrap(err, "NewSession")
+		return sc, fmt.Errorf("NewSession: %w", err)
 	}
 
 	s.s = sess
@@ -366,7 +365,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 
 	sess, err := s.session()
 	if err != nil {
-		return errors.Wrap(err, "NewSession")
+		return fmt.Errorf("NewSession: %w", err)
 	}
 	defer func() {
 		if err := sess.Close(); err != nil {
@@ -378,7 +377,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 
 	w, err := sess.StdinPipe()
 	if err != nil {
-		return errors.Wrap(err, "StdinPipe")
+		return fmt.Errorf("StdinPipe: %w", err)
 	}
 	// The scpcmd below *should not* return until all data is copied and the
 	// StdinPipe is closed. But let's use errgroup to make it explicit.
@@ -395,7 +394,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 
 		copied, err := io.Copy(w, f)
 		if err != nil {
-			return errors.Wrap(err, "io.Copy")
+			return fmt.Errorf("io.Copy: %w", err)
 		}
 		if copied != int64(f.GetLength()) {
 			return fmt.Errorf("%s: expected to copy %d bytes, but copied %d instead", f.GetTargetName(), f.GetLength(), copied)
@@ -404,16 +403,17 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		return nil
 	})
 
-	scp := fmt.Sprintf("sudo mkdir -p %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
+	dir := f.GetTargetDir()
+	scpCmd := fmt.Sprintf("%s && %s", shellquote.Join("sudo", "mkdir", "-p", dir), shellquote.Join("sudo", "scp", "-t", dir))
 	mtime, err := f.GetModTime()
 	if err != nil {
 		klog.Infof("error getting modtime for %s: %v", dst, err)
 	} else if mtime != (time.Time{}) {
-		scp += fmt.Sprintf(" && sudo touch -d \"%s\" %s", mtime.Format(layout), dst)
+		scpCmd = fmt.Sprintf("%s && %s", scpCmd, shellquote.Join("sudo", "touch", "-d", mtime.Format(layout), dst))
 	}
-	out, err := sess.CombinedOutput(scp)
+	out, err := sess.CombinedOutput(scpCmd)
 	if err != nil {
-		return fmt.Errorf("%s: %s\noutput: %s", scp, err, out)
+		return fmt.Errorf("%s: %s\noutput: %s", scpCmd, err, out)
 	}
 	return g.Wait()
 }
@@ -424,7 +424,7 @@ func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
 
 	sess, err := s.session()
 	if err != nil {
-		return errors.Wrap(err, "NewSession")
+		return fmt.Errorf("NewSession: %w", err)
 	}
 	defer func() {
 		if err := sess.Close(); err != nil {
@@ -449,11 +449,11 @@ func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
 
 	r, err := sess.StdoutPipe()
 	if err != nil {
-		return errors.Wrap(err, "StdoutPipe")
+		return fmt.Errorf("StdoutPipe: %w", err)
 	}
 	w, err := sess.StdinPipe()
 	if err != nil {
-		return errors.Wrap(err, "StdinPipe")
+		return fmt.Errorf("StdinPipe: %w", err)
 	}
 	// The scpcmd below *should not* return until all data is copied and the
 	// StdinPipe is closed. But let's use errgroup to make it explicit.
@@ -466,7 +466,7 @@ func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
 		fmt.Fprint(w, "\x00")
 		b, err := br.ReadBytes('\n')
 		if err != nil {
-			return errors.Wrap(err, "ReadBytes")
+			return fmt.Errorf("ReadBytes: %w", err)
 		}
 		if b[0] != 'C' {
 			return fmt.Errorf("unexpected: %v", b)
@@ -477,7 +477,7 @@ func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
 		for copied < int64(length) {
 			n, err := io.CopyN(f, br, int64(length))
 			if err != nil {
-				return errors.Wrap(err, "io.CopyN")
+				return fmt.Errorf("io.CopyN: %w", err)
 			}
 			copied += n
 		}
@@ -489,7 +489,7 @@ func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
 		return nil
 	})
 
-	scp := fmt.Sprintf("sudo scp -f %s", f.GetTargetPath())
+	scp := shellquote.Join("sudo", "scp", "-f", f.GetTargetPath())
 	err = sess.Start(scp)
 	if err != nil {
 		return fmt.Errorf("%s: %s", scp, err)
@@ -527,12 +527,12 @@ func (s *SSHRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error)
 
 	sess, err := s.session()
 	if err != nil {
-		return nil, errors.Wrap(err, "NewSession")
+		return nil, fmt.Errorf("NewSession: %w", err)
 	}
 
 	r, err := sess.StdoutPipe()
 	if err != nil {
-		return nil, errors.Wrap(err, "StdOutPipe")
+		return nil, fmt.Errorf("StdOutPipe: %w", err)
 	}
 
 	cmd := fmt.Sprintf("cat %s", sourcePath)

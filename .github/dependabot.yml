@@ -5,9 +5,21 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      k8s-dependencies:
+        patterns:
+          - "k8s.io/*"
+      golang-org:
+        patterns:
+          - "golang.org/*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      official-gh-actions:
+        patterns:
+          - "actions/*"
     ignore:
       - dependency-name: "vedantmgoyal2009/winget-releaser"

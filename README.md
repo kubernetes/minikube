@@ -4,16 +4,14 @@
 [![GoReport Widget]][GoReport Status]
 [![GitHub All Releases](https://img.shields.io/github/downloads/kubernetes/minikube/total.svg)](https://github.com/kubernetes/minikube/releases/latest)
 [![Latest Release](https://img.shields.io/github/v/release/kubernetes/minikube?include_prereleases)](https://github.com/kubernetes/minikube/releases/latest)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/5015/badge)](https://www.bestpractices.dev/en/projects/5015)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kubernetes/minikube/badge)](https://api.securityscorecards.dev/projects/github.com/kubernetes/minikube)
- 
+[![Try minikube in the browser (needs github login)](https://img.shields.io/badge/Try%20minikube-in%20browser-%23326ce5?logo=kubernetes&logoColor=white)](https://codespaces.new/kubernetes/minikube?quickstart=1)
 
 [GoReport Status]: https://goreportcard.com/report/github.com/kubernetes/minikube
 [GoReport Widget]: https://goreportcard.com/badge/github.com/kubernetes/minikube
 
 <img src="https://github.com/kubernetes/minikube/raw/master/images/logo/logo.png" width="100" alt="minikube logo">
 
-minikube implements a local Kubernetes cluster on macOS, Linux, and Windows. minikube's [primary goals](https://minikube.sigs.k8s.io/docs/concepts/principles/) are to be the best tool for local Kubernetes application development and to support all Kubernetes features that fit. 
+minikube implements a local Kubernetes cluster on macOS, Linux, and Windows. minikube's [primary goals](https://minikube.sigs.k8s.io/docs/concepts/principles/) are to be the best tool for local Kubernetes application development and to support all Kubernetes features that fit.
 
 <img src="https://raw.githubusercontent.com/kubernetes/minikube/master/site/static/images/screenshot.png" width="575" height="322" alt="screenshot">
 
@@ -25,7 +23,6 @@ minikube runs the latest stable release of Kubernetes, with support for standard
 * Multi-cluster - using `minikube start -p <name>`
 * [NodePorts](https://minikube.sigs.k8s.io/docs/handbook/accessing/#nodeport-access) - using `minikube service`
 * [Persistent Volumes](https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/)
-* [Ingress](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/)
 * [Dashboard](https://minikube.sigs.k8s.io/docs/handbook/dashboard/) - `minikube dashboard`
 * [Container runtimes](https://minikube.sigs.k8s.io/docs/handbook/config/#runtime-configuration) - `minikube start --container-runtime`
 * [Configure apiserver and kubelet options](https://minikube.sigs.k8s.io/docs/handbook/config/#modifying-kubernetes-defaults) via command-line flags
@@ -46,13 +43,22 @@ See the [Getting Started Guide](https://minikube.sigs.k8s.io/docs/start/)
 
 :mega: **Please fill out our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A)** so that we can learn how & why you use minikube, and what improvements we should make. Thank you! :dancers:
 
+## GitHub Codespace
+
+You can run minikube in a GitHub Codespace by clicking here:
+[![Open in GitHub Codespaces](https://img.shields.io/badge/Open%20in-GitHub%20Codespaces-blue?logo=github)](https://codespaces.new/kubernetes/minikube?quickstart=1)
+
+This will launch a Github Codespace. You can then run `minikube start` and `minikube dashboard` - You can then open Minikube Dashboard by clicking opening the link displayed in the terminal.  
+
+You can also run Minikube in a Dev Container locally using your favorite IDE, for more information see Dev Containers <https://code.visualstudio.com/docs/devcontainers/containers>
+
 ## Documentation
 
-See https://minikube.sigs.k8s.io/docs/
+See <https://minikube.sigs.k8s.io/docs/>
 
 ## More Examples
 
-See minikube in action [here](https://minikube.sigs.k8s.io/docs/handbook/controls/)
+See minikube in action in the [controls handbook](https://minikube.sigs.k8s.io/docs/handbook/controls/)
 
 ## Governance
 
@@ -74,5 +80,6 @@ minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/
 * [Development Roadmap](https://minikube.sigs.k8s.io/docs/contrib/roadmap/)
 
 Join our community meetings:
+
 * [Bi-weekly office hours, Mondays @ 11am PST](https://tinyurl.com/minikube-oh)
 * [Triage Party](https://minikube.sigs.k8s.io/docs/contrib/triage/)

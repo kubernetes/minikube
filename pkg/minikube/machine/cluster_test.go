@@ -26,12 +26,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
+	"k8s.io/minikube/pkg/minikube/run"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/provision"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/provision"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -57,7 +58,7 @@ func RegisterMockDriver(t *testing.T) {
 	err := registry.Register(registry.DriverDef{
 		Name:   driver.Mock,
 		Config: createMockDriverHost,
-		Init:   func() drivers.Driver { return &tests.MockDriver{T: t} },
+		Init:   func(_ *run.CommandOptions) drivers.Driver { return &tests.MockDriver{T: t} },
 	})
 	if err != nil {
 		t.Fatalf("register failed: %v", err)

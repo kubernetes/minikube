@@ -27,9 +27,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -58,8 +58,9 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the Kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the Kubernetes dashboard running within the minikube cluster`,
 	Run: func(_ *cobra.Command, _ []string) {
+		options := flags.CommandOptions()
 		cname := ClusterFlagValue()
-		co := mustload.Healthy(cname)
+		co := mustload.Healthy(cname, options)
 
 		for _, n := range co.Config.Nodes {
 			if err := proxy.ExcludeIP(n.IP); err != nil {
@@ -82,7 +83,7 @@ var dashboardCmd = &cobra.Command{
 			// Send status messages to stderr for folks reusing this output.
 			out.ErrT(style.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
-			err = addons.SetAndSave(cname, "dashboard", "true")
+			err = addons.SetAndSave(cname, "dashboard", "true", options)
 			if err != nil {
 				exit.Error(reason.InternalAddonEnable, "Unable to enable dashboard", err)
 			}
@@ -146,12 +147,12 @@ func kubectlProxy(kubectlVersion string, binaryURL string, contextName string, p
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, "", errors.Wrap(err, "cmd stdout")
+		return nil, "", fmt.Errorf("cmd stdout: %w", err)
 	}
 
 	klog.Infof("Executing: %s %s", cmd.Path, cmd.Args)
 	if err := cmd.Start(); err != nil {
-		return nil, "", errors.Wrap(err, "proxy start")
+		return nil, "", fmt.Errorf("proxy start: %w", err)
 	}
 
 	klog.Infof("Waiting for kubectl to output host:port ...")
@@ -211,9 +212,8 @@ func dashboardURL(addr string, ns string, svc string) string {
 // checkURL checks if a URL returns 200 HTTP OK
 func checkURL(url string) error {
 	resp, err := http.Get(url)
-	klog.Infof("%s response: %v %+v", url, err, resp)
 	if err != nil {
-		return errors.Wrap(err, "checkURL")
+		return fmt.Errorf("hitting URL:%q\n response: %+v: %w", url, resp, err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return &retry.RetriableError{

@@ -68,16 +68,18 @@ var dependencies = map[string]dependency{
 	"kube-registry-proxy":     {addonsFile, `"k8s-minikube/kube-registry-proxy:(.*)@`},
 	"kube-vip":                {"pkg/minikube/cluster/ha/kube-vip/kube-vip.go", `image: ghcr.io/kube-vip/kube-vip:(.*)`},
 	"kubectl":                 {addonsFile, `bitnami/kubectl:(.*)@`},
+	"kubevirt":                {"deploy/addons/kubevirt/pod.yaml.tmpl", `KUBEVIRT_VERSION="(.*)"`},
 	"metrics-server":          {addonsFile, `metrics-server/metrics-server:(.*)@`},
 	"nerdctl":                 {"deploy/kicbase/Dockerfile", `NERDCTL_VERSION="(.*)"`},
 	"nerdctld":                {"deploy/kicbase/Dockerfile", `NERDCTLD_VERSION="(.*)"`},
 	"node":                    {"netlify.toml", `NODE_VERSION = "(.*)"`},
 	"nvidia-device-plugin":    {addonsFile, `nvidia/k8s-device-plugin:(.*)@`},
+	"portainer":               {addonsFile, `portainer/portainer-ce:(.*)@`},
 	"registry":                {addonsFile, `registry:(.*)@`},
 	"runc":                    {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
 	"debian":                  {dockerfile, `debian:bookworm-(.*)-slim`},
 	"volcano":                 {addonsFile, `volcanosh/vc-webhook-manager:(.*)@`},
-	"yakd":                    {addonsFile, `marcnuri/yakd:(.*)@`},
+	"yakd":                    {addonsFile, `manusa/yakd:(.*)@`},
 }
 
 func main() {
@@ -135,7 +137,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to read file: %v", err)
 	}
-	submatches := re.FindSubmatch(data)
+
+	// this handles cases where multiple versions exist (e.g., old and new versions in go.mod)
+	allMatches := re.FindAllSubmatch(data, -1)
+	if len(allMatches) == 0 {
+		log.Fatalf("no matches found")
+	}
+
+	// Take the last match (most recent version)
+	submatches := allMatches[len(allMatches)-1]
 	if len(submatches) < 2 {
 		log.Fatalf("less than 2 submatches found")
 	}

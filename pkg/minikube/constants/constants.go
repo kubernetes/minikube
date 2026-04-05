@@ -29,15 +29,15 @@ import (
 
 var (
 	// SupportedArchitectures is the list of supported architectures
-	SupportedArchitectures = [5]string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
+	SupportedArchitectures = [4]string{"amd64", "arm64", "ppc64le", "s390x"}
 )
 
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
-	DefaultKubernetesVersion = "v1.34.1"
+	DefaultKubernetesVersion = "v1.35.1"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.34.1"
+	NewestKubernetesVersion = "v1.35.1"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	// TODO: upodate to 6 releases before from DefaultKubernetesVersion
 	OldestKubernetesVersion = "v1.28.0"
@@ -67,6 +67,8 @@ const (
 	Docker = "docker"
 	// DefaultContainerRuntime is our default container runtime
 	DefaultContainerRuntime = ""
+	// DefaultContainerRuntimeChangeWarning is shown when the default runtime will change.
+	DefaultContainerRuntimeChangeWarning = `Starting v1.39.0, minikube will default to "containerd" container runtime. See #21973 for more info.`
 
 	// cgroup drivers
 	DefaultCgroupDriver  = "systemd"
@@ -145,6 +147,9 @@ const (
 
 	// DefaultCertExpiration is the amount of time in the future a certificate will expire in by default, which is 3 years
 	DefaultCertExpiration = time.Hour * 24 * 365 * 3
+
+	// LockRetryInterval is the frequency to check for the lock (10 times a second)
+	LockRetryInterval = 100 * time.Millisecond
 
 	// Mount9PVersionFlag is the flag used to set the mount 9P version
 	Mount9PVersionFlag = "9p-version"

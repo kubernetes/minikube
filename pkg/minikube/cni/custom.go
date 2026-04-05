@@ -17,10 +17,10 @@ limitations under the License.
 package cni
 
 import (
+	"fmt"
 	"os"
 	"path"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -41,7 +41,7 @@ func (c Custom) String() string {
 func NewCustom(cc config.ClusterConfig, manifest string) (Custom, error) {
 	_, err := os.Stat(manifest)
 	if err != nil {
-		return Custom{}, errors.Wrap(err, "stat")
+		return Custom{}, fmt.Errorf("stat: %w", err)
 	}
 
 	return Custom{
@@ -54,7 +54,7 @@ func NewCustom(cc config.ClusterConfig, manifest string) (Custom, error) {
 func (c Custom) Apply(r Runner) error {
 	m, err := assets.NewFileAsset(c.manifest, path.Dir(manifestPath()), path.Base(manifestPath()), "0644")
 	if err != nil {
-		return errors.Wrap(err, "manifest")
+		return fmt.Errorf("manifest: %w", err)
 	}
 	defer func() {
 		if err := m.Close(); err != nil {

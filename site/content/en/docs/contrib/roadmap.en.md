@@ -10,28 +10,24 @@ This roadmap is a living document outlining the major technical improvements whi
 
 Please send a PR to suggest any improvements to it.
 
-# 2024
+# 2025
 
 ## (#1) AI
 
-- [ ] Support Nvidia-Docker runtime
-- [ ] Try Kubeflow addon
+- [x] Add new macOS driver "krunkit" for GPU
 
 ## (#2) Documentation
 
-- [x] Consolidate Kubernetes documentation that references minikube
-- [ ] Delete outdated documentation
-- [ ] Add documentation for new features
+- [ ] Update outdated upstream documentation
 
 ## (#3) Docker
-- [ ] Remove the Docker Desktop requirement on Mac and Windows
-- [ ] Support the Docker Desktop environment on Linux as well
+
+- [ ] Change the default container runtime from "docker" to "containerd"
 
 ## (#4) Podman
-- [ ] Improve support for rootless containers with Podman Engine
-- [ ] Support the Podman Desktop environment on Mac and Windows
+
+- [ ] Make Podman driver less experimental
 
 ## (#5) libmachine Refactor
 
-- [ ] Add new driver with Virtualization.framework, as QEMU alternative on Mac arm64
-- [ ] Fix the provisioner, remove legacy Swarm, and add support for other runtimes
+- [ ] Move minikube-machine inside minikube, remove Docker Machine everywhere

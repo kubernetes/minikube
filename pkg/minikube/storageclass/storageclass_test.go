@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -228,19 +229,16 @@ func TestGetStoragev1(t *testing.T) {
 			err:         true,
 		},
 	}
-	configFile, err := os.CreateTemp("/tmp", "")
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	defer os.Remove(configFile.Name())
+
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if err := setK8SConfig(t, test.config, configFile.Name()); err != nil {
-				t.Fatal(err.Error())
-			}
+			tmpDir := t.TempDir()
+			kubeconfigPath := filepath.Join(tmpDir, "kubeconfig")
+
+			setK8SConfig(t, test.config, kubeconfigPath)
 
 			// context name is hardcoded by mockK8sConfig
-			_, err = GetStoragev1("minikube")
+			_, err := GetStoragev1("minikube")
 			if err != nil && !test.err {
 				t.Fatalf("Unexpected err: %v for test: %v", err, test.description)
 			}
@@ -251,13 +249,9 @@ func TestGetStoragev1(t *testing.T) {
 	}
 }
 
-func setK8SConfig(t *testing.T, config, kubeconfigPath string) error {
-	mockK8sConfigByte := []byte(config)
-	mockK8sConfigPath := kubeconfigPath
-	err := os.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
-	if err != nil {
-		return fmt.Errorf("Unexpected error when writing to file %v. Error: %v", kubeconfigPath, err)
+func setK8SConfig(t *testing.T, config, kubeconfigPath string) {
+	if err := os.WriteFile(kubeconfigPath, []byte(config), 0o644); err != nil {
+		t.Fatalf("unexpected error when writing to %v: %v", kubeconfigPath, err)
 	}
-	t.Setenv("KUBECONFIG", mockK8sConfigPath)
-	return nil
+	t.Setenv("KUBECONFIG", kubeconfigPath)
 }

@@ -17,12 +17,11 @@ limitations under the License.
 package kubeconfig
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync/atomic"
 
-	"github.com/juju/mutex/v2"
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/klog/v2"
@@ -85,7 +84,7 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	if cfg.EmbedCerts {
 		cluster.CertificateAuthorityData, err = os.ReadFile(cfg.CertificateAuthority)
 		if err != nil {
-			return errors.Wrapf(err, "reading CertificateAuthority %s", cfg.CertificateAuthority)
+			return fmt.Errorf("reading CertificateAuthority %s: %w", cfg.CertificateAuthority, err)
 		}
 	} else {
 		cluster.CertificateAuthority = cfg.CertificateAuthority
@@ -102,11 +101,11 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	if cfg.EmbedCerts {
 		user.ClientCertificateData, err = os.ReadFile(cfg.ClientCertificate)
 		if err != nil {
-			return errors.Wrapf(err, "reading ClientCertificate %s", cfg.ClientCertificate)
+			return fmt.Errorf("reading ClientCertificate %s: %w", cfg.ClientCertificate, err)
 		}
 		user.ClientKeyData, err = os.ReadFile(cfg.ClientKey)
 		if err != nil {
-			return errors.Wrapf(err, "reading ClientKey %s", cfg.ClientKey)
+			return fmt.Errorf("reading ClientKey %s: %w", cfg.ClientKey, err)
 		}
 	} else {
 		user.ClientCertificate = cfg.ClientCertificate
@@ -140,9 +139,9 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 func Update(kcs *Settings) error {
 	spec := lock.PathMutexSpec(filepath.Join(kcs.filePath(), "settings.Update"))
 	klog.Infof("acquiring lock: %+v", spec)
-	releaser, err := mutex.Acquire(spec)
+	releaser, err := lock.Acquire(spec)
 	if err != nil {
-		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
+		return fmt.Errorf("unable to acquire lock for %+v: %w", spec, err)
 	}
 	defer releaser.Release()
 
@@ -163,7 +162,7 @@ func Update(kcs *Settings) error {
 
 	// write back to disk
 	if err := writeToFile(kcfg, kcs.filePath()); err != nil {
-		return errors.Wrap(err, "writing kubeconfig")
+		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
 	return nil
 }

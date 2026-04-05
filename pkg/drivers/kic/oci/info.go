@@ -18,11 +18,11 @@ package oci
 
 import (
 	"encoding/json"
+	"fmt"
 	"os/exec"
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 )
 
@@ -256,11 +256,11 @@ func dockerSystemInfo() (dockerSysInfo, error) {
 	rawJSON, err := dockerInfoGetter()
 	if err != nil {
 		klog.Warningf("docker info: %v", err)
-		return ds, errors.Wrap(err, "docker system info")
+		return ds, fmt.Errorf("docker system info: %w", err)
 	}
 	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJSON)), &ds); err != nil {
 		klog.Warningf("unmarshal docker info: %v", err)
-		return ds, errors.Wrapf(err, "unmarshal docker system info")
+		return ds, fmt.Errorf("unmarshal docker system info: %w", err)
 	}
 
 	klog.Infof("docker info: %+v", ds)
@@ -278,12 +278,12 @@ func podmanSystemInfo() (podmanSysInfo, error) {
 	rawJSON, err := podmanInfoGetter()
 	if err != nil {
 		klog.Warningf("podman info: %v", err)
-		return ps, errors.Wrap(err, "podman system info")
+		return ps, fmt.Errorf("podman system info: %w", err)
 	}
 
 	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJSON)), &ps); err != nil {
 		klog.Warningf("unmarshal podman info: %v", err)
-		return ps, errors.Wrapf(err, "unmarshal podman system info")
+		return ps, fmt.Errorf("unmarshal podman system info: %w", err)
 	}
 	klog.Infof("podman info: %+v", ps)
 	return ps, nil

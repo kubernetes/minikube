@@ -8,7 +8,7 @@ metadata:
 spec:
   containers:
   - name: nginx
-    image: docker.io/nginx:alpine
+    image: public.ecr.aws/nginx/nginx:alpine
     ports:
     - containerPort: 80
       protocol: TCP

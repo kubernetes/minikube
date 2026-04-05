@@ -28,7 +28,7 @@ import (
 	"log"
 
 	"cloud.google.com/go/storage"
-	"github.com/pkg/errors"
+	"errors"
 )
 
 const (
@@ -39,7 +39,7 @@ const (
 func downloadMinikube(ctx context.Context, minikubePath string) error {
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return errors.Wrap(err, "creating client")
+		return fmt.Errorf("creating client: %w", err)
 	}
 	obj := client.Bucket("minikube").Object(fmt.Sprintf("latest/%s", binary()))
 
@@ -52,20 +52,20 @@ func downloadMinikube(ctx context.Context, minikubePath string) error {
 	// download minikube binary from GCS
 	rc, err := obj.NewReader(ctx)
 	if err != nil {
-		return errors.Wrap(err, "gcs new reader")
+		return fmt.Errorf("gcs new reader: %w", err)
 	}
 	defer rc.Close()
 
 	data, err := io.ReadAll(rc)
 	if err != nil {
-		return errors.Wrap(err, "io read all")
+		return fmt.Errorf("io read all: %w", err)
 	}
 	log.Printf("downloading gs://%s/%s to %v", bucketName, binary(), minikubePath)
 	if err := os.WriteFile(minikubePath, data, 0777); err != nil {
-		return errors.Wrap(err, "writing minikubePath")
+		return fmt.Errorf("writing minikubePath: %w", err)
 	}
 	if err := os.Chmod(minikubePath, 0700); err != nil {
-		return errors.Wrap(err, "chmod")
+		return fmt.Errorf("chmod: %w", err)
 	}
 	return nil
 }

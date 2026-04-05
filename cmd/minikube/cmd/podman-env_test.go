@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/libmachine/ssh"
 )
 
 func newFakeClient() *ssh.ExternalClient {
@@ -71,7 +71,7 @@ unset MINIKUBE_ACTIVE_PODMAN;
 	}
 	for _, tc := range tests {
 		t.Run(tc.config.profile, func(t *testing.T) {
-			tc.config.EnvConfig.Shell = tc.shell
+			tc.config.Shell = tc.shell
 			defaultNoProxyGetter = tc.noProxyGetter
 			var b []byte
 			buf := bytes.NewBuffer(b)

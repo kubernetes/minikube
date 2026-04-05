@@ -18,9 +18,9 @@ package storageclass
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	storagev1 "k8s.io/client-go/kubernetes/typed/storage/v1"
@@ -40,12 +40,12 @@ func annotateDefaultStorageClass(storage storagev1.StorageV1Interface, class *v1
 func DisableDefaultStorageClass(storage storagev1.StorageV1Interface, class string) error {
 	sc, err := storage.StorageClasses().Get(context.Background(), class, metav1.GetOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Error getting storage class %s", class)
+		return fmt.Errorf("Error getting storage class %s: %w", class, err)
 	}
 
 	err = annotateDefaultStorageClass(storage, sc, false)
 	if err != nil {
-		return errors.Wrapf(err, "Error marking storage class %s as non-default", class)
+		return fmt.Errorf("Error marking storage class %s as non-default: %w", class, err)
 	}
 	return nil
 }
@@ -55,7 +55,7 @@ func DisableDefaultStorageClass(storage storagev1.StorageV1Interface, class stri
 func SetDefaultStorageClass(storage storagev1.StorageV1Interface, name string) error {
 	scList, err := storage.StorageClasses().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		return errors.Wrap(err, "Error listing StorageClasses")
+		return fmt.Errorf("Error listing StorageClasses: %w", err)
 	}
 	for _, sc := range scList.Items {
 		err = annotateDefaultStorageClass(storage, &sc, sc.Name == name)
@@ -64,7 +64,7 @@ func SetDefaultStorageClass(storage storagev1.StorageV1Interface, name string) e
 			if sc.Name == name {
 				isDefault = "default"
 			}
-			return errors.Wrapf(err, "Error while marking storage class %s as %s", sc.Name, isDefault)
+			return fmt.Errorf("Error while marking storage class %s as %s: %w", sc.Name, isDefault, err)
 		}
 	}
 	return nil

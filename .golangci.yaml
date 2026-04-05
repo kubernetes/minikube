@@ -3,15 +3,19 @@ run:
   timeout: 7m
 linters:
   enable:
+    - dogsled
+    - errcheck
     - gocritic
-    - revive
+    - govet
     - gocyclo
+    - ineffassign
     - misspell
     - nakedret
+    - revive
     - staticcheck
     - unconvert
     - unparam
-    - dogsled
+    - unused
   settings:
     staticcheck:
       checks:
@@ -23,6 +27,7 @@ linters:
         - "-ST1020"
         - "-ST1021"
         - "-ST1022"
+        # Omit embedded fields from selector expression
         - "-QF1008"
         
     revive:
@@ -165,3 +170,10 @@ linters:
       - path: '(.+)\.go$'
         text: "Error return value of `.*` is not checked"
         linter: errcheck
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    paths:
+      - third_party

@@ -26,9 +26,8 @@ import (
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/state"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
@@ -370,7 +369,7 @@ func NodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 	hs, err := machine.Status(api, name)
 	klog.Infof("%s host status = %q (err=%v)", name, hs, err)
 	if err != nil {
-		return st, errors.Wrap(err, "host")
+		return st, fmt.Errorf("host: %w", err)
 	}
 
 	// We have no record of this host. Return nonexistent struct
@@ -478,13 +477,15 @@ func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
 
 	st, err := os.Stat(path)
 	if err != nil {
-		return nil, time.Time{}, errors.Wrap(err, "stat")
+		return nil, time.Time{}, fmt.Errorf("stat: %w", err)
 	}
 
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, st.ModTime(), errors.Wrap(err, "open")
+		return nil, st.ModTime(), fmt.Errorf("open: %w", err)
 	}
+	defer f.Close()
+
 	var events []cloudevents.Event
 
 	scanner := bufio.NewScanner(f)

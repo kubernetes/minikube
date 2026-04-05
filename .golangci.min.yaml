@@ -1,0 +1,26 @@
+version: "2"
+linters:
+  enable:
+    - govet
+    - gocyclo
+  disable:
+    - errcheck
+    - staticcheck
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party
+      - '(.+)_test\.go'
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party

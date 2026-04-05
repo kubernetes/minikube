@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -182,12 +181,12 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 	klog.Infof("applying CNI manifest using %s ...", kubectl)
 
 	if err := r.Copy(f); err != nil {
-		return errors.Wrapf(err, "copy")
+		return fmt.Errorf("copy: %w", err)
 	}
 
 	cmd := exec.CommandContext(ctx, "sudo", kubectl, "apply", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")), "-f", manifestPath())
 	if rr, err := r.RunCmd(cmd); err != nil {
-		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
+		return fmt.Errorf("cmd: %s output: %s: %w", rr.Command(), rr.Output(), err)
 	}
 
 	return nil

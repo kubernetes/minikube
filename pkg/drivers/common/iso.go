@@ -20,28 +20,41 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"strings"
 
-	"github.com/hooklift/iso9660"
+	"github.com/diskfs/go-diskfs"
+	"github.com/diskfs/go-diskfs/filesystem"
 )
 
-// ExtractFile extracts a file from an ISO
+// ExtractFile extracts a file from an ISO.
+// It first attempts an exact path match. If that fails, it performs a case-insensitive search
+// to locate the file, handling inconsistencies in ISO naming conventions (e.g. uppercase vs lowercase).
 func ExtractFile(isoPath, srcPath, destPath string) error {
-	iso, err := os.Open(isoPath)
+	disk, err := diskfs.Open(isoPath, diskfs.WithOpenMode(diskfs.ReadOnly))
 	if err != nil {
 		return err
 	}
-	defer iso.Close()
+	defer disk.Close()
 
-	r, err := iso9660.NewReader(iso)
+	fs, err := disk.GetFilesystem(0)
 	if err != nil {
 		return err
 	}
 
-	f, err := findFile(r, srcPath)
+	f, err := fs.OpenFile(srcPath, os.O_RDONLY)
 	if err != nil {
-		return err
+		// Fallback: case-insensitive search
+		actualPath, err2 := findCaseInsensitivePath(fs, srcPath)
+		if err2 != nil {
+			return err
+		}
+		f, err = fs.OpenFile(actualPath, os.O_RDONLY)
+		if err != nil {
+			return err
+		}
 	}
+	defer f.Close()
 
 	dst, err := os.Create(destPath)
 	if err != nil {
@@ -49,17 +62,39 @@ func ExtractFile(isoPath, srcPath, destPath string) error {
 	}
 	defer dst.Close()
 
-	_, err = io.Copy(dst, f.Sys().(io.Reader))
+	_, err = io.Copy(dst, f)
 	return err
 }
 
-func findFile(r *iso9660.Reader, path string) (os.FileInfo, error) {
-	// Look through the ISO for a file with a matching path.
-	for f, err := r.Next(); err != io.EOF; f, err = r.Next() {
-		// For some reason file paths in the ISO sometimes contain a '.' character at the end, so strip that off.
-		if strings.TrimSuffix(f.Name(), ".") == path {
-			return f, nil
+// findCaseInsensitivePath searches for a file in the ISO filesystem in a case-insensitive manner.
+// This is necessary because ISO 9660 file names are often stored in uppercase (or with other normalizations),
+// while the requested path might be in lowercase.
+func findCaseInsensitivePath(fs filesystem.FileSystem, targetPath string) (string, error) {
+	parts := strings.Split(targetPath, "/")
+	currentPath := "/"
+
+	for _, part := range parts {
+		if part == "" || part == "." {
+			continue
+		}
+
+		infos, err := fs.ReadDir(currentPath)
+		if err != nil {
+			return "", err
+		}
+
+		found := false
+		for _, info := range infos {
+			name := info.Name()
+			if strings.EqualFold(name, part) || strings.EqualFold(strings.TrimSuffix(name, "."), part) {
+				currentPath = path.Join(currentPath, name)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return "", fmt.Errorf("file not found: %s in %s", part, currentPath)
 		}
 	}
-	return nil, fmt.Errorf("unable to find file %s", path)
+	return currentPath, nil
 }

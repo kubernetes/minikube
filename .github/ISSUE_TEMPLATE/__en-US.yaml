@@ -50,5 +50,7 @@ body:
         - VMware
         - Parallels
         - QEMU
+        - vfkit
+        - krunkit
     validations:
       required: false

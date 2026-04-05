@@ -29,7 +29,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -39,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -54,20 +54,20 @@ const (
 )
 
 // enableOrDisableGCPAuth enables or disables the gcp-auth addon depending on the val parameter
-func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name, val string) error {
+func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name, val string, options *run.CommandOptions) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
-		return errors.Wrapf(err, "parsing bool: %s", name)
+		return fmt.Errorf("parsing bool: %s: %w", name, err)
 	}
 	if enable {
-		return enableAddonGCPAuth(cfg)
+		return enableAddonGCPAuth(cfg, options)
 	}
-	return disableAddonGCPAuth(cfg)
+	return disableAddonGCPAuth(cfg, options)
 }
 
-func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
+func enableAddonGCPAuth(cfg *config.ClusterConfig, options *run.CommandOptions) error {
 	// Grab command runner from running cluster
-	cc := mustload.Running(cfg.Name)
+	cc := mustload.Running(cfg.Name, options)
 	r := cc.CP.Runner
 
 	// Grab credentials from where GCP would normally look
@@ -89,7 +89,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// Patch service accounts for all namespaces to include the image pull secret.
 	// The image registry pull secret is added to the namespaces in the webhook.
 	if err := patchServiceAccounts(cfg); err != nil {
-		return errors.Wrap(err, "patching service accounts")
+		return fmt.Errorf("patching service accounts: %w", err)
 	}
 
 	// If the env var is explicitly set, even in GCE, then defer to the user and continue
@@ -244,9 +244,9 @@ func refreshExistingPods(cc *config.ClusterConfig) error {
 	return nil
 }
 
-func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
+func disableAddonGCPAuth(cfg *config.ClusterConfig, options *run.CommandOptions) error {
 	// Grab command runner from running cluster
-	cc := mustload.Running(cfg.Name)
+	cc := mustload.Running(cfg.Name, options)
 	r := cc.CP.Runner
 
 	// Clean up the files generated when enabling the addon
@@ -303,10 +303,10 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	return nil
 }
 
-func verifyGCPAuthAddon(cc *config.ClusterConfig, name, val string) error {
+func verifyGCPAuthAddon(cc *config.ClusterConfig, name, val string, options *run.CommandOptions) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
-		return errors.Wrapf(err, "parsing bool: %s", name)
+		return fmt.Errorf("parsing bool: %s: %w", name, err)
 	}
 
 	// If we're in GCE and didn't actually start the gcp-auth pods, don't check for them.
@@ -321,7 +321,7 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name, val string) error {
 		}
 	}
 
-	if err := verifyAddonStatusInternal(cc, name, val, "gcp-auth"); err != nil {
+	if err := verifyAddonStatusInternal(cc, name, val, "gcp-auth", options); err != nil {
 		return err
 	}
 

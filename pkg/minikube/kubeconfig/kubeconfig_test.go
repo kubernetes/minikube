@@ -19,6 +19,7 @@ package kubeconfig
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"testing"
 
@@ -767,7 +768,20 @@ func contextEquals(aContext, bContext *api.Context) bool {
 	return true
 }
 
+func equalPaths(a, b string) bool {
+	return filepath.Clean(filepath.ToSlash(a)) == filepath.Clean(filepath.ToSlash(b))
+}
+
 func TestGetKubeConfigPath(t *testing.T) {
+	sep := string(os.PathListSeparator)
+
+	// Ensure $HOME expands sensibly on Windows where HOME may be unset.
+	if runtime.GOOS == "windows" && os.Getenv("HOME") == "" {
+		if h, err := os.UserHomeDir(); err == nil && h != "" {
+			t.Setenv("HOME", h)
+		}
+	}
+
 	var tests = []struct {
 		input string
 		want  string
@@ -777,15 +791,17 @@ func TestGetKubeConfigPath(t *testing.T) {
 			want:  "/home/fake/.kube/.kubeconfig",
 		},
 		{
-			input: "/home/fake/.kube/.kubeconfig:/home/fake2/.kubeconfig",
+			// multiple entries, first should be chosen
+			input: "/home/fake/.kube/.kubeconfig" + sep + "/home/fake2/.kubeconfig",
 			want:  "/home/fake/.kube/.kubeconfig",
 		},
 		{
-			input: ":/home/fake/.kube/.kubeconfig:/home/fake2/.kubeconfig",
+			// leading empty entry should be skipped
+			input: sep + "/home/fake/.kube/.kubeconfig" + sep + "/home/fake2/.kubeconfig",
 			want:  "/home/fake/.kube/.kubeconfig",
 		},
 		{
-			input: ":",
+			input: sep,
 			want:  "$HOME/.kube/config",
 		},
 		{
@@ -796,8 +812,10 @@ func TestGetKubeConfigPath(t *testing.T) {
 
 	for _, test := range tests {
 		t.Setenv(clientcmd.RecommendedConfigPathEnvVar, test.input)
-		if result := PathFromEnv(); result != os.ExpandEnv(test.want) {
-			t.Errorf("Expected first split chunk, got: %s", result)
+		result := PathFromEnv()
+		expandedWant := os.ExpandEnv(test.want)
+		if !equalPaths(result, expandedWant) {
+			t.Errorf("Expected first split chunk, got: %s (want %s)", result, expandedWant)
 		}
 	}
 }

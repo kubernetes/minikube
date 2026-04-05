@@ -25,10 +25,11 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/juju/fslock"
+	"github.com/gofrs/flock"
 	"github.com/spf13/cobra"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -46,7 +47,7 @@ import (
 
 var cleanup bool
 var bindAddress string
-var lockHandle *fslock.Lock
+var lockHandle *flock.Flock
 
 // tunnelCmd represents the tunnel command
 var tunnelCmd = &cobra.Command{
@@ -57,9 +58,10 @@ var tunnelCmd = &cobra.Command{
 		RootCmd.PersistentPreRun(cmd, args)
 	},
 	Run: func(_ *cobra.Command, _ []string) {
+		options := flags.CommandOptions()
 		manager := tunnel.NewManager()
 		cname := ClusterFlagValue()
-		co := mustload.Healthy(cname)
+		co := mustload.Healthy(cname, options)
 
 		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsBuiltinQEMU(co.Config.Network) {
 			msg := "minikube tunnel is not currently implemented with the builtin network on QEMU"
@@ -134,13 +136,13 @@ func cleanupLock() {
 func mustLockOrExit(profile string) {
 	tunnelLockPath := filepath.Join(localpath.Profile(profile), ".tunnel_lock")
 
-	lockHandle = fslock.New(tunnelLockPath)
-	err := lockHandle.TryLock()
-	if err == fslock.ErrLocked {
-		exit.Message(reason.SvcTunnelAlreadyRunning, "Another tunnel process is already running, terminate the existing instance to start a new one")
-	}
+	lockHandle = flock.New(tunnelLockPath)
+	success, err := lockHandle.TryLock()
 	if err != nil {
 		exit.Error(reason.SvcTunnelStart, "failed to acquire lock due to unexpected error", err)
+	}
+	if !success {
+		exit.Message(reason.SvcTunnelAlreadyRunning, "Another tunnel process is already running, terminate the existing instance to start a new one")
 	}
 }
 

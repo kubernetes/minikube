@@ -19,7 +19,8 @@ package machine
 import (
 	"runtime"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"

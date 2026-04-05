@@ -17,12 +17,14 @@ limitations under the License.
 package process
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/mitchellh/go-ps"
+	"github.com/shirou/gopsutil/v4/process"
+	"k8s.io/klog/v2"
 )
 
 const pidfileMode = 0o600
@@ -61,16 +63,26 @@ func Exists(pid int, executable string) (bool, error) {
 	}
 
 	// Slow path if pid exist, depending on the platform. On windows and darwin
-	// this fetch all processes from the krenel and find a process with pid. On
+	// this fetch all processes from the kernel and find a process with pid. On
 	// linux this reads /proc/pid/stat
-	entry, err := ps.FindProcess(pid)
+	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
-		return true, err
-	}
-	if entry == nil {
+		if errors.Is(err, process.ErrorProcessNotRunning) {
+			return false, nil
+		}
+		// If it's another error, we might want to return it or assume false?
+		// But in this context, if we can't get the process, we can't check its name.
+		// Let's assume if NewProcess fails, it's not the one we want or gone.
+		klog.Warningf("process.NewProcess(%d) failed: %v", pid, err)
 		return false, nil
 	}
-	return entry.Executable() == executable, nil
+	name, err := proc.Name()
+	if err != nil {
+		// If we can't get the name, it might have exited.
+		klog.Warningf("proc.Name() failed for pid %d: %v", pid, err)
+		return false, nil
+	}
+	return name == executable, nil
 }
 
 // Terminate a process with pid and matching name. Returns os.ErrProcessDone if

@@ -25,11 +25,11 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -89,11 +89,12 @@ var statusCmd = &cobra.Command{
 			exit.Message(reason.Usage, "Cannot use both --output and --format options")
 		}
 
+		options := flags.CommandOptions()
 		out.SetJSON(output == "json")
-		go notify.MaybePrintUpdateTextFromGithub()
+		go notify.MaybePrintUpdateTextFromGithub(options)
 
 		cname := ClusterFlagValue()
-		api, cc := mustload.Partial(cname)
+		api, cc := mustload.Partial(cname, options)
 
 		duration := watch
 		if !cmd.Flags().Changed("watch") || watch < 0 {
@@ -158,6 +159,9 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 
 // exitCode calculates the appropriate exit code given a set of status messages
 func exitCode(statuses []*cluster.Status) int {
+	if len(statuses) == 0 {
+		return minikubeNotRunningStatusFlag | clusterNotRunningStatusFlag | k8sNotRunningStatusFlag
+	}
 	c := 0
 	for _, st := range statuses {
 		if st.Host != state.Running.String() {
@@ -225,7 +229,7 @@ func clusterStatusJSON(statuses []*cluster.Status, w io.Writer, cc *config.Clust
 
 	bs, err := json.Marshal(cs)
 	if err != nil {
-		return errors.Wrap(err, "marshal")
+		return fmt.Errorf("marshal: %w", err)
 	}
 
 	_, err = w.Write(bs)

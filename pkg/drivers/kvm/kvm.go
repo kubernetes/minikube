@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux && amd64
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -25,109 +25,27 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
+	"errors"
+
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/util/retry"
 	"libvirt.org/go/libvirt"
 )
-
-// Driver is the machine driver for KVM
-type Driver struct {
-	*drivers.BaseDriver
-	*common.CommonDriver
-
-	// How much memory, in MB, to allocate to the VM
-	Memory int
-
-	// How many cpus to allocate to the VM
-	CPU int
-
-	// The name of the default network
-	Network string
-
-	// The name of the private network
-	PrivateNetwork string
-
-	// The size of the disk to be created for the VM, in MB
-	DiskSize int
-
-	// The path of the disk .img
-	DiskPath string
-
-	// A file or network URI to fetch the minikube ISO
-	Boot2DockerURL string
-
-	// The location of the iso to boot from
-	ISO string
-
-	// The randomly generated MAC Address
-	// If empty, a random MAC will be generated.
-	MAC string
-
-	// The randomly generated MAC Address for the NIC attached to the private network
-	// If empty, a random MAC will be generated.
-	PrivateMAC string
-
-	// Whether to passthrough GPU devices from the host to the VM.
-	GPU bool
-
-	// Whether to hide the KVM hypervisor signature from the guest
-	Hidden bool
-
-	// XML that needs to be added to passthrough GPU devices.
-	DevicesXML string
-
-	// QEMU Connection URI
-	ConnectionURI string
-
-	// NUMA node count default value is 1
-	NUMANodeCount int
-
-	// NUMA XML
-	NUMANodeXML string
-
-	// Extra Disks
-	ExtraDisks int
-
-	// Extra Disks XML
-	ExtraDisksXML []string
-}
-
-const (
-	qemusystem                = "qemu:///system"
-	defaultPrivateNetworkName = "minikube-net"
-	defaultNetworkName        = "default"
-)
-
-// NewDriver creates a new driver for a host
-func NewDriver(hostName, storePath string) *Driver {
-	return &Driver{
-		BaseDriver: &drivers.BaseDriver{
-			MachineName: hostName,
-			StorePath:   storePath,
-			SSHUser:     "docker",
-		},
-		CommonDriver:   &common.CommonDriver{},
-		PrivateNetwork: defaultPrivateNetworkName,
-		Network:        defaultNetworkName,
-		ConnectionURI:  qemusystem,
-	}
-}
 
 // GetURL returns a Docker URL inside this host
 // e.g. tcp://1.2.3.4:2376
 // more info https://github.com/docker/machine/blob/b170508bf44c3405e079e26d5fdffe35a64c6972/libmachine/provision/utils.go#L159_L175
 func (d *Driver) GetURL() (string, error) {
 	if err := d.PreCommandCheck(); err != nil {
-		return "", errors.Wrap(err, "prechecking")
+		return "", fmt.Errorf("prechecking: %w", err)
 	}
 
 	ip, err := d.GetIP()
 	if err != nil {
-		return "", errors.Wrap(err, "getting domain IP")
+		return "", fmt.Errorf("getting domain IP: %w", err)
 	}
 
 	if ip == "" {
@@ -151,7 +69,7 @@ func (d *Driver) PreCommandCheck() error {
 
 	libVersion, err := conn.GetLibVersion()
 	if err != nil {
-		return errors.Wrap(err, "getting libvirt version")
+		return fmt.Errorf("getting libvirt version: %w", err)
 	}
 
 	log.Debugf("using libvirt version %d", libVersion)
@@ -163,7 +81,7 @@ func (d *Driver) PreCommandCheck() error {
 func (d *Driver) GetState() (state.State, error) {
 	dom, conn, err := d.getDomain()
 	if err != nil {
-		return state.None, errors.Wrap(err, "getting domain")
+		return state.None, fmt.Errorf("getting domain: %w", err)
 	}
 	defer func() {
 		if err := closeDomain(dom, conn); err != nil {
@@ -173,7 +91,7 @@ func (d *Driver) GetState() (state.State, error) {
 
 	lvs, _, err := dom.GetState() // state, reason, error
 	if err != nil {
-		return state.None, errors.Wrap(err, "getting domain state")
+		return state.None, fmt.Errorf("getting domain state: %w", err)
 	}
 
 	return machineState(lvs), nil
@@ -216,7 +134,7 @@ func machineState(lvs libvirt.DomainState) state.State {
 func (d *Driver) GetIP() (string, error) {
 	s, err := d.GetState()
 	if err != nil {
-		return "", errors.Wrap(err, "getting domain state")
+		return "", fmt.Errorf("getting domain state: %w", err)
 	}
 
 	if s != state.Running {
@@ -250,7 +168,7 @@ func (d *Driver) DriverName() string {
 func (d *Driver) Kill() error {
 	s, err := d.GetState()
 	if err != nil {
-		return errors.Wrap(err, "getting domain state")
+		return fmt.Errorf("getting domain state: %w", err)
 	}
 
 	if s == state.Stopped {
@@ -261,7 +179,7 @@ func (d *Driver) Kill() error {
 
 	dom, conn, err := d.getDomain()
 	if err != nil {
-		return errors.Wrap(err, "getting domain")
+		return fmt.Errorf("getting domain: %w", err)
 	}
 	defer func() {
 		if err := closeDomain(dom, conn); err != nil {
@@ -293,13 +211,13 @@ func (d *Driver) Start() error {
 	// this call ensures that all networks are active
 	log.Info("ensuring networks are active...")
 	if err := d.ensureNetwork(); err != nil {
-		return errors.Wrap(err, "ensuring active networks")
+		return fmt.Errorf("ensuring active networks: %w", err)
 	}
 
 	log.Info("getting domain XML...")
 	dom, conn, err := d.getDomain()
 	if err != nil {
-		return errors.Wrap(err, "getting domain XML")
+		return fmt.Errorf("getting domain XML: %w", err)
 	}
 	defer func() {
 		if err := closeDomain(dom, conn); err != nil {
@@ -315,23 +233,23 @@ func (d *Driver) Start() error {
 	}
 
 	if err := dom.Create(); err != nil {
-		return errors.Wrap(err, "creating domain")
+		return fmt.Errorf("creating domain: %w", err)
 	}
 
 	log.Info("waiting for domain to start...")
 	if err := d.waitForDomainState(state.Running, 30*time.Second); err != nil {
-		return errors.Wrap(err, "waiting for domain to start")
+		return fmt.Errorf("waiting for domain to start: %w", err)
 	}
 	log.Info("domain is now running")
 
 	log.Info("waiting for IP...")
 	if err := d.waitForStaticIP(conn, 90*time.Second); err != nil {
-		return errors.Wrap(err, "waiting for IP")
+		return fmt.Errorf("waiting for IP: %w", err)
 	}
 
 	log.Info("waiting for SSH...")
 	if err := drivers.WaitForSSH(d); err != nil {
-		return errors.Wrap(err, "waiting for SSH")
+		return fmt.Errorf("waiting for SSH: %w", err)
 	}
 
 	return nil
@@ -363,7 +281,7 @@ func (d *Driver) waitForStaticIP(conn *libvirt.Connect, maxTime time.Duration) e
 	query := func() error {
 		sip, err := ipFromAPI(conn, d.MachineName, d.PrivateNetwork)
 		if err != nil {
-			return errors.Wrap(err, "getting domain IP, will retry")
+			return fmt.Errorf("getting domain IP, will retry: %w", err)
 		}
 
 		if sip == "" {
@@ -395,14 +313,14 @@ func (d *Driver) Create() error {
 
 	log.Info("creating network...")
 	if err := d.createNetwork(); err != nil {
-		return errors.Wrap(err, "creating network")
+		return fmt.Errorf("creating network: %w", err)
 	}
 
 	if d.GPU {
 		log.Info("getting devices XML...")
 		xml, err := getDevicesXML()
 		if err != nil {
-			return errors.Wrap(err, "getting devices XML")
+			return fmt.Errorf("getting devices XML: %w", err)
 		}
 		d.DevicesXML = xml
 	}
@@ -410,7 +328,7 @@ func (d *Driver) Create() error {
 	if d.NUMANodeCount > 1 {
 		numaXML, err := numaXML(d.CPU, d.Memory, d.NUMANodeCount)
 		if err != nil {
-			return errors.Wrap(err, "creating NUMA XML")
+			return fmt.Errorf("creating NUMA XML: %w", err)
 		}
 		d.NUMANodeXML = numaXML
 	}
@@ -419,12 +337,12 @@ func (d *Driver) Create() error {
 	log.Infof("setting up store path in %s ...", store)
 	// 0755 because it must be accessible by libvirt/qemu across a variety of configs
 	if err := os.MkdirAll(store, 0755); err != nil {
-		return errors.Wrap(err, "creating store")
+		return fmt.Errorf("creating store: %w", err)
 	}
 
 	log.Infof("building disk image from %s", d.Boot2DockerURL)
 	if err := common.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
-		return errors.Wrap(err, "creating disk")
+		return fmt.Errorf("creating disk: %w", err)
 	}
 
 	if d.ExtraDisks > 20 {
@@ -436,13 +354,13 @@ func (d *Driver) Create() error {
 	for i := 0; i < d.ExtraDisks; i++ {
 		diskpath := common.ExtraDiskPath(d.BaseDriver, i)
 		if err := common.CreateRawDisk(diskpath, d.DiskSize); err != nil {
-			return errors.Wrap(err, "creating extra disks")
+			return fmt.Errorf("creating extra disks: %w", err)
 		}
 		// Starting the logical names for the extra disks from hdd as the cdrom device is set to hdc.
 		// TODO: Enhance the domain template to use variable for the logical name of the main disk and the cdrom disk.
 		extraDisksXML, err := getExtraDiskXML(diskpath, fmt.Sprintf("hd%v", string(rune('d'+i))))
 		if err != nil {
-			return errors.Wrap(err, "creating extraDisk XML")
+			return fmt.Errorf("creating extraDisk XML: %w", err)
 		}
 		d.ExtraDisksXML = append(d.ExtraDisksXML, extraDisksXML)
 	}
@@ -454,7 +372,7 @@ func (d *Driver) Create() error {
 	log.Info("defining domain...")
 	dom, err := d.defineDomain()
 	if err != nil {
-		return errors.Wrap(err, "defining domain")
+		return fmt.Errorf("defining domain: %w", err)
 	}
 	defer func() {
 		if dom == nil {
@@ -465,7 +383,7 @@ func (d *Driver) Create() error {
 	}()
 
 	if err := d.Start(); err != nil {
-		return errors.Wrap(err, "starting domain")
+		return fmt.Errorf("starting domain: %w", err)
 	}
 
 	log.Infof("domain creation complete")
@@ -596,11 +514,11 @@ func (d *Driver) Remove() error {
 
 	log.Infof("domain %s exists, removing...", d.MachineName)
 	if err := d.destroyRunningDomain(dom); err != nil {
-		return errors.Wrap(err, "destroying running domain")
+		return fmt.Errorf("destroying running domain: %w", err)
 	}
 
 	if err := d.undefineDomain(conn, dom); err != nil {
-		return errors.Wrap(err, "undefining domain")
+		return fmt.Errorf("undefining domain: %w", err)
 	}
 
 	log.Info("removing static IP address...")
@@ -618,7 +536,7 @@ func (d *Driver) Remove() error {
 func (d *Driver) destroyRunningDomain(dom *libvirt.Domain) error {
 	lvs, _, err := dom.GetState()
 	if err != nil {
-		return errors.Wrap(err, "getting domain state")
+		return fmt.Errorf("getting domain state: %w", err)
 	}
 
 	// if the domain is not running, we don't destroy it
@@ -633,7 +551,7 @@ func (d *Driver) destroyRunningDomain(dom *libvirt.Domain) error {
 func (d *Driver) undefineDomain(conn *libvirt.Connect, dom *libvirt.Domain) error {
 	definedDomains, err := conn.ListDefinedDomains()
 	if err != nil {
-		return errors.Wrap(err, "listing domains")
+		return fmt.Errorf("listing domains: %w", err)
 	}
 
 	var found bool

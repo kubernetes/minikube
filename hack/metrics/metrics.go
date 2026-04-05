@@ -27,8 +27,8 @@ import (
 	"time"
 
 	_ "cloud.google.com/go/storage"
+	"errors"
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -65,7 +65,7 @@ func execute() error {
 	}
 	ctx := context.Background()
 	if err := downloadMinikube(ctx, tmpFile); err != nil {
-		return errors.Wrap(err, "downloading minikube")
+		return fmt.Errorf("downloading minikube: %w", err)
 	}
 
 	for _, cr := range []string{"docker", "containerd", "crio"} {
@@ -79,19 +79,19 @@ func execute() error {
 func exportMinikubeStart(ctx context.Context, projectID, containerRuntime string) error {
 	mp, attrs, err := getMeterProvider(projectID, containerRuntime)
 	if err != nil {
-		return errors.Wrap(err, "creating meter provider")
+		return fmt.Errorf("creating meter provider: %w", err)
 	}
 	defer func() { _ = mp.Shutdown(ctx) }()
 
 	meter := mp.Meter("minikube")
 	latency, err := meter.Float64Histogram(customMetricName)
 	if err != nil {
-		return errors.Wrap(err, "creating histogram")
+		return fmt.Errorf("creating histogram: %w", err)
 	}
 
 	st, err := minikubeStartTime(ctx, projectID, tmpFile, containerRuntime)
 	if err != nil {
-		return errors.Wrap(err, "collecting start time")
+		return fmt.Errorf("collecting start time: %w", err)
 	}
 	fmt.Printf("Latency: %f\n", st)
 	latency.Record(ctx, st, metric.WithAttributes(attrs...))
@@ -137,7 +137,7 @@ func minikubeStartTime(ctx context.Context, projectID, minikubePath, containerRu
 	t := time.Now()
 	log.Printf("Running [%v]....", cmd.Args)
 	if err := cmd.Run(); err != nil {
-		return 0, errors.Wrapf(err, "running %v", cmd.Args)
+		return 0, fmt.Errorf("running %v: %w", cmd.Args, err)
 	}
 	totalTime := time.Since(t).Seconds()
 	return totalTime, nil

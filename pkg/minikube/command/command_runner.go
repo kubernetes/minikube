@@ -28,7 +28,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
@@ -196,14 +197,14 @@ func fileExists(r Runner, f assets.CopyableFile, dst string) (bool, error) {
 func writeFile(dst string, f assets.CopyableFile, perms os.FileMode) error {
 	w, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE, perms)
 	if err != nil {
-		return errors.Wrap(err, "create")
+		return fmt.Errorf("create: %w", err)
 	}
 	defer w.Close()
 
 	r := f.(io.Reader)
 	n, err := io.Copy(w, r)
 	if err != nil {
-		return errors.Wrap(err, "copy")
+		return fmt.Errorf("copy: %w", err)
 	}
 
 	if n != int64(f.GetLength()) {
@@ -211,7 +212,7 @@ func writeFile(dst string, f assets.CopyableFile, perms os.FileMode) error {
 	}
 
 	if err := w.Chmod(perms); err != nil {
-		return errors.Wrap(err, "chmod")
+		return fmt.Errorf("chmod: %w", err)
 	}
 
 	return w.Close()

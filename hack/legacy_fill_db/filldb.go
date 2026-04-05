@@ -46,7 +46,7 @@ var existingEnvironments = make(map[string]map[string]struct{})
 func main() {
 	gp, err := exec.LookPath("gopogh")
 	if err != nil {
-		log.Fatalf("missing gopogh. Run 'go install github.com/medyagh/gopogh/cmd/gopogh@latest': %v", err)
+		log.Fatalf("missing gopogh. Run 'go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0': %v", err)
 	}
 	f, err := os.OpenFile("gopogh_filldb_log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {

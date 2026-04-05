@@ -20,10 +20,11 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/mcnflag"
-	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
+	"errors"
+
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/mcnflag"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
 
 	"k8s.io/klog/v2"
@@ -68,8 +69,8 @@ func (d *MockDriver) GetIP() (string, error) {
 	if d.IP != "" {
 		return d.IP, nil
 	}
-	if d.BaseDriver.IPAddress != "" {
-		return d.BaseDriver.IPAddress, nil
+	if d.IPAddress != "" {
+		return d.IPAddress, nil
 	}
 	return "127.0.0.1", nil
 }
@@ -94,7 +95,7 @@ func (d *MockDriver) GetSSHHostname() (string, error) {
 
 // GetSSHKeyPath returns the key path for SSH
 func (d *MockDriver) GetSSHKeyPath() string {
-	return d.BaseDriver.SSHKeyPath
+	return d.SSHKeyPath
 }
 
 // GetState returns the state of the driver

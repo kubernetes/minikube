@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -115,7 +114,7 @@ func NodePressure(cs *kubernetes.Clientset) error {
 
 	err = retry.Expo(listNodes, kconst.APICallRetryInterval, 2*time.Minute)
 	if err != nil {
-		return errors.Wrap(err, "list nodes retry")
+		return fmt.Errorf("list nodes retry: %w", err)
 	}
 
 	for _, n := range ns.Items {

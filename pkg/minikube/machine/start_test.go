@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"runtime"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/command"
@@ -47,6 +48,9 @@ fe00::0 ip6-localnet
 `
 
 func TestAddHostAliasInner(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping TestAddHostAliasInner on Windows: /bin/bash not available")
+	}
 	// Arrange
 	tempFilePath, err := writeContentToTempFile(initialEtcHostsContent)
 	if err != nil {

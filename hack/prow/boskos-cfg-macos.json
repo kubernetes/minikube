@@ -1,0 +1,5 @@
+{
+    "BoskosAcquireTimeoutSeconds": 180,
+    "BoskosHeartbeatIntervalSeconds": 10,
+    "BoskosLocation": "http://boskos.test-pods.svc.cluster.local"
+}

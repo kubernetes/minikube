@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 
@@ -61,12 +59,12 @@ func NewServiceTunnel(sshPort, sshKey string, v1Core typed_core.CoreV1Interface,
 func (t *ServiceTunnel) Start(svcName, namespace string) ([]string, error) {
 	svc, err := t.v1Core.Services(namespace).Get(context.Background(), svcName, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Service %s was not found in %q namespace. You may select another namespace by using 'minikube service %s -n <namespace>", svcName, namespace, svcName)
+		return nil, fmt.Errorf("Service %s was not found in %q namespace. You may select another namespace by using 'minikube service %s -n <namespace>: %w", svcName, namespace, svcName, err)
 	}
 
 	t.sshConn, err = createSSHConnWithRandomPorts(svcName, t.sshPort, t.sshKey, svc)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating ssh conn")
+		return nil, fmt.Errorf("creating ssh conn: %w", err)
 	}
 
 	go func() {

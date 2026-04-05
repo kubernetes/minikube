@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math/rand"
 	"net"
 	"os"
@@ -33,12 +32,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/docker/machine/libmachine/ssh"
-	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
+	"errors"
+
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
+	"k8s.io/minikube/pkg/libmachine/ssh"
+	"k8s.io/minikube/pkg/libmachine/state"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"
@@ -47,6 +47,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/firewall"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util/retry"
@@ -144,7 +145,7 @@ func (d *Driver) GetURL() (string, error) {
 	return fmt.Sprintf("tcp://%s:%d", ip, port), nil
 }
 
-func NewDriver(hostName, storePath string) drivers.Driver {
+func NewDriver(hostName, storePath string, options *run.CommandOptions) drivers.Driver {
 	return &Driver{
 		BIOS:           runtime.GOARCH != "arm64",
 		PrivateNetwork: privateNetworkName,
@@ -152,6 +153,9 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 			SSHUser:     defaultSSHUser,
 			MachineName: hostName,
 			StorePath:   storePath,
+		},
+		CommonDriver: &common.CommonDriver{
+			CommandOptions: *options,
 		},
 	}
 }
@@ -310,12 +314,12 @@ func parsePortRange(rawPortRange string) (int, int, error) {
 
 	minPort, err := strconv.Atoi(portRange[0])
 	if err != nil {
-		return 0, 0, errors.Wrap(err, "invalid min port range")
+		return 0, 0, fmt.Errorf("invalid min port range: %w", err)
 	}
 
 	maxPort, err := strconv.Atoi(portRange[1])
 	if err != nil {
-		return 0, 0, errors.Wrap(err, "invalid max port range")
+		return 0, 0, fmt.Errorf("invalid max port range: %w", err)
 	}
 
 	if maxPort < minPort {
@@ -512,7 +516,7 @@ func (d *Driver) Start() error {
 		getIP := func() error {
 			d.IPAddress, err = common.GetIPAddressByMACAddress(d.MACAddress)
 			if err != nil {
-				return errors.Wrap(err, "failed to get IP address")
+				return fmt.Errorf("failed to get IP address: %w", err)
 			}
 			return nil
 		}
@@ -535,9 +539,9 @@ func (d *Driver) Start() error {
 			break
 		}
 		if !isBootpdError(err) {
-			return errors.Wrap(err, "IP address never found in dhcp leases file")
+			return fmt.Errorf("IP address never found in dhcp leases file: %w", err)
 		}
-		if unblockErr := firewall.UnblockBootpd(); unblockErr != nil {
+		if unblockErr := firewall.UnblockBootpd(&d.CommandOptions); unblockErr != nil {
 			klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
 			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
 		}
@@ -545,9 +549,7 @@ func (d *Driver) Start() error {
 		return fmt.Errorf("ip not found: %v", err)
 	}
 
-	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
-
-	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
+	return common.WaitForSSHAccess(d)
 }
 
 func hardwareAcceleration() string {
@@ -615,16 +617,16 @@ func (d *Driver) Stop() error {
 func (d *Driver) Remove() error {
 	s, err := d.GetState()
 	if err != nil {
-		return errors.Wrap(err, "get state")
+		return fmt.Errorf("get state: %w", err)
 	}
 	if s == state.Running {
 		if err := d.Kill(); err != nil {
-			return errors.Wrap(err, "kill")
+			return fmt.Errorf("kill: %w", err)
 		}
 	}
 	if s != state.Stopped {
 		if _, err := d.RunQMPCommand("quit"); err != nil {
-			return errors.Wrap(err, "quit")
+			return fmt.Errorf("quit: %w", err)
 		}
 	}
 	return nil
@@ -784,7 +786,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	// connect to monitor
 	conn, err := net.Dial("unix", d.monitorPath())
 	if err != nil {
-		return nil, errors.Wrap(err, "connect")
+		return nil, fmt.Errorf("connect: %w", err)
 	}
 	defer conn.Close()
 
@@ -792,7 +794,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	var buf [1024]byte
 	nr, err := conn.Read(buf[:])
 	if err != nil {
-		return nil, errors.Wrap(err, "read initial resp")
+		return nil, fmt.Errorf("read initial resp: %w", err)
 	}
 	type qmpInitialResponse struct {
 		QMP struct {
@@ -810,7 +812,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 
 	var initialResponse qmpInitialResponse
 	if err := json.Unmarshal(buf[:nr], &initialResponse); err != nil {
-		return nil, errors.Wrap(err, "unmarshal initial resp")
+		return nil, fmt.Errorf("unmarshal initial resp: %w", err)
 	}
 
 	// run 'qmp_capabilities' to switch to command mode
@@ -820,21 +822,21 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	}
 	jsonCommand, err := json.Marshal(qmpCommand{Command: "qmp_capabilities"})
 	if err != nil {
-		return nil, errors.Wrap(err, "marshal qmp_capabilities")
+		return nil, fmt.Errorf("marshal qmp_capabilities: %w", err)
 	}
 	if _, err := conn.Write(jsonCommand); err != nil {
-		return nil, errors.Wrap(err, "write qmp_capabilities")
+		return nil, fmt.Errorf("write qmp_capabilities: %w", err)
 	}
 	nr, err = conn.Read(buf[:])
 	if err != nil {
-		return nil, errors.Wrap(err, "read qmp_capabilities resp")
+		return nil, fmt.Errorf("read qmp_capabilities resp: %w", err)
 	}
 	type qmpResponse struct {
 		Return map[string]interface{} `json:"return"`
 	}
 	var response qmpResponse
 	if err := json.Unmarshal(buf[:nr], &response); err != nil {
-		return nil, errors.Wrap(err, "unmarshal qmp_capabilities resp")
+		return nil, fmt.Errorf("unmarshal qmp_capabilities resp: %w", err)
 	}
 	// expecting empty response
 	if len(response.Return) != 0 {
@@ -844,21 +846,21 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	// { "execute": command }
 	jsonCommand, err = json.Marshal(qmpCommand{Command: command})
 	if err != nil {
-		return nil, errors.Wrap(err, "marshal command")
+		return nil, fmt.Errorf("marshal command: %w", err)
 	}
 	if _, err := conn.Write(jsonCommand); err != nil {
-		return nil, errors.Wrap(err, "write command")
+		return nil, fmt.Errorf("write command: %w", err)
 	}
 	nr, err = conn.Read(buf[:])
 	if err != nil {
-		return nil, errors.Wrap(err, "read command resp")
+		return nil, fmt.Errorf("read command resp: %w", err)
 	}
 
 	// Sometimes QEMU returns two JSON objects with the first object being the command response
 	// and the second object being an event log (unimportant)
 	firstRespObj := strings.Split(string(buf[:nr]), "\n")[0]
 	if err := json.Unmarshal([]byte(firstRespObj), &response); err != nil {
-		return nil, errors.Wrap(err, "unmarshal command resp")
+		return nil, fmt.Errorf("unmarshal command resp: %w", err)
 	}
 	if strings.HasPrefix(command, "query-") {
 		return response.Return, nil
@@ -868,20 +870,4 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("%s failed: %v", command, response.Return)
 	}
 	return response.Return, nil
-}
-
-func WaitForTCPWithDelay(addr string, duration time.Duration) error {
-	for {
-		conn, err := net.Dial("tcp", addr)
-		if err != nil {
-			continue
-		}
-		defer conn.Close()
-		if _, err := conn.Read(make([]byte, 1)); err != nil && err != io.EOF {
-			time.Sleep(duration)
-			continue
-		}
-		break
-	}
-	return nil
 }

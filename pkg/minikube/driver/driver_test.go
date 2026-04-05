@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func TestSupportedDrivers(t *testing.T) {
@@ -123,7 +124,7 @@ func TestSuggest(t *testing.T) {
 				Name:     "unhealthy",
 				Default:  true,
 				Priority: registry.Default,
-				Status:   func() registry.State { return registry.State{Installed: true, Healthy: false} },
+				Status:   func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: false} },
 			},
 			choices: []string{"unhealthy"},
 			pick:    "",
@@ -135,7 +136,7 @@ func TestSuggest(t *testing.T) {
 				Name:     "discouraged",
 				Default:  false,
 				Priority: registry.Discouraged,
-				Status:   func() registry.State { return registry.State{Installed: true, Healthy: true} },
+				Status:   func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
 			choices: []string{"discouraged", "unhealthy"},
 			pick:    "",
@@ -147,7 +148,7 @@ func TestSuggest(t *testing.T) {
 				Name:     "default",
 				Default:  true,
 				Priority: registry.Default,
-				Status:   func() registry.State { return registry.State{Installed: true, Healthy: true} },
+				Status:   func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
 			choices: []string{"default", "discouraged", "unhealthy"},
 			pick:    "default",
@@ -159,7 +160,7 @@ func TestSuggest(t *testing.T) {
 				Name:     "preferred",
 				Default:  true,
 				Priority: registry.Preferred,
-				Status:   func() registry.State { return registry.State{Installed: true, Healthy: true} },
+				Status:   func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
 			choices: []string{"preferred", "default", "discouraged", "unhealthy"},
 			pick:    "preferred",
@@ -175,7 +176,7 @@ func TestSuggest(t *testing.T) {
 				}
 			}
 
-			got := Choices(false)
+			got := Choices(false, &run.CommandOptions{})
 			gotNames := []string{}
 			for _, c := range got {
 				gotNames = append(gotNames, c.Name)

@@ -22,7 +22,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/pkg/errors"
+	"errors"
 	"k8s.io/minikube/pkg/minikube/download"
 )
 
@@ -33,7 +33,7 @@ func uploadTarball(tarballFilename, k8sVer string) error {
 	cmd := exec.Command("gsutil", "cp", hostPath, gcsDest)
 	fmt.Printf("Running: %v\n", cmd.Args)
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "uploading %s to GCS bucket: %v\n%s", hostPath, err, string(output))
+		return fmt.Errorf("uploading %s to GCS bucket: %v\n%s: %w", hostPath, err, string(output), err)
 	}
 	return nil
 }
@@ -56,7 +56,7 @@ func uploadArmTarballs(preloadsDir string) error {
 		cmd := exec.Command("gsutil", "cp", hostPath, gcsDest)
 		fmt.Printf("Running: %v\n", cmd.Args)
 		if output, err := cmd.CombinedOutput(); err != nil {
-			return errors.Wrapf(err, "uploading %s to GCS bucket: %v\n%s", hostPath, err, string(output))
+			return fmt.Errorf("uploading %s to GCS bucket: %v\n%s: %w", hostPath, err, string(output), err)
 		}
 	}
 	return nil

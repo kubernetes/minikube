@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -39,8 +40,9 @@ var nodeStopCmd = &cobra.Command{
 			exit.Message(reason.Usage, "Usage: minikube node stop [name]")
 		}
 
+		options := flags.CommandOptions()
 		name := args[0]
-		api, cc := mustload.Partial(ClusterFlagValue())
+		api, cc := mustload.Partial(ClusterFlagValue(), options)
 
 		n, _, err := node.Retrieve(*cc, name)
 		if err != nil {

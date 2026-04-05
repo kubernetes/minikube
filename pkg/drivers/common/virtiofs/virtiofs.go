@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/google/uuid"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 )
 
 // Mount is a directory on the host shared with the guest using virtiofs.

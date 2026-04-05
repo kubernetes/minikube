@@ -31,7 +31,7 @@ import (
 	bootstrapapi "k8s.io/cluster-bootstrap/token/api"
 	utilnet "k8s.io/utils/net"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 const (
@@ -560,12 +560,12 @@ func CreateTempDirForKubeadm(kubernetesDir, dirName string) (string, error) {
 
 	// creates target folder if not already exists
 	if err := os.MkdirAll(tempDir, 0700); err != nil {
-		return "", errors.Wrapf(err, "failed to create directory %q", tempDir)
+		return "", fmt.Errorf("failed to create directory %q: %w", tempDir, err)
 	}
 
 	tempDir, err := os.MkdirTemp(tempDir, dirName)
 	if err != nil {
-		return "", errors.Wrap(err, "couldn't create a temporary directory")
+		return "", fmt.Errorf("couldn't create a temporary directory: %w", err)
 	}
 	return tempDir, nil
 }
@@ -579,13 +579,13 @@ func CreateTimestampDirForKubeadm(kubernetesDir, dirName string) (string, error)
 
 	// creates target folder if not already exists
 	if err := os.MkdirAll(tempDir, 0700); err != nil {
-		return "", errors.Wrapf(err, "failed to create directory %q", tempDir)
+		return "", fmt.Errorf("failed to create directory %q: %w", tempDir, err)
 	}
 
 	timestampDirName := fmt.Sprintf("%s-%s", dirName, time.Now().Format("2006-01-02-15-04-05"))
 	timestampDir := path.Join(tempDir, timestampDirName)
 	if err := os.Mkdir(timestampDir, 0700); err != nil {
-		return "", errors.Wrap(err, "could not create timestamp directory")
+		return "", fmt.Errorf("could not create timestamp directory: %w", err)
 	}
 
 	return timestampDir, nil
@@ -596,13 +596,13 @@ func GetDNSIP(svcSubnetList string, isDualStack bool) (net.IP, error) {
 	// Get the service subnet CIDR
 	svcSubnetCIDR, err := GetKubernetesServiceCIDR(svcSubnetList, isDualStack)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get internal Kubernetes Service IP from the given service CIDR (%s)", svcSubnetList)
+		return nil, fmt.Errorf("unable to get internal Kubernetes Service IP from the given service CIDR (%s): %w", svcSubnetList, err)
 	}
 
 	// Selects the 10th IP in service subnet CIDR range as dnsIP
 	dnsIP, err := utilnet.GetIndexedIP(svcSubnetCIDR, 10)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get internal Kubernetes Service IP from the given service CIDR")
+		return nil, fmt.Errorf("unable to get internal Kubernetes Service IP from the given service CIDR: %w", err)
 	}
 
 	return dnsIP, nil
@@ -616,7 +616,7 @@ func GetKubernetesServiceCIDR(svcSubnetList string, isDualStack bool) (*net.IPNe
 		// of the kube-controller-manager and kube-apiserver.
 		svcSubnets, err := utilnet.ParseCIDRs(strings.Split(svcSubnetList, ","))
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to parse ServiceSubnet %v", svcSubnetList)
+			return nil, fmt.Errorf("unable to parse ServiceSubnet %v: %w", svcSubnetList, err)
 		}
 		if len(svcSubnets) == 0 {
 			return nil, errors.New("received empty ServiceSubnet for dual-stack")
@@ -626,7 +626,7 @@ func GetKubernetesServiceCIDR(svcSubnetList string, isDualStack bool) (*net.IPNe
 	// internal IP address for the API server
 	_, svcSubnet, err := net.ParseCIDR(svcSubnetList)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to parse ServiceSubnet %v", svcSubnetList)
+		return nil, fmt.Errorf("unable to parse ServiceSubnet %v: %w", svcSubnetList, err)
 	}
 	return svcSubnet, nil
 }
@@ -635,11 +635,11 @@ func GetKubernetesServiceCIDR(svcSubnetList string, isDualStack bool) (*net.IPNe
 func GetAPIServerVirtualIP(svcSubnetList string, isDualStack bool) (net.IP, error) {
 	svcSubnet, err := GetKubernetesServiceCIDR(svcSubnetList, isDualStack)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get internal Kubernetes Service IP from the given service CIDR")
+		return nil, fmt.Errorf("unable to get internal Kubernetes Service IP from the given service CIDR: %w", err)
 	}
 	internalAPIServerVirtualIP, err := utilnet.GetIndexedIP(svcSubnet, 1)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get the first IP address from the given CIDR: %s", svcSubnet.String())
+		return nil, fmt.Errorf("unable to get the first IP address from the given CIDR: %s: %w", svcSubnet.String(), err)
 	}
 	return internalAPIServerVirtualIP, nil
 }

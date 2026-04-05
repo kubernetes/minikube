@@ -22,11 +22,12 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/docker/machine/libmachine/auth"
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/swarm"
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/swarm"
 
 	"k8s.io/klog/v2"
 )
@@ -72,7 +73,7 @@ func (api *MockAPI) Close() error {
 func (api *MockAPI) NewHost(drvName string, rawDriver []byte) (*host.Host, error) {
 	var driver MockDriver
 	if err := json.Unmarshal(rawDriver, &driver); err != nil {
-		return nil, errors.Wrap(err, "error unmarshalling json")
+		return nil, fmt.Errorf("error unmarshalling json: %w", err)
 	}
 
 	h := &host.Host{

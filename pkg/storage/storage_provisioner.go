@@ -22,7 +22,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -104,8 +104,8 @@ func (p *hostPathProvisioner) Delete(_ context.Context, volume *core.PersistentV
 		return &controller.IgnoredError{Reason: "identity annotation on PV does not match ours"}
 	}
 
-	if err := os.RemoveAll(volume.Spec.PersistentVolumeSource.HostPath.Path); err != nil {
-		return errors.Wrap(err, "removing hostpath PV")
+	if err := os.RemoveAll(volume.Spec.HostPath.Path); err != nil {
+		return fmt.Errorf("removing hostpath PV: %w", err)
 	}
 
 	return nil

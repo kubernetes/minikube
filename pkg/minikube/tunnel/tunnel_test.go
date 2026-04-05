@@ -19,8 +19,8 @@ package tunnel
 import (
 	"errors"
 
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tests"
 
@@ -37,9 +37,10 @@ const NotRunningPid = 1236
 const NotRunningPid2 = 1237
 
 func mockPidChecker(pid int) (bool, error) {
-	if pid == NotRunningPid || pid == NotRunningPid2 {
+	switch pid {
+	case NotRunningPid, NotRunningPid2:
 		return false, nil
-	} else if pid == RunningPid1 || pid == RunningPid2 {
+	case RunningPid1, RunningPid2:
 		return true, nil
 	}
 	return false, fmt.Errorf("fake pid checker does not recognize %d", pid)

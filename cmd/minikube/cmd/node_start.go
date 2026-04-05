@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -41,7 +42,9 @@ var nodeStartCmd = &cobra.Command{
 			exit.Message(reason.Usage, "Usage: minikube node start [name]")
 		}
 
-		api, cc := mustload.Partial(ClusterFlagValue())
+		options := flags.CommandOptions()
+
+		api, cc := mustload.Partial(ClusterFlagValue(), options)
 		name := args[0]
 
 		n, _, err := node.Retrieve(*cc, name)
@@ -56,7 +59,7 @@ var nodeStartCmd = &cobra.Command{
 		}
 
 		register.Reg.SetStep(register.InitialSetup)
-		r, p, m, h, err := node.Provision(cc, n, viper.GetBool(deleteOnFailure))
+		r, p, m, h, err := node.Provision(cc, n, viper.GetBool(deleteOnFailure), options)
 		if err != nil {
 			exit.Error(reason.GuestNodeProvision, "provisioning host for node", err)
 		}
@@ -71,8 +74,8 @@ var nodeStartCmd = &cobra.Command{
 			ExistingAddons: cc.Addons,
 		}
 
-		if _, err = node.Start(s); err != nil {
-			if _, err := maybeDeleteAndRetry(cmd, *cc, *n, nil, err); err != nil {
+		if _, err = node.Start(s, options); err != nil {
+			if _, err := maybeDeleteAndRetry(cmd, *cc, *n, nil, err, options); err != nil {
 				node.ExitIfFatal(err, false)
 				exit.Error(reason.GuestNodeStart, "failed to start node", err)
 			}

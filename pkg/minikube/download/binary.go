@@ -23,7 +23,7 @@ import (
 	"runtime"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
@@ -53,6 +53,11 @@ func binaryWithChecksumURL(binaryName, version, osName, archName, binaryURL stri
 
 // Binary will download a binary onto the host
 func Binary(binary, version, osName, archName, binaryURL string) (string, error) {
+	// Prevent Kubernetes binary downloads in --no-kubernetes mode
+	if viper.GetBool("no-kubernetes") {
+		klog.Infof("Skipping Kubernetes binary download due to --no-kubernetes flag")
+		return "", nil
+	}
 	targetDir := localpath.MakeMiniPath("cache", osName, archName, version)
 	targetFilepath := path.Join(targetDir, binary)
 	targetLock := targetFilepath + ".lock"
@@ -76,12 +81,12 @@ func Binary(binary, version, osName, archName, binaryURL string) (string, error)
 	}
 
 	if err := download(url, targetFilepath); err != nil {
-		return "", errors.Wrapf(err, "download failed: %s", url)
+		return "", fmt.Errorf("download failed: %s: %w", url, err)
 	}
 
 	if osName == runtime.GOOS && archName == runtime.GOARCH {
 		if err = os.Chmod(targetFilepath, 0755); err != nil {
-			return "", errors.Wrapf(err, "chmod +x %s", targetFilepath)
+			return "", fmt.Errorf("chmod +x %s: %w", targetFilepath, err)
 		}
 	}
 	return targetFilepath, nil

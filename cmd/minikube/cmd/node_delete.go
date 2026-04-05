@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/delete"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -40,12 +41,14 @@ var nodeDeleteCmd = &cobra.Command{
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Usage: minikube node delete [name]")
 		}
+
+		options := flags.CommandOptions()
 		name := args[0]
 
-		co := mustload.Healthy(ClusterFlagValue())
+		co := mustload.Healthy(ClusterFlagValue(), options)
 		out.Step(style.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": co.Config.Name})
 
-		n, err := node.Delete(*co.Config, name)
+		n, err := node.Delete(*co.Config, name, options)
 		if err != nil {
 			exit.Error(reason.GuestNodeDelete, "deleting node", err)
 		}

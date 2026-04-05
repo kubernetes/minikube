@@ -17,18 +17,21 @@ limitations under the License.
 package machine
 
 import (
+	"fmt"
 	"os/exec"
 	"path"
 	"strings"
 	"time"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
-	libprovision "github.com/docker/machine/libmachine/provision"
-	"github.com/pkg/errors"
+	"errors"
+
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/host"
+	libprovision "k8s.io/minikube/pkg/libmachine/provision"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/provision"
 	"k8s.io/minikube/pkg/util/retry"
@@ -49,27 +52,27 @@ func (h *Machine) IsValid() bool {
 		return false
 	}
 
-	if h.Host.Name == "" {
+	if h.Name == "" {
 		return false
 	}
 
-	if h.Host.Driver == nil {
+	if h.Driver == nil {
 		return false
 	}
 
-	if h.Host.HostOptions == nil {
+	if h.HostOptions == nil {
 		return false
 	}
 
-	if h.Host.RawDriver == nil {
+	if h.RawDriver == nil {
 		return false
 	}
 	return true
 }
 
 // LoadMachine returns a Machine abstracting a libmachine.Host
-func LoadMachine(name string) (*Machine, error) {
-	api, err := NewAPIClient()
+func LoadMachine(name string, options *run.CommandOptions) (*Machine, error) {
+	api, err := NewAPIClient(options)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +101,7 @@ func provisionDockerMachine(h *host.Host) error {
 
 	p, err := fastDetectProvisioner(h)
 	if err != nil {
-		return errors.Wrap(err, "fast detect")
+		return fmt.Errorf("fast detect: %w", err)
 	}
 
 	// avoid costly need to stop/power off/delete and then re-create docker machine due to the un-ready ssh server and hence errors like:
@@ -134,7 +137,7 @@ func fastDetectProvisioner(h *host.Host) (libprovision.Provisioner, error) {
 // saveHost is a wrapper around libmachine's Save function to proactively update the node's IP whenever a host is saved
 func saveHost(api libmachine.API, h *host.Host, cfg *config.ClusterConfig, n *config.Node) error {
 	if err := api.Save(h); err != nil {
-		return errors.Wrap(err, "save")
+		return fmt.Errorf("save: %w", err)
 	}
 
 	// Save IP to config file for subsequent use
@@ -157,22 +160,22 @@ func backup(h host.Host, files []string) error {
 
 	r, err := CommandRunner(&h)
 	if err != nil {
-		return errors.Wrap(err, "command runner")
+		return fmt.Errorf("command runner: %w", err)
 	}
 
 	// ensure target dir exists
 	if _, err := r.RunCmd(exec.Command("sudo", "mkdir", "-p", vmpath.GuestBackupDir)); err != nil {
-		return errors.Wrapf(err, "create dir")
+		return fmt.Errorf("create dir: %w", err)
 	}
 
 	errs := []error{}
 	for _, src := range []string{"/etc/cni", "/etc/kubernetes"} {
 		if _, err := r.RunCmd(exec.Command("sudo", "rsync", "--archive", "--relative", src, vmpath.GuestBackupDir)); err != nil {
-			errs = append(errs, errors.Errorf("failed to copy %q to %q (will continue): %v", src, vmpath.GuestBackupDir, err))
+			errs = append(errs, fmt.Errorf("failed to copy %q to %q (will continue): %v", src, vmpath.GuestBackupDir, err))
 		}
 	}
 	if len(errs) > 0 {
-		return errors.Errorf("%v", errs)
+		return fmt.Errorf("%v", errs)
 	}
 	return nil
 }
@@ -184,13 +187,13 @@ func backup(h host.Host, files []string) error {
 func restore(h host.Host) error {
 	r, err := CommandRunner(&h)
 	if err != nil {
-		return errors.Wrap(err, "command runner")
+		return fmt.Errorf("command runner: %w", err)
 	}
 
 	// check first if we have anything to restore
 	out, err := r.RunCmd(exec.Command("sudo", "ls", "--almost-all", "-1", vmpath.GuestBackupDir))
 	if err != nil {
-		return errors.Wrapf(err, "read dir")
+		return fmt.Errorf("read dir: %w", err)
 	}
 	files := strings.Split(strings.TrimSpace(out.Stdout.String()), "\n")
 
@@ -203,11 +206,11 @@ func restore(h host.Host) error {
 		}
 		src := path.Join(vmpath.GuestBackupDir, dst)
 		if _, err := r.RunCmd(exec.Command("sudo", "rsync", "--archive", "--update", src, "/")); err != nil {
-			errs = append(errs, errors.Errorf("failed to copy %q to %q (will continue): %v", src, dst, err))
+			errs = append(errs, fmt.Errorf("failed to copy %q to %q (will continue): %v", src, dst, err))
 		}
 	}
 	if len(errs) > 0 {
-		return errors.Errorf("%v", errs)
+		return fmt.Errorf("%v", errs)
 	}
 	return nil
 }

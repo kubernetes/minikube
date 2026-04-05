@@ -94,12 +94,12 @@ func (router *osRouter) parseTable(table []byte) routingTable {
 			}
 
 			_, ipNet, err := net.ParseCIDR(dstCIDRString)
-			if err != nil {
+			switch {
+			case err != nil:
 				klog.V(4).Infof("skipping line: can't parse CIDR from routing table: %s", dstCIDRString)
-			} else if gatewayIP == nil {
+			case gatewayIP == nil:
 				klog.V(4).Infof("skipping line: can't parse IP from routing table: %s", gatewayIPString)
-			} else {
-
+			default:
 				tableLine := routingTableLine{
 					route: &Route{
 						DestCIDR: ipNet,

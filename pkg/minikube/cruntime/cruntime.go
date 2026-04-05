@@ -22,8 +22,9 @@ import (
 	"os/exec"
 	"strings"
 
+	"errors"
+
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -319,7 +320,7 @@ func compatibleWithVersion(runtime, v string) error {
 func CheckCompatibility(cr Manager) error {
 	v, err := cr.Version()
 	if err != nil {
-		return errors.Wrap(err, "Failed to check container runtime version")
+		return fmt.Errorf("Failed to check container runtime version: %w", err)
 	}
 	return compatibleWithVersion(cr.Name(), v)
 }

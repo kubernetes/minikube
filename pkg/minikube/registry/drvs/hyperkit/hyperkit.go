@@ -25,10 +25,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/google/uuid"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/drivers/hyperkit"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -36,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -85,7 +84,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func status() registry.State {
+func status(_ *run.CommandOptions) registry.State {
 	path, err := exec.LookPath("hyperkit")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Run 'brew install hyperkit'", Doc: docURL}
@@ -122,11 +121,11 @@ func isNewerVersion(currentVersion string, specificVersion string) (bool, error)
 	layout := "20060102"
 	currentVersionDate, err := time.Parse(layout, currentVersion)
 	if err != nil {
-		return false, errors.Wrap(err, "parse date")
+		return false, fmt.Errorf("parse date: %w", err)
 	}
 	specificVersionDate, err := time.Parse(layout, specificVersion)
 	if err != nil {
-		return false, errors.Wrap(err, "parse date")
+		return false, fmt.Errorf("parse date: %w", err)
 	}
 	// If currentVersionDate is equal to specificVersionDate, no need to upgrade hyperkit
 	if currentVersionDate.Equal(specificVersionDate) {

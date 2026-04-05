@@ -20,13 +20,15 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/docker/machine/libmachine/drivers"
-	vmware "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+
+	"k8s.io/minikube/pkg/drivers/vmware"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func init() {
@@ -35,7 +37,7 @@ func init() {
 		Config:   configure,
 		Default:  false,
 		Priority: registry.Deprecated,
-		Init:     func() drivers.Driver { return vmware.NewDriver("", "") },
+		Init:     func(_ *run.CommandOptions) drivers.Driver { return vmware.NewDriver("", "") },
 		Status:   status,
 	})
 	if err != nil {
@@ -56,7 +58,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return d, nil
 }
 
-func status() registry.State {
+func status(_ *run.CommandOptions) registry.State {
 	_, err := exec.LookPath("vmrun")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Install vmrun", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/"}

@@ -28,7 +28,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"golang.org/x/term"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -166,7 +165,7 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 
 	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
 	if err != nil || perms > 07777 {
-		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
+		return fmt.Errorf("error converting permissions %s to integer: %w", f.GetPermissions(), err)
 	}
 
 	if src != assets.MemorySource {
@@ -192,18 +191,18 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 
 	tmpFolder, err := tempDirectory(detect.MinikubeInstalledViaSnap(), detect.DockerInstalledViaSnap())
 	if err != nil {
-		return errors.Wrap(err, "determining temp directory")
+		return fmt.Errorf("determining temp directory: %w", err)
 	}
 
 	tf, err := os.CreateTemp(tmpFolder, "tmpf-memory-asset")
 	if err != nil {
-		return errors.Wrap(err, "creating temporary file")
+		return fmt.Errorf("creating temporary file: %w", err)
 	}
 	defer tf.Close()
 	defer os.Remove(tf.Name())
 
 	if err := writeFile(tf.Name(), f, os.FileMode(perms)); err != nil {
-		return errors.Wrap(err, "write")
+		return fmt.Errorf("write: %w", err)
 	}
 	return k.copy(tf.Name(), dst)
 }
@@ -229,7 +228,7 @@ func tempDirectory(isMinikubeSnap bool, isDockerSnap bool) (string, error) {
 
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", errors.Wrap(err, "detecting home dir")
+		return "", fmt.Errorf("detecting home dir: %w", err)
 	}
 	return home, nil
 }
@@ -261,7 +260,7 @@ func copyToPodman(src string, dest string) error {
 		cmd := oci.PrefixCmd(exec.Command(oci.Podman, "cp", src, dest))
 		klog.Infof("Run: %v", cmd)
 		if out, err := cmd.CombinedOutput(); err != nil {
-			return errors.Wrapf(err, "podman copy %s into %s, output: %s", src, dest, string(out))
+			return fmt.Errorf("podman copy %s into %s, output: %s: %w", src, dest, string(out), err)
 		}
 	} else {
 		file, err := os.Open(src)
@@ -276,7 +275,7 @@ func copyToPodman(src string, dest string) error {
 		cmd.Stdin = file
 		klog.Infof("Run: %v", cmd)
 		if err := cmd.Run(); err != nil {
-			return errors.Wrapf(err, "podman copy %s into %s", src, dest)
+			return fmt.Errorf("podman copy %s into %s: %w", src, dest, err)
 		}
 	}
 	return nil
@@ -284,7 +283,7 @@ func copyToPodman(src string, dest string) error {
 
 func copyToDocker(src string, dest string) error {
 	if out, err := oci.PrefixCmd(exec.Command(oci.Docker, "cp", "-a", src, dest)).CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "docker copy %s into %s, output: %s", src, dest, string(out))
+		return fmt.Errorf("docker copy %s into %s, output: %s: %w", src, dest, string(out), err)
 	}
 	return nil
 }

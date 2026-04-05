@@ -23,8 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -70,13 +68,13 @@ func collectResults(ctx context.Context, binaries []*Binary, driver string, runt
 		for _, binary := range binaries {
 			r, err := timeMinikubeStart(ctx, binary, driver, runtimeName)
 			if err != nil {
-				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
+				return nil, fmt.Errorf("timing run %d with %s: %w", run, binary.Name(), err)
 			}
 			rm.addResult(binary, "start", *r)
 			if !skipIngress(driver) {
 				r, err = timeEnableIngress(ctx, binary)
 				if err != nil {
-					return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
+					return nil, fmt.Errorf("timing run %d with %s: %w", run, binary.Name(), err)
 				}
 				rm.addResult(binary, "ingress", *r)
 			}
@@ -103,12 +101,12 @@ func downloadArtifacts(ctx context.Context, binaries []*Binary, driver string, r
 		c.Stderr = os.Stderr
 		log.Printf("Running: %v...", c.Args)
 		if err := c.Run(); err != nil {
-			return errors.Wrap(err, "artifact download start")
+			return fmt.Errorf("artifact download start: %w", err)
 		}
 		c = exec.CommandContext(ctx, b.path, "delete")
 		log.Printf("Running: %v...", c.Args)
 		if err := c.Run(); err != nil {
-			return errors.Wrap(err, "artifact download delete")
+			return fmt.Errorf("artifact download delete: %w", err)
 		}
 	}
 	return nil
@@ -121,7 +119,7 @@ func timeMinikubeStart(ctx context.Context, binary *Binary, driver string, runti
 
 	r, err := timeCommandLogs(startCmd)
 	if err != nil {
-		return nil, errors.Wrapf(err, "timing cmd: %v", startCmd.Args)
+		return nil, fmt.Errorf("timing cmd: %v: %w", startCmd.Args, err)
 	}
 	return r, nil
 }
@@ -134,7 +132,7 @@ func timeEnableIngress(ctx context.Context, binary *Binary) (*result, error) {
 
 	r, err := timeCommandLogs(enableCmd)
 	if err != nil {
-		return nil, errors.Wrapf(err, "timing cmd: %v", enableCmd.Args)
+		return nil, fmt.Errorf("timing cmd: %v: %w", enableCmd.Args, err)
 	}
 	return r, nil
 }

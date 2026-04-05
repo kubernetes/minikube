@@ -18,10 +18,10 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -155,7 +155,7 @@ func GenerateBashCompletion(w io.Writer, cmd *cobra.Command) error {
 
 	err = cmd.GenBashCompletion(w)
 	if err != nil {
-		return errors.Wrap(err, "Error generating bash completion")
+		return fmt.Errorf("Error generating bash completion: %w", err)
 	}
 
 	return nil
@@ -318,7 +318,7 @@ __minikube_convert_bash_to_zsh() {
 	buf := new(bytes.Buffer)
 	err = cmd.GenBashCompletion(buf)
 	if err != nil {
-		return errors.Wrap(err, "Error generating zsh completion")
+		return fmt.Errorf("Error generating zsh completion: %w", err)
 	}
 	_, err = w.Write(buf.Bytes())
 	if err != nil {
@@ -347,7 +347,7 @@ func GenerateFishCompletion(w io.Writer, cmd *cobra.Command) error {
 
 	err = cmd.GenFishCompletion(w, true)
 	if err != nil {
-		return errors.Wrap(err, "Error generating fish completion")
+		return fmt.Errorf("Error generating fish completion: %w", err)
 	}
 
 	return nil
@@ -362,7 +362,7 @@ func GeneratePowerShellCompletion(w io.Writer, cmd *cobra.Command) error {
 
 	err = cmd.GenPowerShellCompletionWithDesc(w)
 	if err != nil {
-		return errors.Wrap(err, "Error generating powershell completion")
+		return fmt.Errorf("Error generating powershell completion: %w", err)
 	}
 
 	return nil

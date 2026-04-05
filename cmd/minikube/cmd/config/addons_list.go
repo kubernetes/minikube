@@ -28,6 +28,7 @@ import (
 	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -55,9 +56,10 @@ var addonsListCmd = &cobra.Command{
 			exit.Message(reason.Usage, "usage: minikube addons list")
 		}
 
+		options := flags.CommandOptions()
 		var cc *config.ClusterConfig
 		if config.ProfileExists(ClusterFlagValue()) {
-			_, cc = mustload.Partial(ClusterFlagValue())
+			_, cc = mustload.Partial(ClusterFlagValue(), options)
 		}
 		switch strings.ToLower(addonListOutput) {
 		case "list":
@@ -111,8 +113,6 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	table.Header(tHeader)
 
 	// Create table data
-	var tData [][]string
-	var temp []string
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
 		maintainer := addonBundle.Maintainer
@@ -123,19 +123,32 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 		if docs == "" {
 			docs = "n/a"
 		}
+
+		enabled := false
+		if cc != nil {
+			enabled = addonBundle.IsEnabled(cc)
+		}
+
+		// Prepare row data
+		var row []string
 		if cc == nil {
-			temp = []string{addonName, maintainer}
+			row = []string{addonName, maintainer}
 		} else {
-			enabled := addonBundle.IsEnabled(cc)
-			temp = []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer}
+			row = []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer}
 		}
+
 		if printDocs {
-			temp = append(temp, docs)
+			row = append(row, docs)
 		}
-		tData = append(tData, temp)
-	}
-	if err := table.Bulk(tData); err != nil {
-		klog.Error("Error rendering table (bulk)", err)
+
+		// Apply green color if enabled
+		if enabled {
+			for i, val := range row {
+				row[i] = style.Green + val + style.Reset
+			}
+		}
+
+		table.Append(row)
 	}
 	if err := table.Render(); err != nil {
 		klog.Error("Error rendering table", err)

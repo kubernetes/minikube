@@ -33,6 +33,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/phayes/freeport"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -145,7 +146,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		}
 
 		// Start the "busybox-mount" pod.
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml")))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml")))
 		if err != nil {
 			t.Fatalf("failed to 'kubectl replace' for busybox-mount-test. args %q : %v", rr.Command(), err)
 		}
@@ -166,7 +167,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		}
 
 		// test that file written from host was read in by the pod via cat /mount-9p/written-by-host;
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "busybox-mount"))
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "logs", "busybox-mount"))
 		if err != nil {
 			t.Errorf("failed to get kubectl logs for busybox-mount. args %q : %v", rr.Command(), err)
 		}
@@ -209,7 +210,12 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 
 		ctx, cancel := context.WithTimeout(ctx, Minutes(10))
 
-		args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1", "--port", "46464"}
+		port, err := freeport.GetFreePort()
+		if err != nil {
+			t.Fatalf("failed to get free port: %v", err)
+		}
+		portStr := fmt.Sprintf("%d", port)
+		args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1", "--port", portStr}
 		ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
 			t.Fatalf("%v failed: %v", args, err)
@@ -276,12 +282,12 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 			return str
 		}()
 		t.Logf("done reading mount text")
-		match, err := regexp.Match("Bind Address:\\s*[0-9.]+:46464", []byte(mountText))
+		match, err := regexp.Match("Bind Address:\\s*[0-9.]+:"+portStr, []byte(mountText))
 		if err != nil {
 			t.Fatalf("failed to match regex pattern. err: %v", err)
 		}
 		if !match {
-			t.Fatalf("failed to find bind address with port 46464. Mount command out: \n%v", mountText)
+			t.Fatalf("failed to find bind address with port %s. Mount command out: \n%v", portStr, mountText)
 		}
 	})
 

@@ -23,10 +23,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // TestNoKubernetes tests starting minikube without Kubernetes,
@@ -52,6 +55,7 @@ func TestNoKubernetes(t *testing.T) {
 			{"StartWithK8s", validateStartWithK8S},
 			{"StartWithStopK8s", validateStartWithStopK8s},
 			{"Start", validateStartNoK8S},
+			{"VerifyNok8sNoK8sDownloads", VerifyNoK8sDownloadCache},
 			{"VerifyK8sNotRunning", validateK8SNotRunning},
 			{"ProfileList", validateProfileListNoK8S},
 			{"Stop", validateStopNoK8S},
@@ -74,6 +78,25 @@ func TestNoKubernetes(t *testing.T) {
 			})
 		}
 	})
+}
+
+// VerifyNoK8sDownloadCache verifies that starting minikube with --no-kubernetes does not create a download cache.
+func VerifyNoK8sDownloadCache(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	cachePath := filepath.Join(localpath.MiniPath(), "cache", runtime.GOOS, runtime.GOARCH, constants.NoKubernetesVersion)
+
+	t.Logf("Checking cache directory: %s", cachePath)
+	files, err := filepath.Glob(filepath.Join(cachePath, "*"))
+	if err != nil {
+		t.Errorf("Error reading cache directory: %v", err)
+		return
+	}
+
+	if len(files) > 0 {
+		t.Logf("Files found in cache directory: %v", files)
+		t.Errorf("Cache directory should not contain files when using --no-kubernetes")
+	}
 }
 
 // validateStartNoK8sWithVersion expect an error when starting a minikube cluster without kubernetes and with a kubernetes version.

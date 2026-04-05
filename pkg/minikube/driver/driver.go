@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -316,20 +317,20 @@ func FlagDefaults(name string) FlagHints {
 }
 
 // Choices returns a list of drivers which are possible on this system
-func Choices(vm bool) []registry.DriverState {
-	options := registry.Available(vm)
+func Choices(vm bool, options *run.CommandOptions) []registry.DriverState {
+	available := registry.Available(vm, options)
 
 	// Descending priority for predictability and appearance
-	sort.Slice(options, func(i, j int) bool {
-		return options[i].Priority > options[j].Priority
+	sort.Slice(available, func(i, j int) bool {
+		return available[i].Priority > available[j].Priority
 	})
-	return options
+	return available
 }
 
 // Suggest returns a suggested driver, alternate drivers, and rejected drivers
-func Suggest(options []registry.DriverState) (registry.DriverState, []registry.DriverState, []registry.DriverState) {
+func Suggest(driversState []registry.DriverState) (registry.DriverState, []registry.DriverState, []registry.DriverState) {
 	pick := registry.DriverState{}
-	for _, ds := range options {
+	for _, ds := range driversState {
 		if !ds.State.Installed {
 			continue
 		}
@@ -356,7 +357,7 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 
 	alternates := []registry.DriverState{}
 	rejects := []registry.DriverState{}
-	for _, ds := range options {
+	for _, ds := range driversState {
 		if ds != pick {
 			if !ds.State.Installed {
 				ds.Rejection = fmt.Sprintf("Not installed: %v", ds.State.Error)
@@ -382,12 +383,12 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 }
 
 // Status returns the status of a driver
-func Status(name string) registry.DriverState {
+func Status(name string, options *run.CommandOptions) registry.DriverState {
 	d := registry.Driver(name)
 	stateChannel := make(chan registry.State)
 	timeoutChannel := time.After(20 * time.Second)
 	go func() {
-		stateChannel <- registry.Status(name)
+		stateChannel <- registry.Status(name, options)
 	}()
 	select {
 	case s := <-stateChannel:

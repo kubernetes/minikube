@@ -24,7 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -92,7 +91,7 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 			continue
 		}
 
-		for k, v := range pod.ObjectMeta.Labels {
+		for k, v := range pod.Labels {
 			if k == "component" || k == "k8s-app" {
 				found[v] = true
 			}
@@ -121,7 +120,7 @@ func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout tim
 	}
 
 	if err := retry.Local(checkRunning, timeout); err != nil {
-		return errors.Wrapf(err, "expected k8s-apps")
+		return fmt.Errorf("expected k8s-apps: %w", err)
 	}
 	klog.Infof("duration metric: took %s to wait for k8s-apps to be running ...", time.Since(start))
 	return nil
@@ -130,7 +129,7 @@ func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout tim
 // podStatusMsg returns a human-readable pod status, for generating debug status
 func podStatusMsg(pod core.Pod) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.ObjectMeta.GetName(), pod.ObjectMeta.GetUID(), pod.Status.Phase))
+	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.GetName(), pod.GetUID(), pod.Status.Phase))
 	for i, c := range pod.Status.Conditions {
 		if c.Reason != "" {
 			if i == 0 {

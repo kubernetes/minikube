@@ -30,8 +30,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util/retry"
 
-	"github.com/docker/machine/libmachine/state"
 	"github.com/hashicorp/go-getter"
+	"k8s.io/minikube/pkg/libmachine/state"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
@@ -62,11 +62,11 @@ func installRelease(version string) (f *os.File, err error) {
 	return tf, nil
 }
 
-func legacyVersion() string {
+func legacyMinikubeVersion() string {
 	// Should be a version from the last 6 months
 	// note: Test*BinaryUpgrade require minikube v1.22+ to satisfy newer containerd config structure
 	// note: TestMissingContainerUpgrade requires minikube v1.26.0+ where we copy over initial containerd config in kicbase via deploy/kicbase/Dockerfile
-	version := "v1.32.0" // Dec 11, 2024
+	version := "v1.35.0" // Jan 15, 2025
 	return version
 }
 
@@ -88,7 +88,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 
 	defer CleanupWithLogs(t, profile, cancel)
 
-	desiredLegacyVersion := legacyVersion()
+	desiredLegacyVersion := legacyMinikubeVersion()
 	tf, err := installRelease(desiredLegacyVersion)
 	if err != nil {
 		t.Fatalf("%s release installation failed: %v", desiredLegacyVersion, err)
@@ -146,7 +146,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 
 	defer CleanupWithLogs(t, profile, cancel)
 
-	desiredLegacyVersion := legacyVersion()
+	desiredLegacyVersion := legacyMinikubeVersion()
 	var tf *os.File
 	t.Run("Setup", func(t *testing.T) {
 		var err error
@@ -224,7 +224,7 @@ func TestKubernetesUpgrade(t *testing.T) {
 		t.Errorf("failed to start minikube HEAD with oldest k8s version: %s: %v", rr.Command(), err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
@@ -245,7 +245,7 @@ func TestKubernetesUpgrade(t *testing.T) {
 		t.Errorf("failed to upgrade with newest k8s version. args: %s : %v", rr.Command(), err)
 	}
 
-	s, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "version", "--output=json"))
+	s, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "version", "--output=json"))
 	if err != nil {
 		t.Fatalf("error running kubectl: %v", err)
 	}
@@ -295,7 +295,7 @@ func TestMissingContainerUpgrade(t *testing.T) {
 
 	defer CleanupWithLogs(t, profile, cancel)
 
-	legacyVersion := legacyVersion()
+	legacyVersion := legacyMinikubeVersion()
 
 	tf, err := installRelease(legacyVersion)
 	if err != nil {

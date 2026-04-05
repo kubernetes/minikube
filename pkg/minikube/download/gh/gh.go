@@ -24,7 +24,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v84/github"
 	"golang.org/x/oauth2"
 )
 
@@ -37,7 +37,10 @@ func ReleaseAssets(org, project, tag string) ([]*github.ReleaseAsset, error) {
 	ghc := github.NewClient(httpClient)
 
 	rel, _, err := ghc.Repositories.GetReleaseByTag(ctx, org, project, tag)
-	return rel.Assets, err
+	if err != nil {
+		return nil, err
+	}
+	return rel.Assets, nil
 }
 
 // AssetSHA256 returns the  SHA-256 digest for the asset with the given name

@@ -17,9 +17,9 @@ limitations under the License.
 package addons
 
 import (
+	"fmt"
 	"strconv"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -28,19 +28,20 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // enableOrDisableAutoPause enables the service after the config was copied by generic enable.
-func enableOrDisableAutoPause(cc *config.ClusterConfig, name, val string) error {
+func enableOrDisableAutoPause(cc *config.ClusterConfig, name, val string, options *run.CommandOptions) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
-		return errors.Wrapf(err, "parsing bool: %s", name)
+		return fmt.Errorf("parsing bool: %s: %w", name, err)
 	}
 	out.Infof("auto-pause addon is an alpha feature and still in early development. Please file issues to help us make it better.")
-	out.Infof("https://github.com/kubernetes/minikube/labels/co/auto-pause")
+	out.Infof("https://github.com/kubernetes/minikube/issues?q=state%3Aopen%20label%3Aco%2Fauto-pause")
 
-	co := mustload.Running(cc.Name)
+	co := mustload.Running(cc.Name, options)
 	if enable {
 		if err := sysinit.New(co.CP.Runner).EnableNow("auto-pause"); err != nil {
 			klog.ErrorS(err, "failed to enable", "service", "auto-pause")

@@ -19,7 +19,6 @@ package cmd
 import (
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"fmt"
@@ -27,6 +26,7 @@ import (
 	pt "path"
 	"strings"
 
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -54,17 +54,18 @@ Example Command : "minikube cp a.txt /home/docker/b.txt" +
                   "minikube cp minikube-m01:a.txt minikube-m02:/home/docker/b.txt"`,
 	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 2 {
-			exit.Message(reason.Usage, `Please specify the path to copy: 
+			exit.Message(reason.Usage, `Please specify the path to copy:
 	minikube cp <source file path> <target file absolute path> (example: "minikube cp a/b.txt /copied.txt")`)
 		}
 
+		options := flags.CommandOptions()
 		srcPath := args[0]
 		dstPath := setDstFileNameFromSrc(args[1], srcPath)
 		src := newRemotePath(srcPath)
 		dst := newRemotePath(dstPath)
 		validateArgs(src, dst)
 
-		co := mustload.Running(ClusterFlagValue())
+		co := mustload.Running(ClusterFlagValue(), options)
 		var runner command.Runner
 
 		if dst.node != "" {
@@ -151,13 +152,13 @@ func remoteCommandRunner(co *mustload.ClusterController, nodeName string) comman
 
 	h, err := machine.GetHost(co.API, *co.Config, *n)
 	if err != nil {
-		out.ErrLn("%v", errors.Wrap(err, "getting host"))
+		out.ErrLn("%v", fmt.Errorf("getting host: %w", err))
 		os.Exit(1)
 	}
 
 	runner, err := machine.CommandRunner(h)
 	if err != nil {
-		out.ErrLn("%v", errors.Wrap(err, "getting command runner"))
+		out.ErrLn("%v", fmt.Errorf("getting command runner: %w", err))
 		os.Exit(1)
 	}
 
@@ -170,7 +171,7 @@ func copyableFile(co *mustload.ClusterController, src, dst *remotePath) assets.C
 		runner := remoteCommandRunner(co, src.node)
 		f, err := runner.ReadableFile(src.path)
 		if err != nil {
-			out.ErrLn("%v", errors.Wrapf(err, "getting file from %s node", src.node))
+			out.ErrLn("%v", fmt.Errorf("getting file from %s node: %w", src.node, err))
 			os.Exit(1)
 		}
 
@@ -191,7 +192,7 @@ func copyableFile(co *mustload.ClusterController, src, dst *remotePath) assets.C
 
 	fa, err := assets.NewFileAsset(src.path, pt.Dir(dst.path), pt.Base(dst.path), "0644")
 	if err != nil {
-		out.ErrLn("%v", errors.Wrap(err, "getting file asset"))
+		out.ErrLn("%v", fmt.Errorf("getting file asset: %w", err))
 		os.Exit(1)
 	}
 

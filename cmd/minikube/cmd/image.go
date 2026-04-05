@@ -26,6 +26,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
@@ -84,6 +85,8 @@ var loadImageCmd = &cobra.Command{
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Please provide an image in your local daemon to load into minikube via <minikube image load IMAGE_NAME>")
 		}
+
+		options := flags.CommandOptions()
 		// Cache and load images into container runtime
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
@@ -93,7 +96,7 @@ var loadImageCmd = &cobra.Command{
 		if pull {
 			// Pull image from remote registry, without doing any caching except in container runtime.
 			// This is similar to daemon.Image but it is done by the container runtime in the cluster.
-			if err := machine.PullImages(args, profile); err != nil {
+			if err := machine.PullImages(args, profile, options); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to pull image", err)
 			}
 			return
@@ -136,13 +139,13 @@ var loadImageCmd = &cobra.Command{
 		if imgDaemon || imgRemote {
 			image.UseDaemon(imgDaemon)
 			image.UseRemote(imgRemote)
-			if err := machine.CacheAndLoadImages(args, []*config.Profile{profile}, overwrite); err != nil {
+			if err := machine.CacheAndLoadImages(args, []*config.Profile{profile}, overwrite, options); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 			}
 		} else if local {
 			// Load images from local files, without doing any caching or checks in container runtime
 			// This is similar to tarball.Image but it is done by the container runtime in the cluster.
-			if err := machine.DoLoadImages(args, []*config.Profile{profile}, "", overwrite); err != nil {
+			if err := machine.DoLoadImages(args, []*config.Profile{profile}, "", overwrite, options); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 			}
 		}
@@ -175,6 +178,8 @@ var saveImageCmd = &cobra.Command{
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Please provide an image in the container runtime to save from minikube via <minikube image save IMAGE_NAME>")
 		}
+
+		options := flags.CommandOptions()
 		// Save images from container runtime
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
@@ -193,7 +198,7 @@ var saveImageCmd = &cobra.Command{
 				output = tmp.Name()
 			}
 
-			if err := machine.DoSaveImages([]string{args[0]}, output, []*config.Profile{profile}, ""); err != nil {
+			if err := machine.DoSaveImages([]string{args[0]}, output, []*config.Profile{profile}, "", options); err != nil {
 				exit.Error(reason.GuestImageSave, "Failed to save image", err)
 			}
 
@@ -205,7 +210,7 @@ var saveImageCmd = &cobra.Command{
 				os.Remove(output)
 			}
 		} else {
-			if err := machine.SaveAndCacheImages([]string{args[0]}, []*config.Profile{profile}); err != nil {
+			if err := machine.SaveAndCacheImages([]string{args[0]}, []*config.Profile{profile}, options); err != nil {
 				exit.Error(reason.GuestImageSave, "Failed to save image", err)
 			}
 			if imgDaemon || imgRemote {
@@ -231,11 +236,12 @@ $ minikube image unload image busybox
 	Args:    cobra.MinimumNArgs(1),
 	Aliases: []string{"remove", "unload"},
 	Run: func(_ *cobra.Command, args []string) {
+		options := flags.CommandOptions()
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
 		}
-		if err := machine.RemoveImages(args, profile); err != nil {
+		if err := machine.RemoveImages(args, profile, options); err != nil {
 			exit.Error(reason.GuestImageRemove, "Failed to remove image", err)
 		}
 	},
@@ -248,12 +254,13 @@ var pullImageCmd = &cobra.Command{
 $ minikube image pull busybox
 `,
 	Run: func(_ *cobra.Command, args []string) {
+		options := flags.CommandOptions()
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
 		}
 
-		if err := machine.PullImages(args, profile); err != nil {
+		if err := machine.PullImages(args, profile, options); err != nil {
 			exit.Error(reason.GuestImagePull, "Failed to pull images", err)
 		}
 	},
@@ -277,6 +284,8 @@ var buildImageCmd = &cobra.Command{
 		if len(args) < 1 {
 			exit.Message(reason.Usage, "Please provide a path or url to build")
 		}
+
+		options := flags.CommandOptions()
 		// Build images into container runtime
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
@@ -317,7 +326,7 @@ var buildImageCmd = &cobra.Command{
 			out.Stringf("minikube detects that you are using DOS-style path %s. minikube will convert it to UNIX-style by replacing all \\ to /\n", dockerFile)
 			dockerFile = strings.ReplaceAll(dockerFile, "\\", "/")
 		}
-		if err := machine.BuildImage(img, dockerFile, tag, push, buildEnv, buildOpt, []*config.Profile{profile}, allNodes, nodeName); err != nil {
+		if err := machine.BuildImage(img, dockerFile, tag, push, buildEnv, buildOpt, []*config.Profile{profile}, allNodes, nodeName, options); err != nil {
 			exit.Error(reason.GuestImageBuild, "Failed to build image", err)
 		}
 		if tmp != "" {
@@ -334,12 +343,13 @@ $ minikube image ls
 `,
 	Aliases: []string{"list"},
 	Run: func(_ *cobra.Command, _ []string) {
+		options := flags.CommandOptions()
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
 		}
 
-		if err := machine.ListImages(profile, format); err != nil {
+		if err := machine.ListImages(profile, format, options); err != nil {
 			exit.Error(reason.GuestImageList, "Failed to list images", err)
 		}
 	},
@@ -356,12 +366,14 @@ $ minikube image tag source target
 		if len(args) != 2 {
 			exit.Message(reason.Usage, "Please provide source and target image")
 		}
+
+		options := flags.CommandOptions()
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
 		}
 
-		if err := machine.TagImage(profile, args[0], args[1]); err != nil {
+		if err := machine.TagImage(profile, args[0], args[1], options); err != nil {
 			exit.Error(reason.GuestImageTag, "Failed to tag images", err)
 		}
 	},
@@ -374,12 +386,13 @@ var pushImageCmd = &cobra.Command{
 $ minikube image push busybox
 `,
 	Run: func(_ *cobra.Command, args []string) {
+		options := flags.CommandOptions()
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
 		}
 
-		if err := machine.PushImages(args, profile); err != nil {
+		if err := machine.PushImages(args, profile, options); err != nil {
 			exit.Error(reason.GuestImagePush, "Failed to push images", err)
 		}
 	},

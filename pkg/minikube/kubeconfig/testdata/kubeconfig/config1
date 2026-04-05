@@ -3,5 +3,4 @@ clusters: null
 contexts: null
 current-context: minikube
 kind: Config
-preferences: {}
 users: null

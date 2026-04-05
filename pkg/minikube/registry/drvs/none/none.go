@@ -23,12 +23,13 @@ import (
 	"os/exec"
 	"os/user"
 
-	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/drivers/none"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func init() {
@@ -36,7 +37,7 @@ func init() {
 		Name:     driver.None,
 		Alias:    []string{driver.AliasNative},
 		Config:   configure,
-		Init:     func() drivers.Driver { return none.NewDriver(none.Config{}) },
+		Init:     func(_ *run.CommandOptions) drivers.Driver { return none.NewDriver(none.Config{}) },
 		Status:   status,
 		Default:  false, // no isolation
 		Priority: registry.Discouraged,
@@ -53,7 +54,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}), nil
 }
 
-func status() registry.State {
+func status(_ *run.CommandOptions) registry.State {
 	_, err := exec.LookPath("iptables")
 	if err != nil {
 		return registry.State{Running: true, Error: err, Fix: "iptables must be installed", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}

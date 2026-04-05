@@ -6,6 +6,7 @@ Release: --REVISION--
 Summary: Run Kubernetes locally
 License: ASL 2.0
 Group: Development/Tools
+Vendor: The Kubernetes Authors
 URL: https://github.com/kubernetes/minikube
 
 # Needed for older versions of RPM

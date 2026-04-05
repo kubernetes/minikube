@@ -17,10 +17,10 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
 	"slices"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -52,12 +52,12 @@ func pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string
 	klog.Info("kubelet running: ", sm.Active("kubelet"))
 
 	if err := sm.DisableNow("kubelet"); err != nil {
-		return ids, errors.Wrap(err, "kubelet disable --now")
+		return ids, fmt.Errorf("kubelet disable --now: %w", err)
 	}
 
 	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Running, Namespaces: namespaces})
 	if err != nil {
-		return ids, errors.Wrap(err, "list running")
+		return ids, fmt.Errorf("list running: %w", err)
 	}
 
 	if len(ids) == 0 {
@@ -66,7 +66,7 @@ func pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string
 	}
 
 	if err := cr.PauseContainers(ids); err != nil {
-		return ids, errors.Wrap(err, "pausing containers")
+		return ids, fmt.Errorf("pausing containers: %w", err)
 	}
 
 	if doesNamespaceContainKubeSystem(namespaces) {
@@ -94,19 +94,19 @@ func Unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string, error) {
 	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: namespaces})
 	if err != nil {
-		return ids, errors.Wrap(err, "list paused")
+		return ids, fmt.Errorf("list paused: %w", err)
 	}
 
 	if len(ids) == 0 {
 		klog.Warningf("no paused containers found")
 	} else if err := cr.UnpauseContainers(ids); err != nil {
-		return ids, errors.Wrap(err, "unpause")
+		return ids, fmt.Errorf("unpause: %w", err)
 	}
 
 	sm := sysinit.New(r)
 
 	if err := sm.Start("kubelet"); err != nil {
-		return ids, errors.Wrap(err, "kubelet start")
+		return ids, fmt.Errorf("kubelet start: %w", err)
 	}
 
 	if doesNamespaceContainKubeSystem(namespaces) {
@@ -120,7 +120,7 @@ func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 func CheckIfPaused(cr cruntime.Manager, namespaces []string) (bool, error) {
 	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: namespaces})
 	if err != nil {
-		return true, errors.Wrap(err, "list paused")
+		return true, fmt.Errorf("list paused: %w", err)
 	}
 
 	if len(ids) > 0 {

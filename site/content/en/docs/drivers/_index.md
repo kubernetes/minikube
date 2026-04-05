@@ -10,7 +10,7 @@ aliases:
 ---
 minikube can be deployed as a VM, a container, or bare-metal.
 
-To do so, we use the [Docker Machine](https://github.com/docker/machine) library to provide a consistent way to interact with different environments. Here is what's supported:
+Here is what's supported:
 
 ## Linux
 

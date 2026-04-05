@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/pkg/errors"
 	"google.golang.org/api/option"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util/retry"
@@ -68,7 +67,7 @@ func (b *Binary) download() error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
 	if err != nil {
-		return errors.Wrap(err, "getting storage client")
+		return fmt.Errorf("getting storage client: %w", err)
 	}
 	defer client.Close()
 
@@ -80,7 +79,7 @@ func (b *Binary) download() error {
 
 	rc, err := obj.NewReader(ctx)
 	if err != nil {
-		return errors.Wrap(err, "getting minikube object from gcs bucket")
+		return fmt.Errorf("getting minikube object from gcs bucket: %w", err)
 	}
 	defer rc.Close()
 
@@ -104,7 +103,7 @@ func newBinaryFromPR(pr string) (*Binary, error) {
 	// try to convert to int
 	i, err := strconv.Atoi(pr)
 	if err != nil {
-		return nil, errors.Wrapf(err, "converting %s to an integer", pr)
+		return nil, fmt.Errorf("converting %s to an integer: %w", pr, err)
 	}
 
 	b := &Binary{
@@ -113,7 +112,7 @@ func newBinaryFromPR(pr string) (*Binary, error) {
 	}
 
 	if err := retry.Expo(b.download, 1*time.Minute, 10*time.Minute); err != nil {
-		return nil, errors.Wrapf(err, "downloading binary")
+		return nil, fmt.Errorf("downloading binary: %w", err)
 	}
 
 	return b, nil

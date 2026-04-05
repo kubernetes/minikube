@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/third_party/kubeadm/app/features"
 )
 
@@ -60,7 +59,7 @@ func parseFeatureArgs(featureGates string) (map[string]bool, string, error) {
 
 		boolValue, err := strconv.ParseBool(v)
 		if err != nil {
-			return nil, "", errors.Wrapf(err, "failed to convert bool value \"%v\"", v)
+			return nil, "", fmt.Errorf("failed to convert bool value \"%v\": %w", v, err)
 		}
 		kubeadmFeatureArgs[k] = boolValue
 	}

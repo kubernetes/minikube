@@ -478,7 +478,11 @@ spec:
         - --configmap=$(POD_NAMESPACE)/ingress-nginx-controller
         - --tcp-services-configmap=$(POD_NAMESPACE)/tcp-services
         - --udp-services-configmap=$(POD_NAMESPACE)/udp-services
+        {{- if eq .ContainerRuntime "crio"}}
+        - --validating-webhook=:8444
+        {{- else}}
         - --validating-webhook=:8443
+        {{- end}}
         - --validating-webhook-certificate=/usr/local/certificates/cert
         - --validating-webhook-key=/usr/local/certificates/key
         {{- if .CustomIngressCert}}
@@ -522,7 +526,11 @@ spec:
           hostPort: 443
           name: https
           protocol: TCP
+        {{- if eq .ContainerRuntime "crio"}}
+        - containerPort: 8444
+        {{- else}}
         - containerPort: 8443
+        {{- end}}
           name: webhook
           protocol: TCP
         readinessProbe:
@@ -551,7 +559,14 @@ spec:
         - mountPath: /usr/local/certificates/
           name: webhook-cert
           readOnly: true
+      {{- if eq .ContainerRuntime "crio"}}
+      # CRIO/CNI loopback hairpin NAT is unreliable. See #22238
+      # with hostNetwork: true, we need ClusterFirstWithHostNet for DNS to work
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- else}}
       dnsPolicy: ClusterFirst
+      {{- end}}
       nodeSelector:
         minikube.k8s.io/primary: "true"
         kubernetes.io/os: linux

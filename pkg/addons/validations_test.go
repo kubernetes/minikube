@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func TestIsAddonValid(t *testing.T) {
@@ -63,7 +64,7 @@ func TestIsKVMDriverForNVIDIA(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		err := isKVMDriverForNVIDIA(tc.cc, "", "")
+		err := isKVMDriverForNVIDIA(tc.cc, "", "", &run.CommandOptions{})
 		if gotError := (err != nil); gotError != tc.wantError {
 			t.Errorf("isKVMDriverForNVIDIA(%v) got error %t (%v), want error %t", tc.cc, gotError, err, tc.wantError)
 		}

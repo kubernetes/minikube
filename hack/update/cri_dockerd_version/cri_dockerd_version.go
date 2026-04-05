@@ -33,42 +33,34 @@ import (
 
 var (
 	schema = map[string]update.Item{
-		".github/workflows/master.yml": {
+		".github/workflows/functional_test.yml": {
 			Replace: map[string]string{
 				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
-				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
-			},
-		},
-		".github/workflows/pr.yml": {
-			Replace: map[string]string{
-				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
-				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
-			},
-		},
-		"hack/jenkins/linux_integration_tests_none.sh": {
-			Replace: map[string]string{
-				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.Version}}"`,
 				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
 			},
 		},
 		"deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/cri-dockerd.mk": {
 			Replace: map[string]string{
-				`CRI_DOCKERD_AARCH64_VER = .*`:     `CRI_DOCKERD_AARCH64_VER = {{.Version}}`,
-				`CRI_DOCKERD_AARCH64_VERSION = .*`: `CRI_DOCKERD_AARCH64_VERSION = {{.FullCommit}}`,
-				`CRI_DOCKERD_AARCH64_REV = .*`:     `CRI_DOCKERD_AARCH64_REV = {{.ShortCommit}}`,
+				`CRI_DOCKERD_AARCH64_VERSION = .*`: `CRI_DOCKERD_AARCH64_VERSION = {{.Version}}`,
+				`CRI_DOCKERD_AARCH64_COMMIT = .*`:  `CRI_DOCKERD_AARCH64_COMMIT = {{.FullCommit}}`,
 			},
 		},
 		"deploy/iso/minikube-iso/arch/x86_64/package/cri-dockerd/cri-dockerd.mk": {
 			Replace: map[string]string{
-				`CRI_DOCKERD_VER = .*`:     `CRI_DOCKERD_VER = {{.Version}}`,
-				`CRI_DOCKERD_VERSION = .*`: `CRI_DOCKERD_VERSION = {{.FullCommit}}`,
-				`CRI_DOCKERD_REV = .*`:     `CRI_DOCKERD_REV = {{.ShortCommit}}`,
+				`CRI_DOCKERD_VERSION = .*`: `CRI_DOCKERD_VERSION = {{.Version}}`,
+				`CRI_DOCKERD_COMMIT = .*`:  `CRI_DOCKERD_COMMIT = {{.FullCommit}}`,
 			},
 		},
 		"deploy/kicbase/Dockerfile": {
 			Replace: map[string]string{
 				`CRI_DOCKERD_VERSION=.*`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
 				`CRI_DOCKERD_COMMIT=.*`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
+			},
+		},
+		"hack/jenkins/linux_integration_tests_none.sh": {
+			Replace: map[string]string{
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.Version}}"`,
+				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
 			},
 		},
 	}
@@ -94,7 +86,9 @@ func main() {
 
 	data := Data{Version: version, FullCommit: stable.Commit, ShortCommit: stable.Commit[:7]}
 
-	update.Apply(schema, data)
+	if err := update.Apply(schema, data); err != nil {
+		klog.Fatalf("unable to apply update: %v", err)
+	}
 
 	if err := updateHashFiles(stable.Commit); err != nil {
 		klog.Fatalf("failed to update hash files: %v", err)

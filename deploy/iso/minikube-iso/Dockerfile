@@ -12,29 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 RUN apt-get update \
 	&& apt-get install -y apt dpkg apt-utils ca-certificates software-properties-common \
-	&& add-apt-repository -y ppa:longsleep/golang-backports \
 	&& apt-get upgrade -y \
+	&& if [ "$(uname -ms)" = "Linux x86_64" ]; then apt-get install -y gcc-multilib; fi \
 	&& apt-get install -y \
 		build-essential \
 		git \
 		wget \
 		cpio \
-		python \
+		python3 \
 		unzip \
 		bc \
-		gcc-multilib \
+		gcc \
 		automake \
 		libtool \
 		gnupg2 \
 		p7zip-full \
 		locales \
 		rsync \
+		cmake \
 		dumb-init \
-		golang-go \
 		libpcre3-dev \
 		mkisofs \
 	&& rm -rf /var/lib/apt/lists/*
@@ -44,6 +44,14 @@ RUN chmod 777 /app
 
 RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 ENV LANG=en_US.utf8
+
+# the default ccache dir is "$HOME/.buildroot-ccache"
+ENV BR2_CCACHE_DIR=/var/cache/buildroot/ccache
+RUN mkdir -p /var/cache/buildroot/ccache && chmod 1777 /var/cache/buildroot/ccache
+# the default gocache dir is "$HOME/.cache/go-build"
+ENV GOCACHE=/var/cache/buildroot/gocache
+RUN mkdir -p /var/cache/buildroot/gocache && chmod 1777 /var/cache/buildroot/gocache
+VOLUME ["/var/cache/buildroot"]
 
 # dumb init will allow us to interrupt the build with ^C
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]

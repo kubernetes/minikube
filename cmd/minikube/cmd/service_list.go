@@ -24,6 +24,7 @@ import (
 
 	"github.com/spf13/cobra"
 	core "k8s.io/api/core/v1"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -42,7 +43,8 @@ var serviceListCmd = &cobra.Command{
 	Short: "Lists the URLs for the services in your local cluster",
 	Long:  `Lists the URLs for the services in your local cluster`,
 	Run: func(_ *cobra.Command, _ []string) {
-		co := mustload.Healthy(ClusterFlagValue())
+		options := flags.CommandOptions()
+		co := mustload.Healthy(ClusterFlagValue(), options)
 		output := strings.ToLower(profileOutput)
 
 		serviceURLs, err := service.GetServiceURLs(co.API, co.Config.Name, serviceListNamespace, serviceURLTemplate)

@@ -18,6 +18,7 @@ package config
 
 import (
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -35,8 +36,10 @@ var addonsDisableCmd = &cobra.Command{
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube addons disable ADDON_NAME")
 		}
-		_, cc := mustload.Partial(ClusterFlagValue())
-		err := addons.VerifyNotPaused(ClusterFlagValue(), false)
+
+		options := flags.CommandOptions()
+		_, cc := mustload.Partial(ClusterFlagValue(), options)
+		err := addons.VerifyNotPaused(ClusterFlagValue(), false, options)
 		if err != nil {
 			exit.Error(reason.InternalAddonDisablePaused, "disable failed", err)
 		}
@@ -49,7 +52,7 @@ var addonsDisableCmd = &cobra.Command{
 			exit.Message(reason.AddonUnsupported, `"'{{.minikube_addon}}' is not a valid minikube addon`, out.V{"minikube_addon": addon})
 		}
 		if validAddon.IsEnabled(cc) {
-			err = addons.SetAndSave(ClusterFlagValue(), addon, "false")
+			err = addons.SetAndSave(ClusterFlagValue(), addon, "false", options)
 			if err != nil {
 				exit.Error(reason.InternalAddonDisable, "disable failed", err)
 			}

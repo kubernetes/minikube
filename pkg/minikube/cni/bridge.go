@@ -22,7 +22,6 @@ import (
 	"os/exec"
 	"text/template"
 
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 )
@@ -98,11 +97,11 @@ func (c Bridge) Apply(r Runner) error {
 
 	f, err := c.netconf()
 	if err != nil {
-		return errors.Wrap(err, "netconf")
+		return fmt.Errorf("netconf: %w", err)
 	}
 
 	if err := r.Copy(f); err != nil {
-		return errors.Wrapf(err, "copy")
+		return fmt.Errorf("copy: %w", err)
 	}
 
 	return nil

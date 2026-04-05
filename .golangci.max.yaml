@@ -1,0 +1,26 @@
+version: "2"
+linters:
+  enable:
+    - dogsled
+    - errcheck
+    - gocritic
+    - govet
+    - gocyclo
+    - ineffassign
+    - misspell
+    - nakedret
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+  exclusions:
+    paths:
+      - third_party
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    paths:
+      - third_party

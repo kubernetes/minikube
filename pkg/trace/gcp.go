@@ -27,7 +27,6 @@ import (
 	"k8s.io/klog/v2"
 
 	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -49,7 +48,7 @@ type gcpTracer struct {
 // StartSpan starts a span for the next step of
 // `minikube start` via the GCP tracer
 func (t *gcpTracer) StartSpan(name string) {
-	_, span := t.Tracer.Start(t.parentCtx, name)
+	_, span := t.Start(t.parentCtx, name)
 	t.spans[name] = span
 }
 
@@ -84,7 +83,7 @@ func initGCPTracer() (*gcpTracer, error) {
 		texporter.WithProjectID(projectID),
 	}...)
 	if err != nil {
-		return nil, errors.Wrap(err, "installing pipeline")
+		return nil, fmt.Errorf("installing pipeline: %w", err)
 	}
 
 	tp := sdktrace.NewTracerProvider(
