@@ -23,6 +23,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -82,6 +83,9 @@ var addonsConfigureCmd = &cobra.Command{
 
 		case "auto-pause":
 			processAutoPauseConfig(profile, addonConfig, options)
+
+		case "rook-ceph":
+			processRookCephConfig(profile, addonConfig, options)
 
 		default:
 			out.FailureT("{{.name}} has no available configuration options", out.V{"name": addon})
@@ -273,4 +277,49 @@ func processRegistryAliasesConfig(profile string, _ *addonConfig, options *run.C
 			out.ErrT(style.Fatal, "Failed to configure registry-aliases {{.profile}}", out.V{"profile": profile})
 		}
 	}
+}
+
+// processRookCephConfig handles configuration for the rook-ceph addon.
+func processRookCephConfig(profile string, _ *addonConfig, options *run.CommandOptions) {
+	_, cfg := mustload.Partial(profile, options)
+
+	out.Step(style.Option, "Current OSD size: {{.size}}", out.V{"size": rookCephOSDSizeDisplay(cfg.RookCephOSDSize)})
+
+	sizeInput := AskForStaticValue("-- Enter OSD storage size (e.g. 6Gi, 10Gi): ")
+	sizeInput = strings.TrimSpace(sizeInput)
+	if sizeInput != "" {
+		cfg.RookCephOSDSize = sizeInput
+	}
+
+	out.Step(style.Option, "Current OSD device: {{.dev}}", out.V{"dev": rookCephOSDDeviceDisplay(cfg.RookCephOSDDevice)})
+
+	devInput := AskForStaticValue("-- Enter OSD loop device (e.g. /dev/loop0): ")
+	devInput = strings.TrimSpace(devInput)
+	if devInput != "" {
+		cfg.RookCephOSDDevice = devInput
+	}
+
+	if err := config.SaveProfile(profile, cfg); err != nil {
+		out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
+	}
+
+	addon := assets.Addons["rook-ceph"]
+	if addon.IsEnabled(cfg) {
+		out.Styled(style.Tip, "rook-ceph is currently enabled. To apply the new configuration, disable and re-enable the addon:")
+		out.Styled(style.Tip, "  minikube addons disable rook-ceph && minikube addons enable rook-ceph")
+	}
+}
+
+func rookCephOSDSizeDisplay(s string) string {
+	if s == "" {
+		return "6Gi (default)"
+	}
+	return s
+}
+
+func rookCephOSDDeviceDisplay(s string) string {
+	if s == "" {
+		return "auto-discovered (default)"
+	}
+	return s
 }

@@ -793,6 +793,24 @@ var Addons = map[string]*Addon{
 		map[string]string{
 			"Kubetail": "docker.io",
 		}, nil),
+	"rook-ceph": NewAddon([]*BinAsset{
+		// CRDs must be applied first so the operator can reconcile CephCluster CRs
+		MustBinAsset(addons.RookCephAssets, "rook-ceph/rook-ceph-crds.yaml", vmpath.GuestAddonsDir, "rook-ceph-crds.yaml", "0640"),
+		// Operator: namespace, RBAC, configmap, deployment
+		MustBinAsset(addons.RookCephAssets, "rook-ceph/rook-ceph-operator.yaml.tmpl", vmpath.GuestAddonsDir, "rook-ceph-operator.yaml", "0640"),
+		// Cluster: CephCluster CR, block pool, StorageClass, CephFilesystem
+		MustBinAsset(addons.RookCephAssets, "rook-ceph/rook-ceph-cluster.yaml.tmpl", vmpath.GuestAddonsDir, "rook-ceph-cluster.yaml", "0640"),
+	}, false, "rook-ceph", "3rd party (Rook)", "", "https://rook.io/docs/rook/latest-release/Getting-Started/quickstart/",
+		map[string]string{
+			// Rook operator image (tag pinned for reproducibility)
+			"RookOperator": "rook/ceph:v1.16.7",
+			// Ceph daemon image used by MON, OSD, MGR, MDS pods
+			"CephDaemon": "ceph/ceph:v19.2.2",
+		},
+		map[string]string{
+			"RookOperator": "docker.io",
+			"CephDaemon":   "quay.io",
+		}, nil),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
@@ -931,6 +949,8 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		LegacyPodSecurityPolicy bool
 		LegacyRuntimeClass      bool
 		AutoPauseInterval       time.Duration
+		RookCephOSDSize         string
+		RookCephOSDDevice       string
 	}{
 		KubernetesVersion:      make(map[string]uint64),
 		PreOneTwentyKubernetes: false,
@@ -953,6 +973,8 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		LegacyPodSecurityPolicy: v.LT(semver.Version{Major: 1, Minor: 25}),
 		LegacyRuntimeClass:      v.LT(semver.Version{Major: 1, Minor: 25}),
 		AutoPauseInterval:       cc.AutoPauseInterval,
+		RookCephOSDSize:         rookCephOSDSizeOrDefault(cc.RookCephOSDSize),
+		RookCephOSDDevice:       rookCephOSDDeviceOrDefault(cc.RookCephOSDDevice),
 	}
 	if opts.ImageRepository != "" && !strings.HasSuffix(opts.ImageRepository, "/") {
 		opts.ImageRepository += "/"
@@ -1025,3 +1047,20 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 	}
 	return opts
 }
+
+// rookCephOSDSizeOrDefault returns the OSD size or a sensible default.
+func rookCephOSDSizeOrDefault(configured string) string {
+	if configured == "" {
+		return "6Gi"
+	}
+	return configured
+}
+
+// rookCephOSDDeviceOrDefault returns the OSD device or a sensible default.
+func rookCephOSDDeviceOrDefault(configured string) string {
+	if configured == "" {
+		return "/dev/loop0"
+	}
+	return configured
+}
+

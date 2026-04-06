@@ -157,6 +157,30 @@ kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} |
 
 	minikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard
 `, out.V{"profileArg": tipProfileArg})
+	case "rook-ceph":
+		out.Styled(style.Tip, `The rook-ceph addon installs the Rook operator and deploys a single-node Ceph cluster.
+The CephCluster may take 5-10 minutes to reach HEALTH_OK on first start (image pulls + OSD provisioning).
+
+To check cluster status run:
+
+	minikube{{.profileArg}} kubectl -- -n rook-ceph get cephcluster
+
+To watch all rook-ceph pods come up:
+
+	minikube{{.profileArg}} kubectl -- -n rook-ceph get pods -w
+
+To access the Ceph dashboard:
+
+	1. Get the admin password:
+	   minikube{{.profileArg}} kubectl -- -n rook-ceph get secret rook-ceph-dashboard-password -o jsonpath="{['data']['password']}" | base64 --decode && echo
+
+	2. Open the dashboard in your browser:
+	   minikube{{.profileArg}} service rook-ceph-mgr-dashboard-ext -n rook-ceph
+
+NOTE: rook-ceph requires at least 4 GB of memory. Start minikube with:
+
+	minikube start --memory=4096
+`, out.V{"profileArg": tipProfileArg})
 	}
 }
 
@@ -365,6 +389,14 @@ func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, run
 	// we cannot use volcano for crio
 	if name == "volcano" && cc.KubernetesConfig.ContainerRuntime == constants.CRIO && enable {
 		return false, fmt.Errorf("volcano addon does not support crio")
+	}
+
+	// rook-ceph is memory-hungry — warn if < 4 GiB
+	if name == "rook-ceph" && enable {
+		minMemRook := 4096
+		if cc.Memory < minMemRook {
+			out.WarningT("rook-ceph needs at least {{.minMem}}MB of memory -- your configuration only allocates {{.memory}}MB. Consider restarting minikube with --memory={{.minMem}}", out.V{"minMem": minMemRook, "memory": cc.Memory})
+		}
 	}
 
 	return false, nil
