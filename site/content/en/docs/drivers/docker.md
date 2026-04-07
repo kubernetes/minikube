@@ -15,7 +15,7 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
 - [Install Docker](https://docs.docker.com/engine/install/) 18.09 or higher (20.10 or higher is recommended)
 - amd64 or arm64 system.
-- If using WSL complete [these steps]({{<ref "/docs/tutorials/wsl_docker_driver">}}) first
+- If using WSL, complete [these steps]({{<ref "/docs/tutorials/wsl_docker_driver">}}) first.
 - Don't forget to follow this [step](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user) to manage Docker as a non-root user.
 
 ## Usage
@@ -72,6 +72,8 @@ It is recommended to set the `--container-runtime` flag to "containerd".
 - On WSL2 (experimental - see [#5392](https://github.com/kubernetes/minikube/issues/5392)), you may need to run:
 
    `sudo mkdir /sys/fs/cgroup/systemd && sudo mount -t cgroup -o none,name=systemd cgroup /sys/fs/cgroup/systemd`.
+
+- On Windows and WSL with the Docker driver, the node IP is not reachable directly. Use `minikube service --url` for `NodePort` services, and use `minikube tunnel` for `LoadBalancer` services or ingress. For ingress specifically, access it via `127.0.0.1` or `localhost` while the tunnel is running.
 
 Also see [co/docker-driver open issues](https://github.com/kubernetes/minikube/labels/co%2Fdocker-driver).
 
