@@ -258,7 +258,7 @@ jobs:
           echo "=== podman ps ==="
           podman ps || true
       - name: Install kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@v5
       - name: Install qemu and socket_vmnet (macos)
         if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
         run: |
