@@ -37,7 +37,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - name: Azure Login
         id: azlogin
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           creds: '{"clientId":"${{ secrets.MINIKUBE_AZ_CLIENT_ID }}","clientSecret":"${{ secrets.MINIKUBE_AZ_PASSWORD }}","subscriptionId":"${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.MINIKUBE_AZ_TENANT_ID }}"}'
       - name: Set up Go
