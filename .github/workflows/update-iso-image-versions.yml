@@ -131,7 +131,7 @@ jobs:
           body: |
             Changelog:
             ${{ steps.bumpVersions.outputs.changelog }}
-      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         if: ${{ steps.bumpVersions.outputs.changes != '' }}
         with:
           github-token: ${{ secrets.MINIKUBE_BOT_PAT }}
@@ -142,7 +142,7 @@ jobs:
               repo: context.repo.repo,
               body: 'ok-to-build-image'
             })
-      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         if: ${{ steps.bumpVersions.outputs.changes != '' }}
         with:
           github-token: ${{ secrets.MINIKUBE_BOT_PAT }}
