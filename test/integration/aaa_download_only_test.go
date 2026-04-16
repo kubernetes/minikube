@@ -61,12 +61,9 @@ func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 	versions := []string{
 		constants.OldestKubernetesVersion,
 		constants.DefaultKubernetesVersion,
-		constants.NewestKubernetesVersion,
 	}
-
-	// Small optimization, don't run the exact same set of tests twice
-	if constants.DefaultKubernetesVersion == constants.NewestKubernetesVersion {
-		versions = versions[:len(versions)-1]
+	if constants.DefaultKubernetesVersion != constants.NewestKubernetesVersion {
+		versions = append(versions, constants.NewestKubernetesVersion)
 	}
 
 	for _, v := range versions {
