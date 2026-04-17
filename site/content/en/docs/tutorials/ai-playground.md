@@ -213,7 +213,7 @@ spec:
         ]
         resources:
           limits:
-            squat.ai/dri: 1
+            devic.es/dri: 1
         volumeMounts:
         - name: models
           mountPath: /mnt/models
