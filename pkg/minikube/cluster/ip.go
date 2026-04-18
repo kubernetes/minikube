@@ -108,16 +108,13 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 			if err != nil {
 				return []byte{}, fmt.Errorf("Error getting VM/Host IP address: %w", err)
 			}
-			// Extract the NetworkMask and LowerIP for the named hostonlynet.
-			rec := regexp.MustCompile(`(?sm)Name:\s*` + regexp.QuoteMeta(netName) + `\s*$.+?NetworkMask:\s*(\S+).+?LowerIP:\s*(\S+)`).FindStringSubmatch(string(netList))
-			if rec == nil {
+			mask, netAddr, err := parseHostOnlyNet(string(netList), netName)
+			if err != nil {
+				return []byte{}, fmt.Errorf("hostonlynet %q: %w", netName, err)
+			}
+			if mask == nil {
 				return []byte{}, fmt.Errorf("hostonlynet %q not found in `VBoxManage list hostonlynets` output", netName)
 			}
-			mask := net.IPMask(net.ParseIP(rec[1]).To4())
-			if mask == nil {
-				return []byte{}, fmt.Errorf("unable to parse hostonlynet netmask %q", rec[1])
-			}
-			netAddr := net.ParseIP(rec[2]).Mask(mask)
 			hostIP, err := findHostIPInSubnet(netAddr, mask)
 			if err != nil {
 				return []byte{}, fmt.Errorf("host IP for hostonlynet %q: %w", netName, err)
@@ -288,4 +285,66 @@ func findHostIPInSubnet(netAddr net.IP, mask net.IPMask) (net.IP, error) {
 func maskOnes(mask net.IPMask) int {
 	ones, _ := mask.Size()
 	return ones
+}
+
+// parseHostOnlyNet extracts the NetworkMask and LowerIP for the named
+// hostonlynet from the output of `VBoxManage list hostonlynets`. The
+// function is order-tolerant within a record and tolerant of whitespace
+// variation. Returns nil, nil if the name isn't found.
+//
+// Records are delimited by a line starting with "Name:". Blank lines within
+// a record (VBoxManage emits one between GUID and State) are ignored.
+func parseHostOnlyNet(listOutput, name string) (mask net.IPMask, network net.IP, err error) {
+	var blockName, maskStr, lowerStr string
+	// finish evaluates the current record against `name` and, if matched,
+	// parses and returns the mask/network. It is called when a new record
+	// begins (next "Name:" line) and at end-of-input.
+	finish := func() (bool, net.IPMask, net.IP, error) {
+		if blockName != name {
+			return false, nil, nil, nil
+		}
+		if maskStr == "" || lowerStr == "" {
+			return true, nil, nil, fmt.Errorf("hostonlynet %q record missing NetworkMask or LowerIP", name)
+		}
+		mip := net.ParseIP(maskStr).To4()
+		if mip == nil {
+			return true, nil, nil, fmt.Errorf("hostonlynet %q: unable to parse NetworkMask %q", name, maskStr)
+		}
+		lip := net.ParseIP(lowerStr).To4()
+		if lip == nil {
+			return true, nil, nil, fmt.Errorf("hostonlynet %q: unable to parse LowerIP %q", name, lowerStr)
+		}
+		m := net.IPMask(mip)
+		return true, m, lip.Mask(m), nil
+	}
+
+	for _, line := range strings.Split(listOutput, "\n") {
+		parts := strings.SplitN(strings.TrimSpace(line), ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		val := strings.TrimSpace(parts[1])
+		switch key {
+		case "Name":
+			// Starting a new record: evaluate the previous one.
+			if blockName != "" {
+				if matched, m, n, err := finish(); matched {
+					return m, n, err
+				}
+			}
+			blockName, maskStr, lowerStr = val, "", ""
+		case "NetworkMask":
+			maskStr = val
+		case "LowerIP":
+			lowerStr = val
+		}
+	}
+	// Evaluate the last record.
+	if blockName != "" {
+		if matched, m, n, err := finish(); matched {
+			return m, n, err
+		}
+	}
+	return nil, nil, nil
 }
