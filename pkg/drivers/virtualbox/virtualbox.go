@@ -52,6 +52,11 @@ const (
 	defaultHostLoopbackReachable = true
 )
 
+// hostOnlyNicIndex is the NIC slot used for the host-only adapter/network
+// on the guest VM. NIC1 is NAT (for SSH port-forward); NIC2 is host-only
+// (for host-to-guest and inter-node reachability).
+const hostOnlyNicIndex = 2
+
 //nolint:staticcheck // ST1005: error strings should not be capitalized
 var (
 	ErrUnableToGenerateRandomIP = errors.New("unable to generate random IP")
@@ -836,7 +841,8 @@ func (d *Driver) getHostOnlyMACAddress() (string, error) {
 
 	// First, we get the number of the host-only interface. VBox 7.x ARM
 	// (darwin/arm64) uses the hostonly-network<N> field name (new hostonlynet
-	// API); older/x86 configurations use hostonlyadapter<N>.
+	// API); older/x86 configurations use hostonlyadapter<N>. The regex accepts
+	// any NIC index defensively; in practice it matches hostOnlyNicIndex.
 	re := regexp.MustCompile(`(?m)^(?:hostonlyadapter|hostonly-network)([\d]+)`)
 	groups := re.FindStringSubmatch(stdout)
 	if len(groups) < 2 {
@@ -990,11 +996,11 @@ func (d *Driver) setupHostOnlyNetwork(machineName string) (*hostOnlyNetwork, err
 	}
 
 	if err := d.vbm("modifyvm", machineName,
-		"--nic2", "hostonly",
-		"--nictype2", d.HostOnlyNicType,
-		"--nicpromisc2", d.HostOnlyPromiscMode,
-		"--hostonlyadapter2", hostOnlyAdapter.Name,
-		"--cableconnected2", "on"); err != nil {
+		fmt.Sprintf("--nic%d", hostOnlyNicIndex), "hostonly",
+		fmt.Sprintf("--nictype%d", hostOnlyNicIndex), d.HostOnlyNicType,
+		fmt.Sprintf("--nicpromisc%d", hostOnlyNicIndex), d.HostOnlyPromiscMode,
+		fmt.Sprintf("--hostonlyadapter%d", hostOnlyNicIndex), hostOnlyAdapter.Name,
+		fmt.Sprintf("--cableconnected%d", hostOnlyNicIndex), "on"); err != nil {
 		return nil, err
 	}
 
@@ -1048,11 +1054,11 @@ func (d *Driver) setupHostOnlyNetworkVBox7(machineName string, ip net.IP, networ
 	// (not --hostonlyadapter2). --nictype2 and --nicpromisc2 and
 	// --cableconnected2 are still accepted.
 	if err := d.vbm("modifyvm", machineName,
-		"--nic2", "hostonlynet",
-		"--nictype2", d.HostOnlyNicType,
-		"--nicpromisc2", d.HostOnlyPromiscMode,
-		"--host-only-net2", hon.Name,
-		"--cableconnected2", "on"); err != nil {
+		fmt.Sprintf("--nic%d", hostOnlyNicIndex), "hostonlynet",
+		fmt.Sprintf("--nictype%d", hostOnlyNicIndex), d.HostOnlyNicType,
+		fmt.Sprintf("--nicpromisc%d", hostOnlyNicIndex), d.HostOnlyPromiscMode,
+		fmt.Sprintf("--host-only-net%d", hostOnlyNicIndex), hon.Name,
+		fmt.Sprintf("--cableconnected%d", hostOnlyNicIndex), "on"); err != nil {
 		return nil, err
 	}
 
