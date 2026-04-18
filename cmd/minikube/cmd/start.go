@@ -420,7 +420,7 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
 	// in the virtualbox driver's status()), which uses Hypervisor.framework
 	// instead of the kernel extensions that broke in macOS 13. The warning
 	// below is about that kext breakage and does not apply on Apple Silicon.
-	if runtime.GOARCH == "arm64" {
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
 		return
 	}
 	out.WarningT(`Due to changes in macOS 13+ minikube doesn't currently support VirtualBox. You can use alternative drivers such as 'vfkit', 'qemu', or 'docker'.
