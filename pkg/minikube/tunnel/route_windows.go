@@ -49,14 +49,17 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	klog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()
 	message := string(stdInAndOut)
-	if message != " OK!\r\n" {
-		return fmt.Errorf("error adding route: %s, %d", message, len(strings.Split(message, "\n")))
-	}
-	klog.Infof("%s", stdInAndOut)
 	if err != nil {
-		klog.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
-		return err
+		klog.Errorf("error adding Route: %s", message)
+		return fmt.Errorf("error adding route: %w, output: %s", err, message)
 	}
+	// Windows route command returns " OK!" on success, but the exact whitespace
+	// and line endings can vary across Windows versions and locales.
+	// Use a case-insensitive contains check instead of strict equality.
+	if !strings.Contains(strings.ToUpper(strings.TrimSpace(message)), "OK") {
+		return fmt.Errorf("error adding route: unexpected output: %q", message)
+	}
+	klog.Infof("Successfully added route, output: %s", stdInAndOut)
 	return nil
 }
 
@@ -135,8 +138,10 @@ func (router *osRouter) Cleanup(route *Route) error {
 	}
 	message := string(stdInAndOut)
 	klog.Infof("'%s'", message)
-	if message != " OK!\r\n" {
-		return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
+	// Use a case-insensitive contains check for "OK" to handle variations
+	// in Windows route command output across different versions and locales.
+	if !strings.Contains(strings.ToUpper(strings.TrimSpace(message)), "OK") {
+		return fmt.Errorf("error deleting route: unexpected output: %q", message)
 	}
 	return nil
 }
