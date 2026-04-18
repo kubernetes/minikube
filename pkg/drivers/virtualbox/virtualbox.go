@@ -432,12 +432,15 @@ func (d *Driver) CreateVM() error {
 		// Apple's Hypervisor.framework. Several x86-only flags (--hwvirtex,
 		// --nested-paging, --large-pages, --pae, --hpet, --vtxvpid) are not
 		// accepted on ARM VMs. Flag names also use the kebab-case VBox 7.x
-		// form, the firmware must be EFI (no BIOS on ARM), and the chipset
-		// must be armv8virtual.
+		// form, the firmware must be EFI (no BIOS on ARM), the chipset must
+		// be armv8virtual, and the graphics controller must be qemuramfb
+		// because the default vboxvga is x86-only and fails VM start with
+		// VERR_PGM_RAM_CONFLICT on ARM guests.
 		modifyFlags = []string{
 			"modifyvm", d.MachineName,
 			"--chipset", "armv8virtual",
 			"--firmware", "efi64",
+			"--graphicscontroller", "qemuramfb",
 			"--firmware-logo-fade-in", "off",
 			"--firmware-logo-fade-out", "off",
 			"--firmware-logo-display-time", "0",

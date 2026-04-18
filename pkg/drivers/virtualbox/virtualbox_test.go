@@ -534,7 +534,7 @@ func TestCreateVM(t *testing.T) {
 
 	var modifyVMcommand string
 	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
-		modifyVMcommand = "vbm modifyvm default --chipset armv8virtual --firmware efi64 --firmware-logo-fade-in off --firmware-logo-fade-out off --firmware-logo-display-time 0 --firmware-boot-menu disabled --ostype Linux_arm64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtc-use-utc on --natdnshostresolver1 off --natdnsproxy1 on --cpu-hotplug off --accelerate-3d off --boot1 dvd"
+		modifyVMcommand = "vbm modifyvm default --chipset armv8virtual --firmware efi64 --graphicscontroller qemuramfb --firmware-logo-fade-in off --firmware-logo-fade-out off --firmware-logo-display-time 0 --firmware-boot-menu disabled --ostype Linux_arm64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtc-use-utc on --natdnshostresolver1 off --natdnsproxy1 on --cpu-hotplug off --accelerate-3d off --boot1 dvd"
 	} else {
 		modifyVMcommand = "vbm modifyvm default --firmware bios --bioslogofadein off --bioslogofadeout off --bioslogodisplaytime 0 --biosbootmenu disabled --ostype Linux26_64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtcuseutc on --natdnshostresolver1 off --natdnsproxy1 on --cpuhotplug off --pae on --hpet on --hwvirtex on --nestedpaging on --largepages on --vtxvpid on --accelerate3d off --boot1 dvd"
 		if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
@@ -569,7 +569,7 @@ func TestCreateVMWithSpecificNatNicType(t *testing.T) {
 
 	var modifyVMcommand string
 	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
-		modifyVMcommand = "vbm modifyvm default --chipset armv8virtual --firmware efi64 --firmware-logo-fade-in off --firmware-logo-fade-out off --firmware-logo-display-time 0 --firmware-boot-menu disabled --ostype Linux_arm64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtc-use-utc on --natdnshostresolver1 off --natdnsproxy1 on --cpu-hotplug off --accelerate-3d off --boot1 dvd"
+		modifyVMcommand = "vbm modifyvm default --chipset armv8virtual --firmware efi64 --graphicscontroller qemuramfb --firmware-logo-fade-in off --firmware-logo-fade-out off --firmware-logo-display-time 0 --firmware-boot-menu disabled --ostype Linux_arm64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtc-use-utc on --natdnshostresolver1 off --natdnsproxy1 on --cpu-hotplug off --accelerate-3d off --boot1 dvd"
 	} else {
 		modifyVMcommand = "vbm modifyvm default --firmware bios --bioslogofadein off --bioslogofadeout off --bioslogodisplaytime 0 --biosbootmenu disabled --ostype Linux26_64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtcuseutc on --natdnshostresolver1 off --natdnsproxy1 on --cpuhotplug off --pae on --hpet on --hwvirtex on --nestedpaging on --largepages on --vtxvpid on --accelerate3d off --boot1 dvd"
 		if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
@@ -605,7 +605,7 @@ func TestCreateVMWithoutAccelerate3D(t *testing.T) {
 
 	var modifyVMcommand string
 	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
-		modifyVMcommand = "vbm modifyvm default --chipset armv8virtual --firmware efi64 --firmware-logo-fade-in off --firmware-logo-fade-out off --firmware-logo-display-time 0 --firmware-boot-menu disabled --ostype Linux_arm64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtc-use-utc on --natdnshostresolver1 off --natdnsproxy1 on --cpu-hotplug off --boot1 dvd"
+		modifyVMcommand = "vbm modifyvm default --chipset armv8virtual --firmware efi64 --graphicscontroller qemuramfb --firmware-logo-fade-in off --firmware-logo-fade-out off --firmware-logo-display-time 0 --firmware-boot-menu disabled --ostype Linux_arm64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtc-use-utc on --natdnshostresolver1 off --natdnsproxy1 on --cpu-hotplug off --boot1 dvd"
 	} else {
 		modifyVMcommand = "vbm modifyvm default --firmware bios --bioslogofadein off --bioslogofadeout off --bioslogodisplaytime 0 --biosbootmenu disabled --ostype Linux26_64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtcuseutc on --natdnshostresolver1 off --natdnsproxy1 on --cpuhotplug off --pae on --hpet on --hwvirtex on --nestedpaging on --largepages on --vtxvpid on --boot1 dvd"
 		if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
