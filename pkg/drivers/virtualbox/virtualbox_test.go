@@ -191,6 +191,20 @@ func TestGetHostOnlyMACAddress(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
+func TestGetHostOnlyMACAddressHostonlyNet(t *testing.T) {
+	// VBox 7.x ARM uses hostonly-network<N> instead of hostonlyadapter<N>.
+	driver := newTestDriver()
+	driver.VBoxManager = &VBoxManagerMock{
+		args:   "showvminfo default --machinereadable",
+		stdOut: "unrelatedfield=whatever\nhostonly-network2=\"minikube-hostonly-192.168.59.1\"\nmacaddress2=\"004488AABBCC\"\n",
+	}
+
+	result, err := driver.getHostOnlyMACAddress()
+	expected := "004488aabbcc"
+	assert.NoError(t, err)
+	assert.Equal(t, expected, result)
+}
+
 func TestGetHostOnlyMACAddressWhenNoHostOnlyAdapter(t *testing.T) {
 	driver := newTestDriver()
 	driver.VBoxManager = &VBoxManagerMock{

@@ -834,8 +834,10 @@ func (d *Driver) getHostOnlyMACAddress() (string, error) {
 		return "", err
 	}
 
-	// First, we get the number of the host-only interface
-	re := regexp.MustCompile(`(?m)^hostonlyadapter([\d]+)`)
+	// First, we get the number of the host-only interface. VBox 7.x ARM
+	// (darwin/arm64) uses the hostonly-network<N> field name (new hostonlynet
+	// API); older/x86 configurations use hostonlyadapter<N>.
+	re := regexp.MustCompile(`(?m)^(?:hostonlyadapter|hostonly-network)([\d]+)`)
 	groups := re.FindStringSubmatch(stdout)
 	if len(groups) < 2 {
 		//nolint:staticcheck // ST1005: error strings should not be capitalized
