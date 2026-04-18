@@ -32,10 +32,11 @@ VirtualBox added Apple Silicon host support in **VirtualBox 7.1**. minikube's
   available. The driver automatically sets `NoShare=true` on darwin/arm64
   so this limitation does not block cluster startup.
 * **VirtualBox on Apple Silicon is still maturing.** Users may hit
-  VirtualBox bugs unrelated to minikube. The maintainer-recommended drivers
-  for Apple Silicon remain [`vfkit`]({{< ref "/docs/drivers/vfkit" >}}) and
-  [`qemu2`]({{< ref "/docs/drivers/qemu" >}}); use `virtualbox` only if you
-  have a specific reason to.
+  VirtualBox bugs unrelated to minikube.
+  [`vfkit`]({{< ref "/docs/drivers/vfkit" >}}) and
+  [`qemu2`]({{< ref "/docs/drivers/qemu" >}}) are also available on
+  Apple Silicon and may be better suited if VirtualBox-specific features
+  (e.g. a pre-existing VirtualBox workflow, GUI tooling) are not required.
 
 ## Issues
 
