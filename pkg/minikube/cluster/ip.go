@@ -96,6 +96,34 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 		if err != nil {
 			return []byte{}, fmt.Errorf("vboxmanage: %w", err)
 		}
+		// VBox 7.x ARM (darwin/arm64) uses the hostonlynet API, which exposes
+		// the attached network as hostonly-network<N>= in showvminfo output
+		// (rather than the legacy hostonlyadapter<N>= for hostonlyif).
+		// `list hostonlyifs` is empty on that path, so look up `list
+		// hostonlynets` and find the matching host-side IP by enumerating
+		// local interfaces whose subnet overlaps the hostonlynet.
+		if m := regexp.MustCompile(`hostonly-network2="(.*?)"`).FindStringSubmatch(string(out)); m != nil {
+			netName := m[1]
+			netList, err := exec.Command(vBoxManageCmd, "list", "hostonlynets").Output()
+			if err != nil {
+				return []byte{}, fmt.Errorf("Error getting VM/Host IP address: %w", err)
+			}
+			// Extract the NetworkMask and LowerIP for the named hostonlynet.
+			rec := regexp.MustCompile(`(?sm)Name:\s*` + regexp.QuoteMeta(netName) + `\s*$.+?NetworkMask:\s*(\S+).+?LowerIP:\s*(\S+)`).FindStringSubmatch(string(netList))
+			if rec == nil {
+				return []byte{}, fmt.Errorf("hostonlynet %q not found in `VBoxManage list hostonlynets` output", netName)
+			}
+			mask := net.IPMask(net.ParseIP(rec[1]).To4())
+			if mask == nil {
+				return []byte{}, fmt.Errorf("unable to parse hostonlynet netmask %q", rec[1])
+			}
+			netAddr := net.ParseIP(rec[2]).Mask(mask)
+			hostIP, err := findHostIPInSubnet(netAddr, mask)
+			if err != nil {
+				return []byte{}, fmt.Errorf("host IP for hostonlynet %q: %w", netName, err)
+			}
+			return hostIP, nil
+		}
 		re := regexp.MustCompile(`hostonlyadapter2="(.*?)"`)
 		iface := re.FindStringSubmatch(string(out))[1]
 		ipList, err := exec.Command(vBoxManageCmd, "list", "hostonlyifs").Output()
@@ -224,4 +252,40 @@ func getIPForInterface(name string) (net.IP, error) {
 		}
 	}
 	return nil, fmt.Errorf("Unable to find a IPv4 address for interface %q", name)
+}
+
+// findHostIPInSubnet returns the first IPv4 address on any local interface
+// that lies in the given subnet. Used on darwin/arm64 with the hostonlynet
+// API where the host-side IP is auto-assigned by VirtualBox and the actual
+// address is only discoverable by enumerating local interfaces.
+func findHostIPInSubnet(netAddr net.IP, mask net.IPMask) (net.IP, error) {
+	ints, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+	for _, in := range ints {
+		addrs, err := in.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, a := range addrs {
+			ipnet, ok := a.(*net.IPNet)
+			if !ok {
+				continue
+			}
+			ip4 := ipnet.IP.To4()
+			if ip4 == nil {
+				continue
+			}
+			if ip4.Mask(mask).Equal(netAddr) {
+				return ip4, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("no local interface found with an IPv4 address in %s/%d", netAddr, maskOnes(mask))
+}
+
+func maskOnes(mask net.IPMask) int {
+	ones, _ := mask.Size()
+	return ones
 }
