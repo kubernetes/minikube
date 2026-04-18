@@ -426,39 +426,73 @@ func (d *Driver) CreateVM() error {
 		dnsProxy = "on"
 	}
 
-	var modifyFlags = []string{
-		"modifyvm", d.MachineName,
-		"--firmware", "bios",
-		"--bioslogofadein", "off",
-		"--bioslogofadeout", "off",
-		"--bioslogodisplaytime", "0",
-		"--biosbootmenu", "disabled",
-		"--ostype", "Linux26_64",
-		"--cpus", fmt.Sprintf("%d", cpus),
-		"--memory", fmt.Sprintf("%d", d.Memory),
-		"--acpi", "on",
-		"--ioapic", "on",
-		"--rtcuseutc", "on",
-		"--natdnshostresolver1", hostDNSResolver,
-		"--natdnsproxy1", dnsProxy,
-		"--cpuhotplug", "off",
-		"--pae", "on",
-		"--hpet", "on",
-		"--hwvirtex", "on",
-		"--nestedpaging", "on",
-		"--largepages", "on",
-		"--vtxvpid", "on"}
-	if !d.NoAccelerate3DOff {
-		modifyFlags = append(modifyFlags, "--accelerate3d", "off")
-	}
-	modifyFlags = append(modifyFlags, "--boot1", "dvd")
-
-	if d.version > 6 {
-		modifyFlags = append(modifyFlags, "--natlocalhostreachable1", hostLoopbackReachable)
-	}
-
-	if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
-		modifyFlags = append(modifyFlags, "--longmode", "on")
+	var modifyFlags []string
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		// darwin/arm64 (Apple Silicon): VirtualBox 7.1+ creates ARM guests via
+		// Apple's Hypervisor.framework. Several x86-only flags (--hwvirtex,
+		// --nested-paging, --large-pages, --pae, --hpet, --vtxvpid) are not
+		// accepted on ARM VMs. Flag names also use the kebab-case VBox 7.x
+		// form, the firmware must be EFI (no BIOS on ARM), and the chipset
+		// must be armv8virtual.
+		modifyFlags = []string{
+			"modifyvm", d.MachineName,
+			"--chipset", "armv8virtual",
+			"--firmware", "efi64",
+			"--firmware-logo-fade-in", "off",
+			"--firmware-logo-fade-out", "off",
+			"--firmware-logo-display-time", "0",
+			"--firmware-boot-menu", "disabled",
+			"--ostype", "Linux_arm64",
+			"--cpus", fmt.Sprintf("%d", cpus),
+			"--memory", fmt.Sprintf("%d", d.Memory),
+			"--acpi", "on",
+			"--ioapic", "on",
+			"--rtc-use-utc", "on",
+			"--natdnshostresolver1", hostDNSResolver,
+			"--natdnsproxy1", dnsProxy,
+			"--cpu-hotplug", "off",
+		}
+		if !d.NoAccelerate3DOff {
+			modifyFlags = append(modifyFlags, "--accelerate-3d", "off")
+		}
+		modifyFlags = append(modifyFlags, "--boot1", "dvd")
+		if d.version > 6 {
+			modifyFlags = append(modifyFlags, "--natlocalhostreachable1", hostLoopbackReachable)
+		}
+	} else {
+		modifyFlags = []string{
+			"modifyvm", d.MachineName,
+			"--firmware", "bios",
+			"--bioslogofadein", "off",
+			"--bioslogofadeout", "off",
+			"--bioslogodisplaytime", "0",
+			"--biosbootmenu", "disabled",
+			"--ostype", "Linux26_64",
+			"--cpus", fmt.Sprintf("%d", cpus),
+			"--memory", fmt.Sprintf("%d", d.Memory),
+			"--acpi", "on",
+			"--ioapic", "on",
+			"--rtcuseutc", "on",
+			"--natdnshostresolver1", hostDNSResolver,
+			"--natdnsproxy1", dnsProxy,
+			"--cpuhotplug", "off",
+			"--pae", "on",
+			"--hpet", "on",
+			"--hwvirtex", "on",
+			"--nestedpaging", "on",
+			"--largepages", "on",
+			"--vtxvpid", "on",
+		}
+		if !d.NoAccelerate3DOff {
+			modifyFlags = append(modifyFlags, "--accelerate3d", "off")
+		}
+		modifyFlags = append(modifyFlags, "--boot1", "dvd")
+		if d.version > 6 {
+			modifyFlags = append(modifyFlags, "--natlocalhostreachable1", hostLoopbackReachable)
+		}
+		if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
+			modifyFlags = append(modifyFlags, "--longmode", "on")
+		}
 	}
 
 	if err := d.vbm(modifyFlags...); err != nil {
