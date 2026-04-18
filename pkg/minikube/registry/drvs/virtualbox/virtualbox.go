@@ -138,3 +138,36 @@ func status(_ *run.CommandOptions) registry.State {
 
 	return registry.State{Installed: true, Healthy: true, Version: version}
 }
+
+// parseVboxVersion extracts major and minor version numbers from the output of
+// `VBoxManage --version`. The reported string typically looks like
+// "7.2.6" or "7.1.12_Ubuntur169389" (a build suffix is appended to the patch
+// component on some distro builds). Only the major and minor are returned
+// because the arm64 gate only cares about >=7.1 and a soft warn below 7.2.
+func parseVboxVersion(v string) (major, minor int, err error) {
+	v = strings.TrimSpace(v)
+	parts := strings.SplitN(v, ".", 3)
+	if len(parts) < 2 {
+		return 0, 0, fmt.Errorf("unexpected VirtualBox version format: %q", v)
+	}
+	major, err = strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse major from %q: %w", v, err)
+	}
+	// Strip any trailing non-digit suffix from the minor component.
+	minorStr := parts[1]
+	for i, r := range minorStr {
+		if r < '0' || r > '9' {
+			minorStr = minorStr[:i]
+			break
+		}
+	}
+	if minorStr == "" {
+		return 0, 0, fmt.Errorf("no digits in minor component of %q", v)
+	}
+	minor, err = strconv.Atoi(minorStr)
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse minor from %q: %w", v, err)
+	}
+	return major, minor, nil
+}
