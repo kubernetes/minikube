@@ -1009,18 +1009,27 @@ func (d *Driver) setupHostOnlyNetworkVBox7(machineName string, ip net.IP, networ
 		return nil, err
 	}
 
-	// Check for collisions with existing host interfaces. Pass nil for the
-	// currHostOnlyNets arg — validateNoIPCollisions iterates over a nil map
-	// safely (range over nil map is a no-op in Go).
-	if err := validateNoIPCollisions(d.HostInterfaces, network, nil); err != nil {
+	// Shape the hostonlynet list the way validateNoIPCollisions expects, so
+	// host-side vboxnetN OS interfaces from prior runs are correctly excluded
+	// from the collision scan.
+	legacyShape := map[string]*hostOnlyNetwork{}
+	for k, n := range nets {
+		legacyShape[k] = &hostOnlyNetwork{
+			IPv4: net.IPNet{
+				IP:   n.LowerIP.Mask(n.NetworkMask),
+				Mask: n.NetworkMask,
+			},
+		}
+	}
+	if err := validateNoIPCollisions(d.HostInterfaces, network, legacyShape); err != nil {
 		return nil, err
 	}
 
 	lowerIP, upperIP := getDHCPAddressRange(ip, network)
 
-	// Reuse an existing hostonlynet if it covers the requested IP range on
-	// the same netmask; otherwise create one.
-	hon := findHostOnlyNetByRange(nets, ip, network.Mask)
+	// Reuse an existing hostonlynet if its subnet matches the requested one;
+	// otherwise create a new one.
+	hon := findHostOnlyNetByCIDR(nets, ip, network.Mask)
 	if hon == nil {
 		name := fmt.Sprintf("minikube-hostonly-%s", ip.String())
 		hon, err = createHostOnlyNet(d.VBoxManager, name, network.Mask, lowerIP, upperIP)

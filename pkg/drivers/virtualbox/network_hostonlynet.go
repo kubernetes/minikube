@@ -77,41 +77,21 @@ func listHostOnlyNets(vbox VBoxManager) (map[string]*hostOnlyNet, error) {
 	return byName, nil
 }
 
-// findHostOnlyNetByRange searches for an existing hostonlynet whose IP range
-// covers the given host IP in the given network. Returns nil if not found.
-func findHostOnlyNetByRange(nets map[string]*hostOnlyNet, hostIP net.IP, netmask net.IPMask) *hostOnlyNet {
+// findHostOnlyNetByCIDR searches for an existing hostonlynet that covers the
+// same subnet as hostIP/netmask. "Same subnet" means the stored net's
+// NetworkMask matches and the network address (LowerIP masked by NetworkMask)
+// equals the requested hostIP masked by netmask. Returns nil if not found.
+func findHostOnlyNetByCIDR(nets map[string]*hostOnlyNet, hostIP net.IP, netmask net.IPMask) *hostOnlyNet {
+	wantNet := hostIP.Mask(netmask)
 	for _, n := range nets {
-		if n.NetworkMask.String() == netmask.String() &&
-			n.LowerIP != nil && n.UpperIP != nil &&
-			ipInRange(hostIP, n.LowerIP, n.UpperIP) {
+		if n.NetworkMask.String() != netmask.String() || n.LowerIP == nil {
+			continue
+		}
+		if n.LowerIP.Mask(n.NetworkMask).Equal(wantNet) {
 			return n
 		}
 	}
 	return nil
-}
-
-// ipInRange reports whether ip is between lower and upper inclusive.
-// Assumes all three are IPv4.
-func ipInRange(ip, lower, upper net.IP) bool {
-	ip4 := ip.To4()
-	lo4 := lower.To4()
-	up4 := upper.To4()
-	if ip4 == nil || lo4 == nil || up4 == nil {
-		return false
-	}
-	return bytesCompare4(ip4, lo4) >= 0 && bytesCompare4(ip4, up4) <= 0
-}
-
-func bytesCompare4(a, b net.IP) int {
-	for i := 0; i < 4; i++ {
-		if a[i] < b[i] {
-			return -1
-		}
-		if a[i] > b[i] {
-			return 1
-		}
-	}
-	return 0
 }
 
 // createHostOnlyNet creates a new hostonlynet with the given name, netmask,

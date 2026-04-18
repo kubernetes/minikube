@@ -717,14 +717,11 @@ func TestStartWithHostOnlyAdapterCreationBug(t *testing.T) {
 
 	var calls []Call
 	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
-		// The hostonlyif creation-bug scenario does not apply on darwin/arm64;
-		// the hostonlynet API has no equivalent fallback path. Use the same
-		// happy-path tape as TestStart on arm64.
+		// Model the reuse path: a matching hostonlynet already exists from a
+		// prior start, so no hostonlynet add is issued and only one
+		// list hostonlynets call is made.
 		calls = []Call{
 			{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
-			{"vbm list hostonlynets", "", nil},
-			{"Interfaces", "", nil},
-			{"vbm hostonlynet add --name minikube-hostonly-192.168.99.1 --netmask 255.255.255.0 --lower-ip 192.168.99.100 --upper-ip 192.168.99.254 --enable", "", nil},
 			{"vbm list hostonlynets", `
 Name:            minikube-hostonly-192.168.99.1
 GUID:            00000000-0000-0000-0000-000000000001
@@ -734,6 +731,7 @@ NetworkMask:     255.255.255.0
 LowerIP:         192.168.99.100
 UpperIP:         192.168.99.254
 VBoxNetworkName: hostonly-minikube-hostonly-192.168.99.1`, nil},
+			{"Interfaces", "", nil},
 			{"vbm modifyvm default --nic2 hostonlynet --nictype2 82540EM --nicpromisc2 deny --host-only-net2 minikube-hostonly-192.168.99.1 --cableconnected2 on", "", nil},
 			{"IGNORE CALL", "", nil},
 			{"IGNORE CALL", "", nil},
