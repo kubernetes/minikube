@@ -171,3 +171,18 @@ func parseVboxVersion(v string) (major, minor int, err error) {
 	}
 	return major, minor, nil
 }
+
+// vboxArm64Policy reports whether the given VirtualBox version is acceptable
+// for use on darwin/arm64 (Apple Silicon). Apple Silicon host support was
+// added in VirtualBox 7.1; 7.2+ is recommended for stability. Below 7.1 the
+// driver cannot start at all — callers should surface this as an unhealthy
+// registry.State rather than letting VBoxManage fail at runtime.
+func vboxArm64Policy(major, minor int) (healthy bool, warn bool) {
+	if major < 7 || (major == 7 && minor < 1) {
+		return false, false
+	}
+	if major == 7 && minor < 2 {
+		return true, true
+	}
+	return true, false
+}

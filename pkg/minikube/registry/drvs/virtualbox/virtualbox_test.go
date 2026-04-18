@@ -52,3 +52,30 @@ func TestParseVboxVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestVboxArm64Policy(t *testing.T) {
+	tests := []struct {
+		name        string
+		major       int
+		minor       int
+		wantHealthy bool
+		wantWarn    bool
+	}{
+		{"pre-arm64 6.1", 6, 1, false, false},
+		{"pre-arm64 7.0", 7, 0, false, false},
+		{"first arm64 7.1", 7, 1, true, true},
+		{"arm64 7.1.x still warns", 7, 1, true, true},
+		{"current stable 7.2", 7, 2, true, false},
+		{"future 7.3", 7, 3, true, false},
+		{"future major 8.0", 8, 0, true, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			healthy, warn := vboxArm64Policy(tt.major, tt.minor)
+			if healthy != tt.wantHealthy || warn != tt.wantWarn {
+				t.Errorf("vboxArm64Policy(%d, %d) = (%v, %v), want (%v, %v)",
+					tt.major, tt.minor, healthy, warn, tt.wantHealthy, tt.wantWarn)
+			}
+		})
+	}
+}
