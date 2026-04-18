@@ -65,6 +65,10 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	d.DiskSize = cc.DiskSize
 	d.HostOnlyCIDR = cc.HostOnlyCIDR
 	d.NoShare = cc.DisableDriverMounts
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" && !d.NoShare {
+		klog.Infof("darwin/arm64: forcing NoShare=true; arm64 minikube ISO lacks VirtualBox Guest Additions")
+		d.NoShare = true
+	}
 	d.NoVTXCheck = cc.NoVTXCheck
 	d.NatNicType = cc.NatNicType
 	d.HostOnlyNicType = cc.HostOnlyNicType
