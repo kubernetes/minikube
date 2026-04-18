@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -126,12 +127,29 @@ func status(_ *run.CommandOptions) registry.State {
 		}
 	}
 
-	majorVers := (strings.Split(version, "."))[0]
-	majorVersInt, cerr := strconv.Atoi(majorVers)
-	if cerr != nil {
-		klog.Warningf("unable to convert major version: %s of vbox to an int %v", majorVers, cerr)
-	} else if majorVersInt < vboxSupportedMajorVersion {
-		out.WarningT("Minimum VirtualBox Version supported: {{.vers}}, current VirtualBox version: {{.cvers}}", out.V{"vers": vboxSupportedMajorVersion, "cvers": majorVersInt})
+	major, minor, perr := parseVboxVersion(version)
+	if perr != nil {
+		klog.Warningf("unable to parse virtualbox version %q: %v", version, perr)
+	} else {
+		if major < vboxSupportedMajorVersion {
+			out.WarningT("Minimum VirtualBox Version supported: {{.vers}}, current VirtualBox version: {{.cvers}}", out.V{"vers": vboxSupportedMajorVersion, "cvers": major})
+		}
+		if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+			healthy, warn := vboxArm64Policy(major, minor)
+			if !healthy {
+				return registry.State{
+					Installed: true,
+					Healthy:   false,
+					Error:     fmt.Errorf("VirtualBox %d.%d is too old for Apple Silicon; host support was added in VirtualBox 7.1", major, minor),
+					Fix:       "Upgrade to VirtualBox 7.1 or later (7.2+ recommended)",
+					Doc:       docURL,
+					Version:   version,
+				}
+			}
+			if warn {
+				out.WarningT("VirtualBox {{.v}} works on Apple Silicon but 7.2 or later is recommended for stability", out.V{"v": fmt.Sprintf("%d.%d", major, minor)})
+			}
+		}
 	}
 
 	klog.Infof("virtual box version: %s", version)
