@@ -1042,6 +1042,9 @@ func (d *Driver) setupHostOnlyNetworkVBox7(machineName string, ip net.IP, networ
 	// otherwise create a new one.
 	hon := findHostOnlyNetByCIDR(nets, ip, network.Mask)
 	if hon == nil {
+		// NOTE: the name format "minikube-hostonly-<ip>" is read back by
+		// pkg/minikube/cluster/ip.go's HostIP() when resolving the host's
+		// address. Keep the two sites in sync if this format changes.
 		name := fmt.Sprintf("minikube-hostonly-%s", ip.String())
 		hon, err = createHostOnlyNet(d.VBoxManager, name, network.Mask, lowerIP, upperIP)
 		if err != nil {

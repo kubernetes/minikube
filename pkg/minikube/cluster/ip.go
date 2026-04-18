@@ -102,6 +102,11 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 		// `list hostonlyifs` is empty on that path, so look up `list
 		// hostonlynets` and find the matching host-side IP by enumerating
 		// local interfaces whose subnet overlaps the hostonlynet.
+		// Names written here originate in
+		// pkg/drivers/virtualbox.setupHostOnlyNetworkVBox7 which creates
+		// hostonlynets with the format "minikube-hostonly-<ip>". This code
+		// is tolerant of any name the driver produces; the comment is a
+		// reminder for future renames.
 		if m := regexp.MustCompile(`hostonly-network2="(.*?)"`).FindStringSubmatch(string(out)); m != nil {
 			netName := m[1]
 			netList, err := exec.Command(vBoxManageCmd, "list", "hostonlynets").Output()
