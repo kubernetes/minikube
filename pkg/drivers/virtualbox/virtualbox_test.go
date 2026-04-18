@@ -638,12 +638,37 @@ func TestCreateVMWithoutAccelerate3D(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	driver := NewDriver("default", "path")
-	mockCalls(t, driver, []Call{
-		{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
-		{"vbm list hostonlyifs", "", nil},
-		{"Interfaces", "", nil},
-		{"vbm hostonlyif create", "Interface 'VirtualBox Host-Only Ethernet Adapter' was successfully created", nil},
-		{"vbm list hostonlyifs", `
+
+	var calls []Call
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		calls = []Call{
+			{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
+			{"vbm list hostonlynets", "", nil},
+			{"Interfaces", "", nil},
+			{"vbm hostonlynet add --name minikube-hostonly-192.168.99.1 --netmask 255.255.255.0 --lower-ip 192.168.99.100 --upper-ip 192.168.99.254 --enable", "", nil},
+			{"vbm list hostonlynets", `
+Name:            minikube-hostonly-192.168.99.1
+GUID:            00000000-0000-0000-0000-000000000001
+
+State:           Enabled
+NetworkMask:     255.255.255.0
+LowerIP:         192.168.99.100
+UpperIP:         192.168.99.254
+VBoxNetworkName: hostonly-minikube-hostonly-192.168.99.1`, nil},
+			{"vbm modifyvm default --nic2 hostonlynet --nictype2 82540EM --nicpromisc2 deny --host-only-net2 minikube-hostonly-192.168.99.1 --cableconnected2 on", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"vbm startvm default --type headless", "", nil},
+			{"Read path/machines/default/default/Logs/VBox.log", "", nil},
+			{"WaitIP", "", nil},
+		}
+	} else {
+		calls = []Call{
+			{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
+			{"vbm list hostonlyifs", "", nil},
+			{"Interfaces", "", nil},
+			{"vbm hostonlyif create", "Interface 'VirtualBox Host-Only Ethernet Adapter' was successfully created", nil},
+			{"vbm list hostonlyifs", `
 Name:            VirtualBox Host-Only Ethernet Adapter
 GUID:            786f6276-656e-4074-8000-0a0027000000
 DHCP:            Disabled
@@ -655,17 +680,17 @@ HardwareAddress: 0a:00:27:00:00:00
 MediumType:      Ethernet
 Status:          Up
 VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter`, nil},
-		{"vbm hostonlyif ipconfig VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.1 --netmask 255.255.255.0", "", nil},
-		{"vbm list dhcpservers", "", nil},
-		{"vbm list dhcpservers", "", nil},
-		{"vbm dhcpserver add --netname HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.6 --netmask 255.255.255.0 --lowerip 192.168.99.100 --upperip 192.168.99.254 --enable", "", nil},
-		{"vbm modifyvm default --nic2 hostonly --nictype2 82540EM --nicpromisc2 deny --hostonlyadapter2 VirtualBox Host-Only Ethernet Adapter --cableconnected2 on", "", nil},
-		{"IGNORE CALL", "", nil},
-		{"IGNORE CALL", "", nil},
-		{"vbm startvm default --type headless", "", nil},
-		{"Read path/machines/default/default/Logs/VBox.log", "", nil},
-		{"WaitIP", "", nil},
-		{"vbm list hostonlyifs", `
+			{"vbm hostonlyif ipconfig VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.1 --netmask 255.255.255.0", "", nil},
+			{"vbm list dhcpservers", "", nil},
+			{"vbm list dhcpservers", "", nil},
+			{"vbm dhcpserver add --netname HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.6 --netmask 255.255.255.0 --lowerip 192.168.99.100 --upperip 192.168.99.254 --enable", "", nil},
+			{"vbm modifyvm default --nic2 hostonly --nictype2 82540EM --nicpromisc2 deny --hostonlyadapter2 VirtualBox Host-Only Ethernet Adapter --cableconnected2 on", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"vbm startvm default --type headless", "", nil},
+			{"Read path/machines/default/default/Logs/VBox.log", "", nil},
+			{"WaitIP", "", nil},
+			{"vbm list hostonlyifs", `
 Name:            VirtualBox Host-Only Ethernet Adapter
 GUID:            786f6276-656e-4074-8000-0a0027000000
 DHCP:            Disabled
@@ -677,8 +702,10 @@ HardwareAddress: 0a:00:27:00:00:00
 MediumType:      Ethernet
 Status:          Up
 VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter`, nil},
-		{"Interfaces", "", nil},
-	})
+			{"Interfaces", "", nil},
+		}
+	}
+	mockCalls(t, driver, calls)
 
 	err := driver.Start()
 
@@ -687,13 +714,41 @@ VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter`,
 
 func TestStartWithHostOnlyAdapterCreationBug(t *testing.T) {
 	driver := NewDriver("default", "path")
-	mockCalls(t, driver, []Call{
-		{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
-		{"vbm list hostonlyifs", "", nil},
-		{"Interfaces", "", nil},
-		{"vbm hostonlyif create", "", errors.New("error: Failed to create the host-only adapter")},
-		{"vbm list hostonlyifs", "", nil},
-		{"vbm list hostonlyifs", `
+
+	var calls []Call
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		// The hostonlyif creation-bug scenario does not apply on darwin/arm64;
+		// the hostonlynet API has no equivalent fallback path. Use the same
+		// happy-path tape as TestStart on arm64.
+		calls = []Call{
+			{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
+			{"vbm list hostonlynets", "", nil},
+			{"Interfaces", "", nil},
+			{"vbm hostonlynet add --name minikube-hostonly-192.168.99.1 --netmask 255.255.255.0 --lower-ip 192.168.99.100 --upper-ip 192.168.99.254 --enable", "", nil},
+			{"vbm list hostonlynets", `
+Name:            minikube-hostonly-192.168.99.1
+GUID:            00000000-0000-0000-0000-000000000001
+
+State:           Enabled
+NetworkMask:     255.255.255.0
+LowerIP:         192.168.99.100
+UpperIP:         192.168.99.254
+VBoxNetworkName: hostonly-minikube-hostonly-192.168.99.1`, nil},
+			{"vbm modifyvm default --nic2 hostonlynet --nictype2 82540EM --nicpromisc2 deny --host-only-net2 minikube-hostonly-192.168.99.1 --cableconnected2 on", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"vbm startvm default --type headless", "", nil},
+			{"Read path/machines/default/default/Logs/VBox.log", "", nil},
+			{"WaitIP", "", nil},
+		}
+	} else {
+		calls = []Call{
+			{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
+			{"vbm list hostonlyifs", "", nil},
+			{"Interfaces", "", nil},
+			{"vbm hostonlyif create", "", errors.New("error: Failed to create the host-only adapter")},
+			{"vbm list hostonlyifs", "", nil},
+			{"vbm list hostonlyifs", `
 Name:            VirtualBox Host-Only Ethernet Adapter
 GUID:            786f6276-656e-4074-8000-0a0027000000
 DHCP:            Disabled
@@ -705,17 +760,17 @@ HardwareAddress: 0a:00:27:00:00:00
 MediumType:      Ethernet
 Status:          Up
 VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter`, nil},
-		{"vbm hostonlyif ipconfig VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.1 --netmask 255.255.255.0", "", nil},
-		{"vbm list dhcpservers", "", nil},
-		{"vbm list dhcpservers", "", nil},
-		{"vbm dhcpserver add --netname HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.6 --netmask 255.255.255.0 --lowerip 192.168.99.100 --upperip 192.168.99.254 --enable", "", nil},
-		{"vbm modifyvm default --nic2 hostonly --nictype2 82540EM --nicpromisc2 deny --hostonlyadapter2 VirtualBox Host-Only Ethernet Adapter --cableconnected2 on", "", nil},
-		{"IGNORE CALL", "", nil},
-		{"IGNORE CALL", "", nil},
-		{"vbm startvm default --type headless", "", nil},
-		{"Read path/machines/default/default/Logs/VBox.log", "", nil},
-		{"WaitIP", "", nil},
-		{"vbm list hostonlyifs", `
+			{"vbm hostonlyif ipconfig VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.1 --netmask 255.255.255.0", "", nil},
+			{"vbm list dhcpservers", "", nil},
+			{"vbm list dhcpservers", "", nil},
+			{"vbm dhcpserver add --netname HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.6 --netmask 255.255.255.0 --lowerip 192.168.99.100 --upperip 192.168.99.254 --enable", "", nil},
+			{"vbm modifyvm default --nic2 hostonly --nictype2 82540EM --nicpromisc2 deny --hostonlyadapter2 VirtualBox Host-Only Ethernet Adapter --cableconnected2 on", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"vbm startvm default --type headless", "", nil},
+			{"Read path/machines/default/default/Logs/VBox.log", "", nil},
+			{"WaitIP", "", nil},
+			{"vbm list hostonlyifs", `
 Name:            VirtualBox Host-Only Ethernet Adapter
 GUID:            786f6276-656e-4074-8000-0a0027000000
 DHCP:            Disabled
@@ -727,16 +782,18 @@ HardwareAddress: 0a:00:27:00:00:00
 MediumType:      Ethernet
 Status:          Up
 VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter`, nil},
-		{"Interfaces", "", nil},
-		{"vbm showvminfo default --machinereadable", `VMState="running"`, nil},
-		{"vbm controlvm default acpipowerbutton", "", nil},
-		{"vbm showvminfo default --machinereadable", `VMState="stopped"`, nil},
-		{"Sleep 5s", "", nil},
-		{"vbm hostonlyif ipconfig VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.1 --netmask 255.255.255.0", "", nil},
-		{"Sleep 5s", "", nil},
-		{"vbm startvm default --type headless", "", nil},
-		{"WaitIP", "", nil},
-	})
+			{"Interfaces", "", nil},
+			{"vbm showvminfo default --machinereadable", `VMState="running"`, nil},
+			{"vbm controlvm default acpipowerbutton", "", nil},
+			{"vbm showvminfo default --machinereadable", `VMState="stopped"`, nil},
+			{"Sleep 5s", "", nil},
+			{"vbm hostonlyif ipconfig VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.1 --netmask 255.255.255.0", "", nil},
+			{"Sleep 5s", "", nil},
+			{"vbm startvm default --type headless", "", nil},
+			{"WaitIP", "", nil},
+		}
+	}
+	mockCalls(t, driver, calls)
 
 	err := driver.Start()
 

@@ -664,6 +664,13 @@ func (d *Driver) Start() error {
 		return nil
 	}
 
+	// On darwin/arm64 the hostonlynet API manages the network; the legacy
+	// adapter corruption check is not applicable and listHostOnlyAdapters
+	// would fail without /dev/vboxnetctl.
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		return nil
+	}
+
 	// Check that the host-only adapter we just created can still be found
 	// Sometimes it is corrupted after the VM is started.
 	nets, err := listHostOnlyAdapters(d.VBoxManager)
@@ -934,6 +941,10 @@ func (d *Driver) setupHostOnlyNetwork(machineName string) (*hostOnlyNetwork, err
 		return nil, err
 	}
 
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		return d.setupHostOnlyNetworkVBox7(machineName, ip, network)
+	}
+
 	nets, err := listHostOnlyAdapters(d.VBoxManager)
 	if err != nil {
 		return nil, err
@@ -983,6 +994,61 @@ func (d *Driver) setupHostOnlyNetwork(machineName string) (*hostOnlyNetwork, err
 	}
 
 	return hostOnlyAdapter, nil
+}
+
+// setupHostOnlyNetworkVBox7 implements the host-only network setup using the
+// VBox 7.x hostonlynet API. This is required on darwin/arm64 because the
+// legacy hostonlyif mechanism depends on the /dev/vboxnetctl kernel extension
+// which does not exist on Apple Silicon.
+//
+// Unlike the legacy path, hostonlynet bundles IP-range/DHCP config into the
+// `hostonlynet add` command, so no separate DHCP server management is needed.
+func (d *Driver) setupHostOnlyNetworkVBox7(machineName string, ip net.IP, network *net.IPNet) (*hostOnlyNetwork, error) {
+	nets, err := listHostOnlyNets(d.VBoxManager)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check for collisions with existing host interfaces. Pass nil for the
+	// currHostOnlyNets arg — validateNoIPCollisions iterates over a nil map
+	// safely (range over nil map is a no-op in Go).
+	if err := validateNoIPCollisions(d.HostInterfaces, network, nil); err != nil {
+		return nil, err
+	}
+
+	lowerIP, upperIP := getDHCPAddressRange(ip, network)
+
+	// Reuse an existing hostonlynet if it covers the requested IP range on
+	// the same netmask; otherwise create one.
+	hon := findHostOnlyNetByRange(nets, ip, network.Mask)
+	if hon == nil {
+		name := fmt.Sprintf("minikube-hostonly-%s", ip.String())
+		hon, err = createHostOnlyNet(d.VBoxManager, name, network.Mask, lowerIP, upperIP)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Attach NIC2 to the hostonlynet. Note the flag names differ from the
+	// legacy path: --nic2 hostonlynet (not hostonly) and --host-only-net2
+	// (not --hostonlyadapter2). --nictype2 and --nicpromisc2 and
+	// --cableconnected2 are still accepted.
+	if err := d.vbm("modifyvm", machineName,
+		"--nic2", "hostonlynet",
+		"--nictype2", d.HostOnlyNicType,
+		"--nicpromisc2", d.HostOnlyPromiscMode,
+		"--host-only-net2", hon.Name,
+		"--cableconnected2", "on"); err != nil {
+		return nil, err
+	}
+
+	// Return a hostOnlyNetwork-shaped struct so the caller's type expectation
+	// holds. Only Name is used downstream on this path.
+	return &hostOnlyNetwork{
+		Name:        hon.Name,
+		IPv4:        net.IPNet{IP: ip, Mask: network.Mask},
+		NetworkName: hon.VBoxNetworkName,
+	}, nil
 }
 
 func getDHCPAddressRange(dhcpAddr net.IP, network *net.IPNet) (lowerIP net.IP, upperIP net.IP) {
