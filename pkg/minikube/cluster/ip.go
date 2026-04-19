@@ -28,6 +28,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/drivers/virtualbox"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -91,51 +92,11 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 
 		return ip, nil
 	case driver.VirtualBox:
-		vBoxManageCmd := driver.VBoxManagePath()
-		out, err := exec.Command(vBoxManageCmd, "showvminfo", hostInfo.Name, "--machinereadable").Output()
-		if err != nil {
-			return []byte{}, fmt.Errorf("vboxmanage: %w", err)
+		vbxDriver, ok := hostInfo.Driver.(*virtualbox.Driver)
+		if !ok {
+			return []byte{}, fmt.Errorf("unexpected driver type %T for virtualbox case", hostInfo.Driver)
 		}
-		// VBox 7.x ARM (darwin/arm64) uses the hostonlynet API, which exposes
-		// the attached network as hostonly-network<N>= in showvminfo output
-		// (rather than the legacy hostonlyadapter<N>= for hostonlyif).
-		// `list hostonlyifs` is empty on that path, so look up `list
-		// hostonlynets` and find the matching host-side IP by enumerating
-		// local interfaces whose subnet overlaps the hostonlynet.
-		// Names written here originate in
-		// pkg/drivers/virtualbox.setupHostOnlyNetworkVBox7 which creates
-		// hostonlynets with the format "minikube-hostonly-<ip>". This code
-		// is tolerant of any name the driver produces; the comment is a
-		// reminder for future renames.
-		if m := regexp.MustCompile(`hostonly-network2="(.*?)"`).FindStringSubmatch(string(out)); m != nil {
-			netName := m[1]
-			netList, err := exec.Command(vBoxManageCmd, "list", "hostonlynets").Output()
-			if err != nil {
-				return []byte{}, fmt.Errorf("Error getting VM/Host IP address: %w", err)
-			}
-			mask, netAddr, err := parseHostOnlyNet(string(netList), netName)
-			if err != nil {
-				return []byte{}, fmt.Errorf("hostonlynet %q: %w", netName, err)
-			}
-			if mask == nil {
-				return []byte{}, fmt.Errorf("hostonlynet %q not found in `VBoxManage list hostonlynets` output", netName)
-			}
-			hostIP, err := findHostIPInSubnet(netAddr, mask)
-			if err != nil {
-				return []byte{}, fmt.Errorf("host IP for hostonlynet %q: %w", netName, err)
-			}
-			return hostIP, nil
-		}
-		re := regexp.MustCompile(`hostonlyadapter2="(.*?)"`)
-		iface := re.FindStringSubmatch(string(out))[1]
-		ipList, err := exec.Command(vBoxManageCmd, "list", "hostonlyifs").Output()
-		if err != nil {
-			return []byte{}, fmt.Errorf("Error getting VM/Host IP address: %w", err)
-		}
-		re = regexp.MustCompile(`(?sm)Name:\s*` + iface + `\s*$.+?IPAddress:\s*(\S+)`)
-		ip := re.FindStringSubmatch(string(ipList))[1]
-
-		return net.ParseIP(ip), nil
+		return vbxDriver.HostInterfaceIP()
 	case driver.Parallels:
 		bin := "prlsrvctl"
 		var binPath string
@@ -254,102 +215,4 @@ func getIPForInterface(name string) (net.IP, error) {
 		}
 	}
 	return nil, fmt.Errorf("Unable to find a IPv4 address for interface %q", name)
-}
-
-// findHostIPInSubnet returns the first IPv4 address on any local interface
-// that lies in the given subnet. Used on darwin/arm64 with the hostonlynet
-// API where the host-side IP is auto-assigned by VirtualBox and the actual
-// address is only discoverable by enumerating local interfaces.
-func findHostIPInSubnet(netAddr net.IP, mask net.IPMask) (net.IP, error) {
-	ints, err := net.Interfaces()
-	if err != nil {
-		return nil, err
-	}
-	for _, in := range ints {
-		addrs, err := in.Addrs()
-		if err != nil {
-			continue
-		}
-		for _, a := range addrs {
-			ipnet, ok := a.(*net.IPNet)
-			if !ok {
-				continue
-			}
-			ip4 := ipnet.IP.To4()
-			if ip4 == nil {
-				continue
-			}
-			if ip4.Mask(mask).Equal(netAddr) {
-				return ip4, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("no local interface found with an IPv4 address in %s/%d", netAddr, maskOnes(mask))
-}
-
-func maskOnes(mask net.IPMask) int {
-	ones, _ := mask.Size()
-	return ones
-}
-
-// parseHostOnlyNet extracts the NetworkMask and LowerIP for the named
-// hostonlynet from the output of `VBoxManage list hostonlynets`. The
-// function is order-tolerant within a record and tolerant of whitespace
-// variation. Returns nil, nil if the name isn't found.
-//
-// Records are delimited by a line starting with "Name:". Blank lines within
-// a record (VBoxManage emits one between GUID and State) are ignored.
-func parseHostOnlyNet(listOutput, name string) (mask net.IPMask, network net.IP, err error) {
-	var blockName, maskStr, lowerStr string
-	// finish evaluates the current record against `name` and, if matched,
-	// parses and returns the mask/network. It is called when a new record
-	// begins (next "Name:" line) and at end-of-input.
-	finish := func() (bool, net.IPMask, net.IP, error) {
-		if blockName != name {
-			return false, nil, nil, nil
-		}
-		if maskStr == "" || lowerStr == "" {
-			return true, nil, nil, fmt.Errorf("hostonlynet %q record missing NetworkMask or LowerIP", name)
-		}
-		mip := net.ParseIP(maskStr).To4()
-		if mip == nil {
-			return true, nil, nil, fmt.Errorf("hostonlynet %q: unable to parse NetworkMask %q", name, maskStr)
-		}
-		lip := net.ParseIP(lowerStr).To4()
-		if lip == nil {
-			return true, nil, nil, fmt.Errorf("hostonlynet %q: unable to parse LowerIP %q", name, lowerStr)
-		}
-		m := net.IPMask(mip)
-		return true, m, lip.Mask(m), nil
-	}
-
-	for _, line := range strings.Split(listOutput, "\n") {
-		parts := strings.SplitN(strings.TrimSpace(line), ":", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		key := strings.TrimSpace(parts[0])
-		val := strings.TrimSpace(parts[1])
-		switch key {
-		case "Name":
-			// Starting a new record: evaluate the previous one.
-			if blockName != "" {
-				if matched, m, n, err := finish(); matched {
-					return m, n, err
-				}
-			}
-			blockName, maskStr, lowerStr = val, "", ""
-		case "NetworkMask":
-			maskStr = val
-		case "LowerIP":
-			lowerStr = val
-		}
-	}
-	// Evaluate the last record.
-	if blockName != "" {
-		if matched, m, n, err := finish(); matched {
-			return m, n, err
-		}
-	}
-	return nil, nil, nil
 }
