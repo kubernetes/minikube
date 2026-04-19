@@ -292,6 +292,11 @@ buildroot:
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
+		for p in $(CURDIR)/deploy/iso/minikube-iso/patches/buildroot/*.patch; do \
+			[ -f "$$p" ] || continue; \
+			echo "Applying buildroot patch: $$p"; \
+			(cd $(BUILD_DIR)/buildroot && patch -p1 -i "$$p") || exit 1; \
+		done; \
 	fi;
 
 # Change buildroot configuration for the minikube ISO
