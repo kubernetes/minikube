@@ -38,6 +38,7 @@ ARG NERDCTLD_VERSION="0.7.0"
 COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
 COPY 11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
 COPY 02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
+COPY registries.conf /etc/containers/registries.conf
 COPY containerd.toml /etc/containerd/config.toml
 COPY containerd_docker_io_hosts.toml /etc/containerd/certs.d/docker.io/hosts.toml
 COPY clean-install /usr/local/bin/clean-install
