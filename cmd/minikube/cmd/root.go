@@ -209,6 +209,8 @@ func usageTemplate() string {
 
 func init() {
 	klog.InitFlags(nil)
+	flag.Set("legacy_stderr_threshold_behavior", "false") //nolint:errcheck
+	flag.Set("stderrthreshold", "INFO")                   //nolint:errcheck
 	// preset logtostderr and alsologtostderr only for test runs, for normal runs consider flags in main()
 	if strings.HasPrefix(filepath.Base(os.Args[0]), "e2e-") || strings.HasSuffix(os.Args[0], "test") {
 		if err := flag.Set("logtostderr", "false"); err != nil {
