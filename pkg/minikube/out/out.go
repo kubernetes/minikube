@@ -29,7 +29,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/Delta456/box-cli-maker/v2"
+	"github.com/box-cli-maker/box-cli-maker/v3"
 	"github.com/briandowns/spinner"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/pflag"
@@ -67,8 +67,8 @@ var (
 	JSON = false
 	// spin is spinner showed at starting minikube
 	spin = spinner.New(spinner.CharSets[style.SpinnerCharacter], 100*time.Millisecond, spinner.WithWriter(outFile))
-	// defaultBoxCfg is the default style config for cli box output
-	defaultBoxCfg = box.Config{Py: 1, Px: 4, Type: "Round", Color: "Red"}
+	// defaultBox is the default box configuration for cli box output
+	defaultBox = box.NewBox().Style(box.Round).Padding(4, 1).Color(box.Red)
 	// alreadyShoweddGitHubIssueMessage is used to prevent showing the GitHub issue message multiple times
 	alreadyShoweddGitHubIssueMessage = false
 )
@@ -117,27 +117,27 @@ func Styled(st style.Enum, format string, a ...V) {
 	}
 }
 
-func boxedCommon(printFunc func(format string, a ...interface{}), cfg box.Config, title string, format string, a ...V) {
-	b := box.New(cfg)
+func boxedCommon(printFunc func(format string, a ...interface{}), bcfg *box.Box, title string, format string, a ...V) {
+	b := bcfg.Copy()
 	if !useColor {
-		b.Color = nil
+		b.Color("")
 	}
 	str := Sprintf(style.None, format, a...)
-	printFunc(b.String(title, strings.TrimSpace(str)))
+	printFunc(b.MustRender(title, strings.TrimSpace(str)))
 }
 
 // Boxed writes a stylized and templated message in a box to stdout using the default style config
 func Boxed(format string, a ...V) {
-	boxedCommon(Stringf, defaultBoxCfg, "", format, a...)
+	boxedCommon(Stringf, defaultBox, "", format, a...)
 }
 
 // BoxedErr writes a stylized and templated message in a box to stderr using the default style config
 func BoxedErr(format string, a ...V) {
-	boxedCommon(Errf, defaultBoxCfg, "", format, a...)
+	boxedCommon(Errf, defaultBox, "", format, a...)
 }
 
 // BoxedWithConfig writes a templated message in a box with customized style config to stdout
-func BoxedWithConfig(cfg box.Config, st style.Enum, title string, text string, a ...V) {
+func BoxedWithConfig(cfg *box.Box, st style.Enum, title string, text string, a ...V) {
 	if st != style.None {
 		title = Sprintf(st, title)
 	}
