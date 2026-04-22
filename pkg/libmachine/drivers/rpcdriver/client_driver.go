@@ -172,7 +172,7 @@ func (f *DefaultRPCClientDriverFactory) NewRPCClientDriver(driverName string, ra
 	if err := c.Client.Call(GetVersionMethod, struct{}{}, &serverVersion); err != nil {
 		// this is the first call we make to the server. We try to play nice with old pre 0.5.1 client,
 		// by gracefully trying old RPCServiceName, we do this only once, and keep the result for future calls.
-		log.Debugf(err.Error())
+		log.Debugf("%s", err.Error())
 		log.Debugf("Client (%s) with %s does not work, re-attempting with %s", c.Client.MachineName, RPCServiceNameV1, RPCServiceNameV0)
 		c.Client.switchToV0()
 		if err := c.Client.Call(GetVersionMethod, struct{}{}, &serverVersion); err != nil {
