@@ -22,7 +22,7 @@ jobs:
         id: bumpGolang
         run: |
           echo "OLD_VERSION=$(DEP=golang make get-dependency-version)" >> "$GITHUB_OUTPUT"
-          make update-golang-version
+          make update-golang-version GOTOOLCHAIN=auto
           echo "NEW_VERSION=$(DEP=golang make get-dependency-version)" >> "$GITHUB_OUTPUT"
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
           echo "changes<<EOF" >> "$GITHUB_OUTPUT"
