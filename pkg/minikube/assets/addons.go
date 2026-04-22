@@ -381,7 +381,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "registry", "minikube", "", "", map[string]string{
 		"KubeRegistryProxy": "minikube/kube-registry-proxy:v0.0.11@sha256:e321acf067df0a78fba3ff97748c10029ca2c413c5b7207e4ca000c62fcdac93",
-		"Registry":          "registry:3.1.0@sha256:afcd13fd045b8859ac4f60fef26fc2d2f9b7b9d9e604c3c4f7c2fb1b94f95a64",
+		"Registry":          "registry:3.1.0@sha256:8a7c1aae9db5028cbc1cfe83e5969d270a50e8bc0b72eef3cc5657542ec383c9",
 	}, map[string]string{
 		"KubeRegistryProxy": "registry.k8s.io",
 		"Registry":          "docker.io",
