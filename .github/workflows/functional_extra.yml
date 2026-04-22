@@ -30,18 +30,18 @@ jobs:
       VM_NAME: m-${{ github.event.pull_request.number || github.ref_name }}-${{ github.run_id }}
       STACK_NAME: ${{ github.event.pull_request.number || github.ref_name }}-${{ github.run_id }}-stack
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # pull_request_target checks out the base branch by default
           # We need to explicitly checkout the PR's head commit to test the changes
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - name: Azure Login
         id: azlogin
-        uses: azure/login@v3
+        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
         with:
           creds: '{"clientId":"${{ secrets.MINIKUBE_AZ_CLIENT_ID }}","clientSecret":"${{ secrets.MINIKUBE_AZ_PASSWORD }}","subscriptionId":"${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.MINIKUBE_AZ_TENANT_ID }}"}'
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -54,7 +54,7 @@ jobs:
         uses: ./.github/actions/install-gopogh
       - name: Create VM
         id: create_vm
-        uses: azure/bicep-deploy@v2
+        uses: azure/bicep-deploy@66910e9c5c7733c33a1cd605030d02234b3bc4ed # v2.3.0
         with:
           type: deploymentStack
           operation: create

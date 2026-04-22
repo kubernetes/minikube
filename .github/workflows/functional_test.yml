@@ -142,8 +142,8 @@ jobs:
             test-timeout: 10m
     steps:
       - id: info-block
-        uses: medyagh/info-block@main
-      - uses: actions/checkout@v6
+        uses: medyagh/info-block@f5c042624acf8ce21bed4b0de77962e0a56ad88e # v1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
         with:
@@ -258,7 +258,7 @@ jobs:
           echo "=== podman ps ==="
           podman ps || true
       - name: Install kubectl
-        uses: azure/setup-kubectl@v5
+        uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
       - name: Install qemu and socket_vmnet (macos)
         if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
         run: |
