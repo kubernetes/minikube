@@ -63,7 +63,7 @@ jobs:
             sudo: ""
     steps:
       - id: info-block
-        uses: medyagh/info-block@main
+        uses: medyagh/info-block@f5c042624acf8ce21bed4b0de77962e0a56ad88e # v1
       - name: Disable spotlight indexing (macos)
         if: contains(matrix.os, 'macos')
         run: |
