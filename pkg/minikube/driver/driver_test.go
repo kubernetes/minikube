@@ -265,7 +265,7 @@ func TestIndexFromMachineName(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			got := IndexFromMachineName(tc.MachineName)
 			if got != tc.Want {
-				t.Errorf("want order %q but got %q", tc.Want, got)
+				t.Errorf("want order %d but got %d", tc.Want, got)
 
 			}
 		})

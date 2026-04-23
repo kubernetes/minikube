@@ -76,7 +76,7 @@ func findVBoxInstallDirInRegistry() (string, error) {
 	registryKey, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Oracle\VirtualBox`, registry.QUERY_VALUE)
 	if err != nil {
 		errorMessage := fmt.Sprintf("Can't find VirtualBox registry entries, is VirtualBox really installed properly? %s", err)
-		log.Debugf(errorMessage)
+		log.Debugf("%s", errorMessage)
 		return "", fmt.Errorf("%s", errorMessage)
 	}
 
@@ -85,7 +85,7 @@ func findVBoxInstallDirInRegistry() (string, error) {
 	installDir, _, err := registryKey.GetStringValue("InstallDir")
 	if err != nil {
 		errorMessage := fmt.Sprintf("Can't find InstallDir registry key within VirtualBox registries entries, is VirtualBox really installed properly? %s", err)
-		log.Debugf(errorMessage)
+		log.Debugf("%s", errorMessage)
 		return "", fmt.Errorf("%s", errorMessage)
 	}
 
@@ -100,8 +100,7 @@ func isHyperVInstalled() bool {
 	// check if hyper-v is installed
 	_, err := exec.LookPath("vmms.exe")
 	if err != nil {
-		errmsg := "Hyper-V is not installed."
-		log.Debugf(errmsg, err)
+		log.Debugf("Hyper-V is not installed: %v", err)
 		return false
 	}
 
@@ -110,8 +109,7 @@ func isHyperVInstalled() bool {
 	output, err := cmdOutput("wmic", "computersystem", "get", "hypervisorpresent")
 
 	if err != nil {
-		errmsg := "Could not check to see if Hyper-V is running."
-		log.Debugf(errmsg, err)
+		log.Debugf("Could not check to see if Hyper-V is running: %v", err)
 		return false
 	}
 

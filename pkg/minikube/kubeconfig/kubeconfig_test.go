@@ -593,7 +593,7 @@ func Test_Endpoint(t *testing.T) {
 				t.Errorf("got hostname = %q, want hostname = %q", hostname, test.hostname)
 			}
 			if port != test.port {
-				t.Errorf("got port = %q, want port = %q", port, test.port)
+				t.Errorf("got port = %d, want port = %d", port, test.port)
 			}
 		})
 	}

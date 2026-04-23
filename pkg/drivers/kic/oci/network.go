@@ -195,7 +195,7 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	p, err := strconv.Atoi(o)
 
 	if err != nil {
-		return p, fmt.Errorf("convert host-port %q to number: %w", p, err)
+		return p, fmt.Errorf("convert host-port %q to number: %w", o, err)
 	}
 
 	return p, nil
