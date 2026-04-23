@@ -134,6 +134,16 @@ func status(_ *run.CommandOptions) registry.State {
 	major, minor, perr := parseVboxVersion(version)
 	if perr != nil {
 		klog.Warningf("unable to parse virtualbox version %q: %v", version, perr)
+		if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+			return registry.State{
+				Installed: true,
+				Healthy:   false,
+				Error:     fmt.Errorf("unable to parse VirtualBox version %q: %w", version, perr),
+				Fix:       "Ensure VirtualBox 7.1 or later is installed (7.2+ recommended for Apple Silicon)",
+				Doc:       docURL,
+				Version:   version,
+			}
+		}
 	} else {
 		if major < vboxSupportedMajorVersion {
 			out.WarningT("Minimum VirtualBox Version supported: {{.vers}}, current VirtualBox version: {{.cvers}}", out.V{"vers": vboxSupportedMajorVersion, "cvers": major})
