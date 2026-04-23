@@ -745,6 +745,9 @@ NetworkMask:     255.255.255.0
 LowerIP:         192.168.99.100
 UpperIP:         192.168.99.254
 VBoxNetworkName: hostonly-minikube-hostonly-192.168.99.1`, nil},
+			// legacyShape lookup: scan host interfaces for one in the net's subnet.
+			{"Interfaces", "", nil},
+			// validateNoIPCollisions: scans host interfaces again.
 			{"Interfaces", "", nil},
 			{"vbm modifyvm default --nic2 hostonlynet --nictype2 82540EM --nicpromisc2 deny --host-only-net2 minikube-hostonly-192.168.99.1 --cableconnected2 on", "", nil},
 			{"IGNORE CALL", "", nil},

@@ -893,7 +893,7 @@ func (d *Driver) HostInterfaceIP() (net.IP, error) {
 		if mask == nil {
 			return nil, fmt.Errorf("hostonlynet %q not found in `VBoxManage list hostonlynets` output", netName)
 		}
-		return findHostIPInSubnet(netAddr, mask)
+		return findHostIPInSubnet(d.HostInterfaces, netAddr, mask)
 	}
 
 	// Legacy hostonlyif path: find the adapter named in showvminfo and
@@ -923,13 +923,13 @@ func (d *Driver) HostInterfaceIP() (net.IP, error) {
 // that lies in the given subnet. Used on darwin/arm64 with the hostonlynet
 // API where the host-side IP is auto-assigned by VirtualBox and the actual
 // address is only discoverable by enumerating local interfaces.
-func findHostIPInSubnet(netAddr net.IP, mask net.IPMask) (net.IP, error) {
-	ints, err := net.Interfaces()
+func findHostIPInSubnet(hif HostInterfaces, netAddr net.IP, mask net.IPMask) (net.IP, error) {
+	ints, err := hif.Interfaces()
 	if err != nil {
 		return nil, err
 	}
 	for _, in := range ints {
-		addrs, err := in.Addrs()
+		addrs, err := hif.Addrs(&in)
 		if err != nil {
 			continue
 		}
@@ -1176,13 +1176,24 @@ func (d *Driver) setupHostOnlyNetworkVBox7(machineName string, ip net.IP, networ
 	}
 
 	// Shape the hostonlynet list the way validateNoIPCollisions expects, so
-	// host-side vboxnetN OS interfaces from prior runs are correctly excluded
-	// from the collision scan.
+	// the host-side interface that VBox creates for each active hostonlynet
+	// (e.g. bridge100 on darwin via vmnet.framework) is excluded from the
+	// collision scan on a subsequent start that reuses the network.
+	//
+	// The hostonlynet API does not report the host-side address directly, so
+	// it is discovered by scanning live interfaces for one whose IPv4 falls
+	// in the net's subnet. Nets with no live host-side interface (e.g. the
+	// associated VM is not running) are skipped; there is nothing to exclude.
 	legacyShape := map[string]*hostOnlyNetwork{}
 	for k, n := range nets {
+		netAddr := n.LowerIP.Mask(n.NetworkMask)
+		hostIP, err := findHostIPInSubnet(d.HostInterfaces, netAddr, n.NetworkMask)
+		if err != nil {
+			continue
+		}
 		legacyShape[k] = &hostOnlyNetwork{
 			IPv4: net.IPNet{
-				IP:   n.LowerIP.Mask(n.NetworkMask),
+				IP:   hostIP,
 				Mask: n.NetworkMask,
 			},
 		}
