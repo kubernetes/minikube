@@ -9,7 +9,7 @@ metadata:
 data:
   uninstall.sh: |
     #!/bin/bash
-    export KUBEVIRT_VERSION="v1.8.1"
+    export KUBEVIRT_VERSION="v1.8.2"
 
     kubectl delete kubevirt kubevirt -n kubevirt
 
@@ -18,7 +18,7 @@ data:
     #!/bin/bash
 
     # To update: check https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirt/stable.txt
-    export KUBEVIRT_VERSION="v1.8.1"
+    export KUBEVIRT_VERSION="v1.8.2"
     echo "Installing KubeVirt version: $KUBEVIRT_VERSION"
 
     kubectl create -f "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml"
