@@ -133,7 +133,9 @@ Steps:
 runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 
 Steps:
-- Make sure image building works by `minikube image build`
+- Build an image with `minikube image build` using `test/integration/testdata/build/Dockerfile`
+- Add `content.txt` from the build context into a `gcr.io/k8s-minikube/busybox` image and tag it as `localhost/my-image:<profile>`
+- Start `buildkitd` on demand inside minikube only when the build runs, then verify the new image exists in the cluster runtime
 - Make sure image loading from Docker daemon works by `minikube image load --daemon`
 - Try to load image already loaded and make sure `minikube image load --daemon` works
 - Make sure a new updated tag works by `minikube image load --daemon`
