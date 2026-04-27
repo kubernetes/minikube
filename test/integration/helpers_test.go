@@ -715,6 +715,18 @@ func CopyDir(src, dst string) error {
 	return nil
 }
 
+// KubernetesVersions returns unique Kubernetes versions to test against
+func KubernetesVersions() []string {
+    versions := []string{
+        constants.OldestKubernetesVersion,
+        constants.DefaultKubernetesVersion,
+    }
+    
+    if constants.NewestKubernetesVersion != constants.DefaultKubernetesVersion {
+        versions = append(versions, constants.NewestKubernetesVersion)
+    }
+    
+    return versions
 // FailFast proactively stops the addon suite when Docker Hub is rate limited.
 func FailFastDockerHubRateLimited(t *testing.T) {
 	t.Helper()
