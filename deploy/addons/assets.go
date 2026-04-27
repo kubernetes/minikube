@@ -178,4 +178,8 @@ var (
 	// Kubetail assets for kubetail addon
 	//go:embed kubetail/*.yaml kubetail/*.tmpl
 	KubetailAssets embed.FS
+
+	// RookCephAssets assets for rook-ceph addon
+	//go:embed rook-ceph/*.yaml rook-ceph/*.yaml.tmpl
+	RookCephAssets embed.FS
 )
