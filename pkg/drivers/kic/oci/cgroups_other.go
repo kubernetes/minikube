@@ -25,3 +25,7 @@ func HasMemoryCgroup() bool {
 func hasMemorySwapCgroup() bool {
 	return true
 }
+
+func isCgroupV2() bool {
+	return false
+}

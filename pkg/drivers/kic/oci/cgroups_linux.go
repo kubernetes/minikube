@@ -22,8 +22,10 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/opencontainers/cgroups"
+	"golang.org/x/sys/unix"
 
 	"k8s.io/klog/v2"
 )
@@ -46,6 +48,9 @@ func findCgroupMountpoints() (map[string]string, error) {
 
 // HasMemoryCgroup checks whether it is possible to set memory limit for cgroup.
 func HasMemoryCgroup() bool {
+	if isCgroupV2() {
+		return hasCgroupV2Controller("memory")
+	}
 	cgMounts, err := findCgroupMountpoints()
 	if err != nil {
 		klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
@@ -59,8 +64,46 @@ func HasMemoryCgroup() bool {
 	return true
 }
 
+func isCgroupV2() bool {
+	var stat unix.Statfs_t
+	if err := unix.Statfs("/sys/fs/cgroup", &stat); err != nil {
+		return false
+	}
+	return stat.Type == unix.CGROUP2_SUPER_MAGIC
+}
+
+func hasCgroupV2Controller(controller string) bool {
+	data, err := os.ReadFile("/sys/fs/cgroup/cgroup.controllers")
+	if err != nil {
+		klog.Warningf("failed to read cgroup.controllers: %v", err)
+		return false
+	}
+	for _, c := range strings.Fields(string(data)) {
+		if c == controller {
+			return true
+		}
+	}
+	return false
+}
+
 // hasMemorySwapCgroup checks whether it is possible to set swap limit for cgroup
 func hasMemorySwapCgroup() bool {
+	if isCgroupV2() {
+		// On v2, swap controller is often tied to memory controller
+		// We check for memory.swap.max existence in the root or a sub-cgroup
+		// But checking the controller is usually enough if the kernel supports it.
+		// Actually, some distros disable swap accounting even on v2.
+		if !hasCgroupV2Controller("memory") {
+			return false
+		}
+		_, err := os.Stat("/sys/fs/cgroup/memory.swap.max")
+		if err == nil {
+			return true
+		}
+		// If not in root, it might be in a different place, but /sys/fs/cgroup is the root for v2.
+		klog.Warning("Your kernel does not support swap limit capabilities on cgroup v2.")
+		return false
+	}
 	cgMounts, err := findCgroupMountpoints()
 	if err != nil {
 		klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
@@ -72,7 +115,7 @@ func hasMemorySwapCgroup() bool {
 		return false
 	}
 
-	_, err = os.Stat(path.Join(mountPoint, "memory.memsw.limit_in_bytesw"))
+	_, err = os.Stat(path.Join(mountPoint, "memory.memsw.limit_in_bytes"))
 	if err != nil {
 		klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
 		return false
