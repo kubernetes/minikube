@@ -290,6 +290,12 @@ RUN rm -rf \
   /usr/share/doc/* \
   /usr/share/man/* \
   /usr/share/local/*
+
+# Per https://systemd.io/CONTAINER_INTERFACE/, /etc/machine-id must be present
+# but empty in a container image so it is freshly initialized on each boot.
+# Remove /var/lib/dbus/machine-id so that systemd-machine-id-setup cannot fall
+# back to a baked-in value, which would make every container share the same ID.
+RUN truncate -s 0 /etc/machine-id && rm -f /var/lib/dbus/machine-id
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
 
 # squash all layers into one
