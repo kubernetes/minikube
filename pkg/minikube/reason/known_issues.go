@@ -778,6 +778,16 @@ var localNetworkIssues = []match{
 	},
 	{
 		Kind: Kind{
+			ID:       "IF_SSH_TCP_RESET",
+			ExitCode: ExLocalNetworkConfig,
+			Advice:   "Your host is failing to route packets to the minikube VM. If you have VPN software, try turning it off or configuring it so that it does not re-route traffic to the VM IP. If not, check your VM environment routing options.",
+			URL:      vpnDoc,
+			Issues:   []int{9914},
+		},
+		Regexp: re(`ssh: handshake failed: read tcp.*: read: connection reset by peer`),
+	},
+	{
+		Kind: Kind{
 			ID:       "IF_HOST_CIDR_CONFLICT",
 			ExitCode: ExLocalNetworkConflict,
 			Advice:   "Specify an alternate --host-only-cidr value, such as 172.16.0.1/24",
