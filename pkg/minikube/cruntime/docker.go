@@ -132,6 +132,7 @@ func (r *Docker) Active() bool {
 
 // Enable idempotently enables Docker on a host
 func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
+	storageDriver := r.selectStorageDriver()
 	if inUserNamespace {
 		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
 			// For using overlayfs
@@ -162,8 +163,9 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 	if err := r.Init.Enable("docker.socket"); err != nil {
 		klog.ErrorS(err, "Failed to enable", "service", "docker.socket")
 	}
+	klog.Infof("Configuring docker service ...")
 
-	if err := r.configureDocker(cgroupDriver); err != nil {
+	if err := r.configureDocker(cgroupDriver, storageDriver); err != nil {
 		return err
 	}
 
@@ -550,15 +552,21 @@ func (r *Docker) SystemLogCmd(length int) string {
 }
 
 type dockerDaemonConfig struct {
-	ExecOpts       []string              `json:"exec-opts"`
-	LogDriver      string                `json:"log-driver"`
-	LogOpts        dockerDaemonLogOpts   `json:"log-opts"`
-	StorageDriver  string                `json:"storage-driver"`
-	DefaultRuntime string                `json:"default-runtime,omitempty"`
-	Runtimes       *dockerDaemonRuntimes `json:"runtimes,omitempty"`
+	ExecOpts            []string              `json:"exec-opts"`
+	LogDriver           string                `json:"log-driver"`
+	LogOpts             dockerDaemonLogOpts   `json:"log-opts"`
+	StorageDriver       string                `json:"storage-driver"`
+	DefaultRuntime      string                `json:"default-runtime,omitempty"`
+	Runtimes            *dockerDaemonRuntimes `json:"runtimes,omitempty"`
+	Features            dockerDaemonFeatures  `json:"features"`
+	ContainerdNamespace string                `json:"containerd-namespace,omitempty"`
 }
 type dockerDaemonLogOpts struct {
 	MaxSize string `json:"max-size"`
+}
+type dockerDaemonFeatures struct {
+	ContainerdSnapshotter bool `json:"containerd-snapshotter"`
+	ContainerdMigration   bool `json:"containerd-migration"`
 }
 type dockerDaemonRuntimes struct {
 	Nvidia struct {
@@ -569,20 +577,39 @@ type dockerDaemonRuntimes struct {
 
 // configureDocker configures the docker daemon to use driver as cgroup manager
 // ref: https://docs.docker.com/engine/reference/commandline/dockerd/#options-for-the-runtime
-func (r *Docker) configureDocker(driver string) error {
+func (r *Docker) configureDocker(driver string, storageDriver string) error {
 	if driver == constants.UnknownCgroupDriver {
 		return fmt.Errorf("unable to configure docker to use unknown cgroup driver")
 	}
 
 	klog.Infof("configuring docker to use %q as cgroup driver...", driver)
+
+	var isOverlayfs bool
+	if storageDriver == "overlayfs" {
+		isOverlayfs = true
+	} else {
+		isOverlayfs = false
+	}
+
 	daemonConfig := dockerDaemonConfig{
 		ExecOpts:  []string{"native.cgroupdriver=" + driver},
 		LogDriver: "json-file",
 		LogOpts: dockerDaemonLogOpts{
 			MaxSize: "100m",
 		},
-		StorageDriver: "overlay2",
+		StorageDriver: storageDriver,
+		Features: dockerDaemonFeatures{
+			ContainerdSnapshotter: isOverlayfs,
+			ContainerdMigration:   isOverlayfs,
+		},
 	}
+
+	if isOverlayfs {
+		// the docker uses containerd's preload images which are present in k8s.io namespace
+		daemonConfig.ContainerdNamespace = "k8s.io"
+	}
+
+	klog.Infof("Configured docker with storageDriver: %s", storageDriver)
 
 	switch r.GPUs {
 	case "all", "nvidia", "nvidia.com":
@@ -601,6 +628,26 @@ func (r *Docker) configureDocker(driver string) error {
 	}
 	ma := assets.NewMemoryAsset(daemonConfigBytes, "/etc/docker", "daemon.json", "0644")
 	return r.Runner.Copy(ma)
+}
+
+func (r *Docker) selectStorageDriver() string {
+	ver, err := r.Version()
+
+	if err == nil {
+		if v, err := semver.Make(ver); err == nil && v.GTE(semver.Version{Major: 29}) {
+			return "overlayfs"
+		}
+	}
+	return "overlay2"
+}
+
+func (r *Docker) getStorageDriver() string {
+	c := exec.Command("docker", "info", "-f", "{{.Info.Driver}}")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return ""
+	}
+	return strings.Split(rr.Stdout.String(), "\n")[0]
 }
 
 // Preload preloads docker with k8s images:
@@ -627,6 +674,10 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 	refStore := docker.NewStorage(r.Runner)
 	if err := refStore.Save(); err != nil {
 		klog.Infof("error saving reference store: %v", err)
+	}
+
+	if r.getStorageDriver() == "overlayfs" {
+		cRuntime = "containerd"
 	}
 
 	tarballPath := download.TarballPath(k8sVersion, cRuntime)
@@ -821,7 +872,7 @@ func (r *Docker) restartServiceWithExpoRetry(service string) error {
 	// try to restart service if stopped, restart until it works
 	return retry.Expo(
 		func() error {
-			if !r.Init.Active(service) {
+			if !r.Init.Active(service) && r.getStorageDriver() != r.selectStorageDriver() {
 				r.Init.ResetFailed(service)
 				r.Init.Restart(service)
 				return fmt.Errorf("%s not running", service)
