@@ -1,7 +1,7 @@
-//go:build !386 && !amd64 && !(darwin && arm64)
+//go:build darwin && arm64
 
 /*
-Copyright 2022 The Kubernetes Authors All rights reserved.
+Copyright 2026 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,12 @@ limitations under the License.
 
 package virtualbox
 
-// IsVTXDisabled checks if VT-x is disabled in the CPU.
+// IsVTXDisabled always returns false on darwin/arm64. VT-X/AMD-v are x86
+// concepts; Apple Silicon chips have Armv8-A virtualization extensions that
+// VirtualBox 7.1+ accesses via Apple's Hypervisor.framework, and there is no
+// user-facing toggle on Apple Silicon to disable virtualization. If the host
+// hypervisor actually cannot virtualize, VBoxManage will surface the failure
+// when the VM is started, so the precreate check does not need to block here.
 func (d *Driver) IsVTXDisabled() bool {
-	return true
+	return false
 }

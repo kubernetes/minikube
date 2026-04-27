@@ -191,6 +191,20 @@ func TestGetHostOnlyMACAddress(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
+func TestGetHostOnlyMACAddressHostonlyNet(t *testing.T) {
+	// VBox 7.x ARM uses hostonly-network<N> instead of hostonlyadapter<N>.
+	driver := newTestDriver()
+	driver.VBoxManager = &VBoxManagerMock{
+		args:   "showvminfo default --machinereadable",
+		stdOut: "unrelatedfield=whatever\nhostonly-network2=\"minikube-hostonly-192.168.59.1\"\nmacaddress2=\"004488AABBCC\"\n",
+	}
+
+	result, err := driver.getHostOnlyMACAddress()
+	expected := "004488aabbcc"
+	assert.NoError(t, err)
+	assert.Equal(t, expected, result)
+}
+
 func TestGetHostOnlyMACAddressWhenNoHostOnlyAdapter(t *testing.T) {
 	driver := newTestDriver()
 	driver.VBoxManager = &VBoxManagerMock{
@@ -532,9 +546,14 @@ func mockCalls(t *testing.T, driver *Driver, expectedCalls []Call) {
 func TestCreateVM(t *testing.T) {
 	shareName, shareDir := getShareDriveAndName()
 
-	modifyVMcommand := "vbm modifyvm default --firmware bios --bioslogofadein off --bioslogofadeout off --bioslogodisplaytime 0 --biosbootmenu disabled --ostype Linux26_64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtcuseutc on --natdnshostresolver1 off --natdnsproxy1 on --cpuhotplug off --pae on --hpet on --hwvirtex on --nestedpaging on --largepages on --vtxvpid on --accelerate3d off --boot1 dvd"
-	if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
-		modifyVMcommand += " --longmode on"
+	var modifyVMcommand string
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		modifyVMcommand = "vbm modifyvm default --chipset armv8virtual --firmware efi64 --graphicscontroller qemuramfb --firmware-logo-fade-in off --firmware-logo-fade-out off --firmware-logo-display-time 0 --firmware-boot-menu disabled --ostype Linux_arm64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtc-use-utc on --natdnshostresolver1 off --natdnsproxy1 on --cpu-hotplug off --accelerate-3d off --boot1 dvd"
+	} else {
+		modifyVMcommand = "vbm modifyvm default --firmware bios --bioslogofadein off --bioslogofadeout off --bioslogodisplaytime 0 --biosbootmenu disabled --ostype Linux26_64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtcuseutc on --natdnshostresolver1 off --natdnsproxy1 on --cpuhotplug off --pae on --hpet on --hwvirtex on --nestedpaging on --largepages on --vtxvpid on --accelerate3d off --boot1 dvd"
+		if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
+			modifyVMcommand += " --longmode on"
+		}
 	}
 
 	driver := NewDriver("default", "path")
@@ -562,9 +581,14 @@ func TestCreateVM(t *testing.T) {
 func TestCreateVMWithSpecificNatNicType(t *testing.T) {
 	shareName, shareDir := getShareDriveAndName()
 
-	modifyVMcommand := "vbm modifyvm default --firmware bios --bioslogofadein off --bioslogofadeout off --bioslogodisplaytime 0 --biosbootmenu disabled --ostype Linux26_64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtcuseutc on --natdnshostresolver1 off --natdnsproxy1 on --cpuhotplug off --pae on --hpet on --hwvirtex on --nestedpaging on --largepages on --vtxvpid on --accelerate3d off --boot1 dvd"
-	if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
-		modifyVMcommand += " --longmode on"
+	var modifyVMcommand string
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		modifyVMcommand = "vbm modifyvm default --chipset armv8virtual --firmware efi64 --graphicscontroller qemuramfb --firmware-logo-fade-in off --firmware-logo-fade-out off --firmware-logo-display-time 0 --firmware-boot-menu disabled --ostype Linux_arm64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtc-use-utc on --natdnshostresolver1 off --natdnsproxy1 on --cpu-hotplug off --accelerate-3d off --boot1 dvd"
+	} else {
+		modifyVMcommand = "vbm modifyvm default --firmware bios --bioslogofadein off --bioslogofadeout off --bioslogodisplaytime 0 --biosbootmenu disabled --ostype Linux26_64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtcuseutc on --natdnshostresolver1 off --natdnsproxy1 on --cpuhotplug off --pae on --hpet on --hwvirtex on --nestedpaging on --largepages on --vtxvpid on --accelerate3d off --boot1 dvd"
+		if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
+			modifyVMcommand += " --longmode on"
+		}
 	}
 
 	driver := NewDriver("default", "path")
@@ -593,9 +617,14 @@ func TestCreateVMWithSpecificNatNicType(t *testing.T) {
 func TestCreateVMWithoutAccelerate3D(t *testing.T) {
 	shareName, shareDir := getShareDriveAndName()
 
-	modifyVMcommand := "vbm modifyvm default --firmware bios --bioslogofadein off --bioslogofadeout off --bioslogodisplaytime 0 --biosbootmenu disabled --ostype Linux26_64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtcuseutc on --natdnshostresolver1 off --natdnsproxy1 on --cpuhotplug off --pae on --hpet on --hwvirtex on --nestedpaging on --largepages on --vtxvpid on --boot1 dvd"
-	if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
-		modifyVMcommand += " --longmode on"
+	var modifyVMcommand string
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		modifyVMcommand = "vbm modifyvm default --chipset armv8virtual --firmware efi64 --graphicscontroller qemuramfb --firmware-logo-fade-in off --firmware-logo-fade-out off --firmware-logo-display-time 0 --firmware-boot-menu disabled --ostype Linux_arm64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtc-use-utc on --natdnshostresolver1 off --natdnsproxy1 on --cpu-hotplug off --boot1 dvd"
+	} else {
+		modifyVMcommand = "vbm modifyvm default --firmware bios --bioslogofadein off --bioslogofadeout off --bioslogodisplaytime 0 --biosbootmenu disabled --ostype Linux26_64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtcuseutc on --natdnshostresolver1 off --natdnsproxy1 on --cpuhotplug off --pae on --hpet on --hwvirtex on --nestedpaging on --largepages on --vtxvpid on --boot1 dvd"
+		if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
+			modifyVMcommand += " --longmode on"
+		}
 	}
 
 	driver := NewDriver("default", "path")
@@ -623,12 +652,37 @@ func TestCreateVMWithoutAccelerate3D(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	driver := NewDriver("default", "path")
-	mockCalls(t, driver, []Call{
-		{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
-		{"vbm list hostonlyifs", "", nil},
-		{"Interfaces", "", nil},
-		{"vbm hostonlyif create", "Interface 'VirtualBox Host-Only Ethernet Adapter' was successfully created", nil},
-		{"vbm list hostonlyifs", `
+
+	var calls []Call
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		calls = []Call{
+			{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
+			{"vbm list hostonlynets", "", nil},
+			{"Interfaces", "", nil},
+			{"vbm hostonlynet add --name minikube-hostonly-192.168.99.1 --netmask 255.255.255.0 --lower-ip 192.168.99.100 --upper-ip 192.168.99.254 --enable", "", nil},
+			{"vbm list hostonlynets", `
+Name:            minikube-hostonly-192.168.99.1
+GUID:            00000000-0000-0000-0000-000000000001
+
+State:           Enabled
+NetworkMask:     255.255.255.0
+LowerIP:         192.168.99.100
+UpperIP:         192.168.99.254
+VBoxNetworkName: hostonly-minikube-hostonly-192.168.99.1`, nil},
+			{"vbm modifyvm default --nic2 hostonlynet --nictype2 82540EM --nicpromisc2 deny --host-only-net2 minikube-hostonly-192.168.99.1 --cableconnected2 on", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"vbm startvm default --type headless", "", nil},
+			{"Read path/machines/default/default/Logs/VBox.log", "", nil},
+			{"WaitIP", "", nil},
+		}
+	} else {
+		calls = []Call{
+			{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
+			{"vbm list hostonlyifs", "", nil},
+			{"Interfaces", "", nil},
+			{"vbm hostonlyif create", "Interface 'VirtualBox Host-Only Ethernet Adapter' was successfully created", nil},
+			{"vbm list hostonlyifs", `
 Name:            VirtualBox Host-Only Ethernet Adapter
 GUID:            786f6276-656e-4074-8000-0a0027000000
 DHCP:            Disabled
@@ -640,17 +694,17 @@ HardwareAddress: 0a:00:27:00:00:00
 MediumType:      Ethernet
 Status:          Up
 VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter`, nil},
-		{"vbm hostonlyif ipconfig VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.1 --netmask 255.255.255.0", "", nil},
-		{"vbm list dhcpservers", "", nil},
-		{"vbm list dhcpservers", "", nil},
-		{"vbm dhcpserver add --netname HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.6 --netmask 255.255.255.0 --lowerip 192.168.99.100 --upperip 192.168.99.254 --enable", "", nil},
-		{"vbm modifyvm default --nic2 hostonly --nictype2 82540EM --nicpromisc2 deny --hostonlyadapter2 VirtualBox Host-Only Ethernet Adapter --cableconnected2 on", "", nil},
-		{"IGNORE CALL", "", nil},
-		{"IGNORE CALL", "", nil},
-		{"vbm startvm default --type headless", "", nil},
-		{"Read path/machines/default/default/Logs/VBox.log", "", nil},
-		{"WaitIP", "", nil},
-		{"vbm list hostonlyifs", `
+			{"vbm hostonlyif ipconfig VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.1 --netmask 255.255.255.0", "", nil},
+			{"vbm list dhcpservers", "", nil},
+			{"vbm list dhcpservers", "", nil},
+			{"vbm dhcpserver add --netname HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.6 --netmask 255.255.255.0 --lowerip 192.168.99.100 --upperip 192.168.99.254 --enable", "", nil},
+			{"vbm modifyvm default --nic2 hostonly --nictype2 82540EM --nicpromisc2 deny --hostonlyadapter2 VirtualBox Host-Only Ethernet Adapter --cableconnected2 on", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"vbm startvm default --type headless", "", nil},
+			{"Read path/machines/default/default/Logs/VBox.log", "", nil},
+			{"WaitIP", "", nil},
+			{"vbm list hostonlyifs", `
 Name:            VirtualBox Host-Only Ethernet Adapter
 GUID:            786f6276-656e-4074-8000-0a0027000000
 DHCP:            Disabled
@@ -662,8 +716,10 @@ HardwareAddress: 0a:00:27:00:00:00
 MediumType:      Ethernet
 Status:          Up
 VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter`, nil},
-		{"Interfaces", "", nil},
-	})
+			{"Interfaces", "", nil},
+		}
+	}
+	mockCalls(t, driver, calls)
 
 	err := driver.Start()
 
@@ -672,13 +728,42 @@ VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter`,
 
 func TestStartWithHostOnlyAdapterCreationBug(t *testing.T) {
 	driver := NewDriver("default", "path")
-	mockCalls(t, driver, []Call{
-		{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
-		{"vbm list hostonlyifs", "", nil},
-		{"Interfaces", "", nil},
-		{"vbm hostonlyif create", "", errors.New("error: Failed to create the host-only adapter")},
-		{"vbm list hostonlyifs", "", nil},
-		{"vbm list hostonlyifs", `
+
+	var calls []Call
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		// Model the reuse path: a matching hostonlynet already exists from a
+		// prior start, so no hostonlynet add is issued and only one
+		// list hostonlynets call is made.
+		calls = []Call{
+			{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
+			{"vbm list hostonlynets", `
+Name:            minikube-hostonly-192.168.99.1
+GUID:            00000000-0000-0000-0000-000000000001
+
+State:           Enabled
+NetworkMask:     255.255.255.0
+LowerIP:         192.168.99.100
+UpperIP:         192.168.99.254
+VBoxNetworkName: hostonly-minikube-hostonly-192.168.99.1`, nil},
+			// legacyShape lookup: scan host interfaces for one in the net's subnet.
+			{"Interfaces", "", nil},
+			// validateNoIPCollisions: scans host interfaces again.
+			{"Interfaces", "", nil},
+			{"vbm modifyvm default --nic2 hostonlynet --nictype2 82540EM --nicpromisc2 deny --host-only-net2 minikube-hostonly-192.168.99.1 --cableconnected2 on", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"vbm startvm default --type headless", "", nil},
+			{"Read path/machines/default/default/Logs/VBox.log", "", nil},
+			{"WaitIP", "", nil},
+		}
+	} else {
+		calls = []Call{
+			{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
+			{"vbm list hostonlyifs", "", nil},
+			{"Interfaces", "", nil},
+			{"vbm hostonlyif create", "", errors.New("error: Failed to create the host-only adapter")},
+			{"vbm list hostonlyifs", "", nil},
+			{"vbm list hostonlyifs", `
 Name:            VirtualBox Host-Only Ethernet Adapter
 GUID:            786f6276-656e-4074-8000-0a0027000000
 DHCP:            Disabled
@@ -690,17 +775,17 @@ HardwareAddress: 0a:00:27:00:00:00
 MediumType:      Ethernet
 Status:          Up
 VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter`, nil},
-		{"vbm hostonlyif ipconfig VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.1 --netmask 255.255.255.0", "", nil},
-		{"vbm list dhcpservers", "", nil},
-		{"vbm list dhcpservers", "", nil},
-		{"vbm dhcpserver add --netname HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.6 --netmask 255.255.255.0 --lowerip 192.168.99.100 --upperip 192.168.99.254 --enable", "", nil},
-		{"vbm modifyvm default --nic2 hostonly --nictype2 82540EM --nicpromisc2 deny --hostonlyadapter2 VirtualBox Host-Only Ethernet Adapter --cableconnected2 on", "", nil},
-		{"IGNORE CALL", "", nil},
-		{"IGNORE CALL", "", nil},
-		{"vbm startvm default --type headless", "", nil},
-		{"Read path/machines/default/default/Logs/VBox.log", "", nil},
-		{"WaitIP", "", nil},
-		{"vbm list hostonlyifs", `
+			{"vbm hostonlyif ipconfig VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.1 --netmask 255.255.255.0", "", nil},
+			{"vbm list dhcpservers", "", nil},
+			{"vbm list dhcpservers", "", nil},
+			{"vbm dhcpserver add --netname HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.6 --netmask 255.255.255.0 --lowerip 192.168.99.100 --upperip 192.168.99.254 --enable", "", nil},
+			{"vbm modifyvm default --nic2 hostonly --nictype2 82540EM --nicpromisc2 deny --hostonlyadapter2 VirtualBox Host-Only Ethernet Adapter --cableconnected2 on", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"IGNORE CALL", "", nil},
+			{"vbm startvm default --type headless", "", nil},
+			{"Read path/machines/default/default/Logs/VBox.log", "", nil},
+			{"WaitIP", "", nil},
+			{"vbm list hostonlyifs", `
 Name:            VirtualBox Host-Only Ethernet Adapter
 GUID:            786f6276-656e-4074-8000-0a0027000000
 DHCP:            Disabled
@@ -712,16 +797,18 @@ HardwareAddress: 0a:00:27:00:00:00
 MediumType:      Ethernet
 Status:          Up
 VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter`, nil},
-		{"Interfaces", "", nil},
-		{"vbm showvminfo default --machinereadable", `VMState="running"`, nil},
-		{"vbm controlvm default acpipowerbutton", "", nil},
-		{"vbm showvminfo default --machinereadable", `VMState="stopped"`, nil},
-		{"Sleep 5s", "", nil},
-		{"vbm hostonlyif ipconfig VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.1 --netmask 255.255.255.0", "", nil},
-		{"Sleep 5s", "", nil},
-		{"vbm startvm default --type headless", "", nil},
-		{"WaitIP", "", nil},
-	})
+			{"Interfaces", "", nil},
+			{"vbm showvminfo default --machinereadable", `VMState="running"`, nil},
+			{"vbm controlvm default acpipowerbutton", "", nil},
+			{"vbm showvminfo default --machinereadable", `VMState="stopped"`, nil},
+			{"Sleep 5s", "", nil},
+			{"vbm hostonlyif ipconfig VirtualBox Host-Only Ethernet Adapter --ip 192.168.99.1 --netmask 255.255.255.0", "", nil},
+			{"Sleep 5s", "", nil},
+			{"vbm startvm default --type headless", "", nil},
+			{"WaitIP", "", nil},
+		}
+	}
+	mockCalls(t, driver, calls)
 
 	err := driver.Start()
 

@@ -28,6 +28,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/drivers/virtualbox"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -91,21 +92,11 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 
 		return ip, nil
 	case driver.VirtualBox:
-		vBoxManageCmd := driver.VBoxManagePath()
-		out, err := exec.Command(vBoxManageCmd, "showvminfo", hostInfo.Name, "--machinereadable").Output()
-		if err != nil {
-			return []byte{}, fmt.Errorf("vboxmanage: %w", err)
+		vbxDriver, ok := hostInfo.Driver.(*virtualbox.Driver)
+		if !ok {
+			return []byte{}, fmt.Errorf("unexpected driver type %T for virtualbox case", hostInfo.Driver)
 		}
-		re := regexp.MustCompile(`hostonlyadapter2="(.*?)"`)
-		iface := re.FindStringSubmatch(string(out))[1]
-		ipList, err := exec.Command(vBoxManageCmd, "list", "hostonlyifs").Output()
-		if err != nil {
-			return []byte{}, fmt.Errorf("Error getting VM/Host IP address: %w", err)
-		}
-		re = regexp.MustCompile(`(?sm)Name:\s*` + iface + `\s*$.+?IPAddress:\s*(\S+)`)
-		ip := re.FindStringSubmatch(string(ipList))[1]
-
-		return net.ParseIP(ip), nil
+		return vbxDriver.HostInterfaceIP()
 	case driver.Parallels:
 		bin := "prlsrvctl"
 		var binPath string

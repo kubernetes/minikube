@@ -416,6 +416,13 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
 	if !driver.IsVirtualBox(driverName) || !detect.MacOS13Plus() {
 		return
 	}
+	// On darwin/arm64 the virtualbox driver requires VirtualBox 7.1+ (enforced
+	// in the virtualbox driver's status()), which uses Hypervisor.framework
+	// instead of the kernel extensions that broke in macOS 13. The warning
+	// below is about that kext breakage and does not apply on Apple Silicon.
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		return
+	}
 	out.WarningT(`Due to changes in macOS 13+ minikube doesn't currently support VirtualBox. You can use alternative drivers such as 'vfkit', 'qemu', or 'docker'.
     https://minikube.sigs.k8s.io/docs/drivers/vfkit/
     https://minikube.sigs.k8s.io/docs/drivers/qemu/

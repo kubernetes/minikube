@@ -52,6 +52,11 @@ const (
 	defaultHostLoopbackReachable = true
 )
 
+// hostOnlyNicIndex is the NIC slot used for the host-only adapter/network
+// on the guest VM. NIC1 is NAT (for SSH port-forward); NIC2 is host-only
+// (for host-to-guest and inter-node reachability).
+const hostOnlyNicIndex = 2
+
 //nolint:staticcheck // ST1005: error strings should not be capitalized
 var (
 	ErrUnableToGenerateRandomIP = errors.New("unable to generate random IP")
@@ -426,42 +431,7 @@ func (d *Driver) CreateVM() error {
 		dnsProxy = "on"
 	}
 
-	var modifyFlags = []string{
-		"modifyvm", d.MachineName,
-		"--firmware", "bios",
-		"--bioslogofadein", "off",
-		"--bioslogofadeout", "off",
-		"--bioslogodisplaytime", "0",
-		"--biosbootmenu", "disabled",
-		"--ostype", "Linux26_64",
-		"--cpus", fmt.Sprintf("%d", cpus),
-		"--memory", fmt.Sprintf("%d", d.Memory),
-		"--acpi", "on",
-		"--ioapic", "on",
-		"--rtcuseutc", "on",
-		"--natdnshostresolver1", hostDNSResolver,
-		"--natdnsproxy1", dnsProxy,
-		"--cpuhotplug", "off",
-		"--pae", "on",
-		"--hpet", "on",
-		"--hwvirtex", "on",
-		"--nestedpaging", "on",
-		"--largepages", "on",
-		"--vtxvpid", "on"}
-	if !d.NoAccelerate3DOff {
-		modifyFlags = append(modifyFlags, "--accelerate3d", "off")
-	}
-	modifyFlags = append(modifyFlags, "--boot1", "dvd")
-
-	if d.version > 6 {
-		modifyFlags = append(modifyFlags, "--natlocalhostreachable1", hostLoopbackReachable)
-	}
-
-	if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
-		modifyFlags = append(modifyFlags, "--longmode", "on")
-	}
-
-	if err := d.vbm(modifyFlags...); err != nil {
+	if err := d.vbm(d.buildModifyVMFlags(cpus, hostDNSResolver, dnsProxy, hostLoopbackReachable)...); err != nil {
 		return err
 	}
 
@@ -518,6 +488,84 @@ func (d *Driver) CreateVM() error {
 	}
 
 	return nil
+}
+
+// buildModifyVMFlags returns the `VBoxManage modifyvm` argv used by CreateVM.
+// The darwin/arm64 path uses the VBox 7.x kebab-case flags and ARM-appropriate
+// chipset/firmware/graphics. Other platforms keep the legacy x86 flags.
+func (d *Driver) buildModifyVMFlags(cpus int, hostDNSResolver, dnsProxy, hostLoopbackReachable string) []string {
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		// darwin/arm64 (Apple Silicon): VirtualBox 7.1+ creates ARM guests via
+		// Apple's Hypervisor.framework. Several x86-only flags (--hwvirtex,
+		// --nested-paging, --large-pages, --pae, --hpet, --vtxvpid) are not
+		// accepted on ARM VMs. Flag names also use the kebab-case VBox 7.x
+		// form, the firmware must be EFI (no BIOS on ARM), the chipset must
+		// be armv8virtual, and the graphics controller must be qemuramfb
+		// because the default vboxvga is x86-only and fails VM start with
+		// VERR_PGM_RAM_CONFLICT on ARM guests.
+		flags := []string{
+			"modifyvm", d.MachineName,
+			"--chipset", "armv8virtual",
+			"--firmware", "efi64",
+			"--graphicscontroller", "qemuramfb",
+			"--firmware-logo-fade-in", "off",
+			"--firmware-logo-fade-out", "off",
+			"--firmware-logo-display-time", "0",
+			"--firmware-boot-menu", "disabled",
+			"--ostype", "Linux_arm64",
+			"--cpus", fmt.Sprintf("%d", cpus),
+			"--memory", fmt.Sprintf("%d", d.Memory),
+			"--acpi", "on",
+			"--ioapic", "on",
+			"--rtc-use-utc", "on",
+			"--natdnshostresolver1", hostDNSResolver,
+			"--natdnsproxy1", dnsProxy,
+			"--cpu-hotplug", "off",
+		}
+		if !d.NoAccelerate3DOff {
+			flags = append(flags, "--accelerate-3d", "off")
+		}
+		flags = append(flags, "--boot1", "dvd")
+		if d.version > 6 {
+			flags = append(flags, "--natlocalhostreachable1", hostLoopbackReachable)
+		}
+		return flags
+	}
+
+	flags := []string{
+		"modifyvm", d.MachineName,
+		"--firmware", "bios",
+		"--bioslogofadein", "off",
+		"--bioslogofadeout", "off",
+		"--bioslogodisplaytime", "0",
+		"--biosbootmenu", "disabled",
+		"--ostype", "Linux26_64",
+		"--cpus", fmt.Sprintf("%d", cpus),
+		"--memory", fmt.Sprintf("%d", d.Memory),
+		"--acpi", "on",
+		"--ioapic", "on",
+		"--rtcuseutc", "on",
+		"--natdnshostresolver1", hostDNSResolver,
+		"--natdnsproxy1", dnsProxy,
+		"--cpuhotplug", "off",
+		"--pae", "on",
+		"--hpet", "on",
+		"--hwvirtex", "on",
+		"--nestedpaging", "on",
+		"--largepages", "on",
+		"--vtxvpid", "on",
+	}
+	if !d.NoAccelerate3DOff {
+		flags = append(flags, "--accelerate3d", "off")
+	}
+	flags = append(flags, "--boot1", "dvd")
+	if d.version > 6 {
+		flags = append(flags, "--natlocalhostreachable1", hostLoopbackReachable)
+	}
+	if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
+		flags = append(flags, "--longmode", "on")
+	}
+	return flags
 }
 
 func parseShareFolder(shareFolder string) (string, string) {
@@ -627,6 +675,13 @@ func (d *Driver) Start() error {
 	}
 
 	if hostOnlyAdapter == nil {
+		return nil
+	}
+
+	// On darwin/arm64 the hostonlynet API manages the network; the legacy
+	// adapter corruption check is not applicable and listHostOnlyAdapters
+	// would fail without /dev/vboxnetctl.
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
 		return nil
 	}
 
@@ -790,8 +845,11 @@ func (d *Driver) getHostOnlyMACAddress() (string, error) {
 		return "", err
 	}
 
-	// First, we get the number of the host-only interface
-	re := regexp.MustCompile(`(?m)^hostonlyadapter([\d]+)`)
+	// First, we get the number of the host-only interface. VBox 7.x ARM
+	// (darwin/arm64) uses the hostonly-network<N> field name (new hostonlynet
+	// API); older/x86 configurations use hostonlyadapter<N>. The regex accepts
+	// any NIC index defensively; in practice it matches hostOnlyNicIndex.
+	re := regexp.MustCompile(`(?m)^(?:hostonlyadapter|hostonly-network)([\d]+)`)
 	groups := re.FindStringSubmatch(stdout)
 	if len(groups) < 2 {
 		//nolint:staticcheck // ST1005: error strings should not be capitalized
@@ -808,6 +866,161 @@ func (d *Driver) getHostOnlyMACAddress() (string, error) {
 	}
 
 	return strings.ToLower(groups[1]), nil
+}
+
+// HostInterfaceIP returns the host's IPv4 address on the host-only network
+// attached to this VM. On darwin/arm64 (VBox 7.x hostonlynet API) the host
+// address is auto-assigned by VirtualBox and not discoverable from VBox
+// metadata directly, so it is resolved by enumerating local interfaces for
+// one whose subnet matches the hostonlynet. On other platforms the legacy
+// hostonlyif path returns the IPAddress exposed by `list hostonlyifs`.
+func (d *Driver) HostInterfaceIP() (net.IP, error) {
+	stdout, _, err := d.vbmOutErr("showvminfo", d.MachineName, "--machinereadable")
+	if err != nil {
+		return nil, fmt.Errorf("showvminfo: %w", err)
+	}
+
+	// VBox 7.x ARM (darwin/arm64) uses the hostonlynet API, which exposes
+	// the attached network as hostonly-network<N>= in showvminfo output
+	// (rather than the legacy hostonlyadapter<N>= for hostonlyif).
+	// `list hostonlyifs` is empty on that path, so look up `list
+	// hostonlynets` and find the matching host-side IP by enumerating
+	// local interfaces whose subnet overlaps the hostonlynet.
+	if m := regexp.MustCompile(`hostonly-network\d+="(.*?)"`).FindStringSubmatch(stdout); m != nil {
+		netName := m[1]
+		netList, _, err := d.vbmOutErr("list", "hostonlynets")
+		if err != nil {
+			return nil, fmt.Errorf("list hostonlynets: %w", err)
+		}
+		mask, netAddr, err := parseHostOnlyNet(netList, netName)
+		if err != nil {
+			return nil, fmt.Errorf("hostonlynet %q: %w", netName, err)
+		}
+		if mask == nil {
+			return nil, fmt.Errorf("hostonlynet %q not found in `VBoxManage list hostonlynets` output", netName)
+		}
+		return findHostIPInSubnet(d.HostInterfaces, netAddr, mask)
+	}
+
+	// Legacy hostonlyif path: find the adapter named in showvminfo and
+	// extract the IPAddress from `list hostonlyifs`.
+	m := regexp.MustCompile(`hostonlyadapter\d+="(.*?)"`).FindStringSubmatch(stdout)
+	if m == nil {
+		return nil, fmt.Errorf("VM %q has no host-only adapter", d.MachineName)
+	}
+	iface := m[1]
+	list, _, err := d.vbmOutErr("list", "hostonlyifs")
+	if err != nil {
+		return nil, fmt.Errorf("list hostonlyifs: %w", err)
+	}
+	re := regexp.MustCompile(`(?sm)Name:\s*` + regexp.QuoteMeta(iface) + `\s*$.+?IPAddress:\s*(\S+)`)
+	im := re.FindStringSubmatch(list)
+	if im == nil {
+		return nil, fmt.Errorf("IP not found for host-only adapter %q", iface)
+	}
+	ip := net.ParseIP(im[1])
+	if ip == nil {
+		return nil, fmt.Errorf("unable to parse host-only IPAddress %q", im[1])
+	}
+	return ip, nil
+}
+
+// findHostIPInSubnet returns the first IPv4 address on any local interface
+// that lies in the given subnet. Used on darwin/arm64 with the hostonlynet
+// API where the host-side IP is auto-assigned by VirtualBox and the actual
+// address is only discoverable by enumerating local interfaces.
+func findHostIPInSubnet(hif HostInterfaces, netAddr net.IP, mask net.IPMask) (net.IP, error) {
+	ints, err := hif.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+	for _, in := range ints {
+		addrs, err := hif.Addrs(&in)
+		if err != nil {
+			continue
+		}
+		for _, a := range addrs {
+			ipnet, ok := a.(*net.IPNet)
+			if !ok {
+				continue
+			}
+			ip4 := ipnet.IP.To4()
+			if ip4 == nil {
+				continue
+			}
+			if ip4.Mask(mask).Equal(netAddr) {
+				return ip4, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("no local interface found with an IPv4 address in %s/%d", netAddr, maskOnes(mask))
+}
+
+func maskOnes(mask net.IPMask) int {
+	ones, _ := mask.Size()
+	return ones
+}
+
+// parseHostOnlyNet extracts the NetworkMask and LowerIP for the named
+// hostonlynet from the output of `VBoxManage list hostonlynets`. The
+// function is order-tolerant within a record and tolerant of whitespace
+// variation. Returns nil, nil if the name isn't found.
+//
+// Records are delimited by a line starting with "Name:". Blank lines within
+// a record (VBoxManage emits one between GUID and State) are ignored.
+func parseHostOnlyNet(listOutput, name string) (mask net.IPMask, network net.IP, err error) {
+	var blockName, maskStr, lowerStr string
+	// finish evaluates the current record against `name` and, if matched,
+	// parses and returns the mask/network. It is called when a new record
+	// begins (next "Name:" line) and at end-of-input.
+	finish := func() (bool, net.IPMask, net.IP, error) {
+		if blockName != name {
+			return false, nil, nil, nil
+		}
+		if maskStr == "" || lowerStr == "" {
+			return true, nil, nil, fmt.Errorf("hostonlynet %q record missing NetworkMask or LowerIP", name)
+		}
+		mip := net.ParseIP(maskStr).To4()
+		if mip == nil {
+			return true, nil, nil, fmt.Errorf("hostonlynet %q: unable to parse NetworkMask %q", name, maskStr)
+		}
+		lip := net.ParseIP(lowerStr).To4()
+		if lip == nil {
+			return true, nil, nil, fmt.Errorf("hostonlynet %q: unable to parse LowerIP %q", name, lowerStr)
+		}
+		m := net.IPMask(mip)
+		return true, m, lip.Mask(m), nil
+	}
+
+	for _, line := range strings.Split(listOutput, "\n") {
+		parts := strings.SplitN(strings.TrimSpace(line), ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		val := strings.TrimSpace(parts[1])
+		switch key {
+		case "Name":
+			// Starting a new record: evaluate the previous one.
+			if blockName != "" {
+				if matched, m, n, err := finish(); matched {
+					return m, n, err
+				}
+			}
+			blockName, maskStr, lowerStr = val, "", ""
+		case "NetworkMask":
+			maskStr = val
+		case "LowerIP":
+			lowerStr = val
+		}
+	}
+	// Evaluate the last record.
+	if blockName != "" {
+		if matched, m, n, err := finish(); matched {
+			return m, n, err
+		}
+	}
+	return nil, nil, nil
 }
 
 func (d *Driver) parseIPForMACFromIPAddr(ipAddrOutput string, macAddress string) (string, error) {
@@ -900,6 +1113,10 @@ func (d *Driver) setupHostOnlyNetwork(machineName string) (*hostOnlyNetwork, err
 		return nil, err
 	}
 
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		return d.setupHostOnlyNetworkVBox7(machineName, ip, network)
+	}
+
 	nets, err := listHostOnlyAdapters(d.VBoxManager)
 	if err != nil {
 		return nil, err
@@ -940,15 +1157,93 @@ func (d *Driver) setupHostOnlyNetwork(machineName string) (*hostOnlyNetwork, err
 	}
 
 	if err := d.vbm("modifyvm", machineName,
-		"--nic2", "hostonly",
-		"--nictype2", d.HostOnlyNicType,
-		"--nicpromisc2", d.HostOnlyPromiscMode,
-		"--hostonlyadapter2", hostOnlyAdapter.Name,
-		"--cableconnected2", "on"); err != nil {
+		fmt.Sprintf("--nic%d", hostOnlyNicIndex), "hostonly",
+		fmt.Sprintf("--nictype%d", hostOnlyNicIndex), d.HostOnlyNicType,
+		fmt.Sprintf("--nicpromisc%d", hostOnlyNicIndex), d.HostOnlyPromiscMode,
+		fmt.Sprintf("--hostonlyadapter%d", hostOnlyNicIndex), hostOnlyAdapter.Name,
+		fmt.Sprintf("--cableconnected%d", hostOnlyNicIndex), "on"); err != nil {
 		return nil, err
 	}
 
 	return hostOnlyAdapter, nil
+}
+
+// setupHostOnlyNetworkVBox7 implements the host-only network setup using the
+// VBox 7.x hostonlynet API. This is required on darwin/arm64 because the
+// legacy hostonlyif mechanism depends on the /dev/vboxnetctl kernel extension
+// which does not exist on Apple Silicon.
+//
+// Unlike the legacy path, hostonlynet bundles IP-range/DHCP config into the
+// `hostonlynet add` command, so no separate DHCP server management is needed.
+func (d *Driver) setupHostOnlyNetworkVBox7(machineName string, ip net.IP, network *net.IPNet) (*hostOnlyNetwork, error) {
+	nets, err := listHostOnlyNets(d.VBoxManager)
+	if err != nil {
+		return nil, err
+	}
+
+	// Shape the hostonlynet list the way validateNoIPCollisions expects, so
+	// the host-side interface that VBox creates for each active hostonlynet
+	// (e.g. bridge100 on darwin via vmnet.framework) is excluded from the
+	// collision scan on a subsequent start that reuses the network.
+	//
+	// The hostonlynet API does not report the host-side address directly, so
+	// it is discovered by scanning live interfaces for one whose IPv4 falls
+	// in the net's subnet. Nets with no live host-side interface (e.g. the
+	// associated VM is not running) are skipped; there is nothing to exclude.
+	legacyShape := map[string]*hostOnlyNetwork{}
+	for k, n := range nets {
+		netAddr := n.LowerIP.Mask(n.NetworkMask)
+		hostIP, err := findHostIPInSubnet(d.HostInterfaces, netAddr, n.NetworkMask)
+		if err != nil {
+			continue
+		}
+		legacyShape[k] = &hostOnlyNetwork{
+			IPv4: net.IPNet{
+				IP:   hostIP,
+				Mask: n.NetworkMask,
+			},
+		}
+	}
+	if err := validateNoIPCollisions(d.HostInterfaces, network, legacyShape); err != nil {
+		return nil, err
+	}
+
+	lowerIP, upperIP := getDHCPAddressRange(ip, network)
+
+	// Reuse an existing hostonlynet if its subnet matches the requested one;
+	// otherwise create a new one.
+	hon := findHostOnlyNetByCIDR(nets, ip, network.Mask)
+	if hon == nil {
+		// NOTE: the name format "minikube-hostonly-<ip>" is read back by
+		// pkg/minikube/cluster/ip.go's HostIP() when resolving the host's
+		// address. Keep the two sites in sync if this format changes.
+		name := fmt.Sprintf("minikube-hostonly-%s", ip.String())
+		hon, err = createHostOnlyNet(d.VBoxManager, name, network.Mask, lowerIP, upperIP)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Attach NIC2 to the hostonlynet. Note the flag names differ from the
+	// legacy path: --nic2 hostonlynet (not hostonly) and --host-only-net2
+	// (not --hostonlyadapter2). --nictype2 and --nicpromisc2 and
+	// --cableconnected2 are still accepted.
+	if err := d.vbm("modifyvm", machineName,
+		fmt.Sprintf("--nic%d", hostOnlyNicIndex), "hostonlynet",
+		fmt.Sprintf("--nictype%d", hostOnlyNicIndex), d.HostOnlyNicType,
+		fmt.Sprintf("--nicpromisc%d", hostOnlyNicIndex), d.HostOnlyPromiscMode,
+		fmt.Sprintf("--host-only-net%d", hostOnlyNicIndex), hon.Name,
+		fmt.Sprintf("--cableconnected%d", hostOnlyNicIndex), "on"); err != nil {
+		return nil, err
+	}
+
+	// Return a hostOnlyNetwork-shaped struct so the caller's type expectation
+	// holds. Only Name is used downstream on this path.
+	return &hostOnlyNetwork{
+		Name:        hon.Name,
+		IPv4:        net.IPNet{IP: ip, Mask: network.Mask},
+		NetworkName: hon.VBoxNetworkName,
+	}, nil
 }
 
 func getDHCPAddressRange(dhcpAddr net.IP, network *net.IPNet) (lowerIP net.IP, upperIP net.IP) {

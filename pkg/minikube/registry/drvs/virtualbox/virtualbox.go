@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -64,6 +65,10 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	d.DiskSize = cc.DiskSize
 	d.HostOnlyCIDR = cc.HostOnlyCIDR
 	d.NoShare = cc.DisableDriverMounts
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" && !d.NoShare {
+		klog.Infof("darwin/arm64: forcing NoShare=true; arm64 minikube ISO lacks VirtualBox Guest Additions")
+		d.NoShare = true
+	}
 	d.NoVTXCheck = cc.NoVTXCheck
 	d.NatNicType = cc.NatNicType
 	d.HostOnlyNicType = cc.HostOnlyNicType
@@ -126,15 +131,90 @@ func status(_ *run.CommandOptions) registry.State {
 		}
 	}
 
-	majorVers := (strings.Split(version, "."))[0]
-	majorVersInt, cerr := strconv.Atoi(majorVers)
-	if cerr != nil {
-		klog.Warningf("unable to convert major version: %s of vbox to an int %v", majorVers, cerr)
-	} else if majorVersInt < vboxSupportedMajorVersion {
-		out.WarningT("Minimum VirtualBox Version supported: {{.vers}}, current VirtualBox version: {{.cvers}}", out.V{"vers": vboxSupportedMajorVersion, "cvers": majorVersInt})
+	major, minor, perr := parseVboxVersion(version)
+	if perr != nil {
+		klog.Warningf("unable to parse virtualbox version %q: %v", version, perr)
+		if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+			return registry.State{
+				Installed: true,
+				Healthy:   false,
+				Error:     fmt.Errorf("unable to parse VirtualBox version %q: %w", version, perr),
+				Fix:       "Ensure VirtualBox 7.1 or later is installed (7.2+ recommended for Apple Silicon)",
+				Doc:       docURL,
+				Version:   version,
+			}
+		}
+	} else {
+		if major < vboxSupportedMajorVersion {
+			out.WarningT("Minimum VirtualBox Version supported: {{.vers}}, current VirtualBox version: {{.cvers}}", out.V{"vers": vboxSupportedMajorVersion, "cvers": major})
+		}
+		if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+			healthy, warn := vboxArm64Policy(major, minor)
+			if !healthy {
+				return registry.State{
+					Installed: true,
+					Healthy:   false,
+					Error:     fmt.Errorf("VirtualBox %d.%d is too old for Apple Silicon; host support was added in VirtualBox 7.1", major, minor),
+					Fix:       "Upgrade to VirtualBox 7.1 or later (7.2+ recommended)",
+					Doc:       docURL,
+					Version:   version,
+				}
+			}
+			if warn {
+				out.WarningT("VirtualBox {{.v}} works on Apple Silicon but 7.2 or later is recommended for stability", out.V{"v": fmt.Sprintf("%d.%d", major, minor)})
+			}
+		}
 	}
 
 	klog.Infof("virtual box version: %s", version)
 
 	return registry.State{Installed: true, Healthy: true, Version: version}
+}
+
+// parseVboxVersion extracts major and minor version numbers from the output of
+// `VBoxManage --version`. The reported string typically looks like
+// "7.2.6" or "7.1.12_Ubuntur169389" (a build suffix is appended to the patch
+// component on some distro builds). Only the major and minor are returned
+// because the arm64 gate only cares about >=7.1 and a soft warn below 7.2.
+func parseVboxVersion(v string) (major, minor int, err error) {
+	v = strings.TrimSpace(v)
+	parts := strings.SplitN(v, ".", 3)
+	if len(parts) < 2 {
+		return 0, 0, fmt.Errorf("unexpected VirtualBox version format: %q", v)
+	}
+	major, err = strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse major from %q: %w", v, err)
+	}
+	// Strip any trailing non-digit suffix from the minor component.
+	minorStr := parts[1]
+	for i, r := range minorStr {
+		if r < '0' || r > '9' {
+			minorStr = minorStr[:i]
+			break
+		}
+	}
+	if minorStr == "" {
+		return 0, 0, fmt.Errorf("no digits in minor component of %q", v)
+	}
+	minor, err = strconv.Atoi(minorStr)
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse minor from %q: %w", v, err)
+	}
+	return major, minor, nil
+}
+
+// vboxArm64Policy reports whether the given VirtualBox version is acceptable
+// for use on darwin/arm64 (Apple Silicon). Apple Silicon host support was
+// added in VirtualBox 7.1; 7.2+ is recommended for stability. Below 7.1 the
+// driver cannot start at all — callers should surface this as an unhealthy
+// registry.State rather than letting VBoxManage fail at runtime.
+func vboxArm64Policy(major, minor int) (healthy bool, warn bool) {
+	if major < 7 || (major == 7 && minor < 1) {
+		return false, false
+	}
+	if major == 7 && minor < 2 {
+		return true, true
+	}
+	return true, false
 }
