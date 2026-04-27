@@ -332,14 +332,8 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		klog.Info("no existing cluster config was found, will generate one from the flags ")
 		cc = generateNewConfigFromFlags(cmd, k8sVersion, rtime, drvName, options)
 
-		cnm, err := cni.New(&cc)
-		if err != nil {
+		if _, err := cni.New(&cc); err != nil {
 			return cc, config.Node{}, fmt.Errorf("cni: %w", err)
-		}
-
-		if _, ok := cnm.(cni.Disabled); !ok {
-			klog.Infof("Found %q CNI - setting NetworkPlugin=cni", cnm)
-			cc.KubernetesConfig.NetworkPlugin = "cni"
 		}
 	}
 
@@ -576,10 +570,9 @@ func getRosetta(driverName string) bool {
 func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string, options *run.CommandOptions) config.ClusterConfig {
 	var cc config.ClusterConfig
 
-	// networkPlugin cni deprecation warning
 	chosenNetworkPlugin := viper.GetString(networkPlugin)
-	if chosenNetworkPlugin == "cni" {
-		out.WarningT("With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative")
+	if chosenNetworkPlugin != "" && chosenNetworkPlugin != "cni" {
+		out.WarningT("--network-plugin flag is obsolete")
 	}
 
 	if viper.GetString(network) != "" && !driver.SupportsNetworkFlag(drvName) {

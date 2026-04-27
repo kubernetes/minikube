@@ -355,10 +355,6 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) 
 		return fmt.Errorf("cni config: %w", err)
 	}
 
-	if _, ok := cnm.(cni.Disabled); ok {
-		return nil
-	}
-
 	// when not on init, can run in parallel and break step output order
 	if regStep {
 		register.Reg.SetStep(register.ConfiguringCNI)

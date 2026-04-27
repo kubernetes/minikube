@@ -27,7 +27,6 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -67,19 +66,6 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	if mc.Driver == oci.Docker && mc.KubernetesConfig.ContainerRuntime == constants.CRIO {
 		extraOpts["cgroups-per-qos"] = "false"
 		extraOpts["enforce-node-allocatable"] = ""
-	}
-
-	if k8s.NetworkPlugin != "" {
-		// Only CNI is supported in 1.24+, and it is the default
-		if version.LT(semver.MustParse("1.24.0-alpha.2")) {
-			extraOpts["network-plugin"] = k8s.NetworkPlugin
-		} else if k8s.NetworkPlugin != "cni" && mc.KubernetesConfig.ContainerRuntime != constants.Docker {
-			return nil, fmt.Errorf("invalid network plugin: %s", k8s.NetworkPlugin)
-		}
-
-		if k8s.NetworkPlugin == "kubenet" {
-			extraOpts["pod-cidr"] = cni.DefaultPodCIDR
-		}
 	}
 
 	if _, ok := extraOpts["node-ip"]; !ok {
