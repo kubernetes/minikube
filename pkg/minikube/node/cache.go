@@ -171,7 +171,8 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			}
 
 			if cc.Driver == driver.Podman {
-				return fmt.Errorf("not yet implemented, see issue #8426")
+				klog.Warningf("skipping image load from cache: not implemented for podman. see issue #8426")
+				return nil
 			}
 			if driver.IsDocker(cc.Driver) && err == nil {
 				klog.Infof("Loading %s from local cache", img)
