@@ -17,7 +17,9 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -147,6 +149,8 @@ const (
 	autoPauseInterval       = "auto-pause-interval"
 	preloadSrc              = "preload-source"
 	rosetta                 = "rosetta"
+	dnsSearch               = "dns-search"
+	autoDNSSearch           = "auto-dns-search"
 )
 
 var (
@@ -307,6 +311,10 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(sshSSHUser, defaultSSHUser, "SSH user (ssh driver only)")
 	startCmd.Flags().String(sshSSHKey, "", "SSH key (ssh driver only)")
 	startCmd.Flags().Int(sshSSHPort, defaultSSHPort, "SSH port (ssh driver only)")
+
+	// dns search domains
+	startCmd.Flags().StringSliceVar(&dnsSearchDomains, dnsSearch, nil, "DNS search domains to configure inside the minikube node (comma-separated)")
+	startCmd.Flags().Bool(autoDNSSearch, false, "Auto-detect and propagate the host's DNS search domains into the minikube node")
 
 	// socket vmnet
 	startCmd.Flags().String(socketVMnetClientPath, "", "Path to the socket vmnet client binary (QEMU driver only)")
@@ -677,7 +685,18 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		GPUs:               viper.GetString(gpus),
 		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
 		Rosetta:            getRosetta(drvName),
+		DNSSearch:          dnsSearchDomains,
+		AutoDNSSearch:      viper.GetBool(autoDNSSearch),
 	}
+
+	// Auto-detect host DNS search domains if requested
+	if cc.AutoDNSSearch {
+		hostDomains := parseHostDNSSearch()
+		cc.DNSSearch = mergeDNSSearch(cc.DNSSearch, hostDomains)
+	}
+
+	warnDNSSearchOverlap(cc.DNSSearch, cc.KubernetesConfig.DNSDomain)
+
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 
 	if viper.GetString(mountString) != "" && driver.IsKIC(drvName) {
@@ -908,6 +927,16 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 	updateDurationFromFlag(cmd, &cc.AutoPauseInterval, autoPauseInterval)
 	updateBoolFromFlag(cmd, &cc.Rosetta, rosetta)
+	updateStringSliceFromFlag(cmd, &cc.DNSSearch, dnsSearch)
+	updateBoolFromFlag(cmd, &cc.AutoDNSSearch, autoDNSSearch)
+
+	// Auto-detect host DNS search domains if requested
+	if cc.AutoDNSSearch {
+		hostDomains := parseHostDNSSearch()
+		cc.DNSSearch = mergeDNSSearch(cc.DNSSearch, hostDomains)
+	}
+
+	warnDNSSearchOverlap(cc.DNSSearch, cc.KubernetesConfig.DNSDomain)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		kubeVer, err := getKubernetesVersion(existing)
@@ -1036,6 +1065,69 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 	}
 	klog.Infof("Waiting for components: %+v", waitComponents)
 	return waitComponents
+}
+
+// parseHostDNSSearch reads DNS search domains from /etc/resolv.conf on the host.
+func parseHostDNSSearch() []string {
+	return parseHostDNSSearchFrom("/etc/resolv.conf")
+}
+
+// parseHostDNSSearchFrom reads DNS search domains from the given resolv.conf path.
+func parseHostDNSSearchFrom(path string) []string {
+	f, err := os.Open(path)
+	if err != nil {
+		klog.Warningf("failed to open %s for DNS search auto-detect: %v", path, err)
+		return nil
+	}
+	defer f.Close()
+
+	var domains []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "search ") {
+			fields := strings.Fields(line)
+			if len(fields) > 1 {
+				domains = append(domains, fields[1:]...)
+			}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		klog.Warningf("error reading %s: %v", path, err)
+	}
+	return domains
+}
+
+// mergeDNSSearch merges two slices of DNS search domains, deduplicating entries.
+func mergeDNSSearch(a, b []string) []string {
+	seen := make(map[string]bool)
+	var merged []string
+	for _, d := range a {
+		if !seen[d] {
+			seen[d] = true
+			merged = append(merged, d)
+		}
+	}
+	for _, d := range b {
+		if !seen[d] {
+			seen[d] = true
+			merged = append(merged, d)
+		}
+	}
+	return merged
+}
+
+// warnDNSSearchOverlap warns if any DNS search domain matches or is a subdomain of the cluster DNS domain.
+func warnDNSSearchOverlap(domains []string, clusterDomain string) {
+	if len(domains) == 0 || clusterDomain == "" {
+		return
+	}
+	for _, d := range domains {
+		if d == clusterDomain || strings.HasSuffix(d, "."+clusterDomain) {
+			out.WarningT("DNS search domain {{.domain}} overlaps with the cluster DNS domain {{.cluster_domain}}. Kubernetes already configures pods to search {{.cluster_domain}}, so this is likely unnecessary and may cause unexpected DNS behavior.",
+				out.V{"domain": d, "cluster_domain": clusterDomain})
+		}
+	}
 }
 
 func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {

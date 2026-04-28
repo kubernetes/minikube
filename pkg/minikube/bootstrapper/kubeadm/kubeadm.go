@@ -1002,6 +1002,10 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return fmt.Errorf("resolv.conf: %w", err)
 	}
 
+	if err := k.configureDNSSearch(cfg); err != nil {
+		return fmt.Errorf("dns search: %w", err)
+	}
+
 	// add "control-plane.minikube.internal" dns alias
 	// note: needs to be called after APIServerHAVIP is set (in startPrimaryControlPlane()) and before kubeadm kicks off
 	cpIP := cfg.KubernetesConfig.APIServerHAVIP
@@ -1036,6 +1040,38 @@ func (k *Bootstrapper) copyResolvConf(cfg config.ClusterConfig) error {
 	}
 	if _, err := k.c.RunCmd(exec.Command("sudo", "sed", "-i", "-e", "s/^search .$//", "/etc/kubelet-resolv.conf")); err != nil {
 		return fmt.Errorf("sed: %w", err)
+	}
+
+	return nil
+}
+
+// configureDNSSearch configures DNS search domains in /etc/resolv.conf inside the node.
+func (k *Bootstrapper) configureDNSSearch(cfg config.ClusterConfig) error {
+	if len(cfg.DNSSearch) == 0 {
+		return nil
+	}
+	if driver.IsNone(cfg.Driver) {
+		return fmt.Errorf("dns search is not supported with the none driver")
+	}
+
+	searchLine := "search " + strings.Join(cfg.DNSSearch, " ")
+	klog.Infof("Configuring DNS search domains: %v", cfg.DNSSearch)
+
+	// Remove existing search lines and prepend the new one.
+	// Use cp instead of sed -i because /etc/resolv.conf is a bind mount in
+	// Docker/Podman containers and sed -i fails with "Device or resource busy"
+	// when it tries to rename a temp file onto the mount point.
+	resolvScript := fmt.Sprintf(`{ echo '%s'; sed '/^search /d' /etc/resolv.conf; } > /tmp/resolv.tmp && cp /tmp/resolv.tmp /etc/resolv.conf && rm /tmp/resolv.tmp`, searchLine)
+	if _, err := k.c.RunCmd(exec.Command("sudo", "sh", "-c", resolvScript)); err != nil {
+		return fmt.Errorf("updating /etc/resolv.conf: %w", err)
+	}
+
+	// Also update kubelet-resolv.conf if it exists (K8s v1.25 regression workaround)
+	if bsutil.HasResolvConfSearchRegression(cfg.KubernetesConfig.KubernetesVersion) {
+		kubeletScript := fmt.Sprintf(`{ echo '%s'; sed '/^search /d' /etc/kubelet-resolv.conf; } > /tmp/kubelet-resolv.tmp && cp /tmp/kubelet-resolv.tmp /etc/kubelet-resolv.conf && rm /tmp/kubelet-resolv.tmp`, searchLine)
+		if _, err := k.c.RunCmd(exec.Command("sudo", "sh", "-c", kubeletScript)); err != nil {
+			return fmt.Errorf("updating /etc/kubelet-resolv.conf: %w", err)
+		}
 	}
 
 	return nil
