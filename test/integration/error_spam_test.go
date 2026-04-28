@@ -56,6 +56,8 @@ var stderrAllow = []string{
 	`For more information, see`,
 	// warning about upcoming default container runtime change
 	regexp.QuoteMeta(constants.DefaultContainerRuntimeChangeWarning),
+	// docker deprecation notice (e.g. "DEPRECATED: The legacy builder is deprecated...")
+	`DEPRECATED:`,
 }
 
 // stderrAllowRe combines rootCauses into a single regex
