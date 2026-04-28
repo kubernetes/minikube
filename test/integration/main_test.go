@@ -142,7 +142,7 @@ func HyperVDriver() bool {
 	return matchDriverFlag("hyperv")
 }
 
-// KVM returns true is is KVM driver
+// KVM returns true if is KVM driver
 func KVMDriver() bool {
 	return matchDriverFlag("kvm", "kvm2")
 }
