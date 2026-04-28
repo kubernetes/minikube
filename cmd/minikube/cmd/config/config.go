@@ -178,8 +178,8 @@ var settings = []Setting{
 var ConfigCmd = &cobra.Command{
 	Use:   "config SUBCOMMAND [flags]",
 	Short: "Modify persistent configuration values",
-	Long: `config modifies minikube config files using subcommands like "minikube config set driver kvm2"
-Configurable fields: ` + "\n\n" + configurableFields(),
+	Long: `config modifies minikube config files using subcommands like "minikube config set driver kvm2". For a detailed example see https://minikube.sigs.k8s.io/docs/commands/config` +
+		"\n\n" + `Configurable fields: ` + "\n\n" + configurableFields(),
 	Run: func(cmd *cobra.Command, _ []string) {
 		if err := cmd.Help(); err != nil {
 			klog.ErrorS(err, "help")
