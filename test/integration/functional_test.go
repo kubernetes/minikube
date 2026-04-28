@@ -769,8 +769,15 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 
 	start := time.Now()
 	// docs: The tests before this already created a profile
-	// docs: Soft-start minikube with different `--extra-config` command line option
-	startArgs := []string{"start", "-p", profile, "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision", "--wait=all"}
+	// docs: Soft-start minikube with `--k8s-logging-format` and `--extra-config` command line options
+	startArgs := []string{
+		"start",
+		"-p", profile,
+		"--k8s-logging-format=json",
+		"--extra-config=scheduler.logging-format=text",
+		"--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision",
+		"--wait=all",
+	}
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 	if err != nil {
@@ -784,10 +791,74 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("error reading cluster config after soft start: %v", err)
 	}
 
-	// docs: Make sure the specified `--extra-config` is correctly returned
-	expectedExtraOptions := "apiserver.enable-admission-plugins=NamespaceAutoProvision"
-	if !strings.Contains(afterCfg.Config.KubernetesConfig.ExtraOptions.String(), expectedExtraOptions) {
-		t.Errorf("expected ExtraOptions to contain %s but got %s", expectedExtraOptions, afterCfg.Config.KubernetesConfig.ExtraOptions.String())
+	// docs: Make sure `--extra-config` and `--k8s-logging-format` are correctly returned in profile config
+	gotExtraOptions := afterCfg.Config.KubernetesConfig.ExtraOptions.String()
+	expectedExtraOptions := []string{
+		"apiserver.enable-admission-plugins=NamespaceAutoProvision",
+		"apiserver.logging-format=json",
+		"controller-manager.logging-format=json",
+		"kubelet.logging-format=json",
+		"scheduler.logging-format=text",
+	}
+	for _, expected := range expectedExtraOptions {
+		if !strings.Contains(gotExtraOptions, expected) {
+			t.Errorf("expected ExtraOptions to contain %s but got %s", expected, gotExtraOptions)
+		}
+	}
+
+	// docs: Verify control-plane pods pick up logging-format flags from `--k8s-logging-format` and scheduler override
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "po", "-l", "tier=control-plane", "-n", "kube-system", "-o=json"))
+	if err != nil {
+		t.Fatalf("failed to get control-plane pods. args %q: %v", rr.Command(), err)
+	}
+
+	pods := api.PodList{}
+	d := json.NewDecoder(bytes.NewReader(rr.Stdout.Bytes()))
+	if err := d.Decode(&pods); err != nil {
+		t.Fatalf("failed to decode kubectl json output: args %q : %v", rr.Command(), err)
+	}
+
+	type expectedLogging struct {
+		podPrefix string
+		format    string
+	}
+	expectedPodLogging := []expectedLogging{
+		{podPrefix: "kube-apiserver", format: "json"},
+		{podPrefix: "kube-controller-manager", format: "json"},
+		{podPrefix: "kube-scheduler", format: "text"},
+	}
+	found := map[string]bool{}
+	for _, pod := range pods.Items {
+		for _, expected := range expectedPodLogging {
+			if !strings.HasPrefix(pod.Name, expected.podPrefix) {
+				continue
+			}
+			found[expected.podPrefix] = true
+			if len(pod.Spec.Containers) == 0 {
+				t.Errorf("pod %q has no containers", pod.Name)
+				continue
+			}
+
+			container := pod.Spec.Containers[0]
+			flags := append(append([]string{}, container.Command...), container.Args...)
+			want := fmt.Sprintf("--logging-format=%s", expected.format)
+			present := false
+			for _, flag := range flags {
+				if flag == want {
+					present = true
+					break
+				}
+			}
+			if !present {
+				t.Errorf("pod %q missing %q in command/args: %v", pod.Name, want, flags)
+			}
+		}
+	}
+
+	for _, expected := range expectedPodLogging {
+		if !found[expected.podPrefix] {
+			t.Errorf("expected pod with prefix %q was not found", expected.podPrefix)
+		}
 	}
 }
 
