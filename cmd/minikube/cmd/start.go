@@ -2103,3 +2103,20 @@ func startNerdctld(options *run.CommandOptions) {
 		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s", rest.Output()), err)
 	}
 }
+
+func startPodmand(options *run.CommandOptions) {
+	co := mustload.Running(ClusterFlagValue(), options)
+	runner := co.CP.Runner
+
+	// sudo systemctl start podman.socket
+	if rest, err := runner.RunCmd(exec.Command("sudo", "systemctl", "start", "podman.socket")); err != nil {
+		exit.Error(reason.StartPodmand, fmt.Sprintf("Failed to enable podman.socket: %s", rest.Output()), err)
+	}
+
+	// set up environment variable on remote machine. docker client uses 'non-login & non-interactive shell' therefore the only way is to modify .bashrc file of user 'docker'
+	// insert this at 4th line
+	envSetupCommand := exec.Command("/bin/bash", "-c", "sed -i '4i export DOCKER_HOST=unix:///run/podman/podman.sock' .bashrc")
+	if rest, err := runner.RunCmd(envSetupCommand); err != nil {
+		exit.Error(reason.StartPodmand, fmt.Sprintf("Failed to set up DOCKER_HOST: %s", rest.Output()), err)
+	}
+}
