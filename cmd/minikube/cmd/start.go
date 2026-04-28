@@ -2096,10 +2096,30 @@ func startNerdctld(options *run.CommandOptions) {
 		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to enable nerdctl.socket: %s", rest.Output()), err)
 	}
 
-	// set up environment variable on remote machine. docker client uses 'non-login & non-interactive shell' therefore the only way is to modify .bashrc file of user 'docker'
-	// insert this at 4th line
-	envSetupCommand := exec.Command("/bin/bash", "-c", "sed -i '4i export DOCKER_HOST=unix:///var/run/nerdctl.sock' .bashrc")
-	if rest, err := runner.RunCmd(envSetupCommand); err != nil {
-		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s", rest.Output()), err)
+	// set up DOCKER_HOST in both docker and root .bashrc so docker-env --ssh-host works for both users
+	ensureNerdctlDockerHostInBashrc(runner, "/home/docker/.bashrc", false)
+	ensureNerdctlDockerHostInBashrc(runner, "/root/.bashrc", true)
+}
+
+// ensureNerdctlDockerHostInBashrc adds export DOCKER_HOST=unix:///var/run/nerdctl.sock to the given user's .bashrc if not already present.
+func ensureNerdctlDockerHostInBashrc(runner command.Runner, bashrcPath string, useSudo bool) {
+	const exportLine = "export DOCKER_HOST=unix:///var/run/nerdctl.sock"
+
+	checkArgs := []string{"-c", fmt.Sprintf("grep -q 'DOCKER_HOST=unix:///var/run/nerdctl.sock' %s", bashrcPath)}
+	checkCmd := exec.Command("sh", checkArgs...)
+	if useSudo {
+		checkCmd = exec.Command("sudo", append([]string{"sh"}, checkArgs...)...)
+	}
+	if _, err := runner.RunCmd(checkCmd); err == nil {
+		return // already present
+	}
+
+	sedArgs := []string{"-c", fmt.Sprintf("sed -i '4i %s' %s", exportLine, bashrcPath)}
+	sedCmd := exec.Command("sh", sedArgs...)
+	if useSudo {
+		sedCmd = exec.Command("sudo", append([]string{"sh"}, sedArgs...)...)
+	}
+	if rest, err := runner.RunCmd(sedCmd); err != nil {
+		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST in %s: %s", bashrcPath, rest.Output()), err)
 	}
 }
