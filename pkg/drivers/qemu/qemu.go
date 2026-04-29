@@ -374,6 +374,14 @@ func getAvailableTCPPortFromRange(minPort, maxPort int) (int, error) {
 func (d *Driver) Start() error {
 	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
 
+	// WHPX on Windows could have compatibility issues with 'max' CPU type
+	// using 'qemu64' which is the most compatible baseline CPU model is more stable
+	accel := hardwareAcceleration()
+	if accel == "whpx" && (d.CPUType == "max" || d.CPUType == "host") {
+		klog.Infof("Adjusting CPU type for WHPX compatibility (%s -> qemu64)", d.CPUType)
+		d.CPUType = "qemu64"
+	}
+
 	var startCmd []string
 
 	if d.MachineType != "" {
@@ -418,7 +426,7 @@ func (d *Driver) Start() error {
 	}
 
 	// hardware acceleration is important, it increases performance by 10x
-	accel := hardwareAcceleration()
+	accel = hardwareAcceleration()
 	if accel != "" {
 		klog.Infof("Using %s for hardware acceleration", accel)
 		startCmd = append(startCmd,
