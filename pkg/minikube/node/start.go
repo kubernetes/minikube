@@ -704,11 +704,11 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 		if subnetCIDR != "" {
 			_, ipNet, parseErr := net.ParseCIDR(subnetCIDR)
 			if parseErr != nil {
-				klog.Warningf("Failed to parse configured subnet %q for NO_PROXY: %v", subnetCIDR, parseErr) 
+				klog.Warningf("Failed to parse configured subnet %q for NO_PROXY: %v", subnetCIDR, parseErr)
 			} else {
 				if err := proxy.ExcludeIP(ipNet.String()); err != nil {
 					klog.Warningf("Failed to set NO_PROXY for subnet %s: %v", ipNet.String(), err)
-				} 
+				}
 			}
 		}
 	}

@@ -2153,7 +2153,7 @@ func startProxyWithCustomCerts(ctx context.Context, t *testing.T) error {
 	arch := "x86_64"
 	if runtime.GOARCH == "arm64" {
 		arch = "aarch64"
-	} 
+	}
 	filename := fmt.Sprintf("mitmproxy-12.2.2-linux-%s.tar.gz", arch)
 	url := fmt.Sprintf("https://downloads.mitmproxy.org/12.2.2/%s", filename)
 
