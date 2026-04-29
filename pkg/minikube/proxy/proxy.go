@@ -27,6 +27,7 @@ import (
 
 	"errors"
 
+	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -145,15 +146,32 @@ func UpdateTransport(cfg *rest.Config) *rest.Config {
 		if wt != nil {
 			rt = wt(rt)
 		}
-		if ht, ok := rt.(*http.Transport); ok {
-			ht.Proxy = nil
-			rt = ht
-		} else {
-			klog.Errorf("Error while casting RoundTripper (of type %T) to *http.Transport : %v", rt, ok)
+		if t := wrappedHTTPTransport(rt); t != nil {
+			t.Proxy = nil
+		} else if rt != nil {
+			klog.Errorf("transport %T could not be unwrapped to *http.Transport; proxy stripping was skipped", rt)
 		}
 		return rt
 	}
 	return cfg
+}
+
+// wrappedHTTPTransport returns the *http.Transport at the bottom of any
+// RoundTripperWrapper chain wrapping rt, or nil if the chain does not end
+// in one (or rt itself is nil). See
+// https://github.com/kubernetes/minikube/issues/22896 for context.
+func wrappedHTTPTransport(rt http.RoundTripper) *http.Transport {
+	cur := rt
+	for {
+		switch t := cur.(type) {
+		case *http.Transport:
+			return t
+		case utilnet.RoundTripperWrapper:
+			cur = t.WrappedRoundTripper()
+		default:
+			return nil
+		}
+	}
 }
 
 // SetDockerEnv sets the proxy environment variables in the docker environment.
