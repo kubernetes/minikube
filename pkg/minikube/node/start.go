@@ -700,10 +700,15 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	}
 	// Also bypass proxy for the subnet derived from the IP (assuming /24)
 	if err == nil {
-		_, ipNet, parseErr := net.ParseCIDR(ip + "/24")
-		if parseErr == nil {
-			if err := proxy.ExcludeIP(ipNet.String()); err != nil {
-				klog.Warningf("Failed to set NO_PROXY for subnet %s: %v", ipNet.String(), err)
+		subnetCIDR := strings.TrimSpace(cfg.Subnet)
+		if subnetCIDR != "" {
+			_, ipNet, parseErr := net.ParseCIDR(subnetCIDR)
+			if parseErr != nil {
+				klog.Warningf("Failed to parse configured subnet %q for NO_PROXY: %v", subnetCIDR, parseErr) 
+			} else {
+				if err := proxy.ExcludeIP(ipNet.String()); err != nil {
+					klog.Warningf("Failed to set NO_PROXY for subnet %s: %v", ipNet.String(), err)
+				} 
 			}
 		}
 	}
