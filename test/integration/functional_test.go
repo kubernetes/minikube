@@ -2150,13 +2150,20 @@ users:
 
 // startProxyWithCustomCerts mimics starts a proxy with custom certs by using mitmproxy and installing its certs
 func startProxyWithCustomCerts(ctx context.Context, t *testing.T) error {
+	arch := "x86_64"
+	if runtime.GOARCH == "arm64" {
+		arch = "aarch64"
+	}
+	filename := fmt.Sprintf("mitmproxy-12.2.2-linux-%s.tar.gz", arch)
+	url := fmt.Sprintf("https://downloads.mitmproxy.org/12.2.2/%s", filename)
+
 	// Download the mitmproxy bundle for mitmdump
-	_, err := Run(t, exec.CommandContext(ctx, "curl", "-LO", "https://snapshots.mitmproxy.org/6.0.2/mitmproxy-6.0.2-linux.tar.gz"))
+	_, err := Run(t, exec.CommandContext(ctx, "curl", "-LO", url))
 	if err != nil {
 		return fmt.Errorf("download mitmproxy tar: %w", err)
 	}
 	defer func() {
-		err := os.Remove("mitmproxy-6.0.2-linux.tar.gz")
+		err := os.Remove(filename)
 		if err != nil {
 			t.Logf("remove tarball: %v", err)
 		}
@@ -2164,7 +2171,7 @@ func startProxyWithCustomCerts(ctx context.Context, t *testing.T) error {
 
 	mitmDir := t.TempDir()
 
-	_, err = Run(t, exec.CommandContext(ctx, "tar", "xzf", "mitmproxy-6.0.2-linux.tar.gz", "-C", mitmDir))
+	_, err = Run(t, exec.CommandContext(ctx, "tar", "xzf", filename, "-C", mitmDir))
 	if err != nil {
 		return fmt.Errorf("untar mitmproxy tar: %w", err)
 	}
