@@ -698,6 +698,15 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	if err != nil {
 		out.FailureT("Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
 	}
+	// Also bypass proxy for the subnet derived from the IP (assuming /24)
+	if err == nil {
+		_, ipNet, parseErr := net.ParseCIDR(ip + "/24")
+		if parseErr == nil {
+			if err := proxy.ExcludeIP(ipNet.String()); err != nil {
+				klog.Warningf("Failed to set NO_PROXY for subnet %s: %v", ipNet.String(), err)
+			}
+		}
+	}
 
 	return runner, preExists, m, hostInfo, err
 }
