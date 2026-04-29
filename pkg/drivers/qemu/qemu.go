@@ -564,6 +564,12 @@ func hardwareAcceleration() string {
 		// On Linux, enable the Kernel Virtual Machine accelerator.
 		return "kvm"
 	}
+	if runtime.GOOS == "windows" {
+		// On Windows, enable the Windows Hypervisor Platform accelerator (WHPX).
+		// This requires Windows 10/11 with the "Windows Hypervisor Platform" feature enabled.
+		// Users can enable it with: Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform
+		return "whpx"
+	}
 	return ""
 }
 
