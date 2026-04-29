@@ -698,22 +698,35 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	if err != nil {
 		out.FailureT("Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
 	}
-	// Also bypass proxy for the subnet derived from the IP (assuming /24)
+	// Also bypass proxy for the subnet
 	if err == nil {
-		subnetCIDR := strings.TrimSpace(cfg.Subnet)
-		if subnetCIDR != "" {
-			_, ipNet, parseErr := net.ParseCIDR(subnetCIDR)
-			if parseErr != nil {
-				klog.Warningf("Failed to parse configured subnet %q for NO_PROXY: %v", subnetCIDR, parseErr)
-			} else {
-				if err := proxy.ExcludeIP(ipNet.String()); err != nil {
-					klog.Warningf("Failed to set NO_PROXY for subnet %s: %v", ipNet.String(), err)
-				}
-			}
-		}
+		excludeSubnetFromProxy(cfg, ip)
 	}
 
 	return runner, preExists, m, hostInfo, err
+}
+
+// excludeSubnetFromProxy adds the cluster subnet to NO_PROXY.
+func excludeSubnetFromProxy(cfg *config.ClusterConfig, ip string) {
+	subnetCIDR := strings.TrimSpace(cfg.Subnet)
+	if subnetCIDR == "" {
+		// Fallback to deriving subnet from IP if not explicitly configured
+		_, ipNet, parseErr := net.ParseCIDR(ip + "/24")
+		if parseErr == nil {
+			subnetCIDR = ipNet.String()
+		}
+	}
+
+	if subnetCIDR != "" {
+		_, ipNet, parseErr := net.ParseCIDR(subnetCIDR)
+		if parseErr != nil {
+			klog.Warningf("Failed to parse subnet %q for NO_PROXY: %v", subnetCIDR, parseErr)
+		} else {
+			if err := proxy.ExcludeIP(ipNet.String()); err != nil {
+				klog.Warningf("Failed to set NO_PROXY for subnet %s: %v", ipNet.String(), err)
+			}
+		}
+	}
 }
 
 // getPort asks the kernel for a free open port that is ready to use
