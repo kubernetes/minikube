@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-CRI_DOCKERD_AARCH64_VERSION = 0.4.1
-CRI_DOCKERD_AARCH64_COMMIT = 55d6e1a1d6f2ee58949e13a0c66afe7d779ac942
+CRI_DOCKERD_AARCH64_VERSION = 0.4.3
+CRI_DOCKERD_AARCH64_COMMIT = d969e29f500151687337b2a896ab65e8192f3145
 CRI_DOCKERD_AARCH64_SITE = https://github.com/Mirantis/cri-dockerd/archive
 CRI_DOCKERD_AARCH64_SOURCE = $(CRI_DOCKERD_AARCH64_COMMIT).tar.gz
 
