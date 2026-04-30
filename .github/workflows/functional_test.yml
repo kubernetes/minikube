@@ -178,12 +178,13 @@ jobs:
         if: matrix.driver == 'none' && matrix.cruntime == 'docker'
         run: |
           CRI_DOCKERD_VERSION="v0.4.3"
-          CRI_DOCKERD_COMMIT="d969e29f500151687337b2a896ab65e8192f3145"
-          CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
           ARCH="${{ matrix.arch }}"
-          sudo curl -L "${CRI_DOCKERD_BASE_URL}/${ARCH}/cri-dockerd" -o /usr/bin/cri-dockerd
-          sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
-          sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+          VERSION="${CRI_DOCKERD_VERSION#v}"
+          curl -L "https://github.com/Mirantis/cri-dockerd/releases/download/${CRI_DOCKERD_VERSION}/cri-dockerd-${VERSION}.${ARCH}.tgz" -o /tmp/cri-dockerd.tgz
+          tar -C /tmp -xzvf /tmp/cri-dockerd.tgz
+          sudo mv /tmp/cri-dockerd/cri-dockerd /usr/bin/cri-dockerd
+          sudo curl -L "https://raw.githubusercontent.com/Mirantis/cri-dockerd/${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
+          sudo curl -L "https://raw.githubusercontent.com/Mirantis/cri-dockerd/${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
           sudo chmod +x /usr/bin/cri-dockerd
       - name: Install crictl (baremetal only)
         shell: bash
