@@ -386,7 +386,7 @@ func Suggest(driversState []registry.DriverState) (registry.DriverState, []regis
 func Status(name string, options *run.CommandOptions) registry.DriverState {
 	d := registry.Driver(name)
 	stateChannel := make(chan registry.State)
-	timeoutChannel := time.After(20 * time.Second)
+	timeoutChannel := time.After(40 * time.Second)
 	go func() {
 		stateChannel <- registry.Status(name, options)
 	}()
@@ -400,7 +400,18 @@ func Status(name string, options *run.CommandOptions) registry.DriverState {
 		}
 	case <-timeoutChannel:
 		klog.Infof("time out when checking for status of %s driver", name)
-		return registry.DriverState{}
+		return registry.DriverState{
+			Name:     d.Name,
+			Default:  d.Default,
+			Priority: d.Priority,
+			State: registry.State{
+				Reason:    fmt.Sprintf("PROVIDER_%s_TIMEOUT", strings.ToUpper(name)),
+				Error:     fmt.Errorf("timed out waiting for %s driver to be ready", name),
+				Installed: true,
+				Healthy:   false,
+				Running:   false,
+			},
+		}
 
 	}
 
