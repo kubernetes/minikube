@@ -48,7 +48,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	}
 
 	featureGates := k8s.FeatureGates
-	if version.GTE(semver.MustParse("1.36.0")) && r.Name() == "Docker" {
+	if version.GTE(semver.MustParse("1.36.0")) && strings.EqualFold(r.Name(), constants.Docker) {
 		if featureGates == "" {
 			featureGates = "ExtendWebSocketsToKubelet=false"
 		} else if !strings.Contains(featureGates, "ExtendWebSocketsToKubelet") {
