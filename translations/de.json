@@ -873,6 +873,7 @@
 	"VirtualBox is broken. Disable real-time anti-virus software, reboot, and reinstall VirtualBox if the problem continues.": "VirtualBox ist nicht funktionial. Deaktivieren Sie Real-Time Antivirus Software, Reboot und installieren Sie VirtualBox erneut falls das Problem weiterhin besteht.",
 	"VirtualBox is broken. Reinstall VirtualBox, reboot, and run 'minikube delete'.": "VirtualBox ist nicht funktional. ",
 	"VirtualBox is unable to find its network interface. Try upgrading to the latest release and rebooting.": "VirtualBox kann seine Netzwerk-Schnittstellen nicht finden. Versuchen Sie auf die aktuellste Version zu aktualisieren und zu rebooten.",
+	"VirtualBox {{.v}} works on Apple Silicon but 7.2 or later is recommended for stability": "",
 	"Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--driver=docker'. Otherwise, consult your systems BIOS manual for how to enable virtualization.": "Virtualisierungs-Unterstützung ist auf ihrem Computer deaktivert. Wenn Sie Minikube in einer VM ausführen, versuchen Sie '--driver=docker' anzugeben. Andernfalls schauen Sie im BIOS-Handbuch ihres Systems nach, wie man die Virtualisierungs-Unterstützung aktiviert.",
 	"Wait failed: {{.error}}": "Warten fehlgeschlagen: {{.error}}",
 	"Want kubectl {{.version}}? Try 'minikube kubectl -- get pods -A'": "Sie wollen kubectl in der Version {{.version}}? Versuchen Sie 'minikube kubectl -- get pods -A'",

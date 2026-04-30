@@ -873,6 +873,7 @@
 	"VirtualBox is broken. Disable real-time anti-virus software, reboot, and reinstall VirtualBox if the problem continues.": "VirtualBox が故障しています。問題が解決しない場合、リアルタイムのアンチウィルスソフトを無効化し、OS を再起動して、VirtualBox を再インストールしてください。",
 	"VirtualBox is broken. Reinstall VirtualBox, reboot, and run 'minikube delete'.": "VirtualBox が故障しています。 VirtualBox を再インストールして OS を再起動し、'minikube delete' を実行してください。",
 	"VirtualBox is unable to find its network interface. Try upgrading to the latest release and rebooting.": "VirtualBox はネットワークインターフェイスを検出できません。最新版にアップデートして、OS を再起動してみてください。",
+	"VirtualBox {{.v}} works on Apple Silicon but 7.2 or later is recommended for stability": "",
 	"Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--driver=docker'. Otherwise, consult your systems BIOS manual for how to enable virtualization.": "このコンピューターでは仮想化サポートが無効です。VM 内で minikube を実行する場合、'--driver=docker' を試してみてください。そうでなければ、仮想化を有効化する方法を BIOS の説明書を調べてください。",
 	"Wait failed: {{.error}}": "待機に失敗しました: {{.error}}",
 	"Want kubectl {{.version}}? Try 'minikube kubectl -- get pods -A'": "kubectl {{.version}} が必要ですか？ 'minikube kubectl -- get pods -A' を試してみてください",
