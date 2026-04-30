@@ -247,6 +247,7 @@ func (d *Driver) Create() error {
 		if err != nil {
 			return err
 		}
+		log.Infof("Allocated host SSH port: %d (forwards to guest port 22)", d.SSHPort)
 
 		for {
 			d.EnginePort, err = getAvailableTCPPortFromRange(minPort, maxPort)
@@ -259,6 +260,7 @@ func (d *Driver) Create() error {
 			}
 			break
 		}
+		log.Infof("Allocated host Docker engine port: %d (forwards to guest port 2376)", d.EnginePort)
 	case "socket_vmnet":
 		d.SSHPort, err = d.GetSSHPort()
 		if err != nil {
@@ -452,8 +454,15 @@ func (d *Driver) Start() error {
 
 	switch d.Network {
 	case "builtin", "user":
+		// Use the split -device/-netdev form (matches working WHPX VMs on Windows).
+		// The legacy -nic shortcut initializes SLIRP differently and port-forwarded
+		// connections can fail to reach the guest on Windows + WHPX.
+		netdevArg := fmt.Sprintf("user,id=net0,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName())
+		log.Infof("QEMU netdev: %s", netdevArg)
+		log.Infof("To test SSH manually while VM is running: ssh -p %d -i %s docker@localhost", d.SSHPort, d.sshKeyPath())
 		startCmd = append(startCmd,
-			"-nic", fmt.Sprintf("user,model=virtio,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName()),
+			"-device", "virtio-net-pci,netdev=net0",
+			"-netdev", netdevArg,
 		)
 	case "socket_vmnet":
 		startCmd = append(startCmd,
@@ -618,7 +627,36 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 func cmdStart(cmdStr string, args ...string) (string, string, error) {
 	cmd := exec.Command(cmdStr, args...)
 	log.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
-	return "", "", cmd.Start()
+
+	// Capture stderr to help diagnose startup failures on Windows
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Start(); err != nil {
+		return "", stderr.String(), err
+	}
+
+	// On Windows, cmd.Start() returns immediately. Wait briefly and then check
+	// whether the process has already exited (e.g., invalid -accel or CPU type).
+	// NOTE: os.Process.Signal(Signal(0)) is NOT supported on Windows - it always
+	// returns "not supported by windows". We use ProcessState via a non-blocking
+	// Wait goroutine to detect early crashes.
+	exited := make(chan error, 1)
+	go func() {
+		exited <- cmd.Wait()
+	}()
+
+	select {
+	case err := <-exited:
+		// Process died within the grace window - collect stderr for diagnostics.
+		return "", stderr.String(), fmt.Errorf("QEMU exited immediately: %v: %s", err, stderr.String())
+	case <-time.After(2 * time.Second):
+		// Process still running after 2s - assume successful start.
+		// Intentionally do not Wait() here; QEMU is expected to run for the
+		// lifetime of the VM. The goroutine stays alive collecting the exit
+		// status later, which is acceptable for this short-lived minikube call.
+		return "", "", nil
+	}
 }
 
 func (d *Driver) Stop() error {
