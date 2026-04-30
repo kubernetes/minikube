@@ -111,6 +111,7 @@ USER root
 
 # Install cri-dockerd from official GitHub releases
 RUN export VERSION=$(echo "${CRI_DOCKERD_VERSION}" | sed 's/^v//') && \
+    #TODO: add other archs after this PR is merged https://github.com/Mirantis/cri-dockerd/pull/556
 	if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
 		echo "Installing cri-dockerd ${CRI_DOCKERD_VERSION} for ${TARGETARCH}" && \
 		curl -L "https://github.com/Mirantis/cri-dockerd/releases/download/${CRI_DOCKERD_VERSION}/cri-dockerd-${VERSION}.${TARGETARCH}.tgz" -o /tmp/cri-dockerd.tgz && \
@@ -123,8 +124,6 @@ RUN export VERSION=$(echo "${CRI_DOCKERD_VERSION}" | sed 's/^v//') && \
 	else \
 		echo "WARNING: cri-dockerd is not pre-compiled for ${TARGETARCH}, skipping installation."; \
 	fi
-
-
 
 # install system requirements from the regular distro repositories
 RUN clean-install \
