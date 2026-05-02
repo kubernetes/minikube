@@ -27,7 +27,7 @@ spec:
       mountPath: /tmp/kubeconfig
   containers:
   - name: manager
-    image: registry.k8s.io/node-readiness-controller/node-readiness-controller:v0.3.0
+    image: {{.CustomRegistries.NrcController | default .Registries.NrcController}}{{.Images.NrcController}}
     imagePullPolicy: IfNotPresent
     command:
     - /manager
