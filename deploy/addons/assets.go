@@ -180,6 +180,6 @@ var (
 	KubetailAssets embed.FS
 
 	// NrcAssets assets for nrc addon
-	//go:embed nrc/*.yaml
+	//go:embed nrc/crds.yaml nrc/nrc.yaml.tmpl
 	NrcAssets embed.FS
 )
