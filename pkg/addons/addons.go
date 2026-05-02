@@ -92,7 +92,7 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string, options *
 		return fmt.Errorf("running callbacks: %w", err)
 	}
 
-	postStartMessages(cc, name, value)
+	PostStartMessages(cc, name, value)
 
 	return nil
 }
@@ -111,7 +111,7 @@ func preStartMessages(name, value string) {
 	}
 }
 
-func postStartMessages(cc *config.ClusterConfig, name, value string) {
+func PostStartMessages(cc *config.ClusterConfig, name, value string) {
 	if value != "true" {
 		return
 	}

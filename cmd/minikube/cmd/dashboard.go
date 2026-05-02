@@ -25,6 +25,7 @@ import (
 	"os/user"
 	"regexp"
 	"strconv"
+	"text/template"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -47,6 +48,7 @@ import (
 var (
 	dashboardURLMode     bool
 	dashboardExposedPort int
+	dashboardProvider    string
 	// Matches: "127.0.0.1:8001" or "127.0.0.1 40012" etc.
 	// TODO(tstromberg): Get kubectl to implement a stable supported output format.
 	hostPortRe = regexp.MustCompile(`127\.0\.0\.1(:| )\d{4,}`)
@@ -76,21 +78,22 @@ var dashboardCmd = &cobra.Command{
 		var err error
 
 		// Check dashboard status before enabling it
-		addon := assets.Addons["dashboard"]
+		addonName := dashboardAddonName(dashboardProvider) 
+		addon := assets.Addons[addonName]
 		enabled := addon.IsEnabled(co.Config)
 
 		if !enabled {
 			// Send status messages to stderr for folks reusing this output.
 			out.ErrT(style.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
-			err = addons.SetAndSave(cname, "dashboard", "true", options)
+			err = addons.SetAndSave(cname, addonName, "true", options)
 			if err != nil {
 				exit.Error(reason.InternalAddonEnable, "Unable to enable dashboard", err)
 			}
 		}
 
-		ns := "kubernetes-dashboard"
-		svc := "kubernetes-dashboard"
+		ns := dashboardAddon_resourceName(dashboardProvider)
+		svc := dashboardAddon_resourceName(dashboardProvider)
 		out.ErrT(style.Verifying, "Verifying dashboard health ...")
 		checkSVC := func() error { return service.CheckService(cname, ns, svc) }
 		// for slow machines or parallels in CI to avoid #7503
@@ -103,7 +106,7 @@ var dashboardCmd = &cobra.Command{
 		if err != nil {
 			exit.Error(reason.HostKubectlProxy, "kubectl proxy", err)
 		}
-		url := dashboardURL(hostPort, ns, svc)
+		url := dashboardURL(hostPort, ns, svc, co)	
 
 		out.ErrT(style.Verifying, "Verifying proxy health ...")
 		chkURL := func() error { return checkURL(url) }
@@ -119,7 +122,8 @@ var dashboardCmd = &cobra.Command{
 		if dashboardURLMode || user.Uid == "0" {
 			out.Ln(url)
 		} else {
-			out.Styled(style.Celebrate, "Opening {{.url}} in your default browser...", out.V{"url": url})
+			out.Styled(style.Celebrate, `Opening {{.url}} in your default browser...`, out.V{"url": url})
+			addons.PostStartMessages(co.Config, addonName, "true")
 			if err = browser.OpenURL(url); err != nil {
 				exit.Message(reason.HostBrowser, "failed to open browser: {{.error}}", out.V{"error": err})
 			}
@@ -203,10 +207,41 @@ func readByteWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, er
 	}
 }
 
+//gives name mapped in addon, ex: yakd -> dashboard, headlamp, etc
+func dashboardAddonName(provider string) string{
+	switch(provider){
+		case "yakd":  		  return "dashboard"
+		case "headlamp": 	  return "headlamp" 
+	}
+	return "dashboard"
+}
+
+//gives namespace & service name for that dashboard addon
+func dashboardAddon_resourceName(provider string) string {
+	switch(provider) {
+		case "yakd":   return "kubernetes-dashboard"	
+		case "headlamp":   return "headlamp"	
+	}
+	return "kubernetes-dashboard"
+}
+
 // dashboardURL generates a URL for accessing the dashboard service
-func dashboardURL(addr string, ns string, svc string) string {
-	// Reference: https://github.com/kubernetes/dashboard/wiki/Accessing-Dashboard---1.7.X-and-above
-	return fmt.Sprintf("http://%s/api/v1/namespaces/%s/services/http:%s:/proxy/", addr, ns, svc)
+func dashboardURL(addr string, ns string, svc string, co mustload.ClusterController) string {
+	switch (svc) {
+		default:
+			return fmt.Sprintf("http://%s/api/v1/namespaces/%s/services/http:%s:/proxy/", addr, ns, svc)
+		case "headlamp":
+			serviceURLTemplate := template.Must(template.New("serviceURL").Parse("http://{{.IP}}:{{.Port}}"))  
+			serviceURLs, err := service.GetServiceURLsForService(co.API, co.Config.Name, ns, svc, serviceURLTemplate)  
+			if err != nil {  
+				exit.Error(reason.SvcTimeout, "Error getting service URL", err)  
+			}
+			if len(serviceURLs.URLs) == 0 {  
+				exit.Message(reason.SvcNotFound, fmt.Sprintf("No URL found for %s service", svc))  
+			}  
+			serviceURL := serviceURLs.URLs[0]  
+			return serviceURL
+	}
 }
 
 // checkURL checks if a URL returns 200 HTTP OK
@@ -226,4 +261,5 @@ func checkURL(url string) error {
 func init() {
 	dashboardCmd.Flags().BoolVar(&dashboardURLMode, "url", false, "Display dashboard URL instead of opening a browser")
 	dashboardCmd.Flags().IntVar(&dashboardExposedPort, "port", 0, "Exposed port of the proxyfied dashboard. Set to 0 to pick a random port.")
+	dashboardCmd.Flags().StringVar(&dashboardProvider, "provider", "yakd", "Which dashboard to run, such as headlamp, yakd(default = kubernetes dashboard, i.e: yakd)")
 }
