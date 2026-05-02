@@ -30,6 +30,11 @@ const (
 	vpnDoc   = "https://minikube.sigs.k8s.io/docs/handbook/vpn_and_proxy/"
 )
 
+// advice strings used by multiple known issues
+const (
+	vpnAdvice = "Your host is failing to route packets to the minikube VM. If you have VPN software, try turning it off or configuring it so that it does not re-route traffic to the VM IP. If not, check your VM environment routing options."
+)
+
 // re is a shortcut around regexp.MustCompile
 func re(s string) *regexp.Regexp {
 	return regexp.MustCompile(s)
@@ -760,7 +765,7 @@ var localNetworkIssues = []match{
 		Kind: Kind{
 			ID:       "IF_SSH_AUTH",
 			ExitCode: ExLocalNetworkConfig,
-			Advice:   "Your host is failing to route packets to the minikube VM. If you have VPN software, try turning it off or configuring it so that it does not re-route traffic to the VM IP. If not, check your VM environment routing options.",
+			Advice:   vpnAdvice,
 			URL:      vpnDoc,
 			Issues:   []int{3930},
 		},
@@ -770,7 +775,7 @@ var localNetworkIssues = []match{
 		Kind: Kind{
 			ID:       "IF_SSH_NO_RESPONSE",
 			ExitCode: ExLocalNetworkConfig,
-			Advice:   "Your host is failing to route packets to the minikube VM. If you have VPN software, try turning it off or configuring it so that it does not re-route traffic to the VM IP. If not, check your VM environment routing options.",
+			Advice:   vpnAdvice,
 			URL:      vpnDoc,
 			Issues:   []int{3388},
 		},
@@ -780,7 +785,7 @@ var localNetworkIssues = []match{
 		Kind: Kind{
 			ID:       "IF_SSH_TCP_RESET",
 			ExitCode: ExLocalNetworkConfig,
-			Advice:   "Your host is failing to route packets to the minikube VM. If you have VPN software, try turning it off or configuring it so that it does not re-route traffic to the VM IP. If not, check your VM environment routing options.",
+			Advice:   vpnAdvice,
 			URL:      vpnDoc,
 			Issues:   []int{9914},
 		},
