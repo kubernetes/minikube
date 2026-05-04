@@ -11,7 +11,6 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/olekukonko/tablewriter v1.1.4
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/viper v1.21.0
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/metric v1.43.0
 	go.opentelemetry.io/otel/sdk/metric v1.43.0
@@ -188,6 +187,7 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/spf13/viper v1.21.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
