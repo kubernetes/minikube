@@ -30,7 +30,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-getter v1.8.4
 	github.com/hashicorp/go-retryablehttp v0.7.8
-	github.com/hashicorp/go-version v1.8.0
+	github.com/hashicorp/go-version v1.9.0
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95
 	github.com/icza/dyno v0.0.0-20230330125955-09f820a8d9c0
 	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
