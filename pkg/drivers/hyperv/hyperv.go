@@ -220,8 +220,16 @@ func (d *Driver) PreCreateCheck() error {
 		err = b2dutils.UpdateVHDCache(d.WindowsVHDUrl)
 	}
 
+	if err != nil {
+		return err
+	}
+
 	if mcnutils.ConfigGuest.GetGuestOS() == "windows" {
 		vhdxPath := filepath.Join(b2dutils.GetImgCachePath(), defaultServerImageFilename)
+
+		if _, err := os.Stat(vhdxPath); err != nil {
+			return fmt.Errorf("VHDX not found in cache at %s: %w", vhdxPath, err)
+		}
 
 		mounted := false
 		defer func() {
