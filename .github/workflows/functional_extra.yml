@@ -243,7 +243,7 @@ jobs:
         id: run_tests
         continue-on-error: true
         env:
-          HYPERV_VIRTUAL_SWITCH: InternalSwitch
+          HYPERV_VIRTUAL_SWITCH: Default Switch
         working-directory: test/integration
         run: |
           $env:Path += ';C:\Program Files\Go\bin;C:\ProgramData\chocolatey\bin'
