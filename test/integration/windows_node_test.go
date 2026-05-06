@@ -70,12 +70,24 @@ func TestWindowsNode(t *testing.T) {
 			{"WebServerConnectivity", validateWebServerConnectivity},
 			{"NodeDiagnostics", validateWindowsNodeDiagnostics},
 		}
+		startPassed := false
 		for _, tc := range tests {
 			tc := tc
-			t.Run(tc.name, func(t *testing.T) {
+			if tc.name != "Start" && !startPassed {
+				t.Run(tc.name, func(t *testing.T) {
+					t.Skip("skipping because Start failed")
+				})
+				continue
+			}
+
+			passed := t.Run(tc.name, func(t *testing.T) {
 				defer PostMortemLogs(t, profile)
 				tc.validator(ctx, t, profile)
 			})
+
+			if tc.name == "Start" {
+				startPassed = passed
+			}
 		}
 	})
 }
@@ -120,8 +132,12 @@ func podName(ctx context.Context, t *testing.T, profile, selector string) string
 func winSSH(ctx context.Context, t *testing.T, profile, node, command string) (string, error) {
 	t.Helper()
 	rr, err := Run(t, exec.CommandContext(ctx, Target(),
-		"-p", profile, "ssh", "-n", node, command))
-	return strings.TrimSpace(rr.Stdout.String()), err
+		"-p", profile, "ssh", "-n", node, "--", command))
+	stdout := strings.TrimSpace(rr.Stdout.String())
+	if err != nil {
+		return stdout, fmt.Errorf("windows ssh command failed: %w\ncommand: %s\nstdout:\n%s\nstderr:\n%s", err, command, rr.Stdout.String(), rr.Stderr.String())
+	}
+	return stdout, nil
 }
 
 // validateWindowsNodeStart starts a 2-node hybrid cluster with one Linux and one Windows node.
@@ -135,6 +151,7 @@ func validateWindowsNodeStart(ctx context.Context, t *testing.T, profile string)
 		"--kubernetes-version=v1.34.0",
 		"--driver=hyperv",
 		"--wait=true",
+		"--wait-timeout=25m",
 		"-v=5",
 		"--alsologtostderr",
 	}
@@ -223,7 +240,7 @@ func validateWindowsKubeletService(ctx context.Context, t *testing.T, profile st
 		}
 
 		startMode, err := winSSH(ctx, t, profile, node,
-			fmt.Sprintf(`powershell -Command "(Get-CimInstance Win32_Service -Filter 'Name=""%s""').StartMode"`, svc))
+			fmt.Sprintf(`powershell -Command "(Get-CimInstance Win32_Service -Filter \"Name='%s'\").StartMode"`, svc))
 		if err != nil {
 			t.Errorf("failed to query service %s start mode: %v", svc, err)
 			continue
@@ -241,7 +258,7 @@ func validateWindowsKubeletArgs(ctx context.Context, t *testing.T, profile strin
 	node := windowsNodeName(ctx, t, profile)
 
 	cmdLine, err := winSSH(ctx, t, profile, node,
-		`powershell -Command "(Get-CimInstance Win32_Process -Filter 'Name=""kubelet.exe""').CommandLine"`)
+		`powershell -Command "(Get-CimInstance Win32_Process -Filter \"Name='kubelet.exe'\").CommandLine"`)
 	if err != nil {
 		t.Fatalf("failed to read kubelet command line: %v", err)
 	}
@@ -293,9 +310,9 @@ func validateWindowsContainerdConfig(ctx context.Context, t *testing.T, profile 
 	t.Logf("containerd config.toml:\n%s", config)
 
 	checks := map[string]string{
-		"pause image":            "pause",
-		"runhcs-wcow-process":    "runhcs-wcow-process",
-		"containerd named pipe":  "npipe://",
+		"pause image":           "pause",
+		"runhcs-wcow-process":   "runhcs-wcow-process",
+		"containerd named pipe": "npipe://",
 	}
 	for desc, want := range checks {
 		if !strings.Contains(config, want) {
