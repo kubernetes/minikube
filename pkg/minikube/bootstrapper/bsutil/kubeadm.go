@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"path"
 	"slices"
+	"strings"
 
 	"github.com/blang/semver/v4"
 	"k8s.io/klog/v2"
@@ -46,8 +47,17 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		return nil, fmt.Errorf("parsing Kubernetes version: %w", err)
 	}
 
+	featureGates := k8s.FeatureGates
+	if version.GTE(semver.MustParse("1.36.0")) && strings.EqualFold(r.Name(), constants.Docker) {
+		if featureGates == "" {
+			featureGates = "ExtendWebSocketsToKubelet=false"
+		} else if !strings.Contains(featureGates, "ExtendWebSocketsToKubelet") {
+			featureGates = fmt.Sprintf("%s,ExtendWebSocketsToKubelet=false", featureGates)
+		}
+	}
+
 	// parses a map of the feature gates for kubeadm and component
-	kubeadmFeatureArgs, componentFeatureArgs, err := parseFeatureArgs(k8s.FeatureGates)
+	kubeadmFeatureArgs, componentFeatureArgs, err := parseFeatureArgs(featureGates)
 	if err != nil {
 		return nil, fmt.Errorf("parses feature gate config for kubeadm and component: %w", err)
 	}

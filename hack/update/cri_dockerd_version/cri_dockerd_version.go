@@ -42,13 +42,11 @@ var (
 		"deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/cri-dockerd.mk": {
 			Replace: map[string]string{
 				`CRI_DOCKERD_AARCH64_VERSION = .*`: `CRI_DOCKERD_AARCH64_VERSION = {{.Version}}`,
-				`CRI_DOCKERD_AARCH64_COMMIT = .*`:  `CRI_DOCKERD_AARCH64_COMMIT = {{.FullCommit}}`,
 			},
 		},
 		"deploy/iso/minikube-iso/arch/x86_64/package/cri-dockerd/cri-dockerd.mk": {
 			Replace: map[string]string{
 				`CRI_DOCKERD_VERSION = .*`: `CRI_DOCKERD_VERSION = {{.Version}}`,
-				`CRI_DOCKERD_COMMIT = .*`:  `CRI_DOCKERD_COMMIT = {{.FullCommit}}`,
 			},
 		},
 		"deploy/kicbase/Dockerfile": {
@@ -66,11 +64,9 @@ var (
 	}
 )
 
-// Data holds stable cri-dockerd version in semver format.
 type Data struct {
-	Version     string
-	FullCommit  string
-	ShortCommit string
+	Version    string
+	FullCommit string
 }
 
 func main() {
@@ -83,46 +79,67 @@ func main() {
 	}
 
 	version := strings.TrimPrefix(stable.Tag, "v")
-
-	data := Data{Version: version, FullCommit: stable.Commit, ShortCommit: stable.Commit[:7]}
+	data := Data{Version: version, FullCommit: stable.Commit}
 
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
 	}
 
-	if err := updateHashFiles(stable.Commit); err != nil {
+	if err := updateHashFiles(version); err != nil {
 		klog.Fatalf("failed to update hash files: %v", err)
+	}
+
+	if err := updateServiceFiles(version); err != nil {
+		klog.Fatalf("failed to update systemd service files: %v", err)
 	}
 }
 
-func updateHashFiles(commit string) error {
-	r, err := http.Get(fmt.Sprintf("https://github.com/Mirantis/cri-dockerd/archive/%s.tar.gz", commit))
+func updateHashFiles(version string) error {
+	filePathBase := "../deploy/iso/minikube-iso/arch/"
+
+	// amd64
+	amd64URL := fmt.Sprintf("https://github.com/Mirantis/cri-dockerd/releases/download/v%s/cri-dockerd-%s.amd64.tgz", version, version)
+	sumAmd64, err := getURLSHA256(amd64URL)
 	if err != nil {
-		return fmt.Errorf("failed to download source code: %v", err)
+		return err
+	}
+	if err := updateHashFile(filePathBase+"x86_64/package/cri-dockerd/cri-dockerd.hash", fmt.Sprintf("cri-dockerd-%s.amd64.tgz", version), sumAmd64); err != nil {
+		return err
+	}
+
+	// arm64
+	arm64URL := fmt.Sprintf("https://github.com/Mirantis/cri-dockerd/releases/download/v%s/cri-dockerd-%s.arm64.tgz", version, version)
+	sumArm64, err := getURLSHA256(arm64URL)
+	if err != nil {
+		return err
+	}
+	if err := updateHashFile(filePathBase+"aarch64/package/cri-dockerd-aarch64/cri-dockerd.hash", fmt.Sprintf("cri-dockerd-%s.arm64.tgz", version), sumArm64); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getURLSHA256(url string) ([32]byte, error) {
+	r, err := http.Get(url)
+	if err != nil {
+		return [32]byte{}, fmt.Errorf("failed to download %s: %v", url, err)
 	}
 	defer r.Body.Close()
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %v", err)
+		return [32]byte{}, fmt.Errorf("failed to read response body: %v", err)
 	}
-	sum := sha256.Sum256(b)
-	filePathBase := "../deploy/iso/minikube-iso/arch/"
-	if err := updateHashFile(filePathBase+"aarch64/package/cri-dockerd-aarch64/cri-dockerd.hash", commit, sum); err != nil {
-		return fmt.Errorf("aarch64: %v", err)
-	}
-	if err := updateHashFile(filePathBase+"x86_64/package/cri-dockerd/cri-dockerd.hash", commit, sum); err != nil {
-		return fmt.Errorf("x86_64: %v", err)
-	}
-	return nil
+	return sha256.Sum256(b), nil
 }
 
-func updateHashFile(filePath, commit string, shaSum [sha256.Size]byte) error {
+func updateHashFile(filePath, filename string, shaSum [sha256.Size]byte) error {
 	b, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)
 	}
-	if strings.Contains(string(b), commit) {
-		klog.Infof("hash file already contains %q", commit)
+	if strings.Contains(string(b), filename) {
+		klog.Infof("hash file already contains %q", filename)
 		return nil
 	}
 	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
@@ -130,8 +147,47 @@ func updateHashFile(filePath, commit string, shaSum [sha256.Size]byte) error {
 		return fmt.Errorf("failed to open hash file: %v", err)
 	}
 	defer f.Close()
-	if _, err := fmt.Fprintf(f, "sha256 %x %s.tar.gz\n", shaSum, commit); err != nil {
+	if _, err := fmt.Fprintf(f, "sha256 %x %s\n", shaSum, filename); err != nil {
 		return fmt.Errorf("failed to write to hash file: %v", err)
 	}
 	return nil
+}
+
+func updateServiceFiles(version string) error {
+	serviceURL := fmt.Sprintf("https://raw.githubusercontent.com/Mirantis/cri-dockerd/v%s/packaging/systemd/cri-docker.service", version)
+	socketURL := fmt.Sprintf("https://raw.githubusercontent.com/Mirantis/cri-dockerd/v%s/packaging/systemd/cri-docker.socket", version)
+
+	serviceBytes, err := getURLBytes(serviceURL)
+	if err != nil {
+		return err
+	}
+	socketBytes, err := getURLBytes(socketURL)
+	if err != nil {
+		return err
+	}
+
+	paths := []string{
+		"../deploy/iso/minikube-iso/arch/x86_64/package/cri-dockerd/",
+		"../deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/",
+	}
+
+	for _, path := range paths {
+		if err := os.WriteFile(path+"cri-docker.service", serviceBytes, 0644); err != nil {
+			return err
+		}
+		if err := os.WriteFile(path+"cri-docker.socket", socketBytes, 0644); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func getURLBytes(url string) ([]byte, error) {
+	r, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download %s: %v", url, err)
+	}
+	defer r.Body.Close()
+	return io.ReadAll(r.Body)
 }

@@ -50,12 +50,13 @@ if [[ $(cri-dockerd --version 2>&1) != *"$CRI_DOCKERD_VERSION"* ]]; then
   echo "WARNING: expected version of cri-dockerd is not installed. will try to install."
   sudo systemctl stop cri-docker.socket || true
   sudo systemctl stop cri-docker.service || true
-  CRI_DOCKERD_COMMIT="55d6e1a1d6f2ee58949e13a0c66afe7d779ac942"
-  CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
-  sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
-  sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
-  sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+  curl -L "https://github.com/Mirantis/cri-dockerd/releases/download/v${CRI_DOCKERD_VERSION}/cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz" -o /tmp/cri-dockerd.tgz
+  tar -C /tmp -xzvf /tmp/cri-dockerd.tgz
+  sudo mv /tmp/cri-dockerd/cri-dockerd /usr/bin/cri-dockerd
   sudo chmod +x /usr/bin/cri-dockerd
+  sudo curl -L "https://raw.githubusercontent.com/Mirantis/cri-dockerd/v${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
+  sudo curl -L "https://raw.githubusercontent.com/Mirantis/cri-dockerd/v${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+
   sudo systemctl daemon-reload
   sudo systemctl enable cri-docker.service
   sudo systemctl enable --now cri-docker.socket

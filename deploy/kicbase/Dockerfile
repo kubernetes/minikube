@@ -109,11 +109,21 @@ ARG COMMIT_SHA
 # could be changed to any debian that can run systemd
 USER root
 
-# Install cri-dockerd from pre-compiled binaries stored in GCS, this is way faster than building from source in multi-arch
-RUN echo "Installing cri-dockerd ${CRI_DOCKERD_VERSION}" && \
-	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}/${TARGETARCH}/cri-dockerd" -o /usr/bin/cri-dockerd && chmod +x /usr/bin/cri-dockerd && \
-	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket && \
-	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+# Install cri-dockerd from official GitHub releases
+RUN export VERSION=$(echo "${CRI_DOCKERD_VERSION}" | sed 's/^v//') && \
+    #TODO: add other archs after this PR is merged https://github.com/Mirantis/cri-dockerd/pull/556
+	if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
+		echo "Installing cri-dockerd ${CRI_DOCKERD_VERSION} for ${TARGETARCH}" && \
+		curl -L "https://github.com/Mirantis/cri-dockerd/releases/download/${CRI_DOCKERD_VERSION}/cri-dockerd-${VERSION}.${TARGETARCH}.tgz" -o /tmp/cri-dockerd.tgz && \
+		tar -C /tmp -xzvf /tmp/cri-dockerd.tgz && \
+		mv /tmp/cri-dockerd/cri-dockerd /usr/bin/cri-dockerd && \
+		chmod +x /usr/bin/cri-dockerd && \
+		rm -rf /tmp/cri-dockerd /tmp/cri-dockerd.tgz && \
+		curl -L "https://raw.githubusercontent.com/Mirantis/cri-dockerd/${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket && \
+		curl -L "https://raw.githubusercontent.com/Mirantis/cri-dockerd/${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service; \
+	else \
+		echo "WARNING: cri-dockerd is not pre-compiled for ${TARGETARCH}, skipping installation."; \
+	fi
 
 # install system requirements from the regular distro repositories
 RUN clean-install \
