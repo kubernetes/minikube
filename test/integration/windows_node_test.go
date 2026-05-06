@@ -148,7 +148,7 @@ func validateWindowsNodeStart(ctx context.Context, t *testing.T, profile string)
 		"start", "-p", profile,
 		"--nodes=2",
 		"--node-os=[linux,windows]",
-		"--kubernetes-version=v1.34.0",
+		"--kubernetes-version=v1.35.0",
 		"--driver=hyperv",
 		"--wait=true",
 		"--wait-timeout=25m",
