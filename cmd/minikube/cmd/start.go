@@ -209,6 +209,11 @@ func runStart(cmd *cobra.Command, _ []string) {
 	}
 
 	validateSpecifiedDriver(existing, options)
+	if existing == nil {
+		// driver-selection warnings are only meaningful for fresh clusters;
+		// an existing cluster keeps its original driver
+		warnVirtualBoxDriver(options)
+	}
 	validateKubernetesVersion(existing)
 	validateContainerRuntime(existing)
 
