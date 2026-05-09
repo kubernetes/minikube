@@ -224,7 +224,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 	// discourage use of the virtualbox driver, but only when the user actually
 	// asked for it — auto-selected virtualbox means no other driver was viable,
 	// so suggesting alternatives is misleading. See #15456.
-	if starter.Cfg.Driver == driver.VirtualBox && starter.DriverSpecified && viper.GetBool(config.WantVirtualBoxDriverWarning) {
+	if shouldWarnVirtualBox(starter.Cfg.Driver, starter.DriverSpecified, viper.GetBool(config.WantVirtualBoxDriverWarning)) {
 		warnVirtualBox(options)
 	}
 
@@ -998,6 +998,15 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 	klog.Infof("{%q: %s} host record injected into CoreDNS's ConfigMap", name, ip)
 
 	return nil
+}
+
+// shouldWarnVirtualBox returns true when the steering-away-from-virtualbox
+// warning is appropriate: the active driver is virtualbox, the user opted
+// into the warning (WantVirtualBoxDriverWarning) AND they explicitly asked
+// for virtualbox. Auto-selection means minikube already considered (and
+// rejected) the alternatives, so there is no better option to point at.
+func shouldWarnVirtualBox(driverName string, driverSpecified, wantWarning bool) bool {
+	return driverName == driver.VirtualBox && driverSpecified && wantWarning
 }
 
 // prints a warning to the console against the use of the 'virtualbox' driver, if alternatives are available and healthy
