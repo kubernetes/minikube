@@ -231,7 +231,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 
 	useForce := viper.GetBool(force)
 
-	starter, err := provisionWithDriver(cmd, ds, existing, options)
+	starter, err := provisionWithDriver(cmd, ds, existing, specified, options)
 	if err != nil {
 		node.ExitIfFatal(err, useForce)
 		machine.MaybeDisplayAdvice(err, ds.Name)
@@ -258,7 +258,9 @@ func runStart(cmd *cobra.Command, _ []string) {
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
-				starter, err = provisionWithDriver(cmd, ds, existing, options)
+				// the alternate driver was picked by minikube as a fallback, not
+				// specified by the user
+				starter, err = provisionWithDriver(cmd, ds, existing, false, options)
 				if err != nil {
 					continue
 				}
@@ -305,7 +307,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, options *run.CommandOptions) (node.Starter, error) {
+func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, driverSpecified bool, options *run.CommandOptions) (node.Starter, error) {
 	driverName := ds.Name
 	klog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
@@ -401,14 +403,15 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	return node.Starter{
-		Runner:         mRunner,
-		PreExists:      preExists,
-		StopK8s:        stopk8s,
-		MachineAPI:     mAPI,
-		Host:           host,
-		ExistingAddons: existingAddons,
-		Cfg:            &cc,
-		Node:           &n,
+		Runner:          mRunner,
+		PreExists:       preExists,
+		StopK8s:         stopk8s,
+		MachineAPI:      mAPI,
+		Host:            host,
+		ExistingAddons:  existingAddons,
+		Cfg:             &cc,
+		Node:            &n,
+		DriverSpecified: driverSpecified,
 	}, nil
 }
 

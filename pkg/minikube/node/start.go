@@ -83,14 +83,15 @@ var (
 
 // Starter is a struct with all the necessary information to start a node
 type Starter struct {
-	Runner         command.Runner
-	PreExists      bool
-	StopK8s        bool
-	MachineAPI     libmachine.API
-	Host           *host.Host
-	Cfg            *config.ClusterConfig
-	Node           *config.Node
-	ExistingAddons map[string]bool
+	Runner          command.Runner
+	PreExists       bool
+	StopK8s         bool
+	MachineAPI      libmachine.API
+	Host            *host.Host
+	Cfg             *config.ClusterConfig
+	Node            *config.Node
+	ExistingAddons  map[string]bool
+	DriverSpecified bool
 }
 
 // Start spins up a guest and starts the Kubernetes node.
@@ -220,8 +221,10 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		go addons.Enable(&wg, starter.Cfg, list, enabledAddons, options)
 	}
 
-	// discourage use of the virtualbox driver
-	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) {
+	// discourage use of the virtualbox driver, but only when the user actually
+	// asked for it — auto-selected virtualbox means no other driver was viable,
+	// so suggesting alternatives is misleading. See #15456.
+	if starter.Cfg.Driver == driver.VirtualBox && starter.DriverSpecified && viper.GetBool(config.WantVirtualBoxDriverWarning) {
 		warnVirtualBox(options)
 	}
 
