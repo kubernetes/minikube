@@ -147,6 +147,7 @@ const (
 	autoPauseInterval       = "auto-pause-interval"
 	preloadSrc              = "preload-source"
 	rosetta                 = "rosetta"
+	vmnetOffloading         = "vmnet-offloading"
 )
 
 var (
@@ -290,6 +291,9 @@ func initDriverFlags() {
 
 	// vfkit
 	startCmd.Flags().Bool(rosetta, false, "Enable Rosetta to support apps built for Intel processor on a Mac with Apple silicon (vfkit driver only)")
+
+	// krunkit
+	startCmd.Flags().Bool(vmnetOffloading, false, "Enable vmnet checksum and TSO offloading. See krunkit driver documentation for known limitations (krunkit driver only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -572,6 +576,15 @@ func getRosetta(driverName string) bool {
 	return enabled
 }
 
+func getVmnetOffloading(driverName string) bool {
+	enabled := viper.GetBool(vmnetOffloading)
+	if enabled && !driver.IsKrunkit(driverName) {
+		out.WarningT("--vmnet-offloading flag is only valid with the krunkit driver, it will be ignored")
+		return false
+	}
+	return enabled
+}
+
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
 func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string, options *run.CommandOptions) config.ClusterConfig {
 	var cc config.ClusterConfig
@@ -677,6 +690,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		GPUs:               viper.GetString(gpus),
 		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
 		Rosetta:            getRosetta(drvName),
+		VmnetOffloading:    getVmnetOffloading(drvName),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 
@@ -908,6 +922,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 	updateDurationFromFlag(cmd, &cc.AutoPauseInterval, autoPauseInterval)
 	updateBoolFromFlag(cmd, &cc.Rosetta, rosetta)
+	updateBoolFromFlag(cmd, &cc.VmnetOffloading, vmnetOffloading)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		kubeVer, err := getKubernetesVersion(existing)

@@ -110,6 +110,7 @@ type ClusterConfig struct {
 	GPUs                    string
 	AutoPauseInterval       time.Duration // Specifies interval of time to wait before checking if cluster should be paused
 	Rosetta                 bool          // Only used by vfkit driver
+	VmnetOffloading         bool          // Only used by krunkit driver
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
