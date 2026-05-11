@@ -101,7 +101,25 @@ push-kube-registry-proxy-image-prow:
 
 .PHONY: push-kicbase-image-prow
 push-kicbase-image-prow:
-	./hack/jenkins/build_changelog.sh deploy/kicbase/CHANGELOG
+	./hack/jenkins/build_changelog.sh deploy/kicbase/CHANGELOG || touch deploy/kicbase/CHANGELOG
 	./hack/build_auto_pause.sh $(KICBASE_ARCH) $(CURDIR)/deploy/kicbase
 	docker buildx build --push --platform  $(PROW_IMAGE_PLATFORMS) \
 		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kicbase:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kicbase:latest -f deploy/kicbase/Dockerfile deploy/kicbase
+
+# ----------------------------------------------------------------
+# Below are common targets for prow and local
+# ----------------------------------------------------------------	
+.PHONY: install-gh-prow
+install-gh-prow:
+	@if ! command -v gh >/dev/null 2>&1; then \
+		( \
+			set -e; \
+			echo "Determining latest gh version..."; \
+			GH_TAG=$$(basename $$(curl -Ls -o /dev/null -w '%{url_effective}' https://github.com/cli/cli/releases/latest) | sed 's/^v//'); \
+			echo "Installing gh version $${GH_TAG}..."; \
+			curl -sSL "https://github.com/cli/cli/releases/download/v$${GH_TAG}/gh_$${GH_TAG}_linux_amd64.tar.gz" -o /tmp/gh.tar.gz; \
+			tar -xf /tmp/gh.tar.gz -C /tmp; \
+			mv /tmp/gh_$${GH_TAG}_linux_amd64/bin/gh /usr/local/bin/gh; \
+			rm -rf /tmp/gh.tar.gz "/tmp/gh_$${GH_TAG}_linux_amd64"; \
+		) || echo "WARNING: Failed to install gh dynamically, continuing using fallback..."; \
+	fi
