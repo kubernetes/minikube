@@ -27,22 +27,16 @@ apiServer:
       value: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
     - name: "fail-no-swap"
       value: "true"
-    - name: "feature-gates"
-      value: "ExtendWebSocketsToKubelet=false"
 controllerManager:
   extraArgs:
     - name: "allocate-node-cidrs"
       value: "true"
-    - name: "feature-gates"
-      value: "ExtendWebSocketsToKubelet=false"
     - name: "kube-api-burst"
       value: "32"
     - name: "leader-elect"
       value: "false"
 scheduler:
   extraArgs:
-    - name: "feature-gates"
-      value: "ExtendWebSocketsToKubelet=false"
     - name: "leader-elect"
       value: "false"
     - name: "scheduler-name"

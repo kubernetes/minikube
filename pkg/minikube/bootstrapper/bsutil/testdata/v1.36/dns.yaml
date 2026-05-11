@@ -25,20 +25,14 @@ apiServer:
   extraArgs:
     - name: "enable-admission-plugins"
       value: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
-    - name: "feature-gates"
-      value: "ExtendWebSocketsToKubelet=false"
 controllerManager:
   extraArgs:
     - name: "allocate-node-cidrs"
       value: "true"
-    - name: "feature-gates"
-      value: "ExtendWebSocketsToKubelet=false"
     - name: "leader-elect"
       value: "false"
 scheduler:
   extraArgs:
-    - name: "feature-gates"
-      value: "ExtendWebSocketsToKubelet=false"
     - name: "leader-elect"
       value: "false"
 certificatesDir: /var/lib/minikube/certs
