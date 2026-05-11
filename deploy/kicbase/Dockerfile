@@ -20,7 +20,7 @@
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
 ARG KICBASE_IMAGE="debian:bookworm-20260505-slim"
 # start from debin 12, this image is reasonably small as a starting point
-# for a kubernetes node image, it doesn't contain much we don't need
+# for a kubernetes node image, it doesn't contain much we don't need.
 FROM ${KICBASE_IMAGE} AS kicbase
 
 ARG BUILDKIT_VERSION="v0.29.0"
