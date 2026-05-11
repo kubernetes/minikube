@@ -60,8 +60,9 @@ var (
 // dockerShimTemplateDir returns the template directory to use for cri-dockerd testdata files
 // based on the given Kubernetes minor version. For k8s >= v1.36, a separate template directory
 // is used that includes the ExtendWebSocketsToKubelet=false feature-gate workaround.
+// versionMM should be in major.minor format (e.g. "v1.36"), but full semver is also accepted.
 func dockerShimTemplateDir(versionMM string) string {
-	if semver.Compare(versionMM, "v1.36") >= 0 {
+	if semver.Compare(semver.MajorMinor(versionMM), "v1.36") >= 0 {
 		return templateDirV136Plus
 	}
 	return templateDirBase
