@@ -83,6 +83,12 @@ push-kubernetes-bootcamp-image-prow:
 		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kubernetes-bootcamp:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/kubernetes-bootcamp:latest deploy/images/kubernetes-bootcamp
 
 
+.PHONY: push-storage-provisioner-image-prow
+push-storage-provisioner-image-prow: out/storage-provisioner-amd64 out/storage-provisioner-arm64 out/storage-provisioner-ppc64le out/storage-provisioner-s390x
+	docker buildx build --push --platform  $(PROW_IMAGE_PLATFORMS) \
+		-t us-central1-docker.pkg.dev/k8s-staging-images/minikube/storage-provisioner:$(_GIT_TAG) -t us-central1-docker.pkg.dev/k8s-staging-images/minikube/storage-provisioner:latest -f deploy/storage-provisioner/Dockerfile .
+
+
 .PHONY: push-gvisor-image-prow
 push-gvisor-image-prow:
 	docker buildx build --push --platform  $(PROW_IMAGE_PLATFORMS) \
