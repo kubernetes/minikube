@@ -77,6 +77,9 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
 	}
 
+	//	create a test pod that will mount the persistent volume
+	createPVTestPod(ctx, t, profile)
+
 	// make sure the pvc is Bound
 	checkStoragePhase := func() error {
 		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "get", "pvc", "myclaim", "-o=json"))
@@ -97,9 +100,6 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	if err := retry.Expo(checkStoragePhase, 2*time.Second, Minutes(4)); err != nil {
 		t.Fatalf("failed to check storage phase: %v", err)
 	}
-
-	//	create a test pod that will mount the persistent volume
-	createPVTestPod(ctx, t, profile)
 
 	// write to the persistent volume
 	podName := "sp-pod"

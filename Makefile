@@ -115,7 +115,7 @@ AUTOPAUSE_HOOK_TAG ?= v0.0.5
 
 # storage provisioner tag to push changes to
 # NOTE: you will need to bump the PreloadVersion if you change this
-STORAGE_PROVISIONER_TAG ?= v5
+STORAGE_PROVISIONER_TAG ?= v6.0.1
 
 STORAGE_PROVISIONER_MANIFEST ?= $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
 STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
