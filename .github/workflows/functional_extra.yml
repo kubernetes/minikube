@@ -253,19 +253,17 @@ jobs:
 
       - name: Create VM
         id: create_vm
-        uses: azure/bicep-deploy@v2
-        with:
-          type: deploymentStack
-          operation: create
-          name: ${{ env.STACK_NAME }}
-          scope: resourceGroup
-          resource-group-name: ${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}
-          subscription-id: ${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}
-          template-file: ./hack/windows-ci-runner/runner.bicep
-          parameters-file: ./hack/windows-ci-runner/runner.bicepparam
-          parameters: '{"vmName": "${{ env.VM_NAME }}", "adminPassword": "${{ secrets.MINIKUBE_AZ_VM_PASSWORD }}"}'
-          action-on-unmanage-resources: delete
-          deny-settings-mode: none
+        run: |
+          az bicep install
+          az stack group create \
+            --name "${{ env.STACK_NAME }}" \
+            --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" \
+            --subscription "${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}" \
+            --template-file ./hack/windows-ci-runner/runner.bicep \
+            --parameters ./hack/windows-ci-runner/runner.bicepparam \
+            --parameters vmName="${{ env.VM_NAME }}" adminPassword="${{ secrets.MINIKUBE_AZ_VM_PASSWORD }}" \
+            --action-on-unmanage deleteAll \
+            --deny-settings-mode none
 
       - name: Wait for SSH
         env:
