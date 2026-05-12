@@ -41,6 +41,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/run"
+	"k8s.io/minikube/pkg/minikube/runtimedir"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -59,6 +60,10 @@ const (
 type Helper struct {
 	// The pidfile and log are stored here.
 	MachineDir string
+
+	// MachineName identifies the per-machine runtime directory used for
+	// the AF_UNIX socket. See pkg/minikube/runtimedir.
+	MachineName string
 
 	// InterfaceID is a random UUID for the vmnet interface. Using the same UUID
 	// will obtain the same MAC address from vmnet.
@@ -325,8 +330,13 @@ func (h *Helper) GetState() (state.State, error) {
 	return state.Running, nil
 }
 
-func (h *Helper) SocketPath() string {
-	return filepath.Join(h.MachineDir, sockfileName)
+// EnsureSocketPath returns the AF_UNIX path used by vmnet-helper and ensures the
+// parent directory exists. It lives in a short runtime directory (see
+// pkg/minikube/runtimedir) so the full path fits within sockaddr_un.sun_path
+// regardless of $MINIKUBE_HOME length. Called during driver Start, before
+// vmnet-helper binds the socket.
+func (h *Helper) EnsureSocketPath() (string, error) {
+	return runtimedir.EnsureSocketPath(h.MachineName, sockfileName)
 }
 
 func (h *Helper) openLogfile() (*os.File, error) {

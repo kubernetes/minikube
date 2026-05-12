@@ -50,6 +50,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/run"
+	"k8s.io/minikube/pkg/minikube/runtimedir"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -196,7 +197,10 @@ func (d *Driver) Create() error {
 }
 
 func (d *Driver) Start() error {
-	socketPath := d.VmnetHelper.SocketPath()
+	socketPath, err := d.VmnetHelper.EnsureSocketPath()
+	if err != nil {
+		return fmt.Errorf("resolve vmnet socket path: %w", err)
+	}
 	if err := d.VmnetHelper.Start(socketPath); err != nil {
 		return err
 	}
@@ -227,10 +231,14 @@ func (d *Driver) Start() error {
 
 // startKrunkit starts the krunkit child process.
 func (d *Driver) startKrunkit(socketPath string) error {
+	restURI, err := d.restfulURI()
+	if err != nil {
+		return fmt.Errorf("resolve krunkit socket path: %w", err)
+	}
 	var args = []string{
 		"--memory", fmt.Sprintf("%d", d.Memory),
 		"--cpus", fmt.Sprintf("%d", d.CPU),
-		"--restful-uri", d.restfulURI(),
+		"--restful-uri", restURI,
 		"--device", fmt.Sprintf("virtio-net,type=unixgram,path=%s,mac=%s,offloading=%t",
 			socketPath, d.MACAddress, d.VmnetHelper.Offloading),
 		"--device", fmt.Sprintf("virtio-serial,logFilePath=%s", d.serialPath()),
@@ -339,6 +347,9 @@ func (d *Driver) Remove() error {
 		if err := d.Kill(); err != nil {
 			return fmt.Errorf("kill: %w", err)
 		}
+	}
+	if err := runtimedir.Cleanup(d.GetMachineName()); err != nil {
+		log.Debugf("Failed to remove runtime dir: %v", err)
 	}
 	return nil
 }
@@ -469,12 +480,25 @@ func (d *Driver) isoPath() string {
 	return d.ResolveStorePath(isoFileName)
 }
 
-func (d *Driver) sockfilePath() string {
-	return d.ResolveStorePath(sockFileName)
+// sockfilePath returns the krunkit REST socket path without touching the
+// filesystem. Used by state read/write callers that dial an existing socket.
+func (d *Driver) sockfilePath() (string, error) {
+	return runtimedir.SocketPath(d.GetMachineName(), sockFileName)
 }
 
-func (d *Driver) restfulURI() string {
-	return fmt.Sprintf("unix://%s", d.sockfilePath())
+// ensureSockfilePath resolves the krunkit REST socket path and creates its
+// parent directory with mode 0700. Used by Start before binding the socket.
+func (d *Driver) ensureSockfilePath() (string, error) {
+	return runtimedir.EnsureSocketPath(d.GetMachineName(), sockFileName)
+}
+
+// restfulURI returns the unix:// URI used to bind the REST socket on Start.
+func (d *Driver) restfulURI() (string, error) {
+	sock, err := d.ensureSockfilePath()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("unix://%s", sock), nil
 }
 
 func (d *Driver) vmStateURI() string {
@@ -558,7 +582,11 @@ func (d *Driver) setKrunkitState(desired string) error {
 	if err != nil {
 		return err
 	}
-	httpc := httpUnixClient(d.sockfilePath())
+	sock, err := d.sockfilePath()
+	if err != nil {
+		return fmt.Errorf("resolve krunkit socket path: %w", err)
+	}
+	httpc := httpUnixClient(sock)
 	_, err = httpc.Post(d.vmStateURI(), "application/json", bytes.NewReader(data))
 	if err != nil {
 		return err

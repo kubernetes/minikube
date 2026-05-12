@@ -48,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/run"
+	"k8s.io/minikube/pkg/minikube/runtimedir"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util/retry"
@@ -437,8 +438,18 @@ func (d *Driver) Start() error {
 		startCmd = append(startCmd,
 			"-cdrom", isoPath)
 	}
+	monitorSock, err := d.ensureMonitorPath()
+	if err != nil {
+		return fmt.Errorf("resolve QMP socket path: %w", err)
+	}
+	// Best-effort: clear a stale socket from a previous run so QEMU can bind.
+	// Failures (e.g. socket owned by root from a prior sudo run) are logged
+	// but do not block start — QEMU will surface a clearer error if needed.
+	if err := os.Remove(monitorSock); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Debugf("Failed to remove stale QMP socket %q: %v", monitorSock, err)
+	}
 	startCmd = append(startCmd,
-		"-qmp", fmt.Sprintf("unix:%s,server,nowait", d.monitorPath()),
+		"-qmp", fmt.Sprintf("unix:%s,server,nowait", monitorSock),
 		"-pidfile", d.pidfilePath(),
 	)
 
@@ -629,6 +640,9 @@ func (d *Driver) Remove() error {
 			return fmt.Errorf("quit: %w", err)
 		}
 	}
+	if err := runtimedir.Cleanup(d.GetMachineName()); err != nil {
+		log.Debugf("Failed to remove runtime dir: %v", err)
+	}
 	return nil
 }
 
@@ -683,9 +697,14 @@ func (d *Driver) diskPath() string {
 	return filepath.Join(machineDir, "disk.qcow2")
 }
 
-func (d *Driver) monitorPath() string {
-	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
-	return filepath.Join(machineDir, "monitor")
+// monitorPath returns the QMP socket path without touching the filesystem.
+// Use ensureMonitorPath when binding the socket.
+func (d *Driver) monitorPath() (string, error) {
+	return runtimedir.SocketPath(d.GetMachineName(), "monitor")
+}
+
+func (d *Driver) ensureMonitorPath() (string, error) {
+	return runtimedir.EnsureSocketPath(d.GetMachineName(), "monitor")
 }
 
 func (d *Driver) pidfilePath() string {
@@ -784,7 +803,11 @@ func (d *Driver) generateUserdataDisk(userdataFile string) (string, error) {
 
 func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	// connect to monitor
-	conn, err := net.Dial("unix", d.monitorPath())
+	monitorSock, err := d.monitorPath()
+	if err != nil {
+		return nil, fmt.Errorf("resolve QMP socket path: %w", err)
+	}
+	conn, err := net.Dial("unix", monitorSock)
 	if err != nil {
 		return nil, fmt.Errorf("connect: %w", err)
 	}

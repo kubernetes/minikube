@@ -86,6 +86,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		}
 		helper = &vmnet.Helper{
 			MachineDir:  filepath.Join(storePath, "machines", machineName),
+			MachineName: machineName,
 			InterfaceID: u,
 		}
 	default:
