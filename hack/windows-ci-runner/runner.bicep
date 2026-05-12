@@ -1,9 +1,8 @@
-// runner.bicep - Persistent Azure VM for self-hosted GitHub Actions Windows Hyper-V runner
-// This VM is long-lived (not ephemeral per test run) and runs the GitHub Actions runner service.
-// VM size Standard_D16s_v3 supports nested virtualization required for Hyper-V testing.
-//
-// Uses a marketplace Windows Server 2022 image so no Shared Image Gallery access is required.
-// Switch to the SIG-based image (see functional_extra.yml) once minikube subscription access is granted.
+// runner.bicep - Ephemeral Azure VM for windows-node-selfhosted CI tests.
+// Created fresh per run and deleted after. VM size Standard_D16s_v3 supports
+// nested virtualization required for Hyper-V. Uses a marketplace Windows 11 image
+// so no Shared Image Gallery access is required. Windows 11 includes the
+// Hyper-V Default Switch out of the box, providing DHCP to nested VMs.
 targetScope = 'resourceGroup'
 
 param vmName string
@@ -123,18 +122,16 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-09-01' = {
       }
     }
     storageProfile: {
-      // Windows Server 2022 Azure Edition Gen 2 — supports nested virtualization on Dv3/Ev3 sizes.
-      // TODO: Switch to SIG minikube-ci-windows-11 once minikube subscription access is granted.
       imageReference: {
-        publisher: 'MicrosoftWindowsServer'
-        offer: 'WindowsServer'
-        sku: '2022-datacenter-azure-edition'
+        publisher: 'MicrosoftWindowsDesktop'
+        offer: 'windows-11'
+        sku: 'win11-24h2-pro'
         version: 'latest'
       }
       osDisk: {
         createOption: 'FromImage'
         managedDisk: { storageAccountType: 'StandardSSD_LRS' }
-        deleteOption: 'Detach'
+        deleteOption: 'Delete'
       }
     }
     networkProfile: {
@@ -162,21 +159,6 @@ resource enableSsh 'Microsoft.Compute/virtualMachines/extensions@2023-09-01' = {
     settings: {
       commandToExecute: 'powershell -ExecutionPolicy Bypass -Command "Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0; Start-Service sshd; Set-Service -Name sshd -StartupType Automatic"'
     }
-  }
-}
-
-// Auto-shutdown at midnight UTC to save costs during development.
-// The VM can be started manually or via the provisioning workflow when needed.
-resource autoShutdown 'Microsoft.DevTestLab/schedules@2018-09-15' = {
-  name: 'shutdown-computevm-${vmName}'
-  location: location
-  tags: { project: 'minikube', purpose: 'ci-runner' }
-  properties: {
-    status: 'Enabled'
-    taskType: 'ComputeVmShutdownTask'
-    dailyRecurrence: { time: '0000' }
-    timeZoneId: 'UTC'
-    targetResourceId: virtualMachine.id
   }
 }
 
