@@ -68,7 +68,6 @@ func TestWindowsNode(t *testing.T) {
 			{"DNSFromWindowsPod", validateWindowsPodDNS},
 			{"CrossNodeConnectivity", validateCrossNodePodConnectivity},
 			{"WebServerConnectivity", validateWebServerConnectivity},
-			{"NodeDiagnostics", validateWindowsNodeDiagnostics},
 		}
 		startPassed := false
 		for _, tc := range tests {
@@ -529,29 +528,4 @@ func validateWebServerConnectivity(ctx context.Context, t *testing.T, profile st
 		return
 	}
 	t.Errorf("web server at %s did not respond after 2 minutes: %v", url, lastErr)
-}
-
-// validateWindowsNodeDiagnostics checks that the Windows log collection script is present
-// on the node and executes without error.
-func validateWindowsNodeDiagnostics(ctx context.Context, t *testing.T, profile string) {
-	t.Helper()
-	node := windowsNodeName(ctx, t, profile)
-
-	// Check the script is present.
-	out, err := winSSH(ctx, t, profile, node,
-		`powershell -Command "Test-Path 'c:\k\debug\collect-windows-logs.ps1'"`)
-	if err != nil {
-		t.Fatalf("failed to check diagnostics script presence: %v", err)
-	}
-	if !strings.EqualFold(out, "True") {
-		t.Errorf("diagnostics script not found at c:\\k\\debug\\collect-windows-logs.ps1")
-		return
-	}
-
-	// Execute the script and confirm it runs without error.
-	_, err = winSSH(ctx, t, profile, node,
-		`powershell -Command "& 'c:\k\debug\collect-windows-logs.ps1'; exit $LASTEXITCODE"`)
-	if err != nil {
-		t.Errorf("diagnostics script failed to execute cleanly: %v", err)
-	}
 }

@@ -429,8 +429,9 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 			}
 			klog.Infof("Driver IP: %s", driverIP)
 
-			// Call with a timeout of 30 seconds
-			timeout := 20 * time.Second
+			// Allow enough time for kubeadm join to complete on a Windows node.
+			// The initial 20s was too short; Windows kubeadm join takes longer.
+			timeout := 1 * time.Minute
 
 			if commandResult, err := bs.JoinClusterWindows(starter.Host, *starter.Cfg, *starter.Node, joinCmd, timeout); err != nil {
 				klog.Infof("%s node failed to join cluster, will retry: %v", role, err)
