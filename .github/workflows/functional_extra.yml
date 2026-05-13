@@ -251,6 +251,22 @@ jobs:
             --tags project=minikube purpose=ci-runner \
             --output none
 
+      - name: Cleanup orphaned stacks from cancelled runs
+        run: |
+          stacks=$(az stack group list \
+            --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" \
+            --subscription "${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}" \
+            --query "[].name" -o tsv 2>/dev/null || true)
+          for stack in $stacks; do
+            echo "Deleting orphaned stack: $stack"
+            az stack group delete \
+              --name "$stack" \
+              --resource-group "${{ env.MINIKUBE_AZ_RESOURCE_GROUP }}" \
+              --subscription "${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}" \
+              --action-on-unmanage deleteAll \
+              --yes || true
+          done
+
       - name: Create VM
         id: create_vm
         run: |
