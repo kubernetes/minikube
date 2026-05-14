@@ -19,6 +19,7 @@ package common
 import (
 	"bufio"
 	"bytes"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"net"
@@ -299,4 +300,16 @@ func parseMAC(mac string) (net.HardwareAddr, error) {
 		return nil, fmt.Errorf("unable to parse MAC address: %q: %s", mac, err)
 	}
 	return hw, nil
+}
+
+// GenerateMACAddress generates a random locally administered unicast MAC address.
+func GenerateMACAddress() (string, error) {
+	buf := make([]byte, 6)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	// Set local bit, ensure unicast address.
+	buf[0] = (buf[0] | 0x02) & 0xfe
+	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x",
+		buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]), nil
 }

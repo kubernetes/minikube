@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/krunkit"
@@ -62,11 +63,21 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	machineName := config.MachineName(cfg, n)
 	storePath := localpath.MiniPath()
 
-	// We generate a random UUID (or use a user provided one). vment-helper will
-	// obtain a mac address from the vmnet framework using the UUID.
-	u := cfg.UUID
-	if u == "" {
-		u = uuid.NewString()
+	var mac string
+	var u string
+	if vmnet.GeneratesMACAddress() {
+		// Interface-id mode: generate UUID, vmnet will provide MAC.
+		u = cfg.UUID
+		if u == "" {
+			u = uuid.NewString()
+		}
+	} else {
+		// Network mode: we generate the MAC address.
+		var err error
+		mac, err = common.GenerateMACAddress()
+		if err != nil {
+			return nil, fmt.Errorf("generating MAC address: %v", err)
+		}
 	}
 
 	mounts, err := virtiofs.ValidateMountString(cfg.MountString)
@@ -86,9 +97,11 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		CPU:            cfg.CPUs,
 		ExtraDisks:     cfg.ExtraDisks,
 		VirtiofsMounts: mounts,
+		MACAddress:     mac,
 		VmnetHelper: vmnet.Helper{
 			MachineDir:  filepath.Join(storePath, "machines", machineName),
 			InterfaceID: u,
+			NetworkName: "vmnet:shared",
 		},
 	}, nil
 }
