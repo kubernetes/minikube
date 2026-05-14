@@ -447,19 +447,21 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 						klog.Errorf("error retrying join command: %v, command result: %s", err, commandResult)
 						return err
 					}
-
-					// set up flannel network issues
-					if err := prepareWindowsNodeFlannel(); err != nil {
-						klog.Errorf("error preparing windows node flannel: %v", err)
-					}
-
-					// set up kube-proxy issues
-					if err := prepareWindowsNodeKubeProxy(); err != nil {
-						klog.Errorf("error preparing windows node kube-proxy: %v", err)
-					}
 				}
 				// return err
 
+			}
+
+			// Apply Windows networking config after a successful join regardless
+			// of which join path was taken (first attempt or cert-fix retry).
+			// Previously these were inside the error/retry block so they were
+			// never called when the first join attempt succeeded.
+			if err := prepareWindowsNodeFlannel(); err != nil {
+				klog.Errorf("error preparing windows node flannel: %v", err)
+			}
+
+			if err := prepareWindowsNodeKubeProxy(); err != nil {
+				klog.Errorf("error preparing windows node kube-proxy: %v", err)
 			}
 		}
 		return nil
