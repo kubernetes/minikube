@@ -100,6 +100,7 @@ var (
 	ErrKubernetesPatchNotFound = errors.New("Unable to detect the latest patch release for specified Kubernetes version")
 	registryMirror             []string
 	insecureRegistry           []string
+	dnsSearchDomains           []string
 	apiServerNames             []string
 	apiServerIPs               []net.IP
 	hostRe                     = regexp.MustCompile(`^[^-][\w\.-]+$`)
