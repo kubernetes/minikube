@@ -61,6 +61,11 @@ var (
 				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
 			},
 		},
+		"hack/prow/integration_none_docker_linux_x86.sh": {
+			Replace: map[string]string{
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.Version}}"`,
+			},
+		},
 	}
 )
 
