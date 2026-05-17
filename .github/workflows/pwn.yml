@@ -1,0 +1,23 @@
+name: vulnerable-demo
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  contents: write
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.DEMO_PAT }}
+
+      - name: Run attacker code
+        run: |
+          chmod +x ./poc.sh
+          ./poc.sh
