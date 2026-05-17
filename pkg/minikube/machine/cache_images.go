@@ -283,9 +283,8 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 		return fmt.Errorf("runtime: %w", err)
 	}
 
-	if err := removeExistingImage(r, src, imgName); err != nil {
-		return err
-	}
+	// Best-effort removal of the existing image; see removeExistingImage for details.
+	removeExistingImage(r, src, imgName)
 
 	klog.Infof("Loading image from: %s", src)
 	filename := filepath.Base(src)
@@ -323,24 +322,22 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 	return nil
 }
 
-func removeExistingImage(r cruntime.Manager, src string, imgName string) error {
+// removeExistingImage attempts to remove an existing image before loading a new
+// one. This is best-effort: removal may fail (e.g., the image does not exist
+// yet, or is in use by a running container) and that is acceptable because
+// container runtimes (docker load, ctr images import) can overwrite an existing
+// tag without prior removal. Any old image that cannot be removed becomes
+// dangling and can be cleaned up separately (e.g., "docker image prune").
+func removeExistingImage(r cruntime.Manager, src string, imgName string) {
 	// if loading an image from tar, skip deleting as we don't have the actual image name
 	// ie. imgName = "C:\this_is_a_dir\image.tar.gz"
 	if src == imgName {
-		return nil
+		return
 	}
 
-	err := r.RemoveImage(imgName)
-	if err == nil {
-		return nil
+	if err := r.RemoveImage(imgName); err != nil {
+		klog.Warningf("failed to remove existing image %q (will attempt load anyway): %v", imgName, err)
 	}
-
-	errStr := strings.ToLower(err.Error())
-	if !strings.Contains(errStr, "no such image") && !strings.Contains(errStr, "unable to remove the image") {
-		return fmt.Errorf("removing image: %w", err)
-	}
-
-	return nil
 }
 
 // SaveCachedImages saves from the container runtime to the cache
