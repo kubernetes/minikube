@@ -29,7 +29,13 @@ import (
 	"k8s.io/minikube/pkg/libmachine/log"
 )
 
-var (
+const (
+	// retryThreshold is the minimum check duration before we consider it a fast
+	// return that needs throttling. Checks shorter than this (e.g. immediate
+	// "connection refused") trigger a sleep to avoid busy-looping.
+	retryThreshold = 500 * time.Millisecond
+
+	// retryDelay is how long to sleep after a fast dial return.
 	retryDelay = time.Second
 
 	// We have 2 cases:
@@ -61,6 +67,7 @@ func WaitForSSHAccess(d drivers.Driver) error {
 	dialer := net.Dialer{Deadline: deadline}
 
 	for {
+		checkStart := time.Now()
 		done, err := checkSSHAccess(&dialer, addr)
 		if err != nil {
 			return err
@@ -69,7 +76,9 @@ func WaitForSSHAccess(d drivers.Driver) error {
 			log.Infof("SSH server %q is accessible in %.3f seconds", addr, time.Since(start).Seconds())
 			return nil
 		}
-		time.Sleep(retryDelay)
+		if time.Since(checkStart) < retryThreshold {
+			time.Sleep(retryDelay)
+		}
 	}
 }
 
