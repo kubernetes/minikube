@@ -7,7 +7,7 @@ ii  adduser                         3.134                          all          
 ii  apt                             2.6.1                          amd64        commandline package manager
 ii  base-files                      12.4+deb12u13                  amd64        Debian base system miscellaneous files
 ii  base-passwd                     3.6.1                          amd64        Debian base system master password and group files
-ii  bash                            5.2.15-2+b10                   amd64        GNU Bourne Again SHell
+ii  bash                            5.2.15-2+b13                   amd64        GNU Bourne Again SHell
 ii  bind9-dnsutils                  1:9.18.47-1~deb12u1            amd64        Clients provided with BIND 9
 ii  bind9-host                      1:9.18.47-1~deb12u1            amd64        DNS Lookup Utility
 ii  bind9-libs:amd64                1:9.18.47-1~deb12u1            amd64        Shared Libraries used by BIND 9
@@ -35,9 +35,9 @@ ii  diffutils                       1:3.8-4                        amd64        
 ii  dirmngr                         2.2.40-1.1+deb12u2             amd64        GNU privacy guard - network certificate management service
 ii  dmsetup                         2:1.02.185-2                   amd64        Linux Kernel Device Mapper userspace library
 ii  dnsutils                        1:9.18.47-1~deb12u1            all          Transitional package for bind9-dnsutils
-ii  docker-buildx-plugin            0.33.0-1~debian.12~bookworm    amd64        Docker Buildx plugin extends build capabilities with BuildKit.
-ii  docker-ce                       5:29.4.3-1~debian.12~bookworm  amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:29.4.3-1~debian.12~bookworm  amd64        Docker CLI: the open-source application container engine
+ii  docker-buildx-plugin            0.34.0-1~debian.12~bookworm    amd64        Docker Buildx plugin extends build capabilities with BuildKit.
+ii  docker-ce                       5:29.5.1-1~debian.12~bookworm  amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:29.5.1-1~debian.12~bookworm  amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.22                        amd64        Debian package management system
 ii  e2fsprogs                       1.47.0-2+b2                    amd64        ext2/ext3/ext4 file system utilities
 ii  ebtables                        2.0.11-5                       amd64        Ethernet bridge frame table administration
@@ -81,8 +81,8 @@ ii  libbz2-1.0:amd64                1.0.8-5+b1                     amd64        
 ii  libc-bin                        2.36-9+deb12u13                amd64        GNU C Library: Binaries
 ii  libc6:amd64                     2.36-9+deb12u13                amd64        GNU C Library: Shared libraries
 ii  libcap-ng0:amd64                0.8.3-1+b3                     amd64        alternate POSIX capabilities library
-ii  libcap2:amd64                   1:2.66-4+deb12u2+b2            amd64        POSIX 1003.1e capabilities (library)
-ii  libcap2-bin                     1:2.66-4+deb12u2+b2            amd64        POSIX 1003.1e capabilities (utilities)
+ii  libcap2:amd64                   1:2.66-4+deb12u3+b1            amd64        POSIX 1003.1e capabilities (library)
+ii  libcap2-bin                     1:2.66-4+deb12u3+b1            amd64        POSIX 1003.1e capabilities (utilities)
 ii  libcbor0.8:amd64                0.8.0-2+b1                     amd64        library for parsing and generating CBOR (RFC 7049)
 ii  libcom-err2:amd64               1.47.0-2+b2                    amd64        common error description library
 ii  libcrypt1:amd64                 1:4.4.33-2                     amd64        libcrypt shared library
@@ -103,7 +103,7 @@ ii  libfido2-1:amd64                1.12.0-2+b1                    amd64        
 ii  libfstrm0:amd64                 0.6.1-1                        amd64        Frame Streams (fstrm) library
 ii  libgcc-s1:amd64                 12.2.0-14+deb12u1              amd64        GCC support library
 ii  libgcrypt20:amd64               1.10.1-3                       amd64        LGPL Crypto library - runtime library
-ii  libglib2.0-0:amd64              2.74.6-2+deb12u8               amd64        GLib library of C routines
+ii  libglib2.0-0:amd64              2.74.6-2+deb12u9               amd64        GLib library of C routines
 ii  libgmp10:amd64                  2:6.2.1+dfsg1-1.1              amd64        Multiprecision arithmetic library
 ii  libgnutls30:amd64               3.7.9-2+deb12u6                amd64        GNU TLS library - main runtime library
 ii  libgpg-error0:amd64             1.46-1                         amd64        GnuPG development runtime library
@@ -138,7 +138,7 @@ ii  libnfnetlink0:amd64             1.0.2-2                        amd64        
 ii  libnfsidmap1:amd64              1:2.6.2-4+deb12u1              amd64        NFS idmapping library
 ii  libnftables1:amd64              1.0.6-2+deb12u2                amd64        Netfilter nftables high level userspace API library
 ii  libnftnl11:amd64                1.2.4-2                        amd64        Netfilter nftables userspace API library
-ii  libnghttp2-14:amd64             1.52.0-1+deb12u2               amd64        library implementing HTTP/2 protocol (shared library)
+ii  libnghttp2-14:amd64             1.52.0-1+deb12u3               amd64        library implementing HTTP/2 protocol (shared library)
 ii  libnpth0:amd64                  1.6-3                          amd64        replacement for GNU Pth using system threads
 ii  libnsl2:amd64                   1.3.0-2                        amd64        Public client interface for NIS(YP) and NIS+
 ii  libnvidia-container-tools       1.19.0-1                       amd64        NVIDIA container runtime library (command-line tools)
@@ -154,8 +154,8 @@ ii  libproc2-0:amd64                2:4.0.2-3                      amd64        
 ii  libprotobuf-c1:amd64            1.4.1-1+b1                     amd64        Protocol Buffers C shared library (protobuf-c)
 ii  libpsl5:amd64                   0.21.2-1                       amd64        Library for Public Suffix List (shared libraries)
 ii  libpython3-stdlib:amd64         3.11.2-1+b1                    amd64        interactive high-level object-oriented language (default python3 version)
-ii  libpython3.11-minimal:amd64     3.11.2-6+deb12u6               amd64        Minimal subset of the Python language (version 3.11)
-ii  libpython3.11-stdlib:amd64      3.11.2-6+deb12u6               amd64        Interactive high-level object-oriented language (standard library, version 3.11)
+ii  libpython3.11-minimal:amd64     3.11.2-6+deb12u7               amd64        Minimal subset of the Python language (version 3.11)
+ii  libpython3.11-stdlib:amd64      3.11.2-6+deb12u7               amd64        Interactive high-level object-oriented language (standard library, version 3.11)
 ii  libreadline8:amd64              8.2-1.3                        amd64        GNU readline and history libraries, run-time libraries
 ii  librtmp1:amd64                  2.4+20151223.gitfa8646d.1-2+b2 amd64        toolkit for RTMP streams (shared library)
 ii  libsasl2-2:amd64                2.1.28+dfsg-10                 amd64        Cyrus SASL - authentication abstraction library
@@ -169,16 +169,16 @@ ii  libsmartcols1:amd64             2.38.1-5+deb12u3               amd64        
 ii  libsqlite3-0:amd64              3.40.1-2+deb12u2               amd64        SQLite 3 shared library
 ii  libss2:amd64                    1.47.0-2+b2                    amd64        command-line interface parsing library
 ii  libssh2-1:amd64                 1.10.0-3+b1                    amd64        SSH2 client-side library
-ii  libssl3:amd64                   3.0.19-1~deb12u2               amd64        Secure Sockets Layer toolkit - shared libraries
+ii  libssl3:amd64                   3.0.20-1~deb12u1               amd64        Secure Sockets Layer toolkit - shared libraries
 ii  libstdc++6:amd64                12.2.0-14+deb12u1              amd64        GNU Standard C++ Library v3
 ii  libsubid4:amd64                 1:4.13+dfsg1-1+deb12u2         amd64        subordinate id handling library -- shared library
-ii  libsystemd-shared:amd64         252.39-1~deb12u1               amd64        systemd shared private library
-ii  libsystemd0:amd64               252.39-1~deb12u1               amd64        systemd utility library
+ii  libsystemd-shared:amd64         252.39-1~deb12u2               amd64        systemd shared private library
+ii  libsystemd0:amd64               252.39-1~deb12u2               amd64        systemd utility library
 ii  libtasn1-6:amd64                4.19.0-2+deb12u1               amd64        Manage ASN.1 structures (runtime)
 ii  libtinfo6:amd64                 6.4-4                          amd64        shared low-level terminfo library for terminal handling
 ii  libtirpc-common                 1.3.3+ds-1                     all          transport-independent RPC library - common files
 ii  libtirpc3:amd64                 1.3.3+ds-1                     amd64        transport-independent RPC library
-ii  libudev1:amd64                  252.39-1~deb12u1               amd64        libudev shared library
+ii  libudev1:amd64                  252.39-1~deb12u2               amd64        libudev shared library
 ii  libunistring2:amd64             1.0-2                          amd64        Unicode string library for C
 ii  libuuid1:amd64                  2.38.1-5+deb12u3               amd64        Universally Unique ID library
 ii  libuv1:amd64                    1.44.2-1+deb12u1               amd64        asynchronous event notification library - runtime library
@@ -202,20 +202,20 @@ ii  nfs-common                      1:2.6.2-4+deb12u1              amd64        
 ii  nftables                        1.0.6-2+deb12u2                amd64        Program to control packet filtering rules by Netfilter project
 ii  nvidia-container-toolkit        1.19.0-1                       amd64        NVIDIA Container toolkit
 ii  nvidia-container-toolkit-base   1.19.0-1                       amd64        NVIDIA Container Toolkit Base
-ii  openssh-client                  1:9.2p1-2+deb12u9              amd64        secure shell (SSH) client, for secure access to remote machines
-ii  openssh-server                  1:9.2p1-2+deb12u9              amd64        secure shell (SSH) server, for secure access from remote machines
-ii  openssh-sftp-server             1:9.2p1-2+deb12u9              amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
-ii  openssl                         3.0.19-1~deb12u2               amd64        Secure Sockets Layer toolkit - cryptographic utility
+ii  openssh-client                  1:9.2p1-2+deb12u10             amd64        secure shell (SSH) client, for secure access to remote machines
+ii  openssh-server                  1:9.2p1-2+deb12u10             amd64        secure shell (SSH) server, for secure access from remote machines
+ii  openssh-sftp-server             1:9.2p1-2+deb12u10             amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
+ii  openssl                         3.0.20-1~deb12u1               amd64        Secure Sockets Layer toolkit - cryptographic utility
 ii  passwd                          1:4.13+dfsg1-1+deb12u2         amd64        change and administer password and group data
 ii  perl-base                       5.36.0-7+deb12u3               amd64        minimal Perl system
 ii  pigz                            2.6-1                          amd64        Parallel Implementation of GZip
 ii  pinentry-curses                 1.2.1-1                        amd64        curses-based PIN or pass-phrase entry dialog for GnuPG
-ii  podman                          4.3.1+ds1-8+deb12u1+b2         amd64        engine to run OCI-based containers in Pods
+ii  podman                          4.3.1+ds1-8+deb12u1+b3         amd64        engine to run OCI-based containers in Pods
 ii  procps                          2:4.0.2-3                      amd64        /proc file system utilities
 ii  python3                         3.11.2-1+b1                    amd64        interactive high-level object-oriented language (default python3 version)
 ii  python3-minimal                 3.11.2-1+b1                    amd64        minimal subset of the Python language (default python3 version)
-ii  python3.11                      3.11.2-6+deb12u6               amd64        Interactive high-level object-oriented language (version 3.11)
-ii  python3.11-minimal              3.11.2-6+deb12u6               amd64        Minimal subset of the Python language (version 3.11)
+ii  python3.11                      3.11.2-6+deb12u7               amd64        Interactive high-level object-oriented language (version 3.11)
+ii  python3.11-minimal              3.11.2-6+deb12u7               amd64        Minimal subset of the Python language (version 3.11)
 ii  readline-common                 8.2-1.3                        all          GNU readline and history libraries, common files
 ii  rpcbind                         1.2.6-6+b1                     amd64        converts RPC program numbers into universal addresses
 ii  rsync                           3.2.7-1+deb12u4                amd64        fast, versatile, remote (and local) file-copying tool
@@ -223,14 +223,14 @@ ii  runit-helper                    2.15.2                         all          
 ii  sed                             4.9-1                          amd64        GNU stream editor for filtering/transforming text
 ii  sensible-utils                  0.0.17+nmu1                    all          Utilities for sensible alternative selection
 ii  socat                           1.7.4.4-2                      amd64        multipurpose relay for bidirectional data transfer
-ii  sudo                            1.9.13p3-1+deb12u3             amd64        Provide limited super user privileges to specific users
-ii  systemd                         252.39-1~deb12u1               amd64        system and service manager
-ii  systemd-sysv                    252.39-1~deb12u1               amd64        system and service manager - SysV compatibility symlinks
+ii  sudo                            1.9.13p3-1+deb12u4             amd64        Provide limited super user privileges to specific users
+ii  systemd                         252.39-1~deb12u2               amd64        system and service manager
+ii  systemd-sysv                    252.39-1~deb12u2               amd64        system and service manager - SysV compatibility symlinks
 ii  sysvinit-utils                  3.06-4                         amd64        System-V-like utilities
 ii  tar                             1.34+dfsg-1.2+deb12u1          amd64        GNU version of the tar archiving utility
 ii  tzdata                          2025b-0+deb12u2                all          time zone and daylight-saving time data
 ii  ucf                             3.0043+nmu1+deb12u1            all          Update Configuration File(s): preserve user changes to config files
-ii  udev                            252.39-1~deb12u1               amd64        /dev/ and hotplug management daemon
+ii  udev                            252.39-1~deb12u2               amd64        /dev/ and hotplug management daemon
 ii  usr-is-merged                   37~deb12u1                     all          Transitional package to assert a merged-/usr system
 ii  util-linux                      2.38.1-5+deb12u3               amd64        miscellaneous system utilities
 ii  util-linux-extra                2.38.1-5+deb12u3               amd64        interactive login tools
