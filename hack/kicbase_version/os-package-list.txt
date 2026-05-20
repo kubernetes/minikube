@@ -35,9 +35,9 @@ ii  diffutils                       1:3.8-4                        amd64        
 ii  dirmngr                         2.2.40-1.1+deb12u2             amd64        GNU privacy guard - network certificate management service
 ii  dmsetup                         2:1.02.185-2                   amd64        Linux Kernel Device Mapper userspace library
 ii  dnsutils                        1:9.18.47-1~deb12u1            all          Transitional package for bind9-dnsutils
-ii  docker-buildx-plugin            0.33.0-1~debian.12~bookworm    amd64        Docker Buildx plugin extends build capabilities with BuildKit.
-ii  docker-ce                       5:29.4.3-1~debian.12~bookworm  amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:29.4.3-1~debian.12~bookworm  amd64        Docker CLI: the open-source application container engine
+ii  docker-buildx-plugin            0.34.0-1~debian.12~bookworm    amd64        Docker Buildx plugin extends build capabilities with BuildKit.
+ii  docker-ce                       5:29.5.0-1~debian.12~bookworm  amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:29.5.0-1~debian.12~bookworm  amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.22                        amd64        Debian package management system
 ii  e2fsprogs                       1.47.0-2+b2                    amd64        ext2/ext3/ext4 file system utilities
 ii  ebtables                        2.0.11-5                       amd64        Ethernet bridge frame table administration
@@ -138,7 +138,7 @@ ii  libnfnetlink0:amd64             1.0.2-2                        amd64        
 ii  libnfsidmap1:amd64              1:2.6.2-4+deb12u1              amd64        NFS idmapping library
 ii  libnftables1:amd64              1.0.6-2+deb12u2                amd64        Netfilter nftables high level userspace API library
 ii  libnftnl11:amd64                1.2.4-2                        amd64        Netfilter nftables userspace API library
-ii  libnghttp2-14:amd64             1.52.0-1+deb12u2               amd64        library implementing HTTP/2 protocol (shared library)
+ii  libnghttp2-14:amd64             1.52.0-1+deb12u3               amd64        library implementing HTTP/2 protocol (shared library)
 ii  libnpth0:amd64                  1.6-3                          amd64        replacement for GNU Pth using system threads
 ii  libnsl2:amd64                   1.3.0-2                        amd64        Public client interface for NIS(YP) and NIS+
 ii  libnvidia-container-tools       1.19.0-1                       amd64        NVIDIA container runtime library (command-line tools)
