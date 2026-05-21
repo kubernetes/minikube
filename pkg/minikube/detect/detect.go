@@ -52,7 +52,7 @@ func IsMicrosoftWSL() bool {
 
 // IsOnGCE determines whether minikube is currently running on GCE.
 func IsOnGCE() bool {
-	resp, err := http.Get("http://metadata.google.internal")
+	resp, err := http.Get("http://metadata.google.internal") //nolint:revive
 	if err != nil {
 		return false
 	}
