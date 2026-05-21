@@ -27,6 +27,7 @@ linters:
         - "-ST1020"
         - "-ST1021"
         - "-ST1022"
+        - "-ST1005"
         # Omit embedded fields from selector expression
         - "-QF1008"
         
@@ -47,6 +48,22 @@ linters:
         - name: import-shadowing
           disabled: true
         - name: use-errors-new
+          disabled: true
+        - name: package-naming
+          disabled: true
+        - name: unsecure-url-scheme
+          disabled: true
+        - name: use-slices-sort
+          disabled: true
+        - name: identical-switch-branches
+          disabled: true
+        - name: enforce-switch-style
+          disabled: true
+        - name: use-waitgroup-go
+          disabled: true
+        - name: unnecessary-format
+          disabled: true
+        - name: identical-ifelseif-branches
           disabled: true
         ##### P1: consider making a dent on these, but not critical.
         - name: argument-limit

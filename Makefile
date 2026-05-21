@@ -73,7 +73,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 # update this only by running `make update-golint-version`
 GOLINT_VERSION ?= v2.12.2
 # see https://golangci-lint.run/docs/configuration/file/ for config details
-GOLINT_CONFIG ?= .golangci.min.yaml
+GOLINT_CONFIG ?= .golangci.yaml
 # Set this to --verbose to see details about the linters and formatters used
 GOLINT_VERBOSE ?=
 # Limit number of default jobs, to avoid the CI builds running out of memory
