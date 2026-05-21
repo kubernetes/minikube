@@ -119,7 +119,11 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 		ip := ipMatch[1]
 
 		return net.ParseIP(ip), nil
-	case driver.HyperKit:
+	case driver.HyperKit, driver.VFKit, driver.Krunkit:
+		// TODO: check why we need this and test with:
+		// - vfkkit+nat
+		// - vfkit+vmnet-shared
+		// - krunkit+vmnet-shared
 		vmIPString, _ := hostInfo.Driver.GetIP()
 		gatewayIPString := vmIPString[:strings.LastIndex(vmIPString, ".")+1] + "1"
 		return net.ParseIP(gatewayIPString), nil
@@ -133,14 +137,6 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 			return []byte{}, fmt.Errorf("Error converting VM IP address to IPv4 address: %w", err)
 		}
 		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
-	case driver.VFKit, driver.Krunkit:
-		// TODO: check why we need this and test with:
-		// - vfkkit+nat
-		// - vfkit+vmnet-shared
-		// - krunkit+vmnet-shared
-		vmIPString, _ := hostInfo.Driver.GetIP()
-		gatewayIPString := vmIPString[:strings.LastIndex(vmIPString, ".")+1] + "1"
-		return net.ParseIP(gatewayIPString), nil
 	case driver.None:
 		return net.ParseIP("127.0.0.1"), nil
 	default:
