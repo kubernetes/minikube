@@ -157,12 +157,12 @@ func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) {
 	klog.Infof("found existing configuration files:\n%s\n", rr.Stdout.String())
 
 	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(constants.ControlPlaneAlias, strconv.Itoa(cfg.APIServerPort)))
-	for _, path := range paths {
-		_, err := k.c.RunCmd(exec.Command("sudo", "grep", endpoint, path))
+	for _, p := range paths {
+		_, err := k.c.RunCmd(exec.Command("sudo", "grep", endpoint, p))
 		if err != nil {
-			klog.Infof("%q may not be in %s - will remove: %v", endpoint, path, err)
+			klog.Infof("%q may not be in %s - will remove: %v", endpoint, p, err)
 
-			_, err := k.c.RunCmd(exec.Command("sudo", "rm", "-f", path))
+			_, err := k.c.RunCmd(exec.Command("sudo", "rm", "-f", p))
 			if err != nil {
 				klog.Errorf("rm failed: %v", err)
 			}

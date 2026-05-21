@@ -45,8 +45,8 @@ func (api *FakeAPI) Create(h *host.Host) error {
 }
 
 func (api *FakeAPI) Exists(name string) (bool, error) {
-	for _, host := range api.Hosts {
-		if name == host.Name {
+	for _, h := range api.Hosts {
+		if name == h.Name {
 			return true, nil
 		}
 	}
@@ -59,9 +59,9 @@ func (api *FakeAPI) List() ([]string, error) {
 }
 
 func (api *FakeAPI) Load(name string) (*host.Host, error) {
-	for _, host := range api.Hosts {
-		if name == host.Name {
-			return host, nil
+	for _, h := range api.Hosts {
+		if name == h.Name {
+			return h, nil
 		}
 	}
 
@@ -73,9 +73,9 @@ func (api *FakeAPI) Load(name string) (*host.Host, error) {
 func (api *FakeAPI) Remove(name string) error {
 	newHosts := []*host.Host{}
 
-	for _, host := range api.Hosts {
-		if name != host.Name {
-			newHosts = append(newHosts, host)
+	for _, h := range api.Hosts {
+		if name != h.Name {
+			newHosts = append(newHosts, h)
 		}
 	}
 

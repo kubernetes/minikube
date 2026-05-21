@@ -34,7 +34,7 @@ type Store interface {
 	Remove(name string) error
 
 	// Save persists a machine in the store
-	Save(host *host.Host) error
+	Save(h *host.Host) error
 }
 
 func LoadHosts(s Store, hostNames []string) ([]*host.Host, map[string]error) {
