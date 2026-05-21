@@ -79,7 +79,7 @@ func (mgr *Manager) startTunnel(ctx context.Context, tunnel controller) (done ch
 	go mgr.run(ctx, tunnel, ready, check, done)
 
 	klog.Info("Started minikube tunnel.")
-	return
+	return done, err
 }
 
 func (mgr *Manager) timerLoop(ready, check chan bool) {
