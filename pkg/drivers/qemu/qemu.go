@@ -368,7 +368,7 @@ func getAvailableTCPPortFromRange(minPort, maxPort int) (int, error) {
 		}
 		time.Sleep(time.Second)
 	}
-	return 0, fmt.Errorf("unable to allocate tcp port")
+	return 0, errors.New("unable to allocate tcp port")
 }
 
 func (d *Driver) Start() error {
@@ -394,7 +394,7 @@ func (d *Driver) Start() error {
 			startCmd = append(startCmd,
 				"-drive", fmt.Sprintf("file=%s,readonly=on,format=raw,if=pflash", d.Firmware))
 		} else {
-			return fmt.Errorf("unknown firmware")
+			return errors.New("unknown firmware")
 		}
 	}
 
@@ -654,11 +654,11 @@ func (d *Driver) Kill() error {
 }
 
 func (d *Driver) StartDocker() error {
-	return fmt.Errorf("hosts without a driver cannot start docker")
+	return errors.New("hosts without a driver cannot start docker")
 }
 
 func (d *Driver) StopDocker() error {
-	return fmt.Errorf("hosts without a driver cannot stop docker")
+	return errors.New("hosts without a driver cannot stop docker")
 }
 
 func (d *Driver) GetDockerConfigDir() string {
@@ -666,7 +666,7 @@ func (d *Driver) GetDockerConfigDir() string {
 }
 
 func (d *Driver) Upgrade() error {
-	return fmt.Errorf("hosts without a driver cannot be upgraded")
+	return errors.New("hosts without a driver cannot be upgraded")
 }
 
 func (d *Driver) sshKeyPath() string {

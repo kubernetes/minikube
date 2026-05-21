@@ -19,6 +19,7 @@ package kubeadm
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -445,7 +446,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig, options *run.Comma
 // tunnelToAPIServer creates ssh tunnel between apiserver:port inside control-plane node and host on port 8443.
 func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig, options *run.CommandOptions) error {
 	if cfg.APIServerPort == 0 {
-		return fmt.Errorf("apiserver port not set")
+		return errors.New("apiserver port not set")
 	}
 	// An API server tunnel is only needed for QEMU w/ builtin network, for
 	// everything else return
@@ -732,7 +733,7 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 					return nil
 				}
 			}
-			return fmt.Errorf("kubelet not initialised")
+			return errors.New("kubelet not initialised")
 		}
 		_ = retry.Expo(waitFunc, 250*time.Millisecond, 1*time.Minute)
 		klog.Infof("kubelet initialised")

@@ -18,6 +18,7 @@ package command
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
@@ -148,7 +149,7 @@ func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 func (f *FakeCommandRunner) CopyFrom(file assets.CopyableFile) error {
 	v, ok := f.fileMap.Load(file.GetSourcePath())
 	if !ok {
-		return fmt.Errorf("not found in map")
+		return errors.New("not found in map")
 	}
 	var b bytes.Buffer
 	switch val := v.(type) {

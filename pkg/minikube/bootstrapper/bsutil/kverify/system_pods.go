@@ -19,6 +19,7 @@ package kverify
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -68,7 +69,7 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 	}
 
 	if err := retry.Local(podList, timeout); err != nil {
-		return fmt.Errorf("apiserver never returned a pod list")
+		return errors.New("apiserver never returned a pod list")
 	}
 	klog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
 	return nil

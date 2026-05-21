@@ -17,7 +17,7 @@ limitations under the License.
 package persisttest
 
 import (
-	"fmt"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -42,7 +42,7 @@ func TestExists(t *testing.T) {
 	if exist == true {
 		t.Fatal("Expected host 'not-found' to no exist")
 	}
-	store.ExistsErr = fmt.Errorf("error checking host")
+	store.ExistsErr = errors.New("error checking host")
 	_, err = store.Exists("my-host")
 	if err != store.ExistsErr {
 		t.Fatalf("Expected err %s.", store.ExistsErr)
@@ -61,7 +61,7 @@ func TestList(t *testing.T) {
 	if !reflect.DeepEqual(list, expected) {
 		t.Fatalf("Expected hosts to be %s. Got %s.", expected, list)
 	}
-	store.ListErr = fmt.Errorf("error listing")
+	store.ListErr = errors.New("error listing")
 	_, err = store.List()
 	if err != store.ListErr {
 		t.Fatal(err)
@@ -87,7 +87,7 @@ func TestLoad(t *testing.T) {
 	if h != nil {
 		t.Fatalf("Expected nil host. Got %v.", h)
 	}
-	store.LoadErr = fmt.Errorf("error loading")
+	store.LoadErr = errors.New("error loading")
 	h, err = store.Load("my-host")
 	if err != store.LoadErr {
 		t.Fatalf("Wrong error. Expected %s. Got %s.", store.LoadErr, err)
@@ -112,7 +112,7 @@ func TestRemove(t *testing.T) {
 	if len(store.Hosts) != 0 {
 		t.Fatalf("Expected hosts length to be zero. Got %d", len(store.Hosts))
 	}
-	store.RemoveErr = fmt.Errorf("error removing")
+	store.RemoveErr = errors.New("error removing")
 	err = store.Remove("my-host")
 	if err != store.RemoveErr {
 		t.Fatal(err)
@@ -129,7 +129,7 @@ func TestSave(t *testing.T) {
 	if !reflect.DeepEqual(store.Hosts, expectedHosts) {
 		t.Fatalf("Expected hosts to be %v. Got %v.", expectedHosts, store.Hosts)
 	}
-	store.SaveErr = fmt.Errorf("error saving")
+	store.SaveErr = errors.New("error saving")
 	err = store.Save(&host.Host{Name: "new-host"})
 	if err != store.SaveErr {
 		t.Fatal(err)

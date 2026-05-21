@@ -171,7 +171,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			}
 
 			if cc.Driver == driver.Podman {
-				return fmt.Errorf("not yet implemented, see issue #8426")
+				return errors.New("not yet implemented, see issue #8426")
 			}
 			if driver.IsDocker(cc.Driver) && err == nil {
 				klog.Infof("Loading %s from local cache", img)
@@ -205,7 +205,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		_, err = download.GHKicbaseTarballToCache(kicbaseVersion)
 		if err != nil {
 			klog.Infof("failed to download kicbase from github")
-			return fmt.Errorf("failed to download kic base image or any fallback image")
+			return errors.New("failed to download kic base image or any fallback image")
 		}
 
 		klog.Infof("successfully downloaded kicbase as fall back image from github")

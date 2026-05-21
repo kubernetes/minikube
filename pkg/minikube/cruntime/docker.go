@@ -19,6 +19,7 @@ package cruntime
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -571,7 +572,7 @@ type dockerDaemonRuntimes struct {
 // ref: https://docs.docker.com/engine/reference/commandline/dockerd/#options-for-the-runtime
 func (r *Docker) configureDocker(driver string) error {
 	if driver == constants.UnknownCgroupDriver {
-		return fmt.Errorf("unable to configure docker to use unknown cgroup driver")
+		return errors.New("unable to configure docker to use unknown cgroup driver")
 	}
 
 	klog.Infof("configuring docker to use %q as cgroup driver...", driver)

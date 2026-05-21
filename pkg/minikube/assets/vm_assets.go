@@ -410,7 +410,7 @@ func (m *BinAsset) SetLength(length int) {
 // Read reads the asset
 func (m *BinAsset) Read(p []byte) (int, error) {
 	if m.GetLength() == 0 {
-		return 0, fmt.Errorf("attempted read from a 0 length asset")
+		return 0, errors.New("attempted read from a 0 length asset")
 	}
 	return m.reader.Read(p)
 }

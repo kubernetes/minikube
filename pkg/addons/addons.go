@@ -364,7 +364,7 @@ func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, run
 
 	// we cannot use volcano for crio
 	if name == "volcano" && cc.KubernetesConfig.ContainerRuntime == constants.CRIO && enable {
-		return false, fmt.Errorf("volcano addon does not support crio")
+		return false, errors.New("volcano addon does not support crio")
 	}
 
 	return false, nil

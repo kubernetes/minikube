@@ -17,6 +17,7 @@ limitations under the License.
 package download
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -104,7 +105,7 @@ func download(src, dst string, options ...getter.ClientOption) error {
 
 	// Politely prevent tests from shooting themselves in the foot
 	if withinUnitTest() {
-		return fmt.Errorf("unmocked download under test")
+		return errors.New("unmocked download under test")
 	}
 
 	klog.Infof("Downloading: %s -> %s", src, dst)

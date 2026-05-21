@@ -1506,12 +1506,12 @@ func validateGPUs(value, drvName, rtime string) error {
 		return err
 	}
 	if value != "nvidia" && value != "all" && value != "amd" && value != "nvidia.com" {
-		return fmt.Errorf(`The gpus flag must be passed a value of "nvidia", "nvidia.com", "amd" or "all"`)
+		return errors.New(`The gpus flag must be passed a value of "nvidia", "nvidia.com", "amd" or "all"`)
 	}
 	if drvName == constants.Docker && (rtime == constants.Docker || rtime == constants.DefaultContainerRuntime) {
 		return nil
 	}
-	return fmt.Errorf("The gpus flag can only be used with the docker driver and docker container-runtime")
+	return errors.New("The gpus flag can only be used with the docker driver and docker container-runtime")
 }
 
 func validateGPUsArch() error {
@@ -1987,7 +1987,7 @@ func validateSubnet(subnet string) error {
 	if cidr != nil {
 		mask, _ := cidr.Mask.Size()
 		if mask > 30 {
-			return fmt.Errorf("Sorry, the subnet provided does not have a mask less than or equal to /30")
+			return errors.New("Sorry, the subnet provided does not have a mask less than or equal to /30")
 		}
 	}
 	return nil
@@ -2005,14 +2005,14 @@ func validateStaticIP(staticIP, drvName, subnet string) error {
 	}
 	ip := net.ParseIP(staticIP)
 	if !ip.IsPrivate() {
-		return fmt.Errorf("static IP must be private")
+		return errors.New("static IP must be private")
 	}
 	if ip.To4() == nil {
-		return fmt.Errorf("static IP must be IPv4")
+		return errors.New("static IP must be IPv4")
 	}
 	lastOctet, _ := strconv.Atoi(strings.Split(ip.String(), ".")[3])
 	if lastOctet < 2 || lastOctet > 254 {
-		return fmt.Errorf("static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200")
+		return errors.New("static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200")
 	}
 	return nil
 }

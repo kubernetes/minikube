@@ -18,6 +18,7 @@ limitations under the License.
 package images
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"path"
@@ -67,7 +68,7 @@ func componentImage(name string, v semver.Version, mirror string) string {
 // tagFromKubeadm gets the image tag by running kubeadm image list command on the host machine (Linux only)
 func tagFromKubeadm(v, name string) (string, error) {
 	if runtime.GOOS != "linux" {
-		return "", fmt.Errorf("can only get tag from kubeadm on Linux")
+		return "", errors.New("can only get tag from kubeadm on Linux")
 	}
 	kubeadm, err := download.Binary("kubeadm", v, "linux", runtime.GOARCH, "")
 	if err != nil {

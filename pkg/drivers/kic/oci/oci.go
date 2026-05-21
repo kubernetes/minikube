@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -138,7 +139,7 @@ func checkRunning(p CreateParams) func() error {
 			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
 		}
 		if !iptablesFileExists(p.OCIBinary, p.Name) {
-			return fmt.Errorf("iptables file doesn't exist, see #8179")
+			return errors.New("iptables file doesn't exist, see #8179")
 		}
 		klog.Infof("the created container %q has a running status.", p.Name)
 		return nil

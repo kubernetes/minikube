@@ -19,6 +19,7 @@ package out
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -472,7 +473,7 @@ func latestLogFilePath() (string, error) {
 
 func command() (string, error) {
 	if len(pflag.Args()) < 1 {
-		return "", fmt.Errorf("unable to detect command")
+		return "", errors.New("unable to detect command")
 	}
 
 	return pflag.Arg(0), nil

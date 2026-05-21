@@ -41,10 +41,10 @@ var EnvVars = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "h
 // isInBlock checks if ip is a CIDR block
 func isInBlock(ip string, block string) (bool, error) {
 	if ip == "" {
-		return false, fmt.Errorf("ip is nil")
+		return false, errors.New("ip is nil")
 	}
 	if block == "" {
-		return false, fmt.Errorf("CIDR is nil")
+		return false, errors.New("CIDR is nil")
 	}
 
 	if ip == block {
@@ -53,7 +53,7 @@ func isInBlock(ip string, block string) (bool, error) {
 
 	i := net.ParseIP(ip)
 	if i == nil {
-		return false, fmt.Errorf("parsed IP is nil")
+		return false, errors.New("parsed IP is nil")
 	}
 
 	// check the block if it's CIDR

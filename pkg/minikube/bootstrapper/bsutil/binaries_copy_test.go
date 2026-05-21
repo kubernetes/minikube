@@ -17,7 +17,7 @@ limitations under the License.
 package bsutil
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,7 +31,7 @@ type copyFailRunner struct {
 }
 
 func (copyFailRunner) Copy(_ assets.CopyableFile) error {
-	return fmt.Errorf("test error during copy file")
+	return errors.New("test error during copy file")
 }
 
 func newFakeCommandRunnerCopyFail() command.Runner {

@@ -133,7 +133,7 @@ func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error)
 	var img v1.Image
 
 	if !useDaemon && !useRemote {
-		return nil, "", fmt.Errorf("neither daemon nor remote")
+		return nil, "", errors.New("neither daemon nor remote")
 	}
 
 	klog.Infof("retrieving image: %+v", ref)
@@ -233,7 +233,7 @@ func uploadImage(tag name.Tag, p string) error {
 	var img v1.Image
 
 	if !useDaemon && !useRemote {
-		return fmt.Errorf("neither daemon nor remote")
+		return errors.New("neither daemon nor remote")
 	}
 
 	img, err = imageFromPathWithRetry(p, tag)
