@@ -107,7 +107,7 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, contai
 		exit.Error(reason.InetCacheTar, "Failed to cache images to tar", err)
 	}
 	out.Step(style.Check, "Download complete!")
-	os.Exit(0)
+	os.Exit(0) //nolint:revive
 }
 
 // CacheKubectlBinary caches the kubectl binary
