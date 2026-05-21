@@ -45,8 +45,6 @@ linters:
           disabled: true
         - name: enforce-switch-style
           disabled: true
-        - name: unnecessary-format
-          disabled: true
         ##### P1: consider making a dent on these, but not critical.
         - name: argument-limit
           arguments: [12]
