@@ -72,13 +72,13 @@ func (s Filestore) saveToFile(data []byte, file string) error {
 	return err
 }
 
-func (s Filestore) Save(host *host.Host) error {
-	data, err := json.MarshalIndent(host, "", "    ")
+func (s Filestore) Save(h *host.Host) error {
+	data, err := json.MarshalIndent(h, "", "    ")
 	if err != nil {
 		return err
 	}
 
-	hostPath := filepath.Join(s.GetMachinesDir(), host.Name)
+	hostPath := filepath.Join(s.GetMachinesDir(), h.Name)
 
 	// Ensure that the directory we want to save to exists.
 	if err := os.MkdirAll(hostPath, 0700); err != nil {
@@ -164,13 +164,13 @@ func (s Filestore) Load(name string) (*host.Host, error) {
 		}
 	}
 
-	host := &host.Host{
+	h := &host.Host{
 		Name: name,
 	}
 
-	if err := s.loadConfig(host); err != nil {
+	if err := s.loadConfig(h); err != nil {
 		return nil, err
 	}
 
-	return host, nil
+	return h, nil
 }

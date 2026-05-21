@@ -130,7 +130,7 @@ func platform() string {
 	// Show the distro version if possible
 	hi, err := gopshost.Info()
 	if err == nil {
-		s.WriteString(fmt.Sprintf("%s %s", cases.Title(language.Und).String(hi.Platform), hi.PlatformVersion))
+		fmt.Fprintf(&s, "%s %s", cases.Title(language.Und).String(hi.Platform), hi.PlatformVersion)
 		klog.Infof("hostinfo: %+v", hi)
 	} else {
 		klog.Warningf("gopshost.Info returned error: %v", err)
@@ -147,9 +147,9 @@ func platform() string {
 	// This environment is exotic, let's output a bit more.
 	if vrole == "guest" || runtime.GOARCH != "amd64" {
 		if vrole == "guest" && vsys != "" {
-			s.WriteString(fmt.Sprintf(" (%s/%s)", vsys, runtime.GOARCH))
+			fmt.Fprintf(&s, " (%s/%s)", vsys, runtime.GOARCH)
 		} else {
-			s.WriteString(fmt.Sprintf(" (%s)", runtime.GOARCH))
+			fmt.Fprintf(&s, " (%s)", runtime.GOARCH)
 		}
 	}
 	return s.String()

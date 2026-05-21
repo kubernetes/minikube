@@ -116,7 +116,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("Processing translations...\n\n")
+	fmt.Print("Processing translations...\n\n")
 	for _, r := range results {
 		fmt.Printf("  %s: %d removed, %d kept\n", r.File, r.Removed, r.Kept)
 	}

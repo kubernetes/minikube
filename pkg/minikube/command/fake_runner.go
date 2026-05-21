@@ -62,7 +62,7 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 		var txt strings.Builder
 		for _, c := range f.commands() {
-			txt.WriteString(fmt.Sprintf("  `%s`\n", c))
+			fmt.Fprintf(&txt, "  `%s`\n", c)
 		}
 		return rr, fmt.Errorf("unregistered command:\n  `%s`\nexpected one of:\n%s", key, txt.String())
 	}
@@ -104,7 +104,7 @@ func (f *FakeCommandRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 
 		var txt strings.Builder
 		for _, c := range f.commands() {
-			txt.WriteString(fmt.Sprintf("  `%s`\n", c))
+			fmt.Fprintf(&txt, "  `%s`\n", c)
 		}
 		return sc, fmt.Errorf("unregistered command:\n  `%s`\nexpected one of:\n%s", key, txt.String())
 	}

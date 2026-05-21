@@ -534,7 +534,7 @@ func (r *Docker) ContainerLogCmd(id string, length int, follow bool) string {
 	var cmd strings.Builder
 	cmd.WriteString("docker logs ")
 	if length > 0 {
-		cmd.WriteString(fmt.Sprintf("--tail %d ", length))
+		fmt.Fprintf(&cmd, "--tail %d ", length)
 	}
 	if follow {
 		cmd.WriteString("--follow ")

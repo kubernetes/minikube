@@ -1002,7 +1002,7 @@ func warnVirtualBox(options *run.CommandOptions) {
 	var altDriverList strings.Builder
 	for _, choice := range driver.Choices(true, options) {
 		if !driver.IsVirtualBox(choice.Name) && choice.Priority != registry.Discouraged && choice.State.Installed && choice.State.Healthy {
-			altDriverList.WriteString(fmt.Sprintf("\n\t- %s", choice.Name))
+			fmt.Fprintf(&altDriverList, "\n\t- %s", choice.Name)
 		}
 	}
 
