@@ -43,8 +43,6 @@ linters:
           disabled: true
         - name: package-naming
           disabled: true
-        - name: unsecure-url-scheme
-          disabled: true
         - name: enforce-switch-style
           disabled: true
         - name: unnecessary-format

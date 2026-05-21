@@ -41,7 +41,7 @@ var (
 	interval          int
 )
 
-const defaultAddonsFormatTemplate = "http://{{.IP}}:{{.Port}}"
+const defaultAddonsFormatTemplate = "http://{{.IP}}:{{.Port}}" //nolint:revive
 
 var addonsOpenCmd = &cobra.Command{
 	Use:   "open ADDON_NAME",
