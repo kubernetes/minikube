@@ -31,7 +31,6 @@ import (
 	"github.com/cheggaaa/pb/v3"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/hashicorp/go-getter"
@@ -106,19 +105,15 @@ func ImageExistsInDaemon(img string) bool {
 // arch. This is needed to resolve
 // https://github.com/kubernetes/minikube/pull/19205
 func isImageCorrectArch(img string) (bool, error) {
-	ref, err := name.ParseReference(img)
+	// Use the docker CLI instead of directly accessing the Docker daemon
+	// socket so that users who access docker via sudo wrappers are supported.
+	cmd := exec.Command("docker", "image", "inspect", "--format", "{{.Architecture}}", img)
+	output, err := cmd.Output()
 	if err != nil {
-		return false, fmt.Errorf("failed to parse reference: %v", err)
+		return false, fmt.Errorf("failed to inspect image %s: %v", img, err)
 	}
-	dImg, err := daemon.Image(ref)
-	if err != nil {
-		return false, fmt.Errorf("failed to get image from daemon: %v", err)
-	}
-	cfg, err := dImg.ConfigFile()
-	if err != nil {
-		return false, fmt.Errorf("failed to get config for %s: %v", img, err)
-	}
-	return cfg.Architecture == runtime.GOARCH, nil
+	arch := strings.TrimSpace(string(output))
+	return arch == runtime.GOARCH, nil
 }
 
 // ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
@@ -285,30 +280,32 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 func CacheToDaemon(img string) (string, error) {
 	p := imagePathInCache(img)
 
-	tag, ref, err := parseImage(img)
+	_, ref, err := parseImage(img)
 	if err != nil {
 		return "", err
 	}
 	// do not use cache if image is set in format <name>:latest
-	if _, ok := ref.(name.Tag); ok {
-		if tag.Name() == "latest" {
+	if t, ok := ref.(name.Tag); ok {
+		if t.TagStr() == "latest" {
 			return "", fmt.Errorf("can't cache 'latest' tag")
 		}
 	}
 
-	i, err := tarball.ImageFromPath(p, tag)
+	// Use the docker CLI to load the image so that users who access docker
+	// via sudo wrappers or similar privilege-escalation mechanisms are
+	// supported.  The previous daemon.Write() call connected directly to
+	// the Docker socket, which fails with "permission denied" when the
+	// current user doesn't have socket access.
+	cmd := exec.Command("docker", "load", "-i", p)
+	klog.Infof("Loading image into docker daemon: %v", cmd.Args)
+	output, err := cmd.CombinedOutput()
+	klog.V(2).Infof("docker load output: %s", output)
 	if err != nil {
-		return "", fmt.Errorf("tarball: %w", err)
-	}
-
-	resp, err := daemon.Write(*tag, i)
-	klog.V(2).Infof("response: %s", resp)
-	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error loading image: %w", err)
 	}
 
 	platform := fmt.Sprintf("linux/%s", runtime.GOARCH)
-	cmd := exec.Command("docker", "pull", "--platform", platform, "--quiet", img)
+	cmd = exec.Command("docker", "pull", "--platform", platform, "--quiet", img)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		klog.Warningf("failed to pull image digest (expected if offline): %s: %v", output, err)
 		img = image.Tag(img)
