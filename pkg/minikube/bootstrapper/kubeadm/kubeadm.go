@@ -241,12 +241,13 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig, options *run.CommandOption
 	c.Stdout = kw
 	c.Stderr = kw
 	var wg sync.WaitGroup
-	wg.Add(1)
 	sc, err := k.c.StartCmd(c)
 	if err != nil {
 		return fmt.Errorf("start: %w", err)
 	}
-	go outputKubeadmInitSteps(kr, &wg)
+	wg.Go(func() {
+		outputKubeadmInitSteps(kr)
+	})
 	if _, err := k.c.WaitCmd(sc); err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			return ErrInitTimedout
@@ -264,29 +265,24 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig, options *run.CommandOption
 		return fmt.Errorf("apply cni: %w", err)
 	}
 
-	wg.Add(3)
-
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		// we need to have cluster role binding before applying overlay to avoid #7428
 		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
 			klog.Errorf("unable to create cluster role binding for primary control-plane node, some addons might not work: %v", err)
 		}
-	}()
+	})
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := k.LabelAndUntaintNode(cfg, config.ControlPlanes(cfg)[0]); err != nil {
 			klog.Warningf("unable to apply primary control-plane node labels and taints: %v", err)
 		}
-	}()
+	})
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 			klog.Warningf("unable to adjust resource limits for primary control-plane node: %v", err)
 		}
-	}()
+	})
 
 	wg.Wait()
 
@@ -299,7 +295,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig, options *run.CommandOption
 }
 
 // outputKubeadmInitSteps streams the pipe and outputs the current step
-func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
+func outputKubeadmInitSteps(logs io.Reader) {
 	type step struct {
 		logTag       string
 		registerStep register.RegStep
@@ -340,7 +336,6 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 	if err := scanner.Err(); err != nil {
 		klog.Warningf("failed to read logs: %v", err)
 	}
-	wg.Done()
 }
 
 // applyCNI applies CNI to a cluster. Needs to be done every time a VM is powered up.

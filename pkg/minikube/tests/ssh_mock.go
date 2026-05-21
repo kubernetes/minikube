@@ -106,11 +106,9 @@ func (s *SSHServer) handleIncomingConnection(c net.Conn) {
 		return
 	}
 	// The incoming Request channel must be serviced.
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		ssh.DiscardRequests(reqs)
-		wg.Done()
-	}()
+	})
 
 	// Service the incoming Channel channel.
 	for newChannel := range chans {
@@ -131,17 +129,14 @@ func (s *SSHServer) handleIncomingConnection(c net.Conn) {
 }
 
 func (s *SSHServer) handleRequest(channel ssh.Channel, req *ssh.Request, wg *sync.WaitGroup) {
-	wg.Add(1)
-
-	go func() {
+	wg.Go(func() {
 		// Explicitly copy buffer contents to avoid data race
 		b := s.Transfers.Bytes()
 		if _, err := io.Copy(bytes.NewBuffer(b), channel); err != nil {
 			s.t.Errorf("copy failed: %v", err)
 		}
 		channel.Close()
-		wg.Done()
-	}()
+	})
 
 	switch req.Type {
 	case "exec":

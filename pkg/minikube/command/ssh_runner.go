@@ -165,20 +165,16 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 		return fmt.Errorf("stderr: %w", err)
 	}
 	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
+	wg.Go(func() {
 		if err := teePrefix(ErrPrefix, errPipe, errB, klog.V(8).Infof); err != nil {
 			klog.Errorf("tee stderr: %v", err)
 		}
-		wg.Done()
-	}()
-	go func() {
+	})
+	wg.Go(func() {
 		if err := teePrefix(OutPrefix, outPipe, outB, klog.V(8).Infof); err != nil {
 			klog.Errorf("tee stdout: %v", err)
 		}
-		wg.Done()
-	}()
+	})
 	err = s.Run(cmd)
 	wg.Wait()
 	return err
@@ -252,18 +248,16 @@ func teeSSHStart(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer, wg 
 		return fmt.Errorf("stderr: %w", err)
 	}
 
-	go func() {
+	wg.Go(func() {
 		if err := teePrefix(ErrPrefix, errPipe, errB, klog.V(8).Infof); err != nil {
 			klog.Errorf("tee stderr: %v", err)
 		}
-		wg.Done()
-	}()
-	go func() {
+	})
+	wg.Go(func() {
 		if err := teePrefix(OutPrefix, outPipe, outB, klog.V(8).Infof); err != nil {
 			klog.Errorf("tee stdout: %v", err)
 		}
-		wg.Done()
-	}()
+	})
 
 	return s.Start(cmd)
 }
@@ -279,7 +273,6 @@ func (s *SSHRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(2)
 	rr := &RunResult{Args: cmd.Args}
 	sc := &StartedCmd{cmd: cmd, rr: rr, wg: &wg}
 	klog.Infof("Start: %v", rr.Command())

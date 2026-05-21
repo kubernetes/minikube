@@ -146,9 +146,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		}
 		// configure CoreDNS concurrently from primary control-plane node only and only on first node start
 		if !starter.PreExists {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				// inject {"host.minikube.internal": hostIP} record into coredns for primary control-plane node host ip
 				if hostIP != nil {
 					if err := addCoreDNSEntry(starter.Runner, constants.HostAlias, hostIP.String(), *starter.Cfg); err != nil {
@@ -162,7 +160,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 						klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
 					}
 				}
-			}()
+			})
 		}
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
@@ -196,9 +194,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 
 	go configureMounts(&wg, *starter.Cfg)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		profile, err := config.LoadProfile(starter.Cfg.Name)
 		if err != nil {
 			out.FailureT("Unable to load profile: {{.error}}", out.V{"error": err})
@@ -206,7 +202,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		if err := CacheAndLoadImagesInConfig([]*config.Profile{profile}, options); err != nil {
 			out.FailureT("Unable to push cached images: {{.error}}", out.V{"error": err})
 		}
-	}()
+	})
 
 	// enable addons, both old and new!
 	addonList := viper.GetStringSlice(config.AddonListFlag)
