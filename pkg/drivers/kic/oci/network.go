@@ -229,21 +229,30 @@ func podmanContainerIP(ociBin string, name string) (string, string, error) {
 	return output, "", nil
 }
 
+// dockerContainerInspect is a variable to allow mocking in tests.
+var dockerContainerInspect = inspect
+
 // dockerContainerIP returns ipv4, ipv6 of container or error
 func dockerContainerIP(ociBin string, name string) (string, string, error) {
 	// retrieve the IP address of the node using docker inspect
-	lines, err := inspect(ociBin, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
+	// use \n separator so each network entry is on its own line, supporting multiple attached networks
+	lines, err := dockerContainerInspect(ociBin, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}\n{{end}}")
 	if err != nil {
 		return "", "", fmt.Errorf("inspecting NetworkSettings.Networks: %w", err)
 	}
 
-	if len(lines) != 1 {
-		return "", "", fmt.Errorf("IPs output should only be one line, got %d lines", len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		ips := strings.Split(line, ",")
+		if len(ips) != 2 {
+			return "", "", fmt.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
+		}
+		if ips[0] != "" {
+			return ips[0], ips[1], nil
+		}
 	}
-
-	ips := strings.Split(lines[0], ",")
-	if len(ips) != 2 {
-		return "", "", fmt.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
-	}
-	return ips[0], ips[1], nil
+	return "", "", fmt.Errorf("no IP address found for container %s", name)
 }

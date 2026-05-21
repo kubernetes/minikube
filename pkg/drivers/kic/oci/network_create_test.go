@@ -38,6 +38,7 @@ func TestDockerInspect(t *testing.T) {
 		gateway               string
 		subnetIP              string
 		mtu                   int
+		containerIPs          []string
 	}{
 		{
 			name:                  "withMTU",
@@ -53,13 +54,19 @@ func TestDockerInspect(t *testing.T) {
 			subnetIP:              "172.19.0.0",
 			mtu:                   0,
 		},
+		{
+			name:                  "withContainerIPs",
+			dockerInspectResponse: `{"Name": "mynet","Driver": "bridge","Subnet": "192.168.49.0/24","Gateway": "192.168.49.1","MTU": 1500, "ContainerIPs": ["192.168.49.2/24","192.168.49.3/24"]}`,
+			gateway:               "192.168.49.1",
+			subnetIP:              "192.168.49.0",
+			mtu:                   1500,
+			containerIPs:          []string{"192.168.49.2", "192.168.49.3"},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			dockerInspectResponseWithMtu := tc.dockerInspectResponse
-
 			// setting up mock funcs
-			dockerResponse = dockerInspectResponseWithMtu
+			dockerResponse = tc.dockerInspectResponse
 			dockerInspectGetter = dockerInspectGetterMock
 
 			netInfo, err := dockerNetworkInspect("m2")
@@ -78,6 +85,61 @@ func TestDockerInspect(t *testing.T) {
 
 			if !netInfo.subnet.IP.Equal(net.ParseIP(tc.subnetIP)) {
 				t.Errorf("Expected subnet to be %v but got %v", tc.subnetIP, netInfo.subnet.IP)
+			}
+
+			if len(netInfo.containerIPs) != len(tc.containerIPs) {
+				t.Errorf("Expected %d containerIPs but got %d: %v", len(tc.containerIPs), len(netInfo.containerIPs), netInfo.containerIPs)
+			} else {
+				for i, want := range tc.containerIPs {
+					if !netInfo.containerIPs[i].Equal(net.ParseIP(want)) {
+						t.Errorf("containerIPs[%d]: got %v, want %v", i, netInfo.containerIPs[i], want)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestAllocateFreeContainerIP(t *testing.T) {
+	gateway := net.ParseIP("192.168.49.1")
+
+	tests := []struct {
+		name          string
+		inspectJSON   string
+		wantIP        string
+		wantErr       bool
+	}{
+		{
+			name:        "no existing containers — returns gateway+1",
+			inspectJSON: `{"Name": "mynet","Driver": "bridge","Subnet": "192.168.49.0/24","Gateway": "192.168.49.1","MTU": 1500, "ContainerIPs": []}`,
+			wantIP:      "192.168.49.2",
+		},
+		{
+			name:        "first ip taken by another profile — returns next free",
+			inspectJSON: `{"Name": "mynet","Driver": "bridge","Subnet": "192.168.49.0/24","Gateway": "192.168.49.1","MTU": 1500, "ContainerIPs": ["192.168.49.2/24"]}`,
+			wantIP:      "192.168.49.3",
+		},
+		{
+			name:        "multiple ips taken — returns first gap",
+			inspectJSON: `{"Name": "mynet","Driver": "bridge","Subnet": "192.168.49.0/24","Gateway": "192.168.49.1","MTU": 1500, "ContainerIPs": ["192.168.49.2/24","192.168.49.3/24","192.168.49.4/24"]}`,
+			wantIP:      "192.168.49.5",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dockerResponse = tc.inspectJSON
+			dockerInspectGetter = dockerInspectGetterMock
+
+			got, err := AllocateFreeContainerIP(Docker, "mynet", gateway)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("wantErr=%v, got err=%v", tc.wantErr, err)
+			}
+			if err != nil {
+				return
+			}
+			if !got.Equal(net.ParseIP(tc.wantIP)) {
+				t.Errorf("got IP %v, want %v", got, tc.wantIP)
 			}
 		})
 	}
