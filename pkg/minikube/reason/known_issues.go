@@ -458,7 +458,7 @@ Alternatively, you can try upgrading to the latest hyperkit version, or using an
 			ID:       "PR_KVM_CAPABILITIES",
 			ExitCode: ExProviderUnavailable,
 			Advice:   "Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem",
-			URL:      "https://mikko.repolainen.fi/documents/virtualization-with-kvm", 
+			URL:      "https://mikko.repolainen.fi/documents/virtualization-with-kvm",
 			Issues:   []int{2991},
 		},
 		Regexp: re(`invalid argument: could not find capabilities for domaintype=kvm`),
