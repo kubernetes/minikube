@@ -70,7 +70,9 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	var buf bytes.Buffer
 	outStr := ""
 	if out != nil {
-		outStr = out.(string)
+		if str, ok := out.(string); ok {
+			outStr = str
+		}
 	}
 	_, err := buf.WriteString(outStr)
 	if err != nil {
@@ -112,7 +114,9 @@ func (f *FakeCommandRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 	var buf bytes.Buffer
 	outStr := ""
 	if out != nil {
-		outStr = out.(string)
+		if str, ok := out.(string); ok {
+			outStr = str
+		}
 	}
 	_, err := buf.WriteString(outStr)
 	if err != nil {
@@ -146,7 +150,15 @@ func (f *FakeCommandRunner) CopyFrom(file assets.CopyableFile) error {
 	if !ok {
 		return fmt.Errorf("not found in map")
 	}
-	b := v.(bytes.Buffer)
+	var b bytes.Buffer
+	switch val := v.(type) {
+	case string:
+		b.WriteString(val)
+	case bytes.Buffer:
+		b = val
+	default:
+		return fmt.Errorf("file contents for %s is of unexpected type %T", file.GetSourcePath(), v)
+	}
 	_, err := io.Copy(file, &b)
 	if err != nil {
 		return fmt.Errorf("error writing file: %+v: %w", file, err)
@@ -186,7 +198,10 @@ func (f *FakeCommandRunner) GetFileToContents(filename string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("unavailable file: %s", filename)
 	}
-	return contents.(string), nil
+	if str, ok := contents.(string); ok {
+		return str, nil
+	}
+	return "", fmt.Errorf("file contents for %s is of unexpected type %T", filename, contents)
 }
 
 func (f *FakeCommandRunner) commands() []string {

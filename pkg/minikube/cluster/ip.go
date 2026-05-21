@@ -77,7 +77,9 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 		// We don't have direct access to hyperv.Driver so use reflection to retrieve the virtual switch name
 		for i := 0; i < v.NumField(); i++ {
 			if v.Type().Field(i).Name == "VSwitch" {
-				hypervVirtualSwitch = v.Field(i).Interface().(string)
+				if val, ok := v.Field(i).Interface().(string); ok {
+					hypervVirtualSwitch = val
+				}
 
 				break
 			}

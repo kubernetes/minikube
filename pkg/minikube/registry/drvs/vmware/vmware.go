@@ -46,7 +46,11 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := vmware.NewDriver(config.MachineName(cc, n), localpath.MiniPath()).(*vmware.Driver)
+	drv := vmware.NewDriver(config.MachineName(cc, n), localpath.MiniPath())
+	d, ok := drv.(*vmware.Driver)
+	if !ok {
+		return nil, fmt.Errorf("unexpected driver type %T", drv)
+	}
 	d.Boot2DockerURL = download.LocalISOResource(cc.MinikubeISO)
 	d.Memory = cc.Memory
 	d.CPU = cc.CPUs

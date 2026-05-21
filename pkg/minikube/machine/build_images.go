@@ -91,9 +91,7 @@ func BuildImage(srcPath string, file string, tag string, push bool, env []string
 
 			if !allNodes {
 				// build images on the control-plane node by default
-				if nodeName == "" && n != cp {
-					continue
-				} else if nodeName != n.Name && nodeName != m {
+				if (nodeName == "" && n != cp) || (nodeName != n.Name && nodeName != m) {
 					continue
 				}
 			}
