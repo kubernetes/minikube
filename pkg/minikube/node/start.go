@@ -274,7 +274,7 @@ func handleNoKubernetes(starter Starter) (bool, error) {
 // startPrimaryControlPlane starts control-plane node.
 func startPrimaryControlPlane(starter Starter, cr cruntime.Manager, options *run.CommandOptions) (*kubeconfig.Settings, bootstrapper.Bootstrapper, error) {
 	if !config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
-		return nil, nil, fmt.Errorf("node not marked as primary control-plane")
+		return nil, nil, errors.New("node not marked as primary control-plane")
 	}
 
 	if config.IsHA(*starter.Cfg) {

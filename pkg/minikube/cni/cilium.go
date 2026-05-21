@@ -19,6 +19,7 @@ package cni
 import (
 	"bytes"
 	_ "embed"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
@@ -117,7 +118,7 @@ func removeAppArmorProfile(ciliumConfig string) (string, error) {
 			return "", fmt.Errorf("failed to remove securityContext yaml: %v", err)
 		}
 		if err := encoder.Encode(obj); err != nil {
-			return "", fmt.Errorf("failed to encode yaml")
+			return "", errors.New("failed to encode yaml")
 		}
 
 	}

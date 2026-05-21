@@ -18,6 +18,7 @@ package virtualbox
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"runtime"
@@ -83,7 +84,7 @@ func status(_ *run.CommandOptions) registry.State {
 	path, err := exec.LookPath(tryPath)
 	if err != nil {
 		return registry.State{
-			Error:     fmt.Errorf("unable to find VBoxManage in $PATH"),
+			Error:     errors.New("unable to find VBoxManage in $PATH"),
 			Fix:       "Install VirtualBox",
 			Installed: false,
 			Doc:       docURL,

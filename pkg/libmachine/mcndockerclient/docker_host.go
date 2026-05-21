@@ -17,7 +17,7 @@ limitations under the License.
 package mcndockerclient
 
 import (
-	"fmt"
+	"errors"
 
 	"k8s.io/minikube/pkg/libmachine/auth"
 )
@@ -45,7 +45,7 @@ type RemoteDocker struct {
 // URL returns the Docker host URL
 func (rd *RemoteDocker) URL() (string, error) {
 	if rd.HostURL == "" {
-		return "", fmt.Errorf("Docker Host URL not set")
+		return "", errors.New("Docker Host URL not set")
 	}
 
 	return rd.HostURL, nil

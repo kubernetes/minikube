@@ -18,6 +18,7 @@ package command
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -216,5 +217,5 @@ func (e *execRunner) Remove(f assets.CopyableFile) error {
 }
 
 func (e *execRunner) ReadableFile(_ string) (assets.ReadableFile, error) {
-	return nil, fmt.Errorf("execRunner does not support ReadableFile - you could be the first to add it")
+	return nil, errors.New("execRunner does not support ReadableFile - you could be the first to add it")
 }

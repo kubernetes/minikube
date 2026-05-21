@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -214,7 +215,7 @@ func (s *SSHServer) SetCommandToOutput(cmdToOutput map[string]string) {
 func (s *SSHServer) GetCommandToOutput(cmd string) (string, error) {
 	cmdMap, ok := s.commandToOutput.Load().(map[string]string)
 	if !ok {
-		return "", fmt.Errorf("commandToOutput map has unexpected type")
+		return "", errors.New("commandToOutput map has unexpected type")
 	}
 	val, ok := cmdMap[cmd]
 	if !ok {

@@ -18,6 +18,7 @@ package none
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
 
@@ -106,12 +107,12 @@ func (d *Driver) GetIP() (string, error) {
 
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
-	return "", fmt.Errorf("driver does not support ssh commands")
+	return "", errors.New("driver does not support ssh commands")
 }
 
 // GetSSHPort returns port for use with ssh
 func (d *Driver) GetSSHPort() (int, error) {
-	return 0, fmt.Errorf("driver does not support ssh commands")
+	return 0, errors.New("driver does not support ssh commands")
 }
 
 // GetURL returns a Docker URL inside this host
@@ -284,5 +285,5 @@ func (d *Driver) UnmarshalJSON(data []byte) error {
 
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
-	return fmt.Errorf("driver does not support ssh commands")
+	return errors.New("driver does not support ssh commands")
 }

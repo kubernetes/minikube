@@ -19,6 +19,7 @@ package command
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
@@ -81,13 +82,13 @@ func (s *sshReadableFile) GetModTime() (time.Time, error) {
 
 func (s *sshReadableFile) Read(p []byte) (int, error) {
 	if s.GetLength() == 0 {
-		return 0, fmt.Errorf("attempted read from a 0 length asset")
+		return 0, errors.New("attempted read from a 0 length asset")
 	}
 	return s.reader.Read(p)
 }
 
 func (s *sshReadableFile) Seek(_ int64, _ int) (int64, error) {
-	return 0, fmt.Errorf("Seek is not implemented for sshReadableFile")
+	return 0, errors.New("Seek is not implemented for sshReadableFile")
 }
 
 func (s *sshReadableFile) Close() error {
@@ -183,7 +184,7 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
 func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	if cmd.Stdin != nil {
-		return nil, fmt.Errorf("SSHRunner does not support stdin - you could be the first to add it")
+		return nil, errors.New("SSHRunner does not support stdin - you could be the first to add it")
 	}
 
 	rr := &RunResult{Args: cmd.Args}
@@ -265,11 +266,11 @@ func teeSSHStart(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer, wg 
 // StartCmd implements the Command Runner interface to start a exec.Cmd object
 func (s *SSHRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 	if cmd.Stdin != nil {
-		return nil, fmt.Errorf("SSHRunner does not support stdin - you could be the first to add it")
+		return nil, errors.New("SSHRunner does not support stdin - you could be the first to add it")
 	}
 
 	if s.s != nil {
-		return nil, fmt.Errorf("another SSH command has been started and is currently running")
+		return nil, errors.New("another SSH command has been started and is currently running")
 	}
 
 	var wg sync.WaitGroup
@@ -308,7 +309,7 @@ func (s *SSHRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 // WaitCmd implements the Command Runner interface to wait until a started exec.Cmd object finishes
 func (s *SSHRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 	if s.s == nil {
-		return nil, fmt.Errorf("there is no SSH command started")
+		return nil, errors.New("there is no SSH command started")
 	}
 
 	rr := sc.rr
@@ -495,7 +496,7 @@ func (s *SSHRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error)
 	klog.V(4).Infof("NewsshReadableFile: %s", sourcePath)
 
 	if !strings.HasPrefix(sourcePath, "/") {
-		return nil, fmt.Errorf("sourcePath must be an absolute Path. Relative Path is not allowed")
+		return nil, errors.New("sourcePath must be an absolute Path. Relative Path is not allowed")
 	}
 
 	// get file size and modtime of the destination

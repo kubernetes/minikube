@@ -20,6 +20,7 @@ package hyperv
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -132,7 +133,7 @@ func status(_ *run.CommandOptions) registry.State {
 	}
 
 	if (strings.TrimSpace(string(adminCheckOut)) != "True") && (strings.TrimSpace(string(hypervAdminCheckOut)) != "True") {
-		err := fmt.Errorf("Hyper-V requires Administrator privileges")
+		err := errors.New("Hyper-V requires Administrator privileges")
 		fixMessage := "Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode."
 		return registry.State{Installed: true, Running: false, Error: err, Fix: fixMessage}
 	}

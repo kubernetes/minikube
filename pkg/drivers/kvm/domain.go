@@ -20,6 +20,7 @@ package kvm
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"text/template"
 
@@ -52,7 +53,7 @@ func getConnection(connectionURI string) (*libvirt.Connect, error) {
 
 func closeDomain(dom *libvirt.Domain, conn *libvirt.Connect) error {
 	if dom == nil {
-		return fmt.Errorf("nil domain, cannot close")
+		return errors.New("nil domain, cannot close")
 	}
 
 	if err := dom.Free(); err != nil {

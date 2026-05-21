@@ -17,7 +17,7 @@ limitations under the License.
 package download
 
 import (
-	"fmt"
+	"errors"
 	"io/fs"
 	"os"
 	"sync"
@@ -78,7 +78,7 @@ func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 
 	checkCache = func(_ string) (fs.FileInfo, error) {
 		if downloadNum == 0 {
-			return nil, fmt.Errorf("some error")
+			return nil, errors.New("some error")
 		}
 		return nil, nil
 	}
@@ -118,7 +118,7 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 
 	checkCache = func(_ string) (fs.FileInfo, error) {
 		if downloadNum == 0 {
-			return nil, fmt.Errorf("some error")
+			return nil, errors.New("some error")
 		}
 		return os.Stat(f.Name())
 	}
@@ -149,7 +149,7 @@ func testPreloadNotExists(t *testing.T) {
 	downloadNum := 0
 	DownloadMock = mockSleepDownload(&downloadNum)
 
-	checkCache = func(_ string) (fs.FileInfo, error) { return nil, fmt.Errorf("cache not found") }
+	checkCache = func(_ string) (fs.FileInfo, error) { return nil, errors.New("cache not found") }
 	checkPreloadExists = func(_, _, _ string, _ ...bool) bool { return false }
 	getChecksumGCS = func(_, _ string) ([]byte, error) { return []byte("check"), nil }
 
@@ -200,7 +200,7 @@ func testImageToCache(t *testing.T) {
 func testPreloadExistsCaching(t *testing.T) {
 	setupTestMiniHome(t)
 	checkCache = func(_ string) (fs.FileInfo, error) {
-		return nil, fmt.Errorf("cache not found")
+		return nil, errors.New("cache not found")
 	}
 	doesPreloadExist := false
 	gcsCheckCalls := 0

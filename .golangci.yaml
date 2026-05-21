@@ -41,8 +41,6 @@ linters:
           arguments: [7]
         - name: deep-exit
           disabled: true
-        - name: use-errors-new
-          disabled: true
         - name: package-naming
           disabled: true
         - name: unsecure-url-scheme

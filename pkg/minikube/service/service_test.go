@@ -19,7 +19,6 @@ package service
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -62,7 +61,7 @@ var getCoreClientFail bool
 
 func (m *MockClientGetter) GetCoreClient(string) (typed_core.CoreV1Interface, error) {
 	if getCoreClientFail {
-		return nil, fmt.Errorf("test Error - Mocked Get")
+		return nil, errors.New("test Error - Mocked Get")
 	}
 	return &MockCoreClient{
 		FakeCoreV1:       fake.FakeCoreV1{Fake: &testing_fake.Fake{}},

@@ -17,6 +17,7 @@ limitations under the License.
 package ssh
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -55,13 +56,13 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	})
 
 	if cc.SSHIPAddress == "" {
-		return nil, fmt.Errorf("please provide an IP address")
+		return nil, errors.New("please provide an IP address")
 	}
 
 	// We don't want the API server listening on loopback interface,
 	// even if we might use a tunneled VM port for the SSH service
 	if cc.SSHIPAddress == "127.0.0.1" || cc.SSHIPAddress == "localhost" {
-		return nil, fmt.Errorf("please provide real IP address")
+		return nil, errors.New("please provide real IP address")
 	}
 
 	d.IPAddress = cc.SSHIPAddress
