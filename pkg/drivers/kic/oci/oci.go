@@ -453,14 +453,12 @@ func generateMountBindings(mounts ...Mount) []string {
 			attrs = append(attrs, "Z")
 		}
 		switch m.Propagation {
-		case MountPropagationNone:
-			// noop, private is default
 		case MountPropagationBidirectional:
 			attrs = append(attrs, "rshared")
 		case MountPropagationHostToContainer:
 			attrs = append(attrs, "rslave")
 		default:
-			// Falls back to "private"
+			// Falls back to "private" (including MountPropagationNone)
 		}
 
 		if len(attrs) > 0 {
@@ -633,12 +631,10 @@ func ContainerStatus(ociBin string, name string, warnSlow ...bool) (state.State,
 	rr, err := runCmd(cmd, warnSlow...)
 	o := strings.TrimSpace(rr.Stdout.String())
 	switch o {
-	case "configured":
+	case "configured", "exited":
 		return state.Stopped, nil
 	case "running":
 		return state.Running, nil
-	case "exited":
-		return state.Stopped, nil
 	case "paused":
 		return state.Paused, nil
 	case "restarting":
