@@ -38,7 +38,7 @@ linters:
 
         ##### P0
         - name: max-control-nesting
-          arguments: [4]
+          arguments: [5]
         - name: enforce-switch-style
           arguments: ["allow-no-default"]
         ##### P1: consider making a dent on these, but not critical.
