@@ -39,10 +39,6 @@ linters:
         ##### P0: we should do it ASAP.
         - name: max-control-nesting
           arguments: [7]
-        - name: deep-exit
-          disabled: true
-        - name: package-naming
-          disabled: true
         - name: enforce-switch-style
           disabled: true
         ##### P1: consider making a dent on these, but not critical.
@@ -167,6 +163,23 @@ linters:
       - path: '(.+)\.go$'
         text: "Error return value of `.*` is not checked"
         linter: errcheck
+      # Allow deep-exit in CLI command files, exit helpers, and main entry points
+      - path: 'cmd/'
+        text: "deep-exit:"
+        linter: revive
+      - path: 'deploy/'
+        text: "deep-exit:"
+        linter: revive
+      - path: 'pkg/minikube/exit/'
+        text: "deep-exit:"
+        linter: revive
+      # Allow deep-exit in libmachine driver plugins, which run as standalone sub-processes communicating via RPC
+      - path: 'pkg/libmachine/drivers/plugin/'
+        text: "deep-exit:"
+        linter: revive
+      - path: 'pkg/gvisor/'
+        text: "deep-exit:"
+        linter: revive
 formatters:
   enable:
     - gofmt
