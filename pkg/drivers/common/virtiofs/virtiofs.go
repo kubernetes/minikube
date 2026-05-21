@@ -135,8 +135,8 @@ func SetupMounts(d drivers.Driver, mounts []*Mount) error {
 	script.WriteString("set -e\n")
 
 	for _, mount := range mounts {
-		script.WriteString(fmt.Sprintf("sudo mkdir -p \"%s\"\n", mount.GuestPath))
-		script.WriteString(fmt.Sprintf("sudo mount -t virtiofs %s \"%s\"\n", mount.Tag, mount.GuestPath))
+		fmt.Fprintf(&script, "sudo mkdir -p \"%s\"\n", mount.GuestPath)
+		fmt.Fprintf(&script, "sudo mount -t virtiofs %s \"%s\"\n", mount.Tag, mount.GuestPath)
 	}
 
 	if _, err := drivers.RunSSHCommandFromDriver(d, script.String()); err != nil {

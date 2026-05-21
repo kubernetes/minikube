@@ -84,7 +84,7 @@ func (api *FakeAPI) Remove(name string) error {
 	return nil
 }
 
-func (api *FakeAPI) Save(host *host.Host) error {
+func (api *FakeAPI) Save(h *host.Host) error {
 	return nil
 }
 
@@ -93,8 +93,8 @@ func (api FakeAPI) GetMachinesDir() string {
 }
 
 func State(api libmachine.API, name string) state.State {
-	host, _ := api.Load(name)
-	machineState, _ := host.Driver.GetState()
+	h, _ := api.Load(name)
+	machineState, _ := h.Driver.GetState()
 	return machineState
 }
 

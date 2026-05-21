@@ -129,7 +129,7 @@ func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout tim
 // podStatusMsg returns a human-readable pod status, for generating debug status
 func podStatusMsg(pod core.Pod) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.GetName(), pod.GetUID(), pod.Status.Phase))
+	fmt.Fprintf(&sb, "%q [%s] %s", pod.GetName(), pod.GetUID(), pod.Status.Phase)
 	for i, c := range pod.Status.Conditions {
 		if c.Reason != "" {
 			if i == 0 {
@@ -137,10 +137,10 @@ func podStatusMsg(pod core.Pod) string {
 			} else {
 				sb.WriteString(" / ")
 			}
-			sb.WriteString(fmt.Sprintf("%s:%s", c.Type, c.Reason))
+			fmt.Fprintf(&sb, "%s:%s", c.Type, c.Reason)
 		}
 		if c.Message != "" {
-			sb.WriteString(fmt.Sprintf(" (%s)", c.Message))
+			fmt.Fprintf(&sb, " (%s)", c.Message)
 		}
 	}
 	return sb.String()

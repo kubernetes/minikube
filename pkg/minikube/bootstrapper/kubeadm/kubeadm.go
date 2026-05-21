@@ -97,7 +97,7 @@ func (k *Bootstrapper) LogCommands(cfg config.ClusterConfig, o bootstrapper.LogO
 	var kubelet strings.Builder
 	kubelet.WriteString("sudo journalctl -u kubelet")
 	if o.Lines > 0 {
-		kubelet.WriteString(fmt.Sprintf(" -n %d", o.Lines))
+		fmt.Fprintf(&kubelet, " -n %d", o.Lines)
 	}
 	if o.Follow {
 		kubelet.WriteString(" -f")
@@ -109,7 +109,7 @@ func (k *Bootstrapper) LogCommands(cfg config.ClusterConfig, o bootstrapper.LogO
 		dmesg.WriteString(" --follow")
 	}
 	if o.Lines > 0 {
-		dmesg.WriteString(fmt.Sprintf(" | tail -n %d", o.Lines))
+		fmt.Fprintf(&dmesg, " | tail -n %d", o.Lines)
 	}
 
 	describeNodes := fmt.Sprintf("sudo %s describe nodes --kubeconfig=%s", kubectlPath(cfg),

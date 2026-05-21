@@ -77,7 +77,7 @@ func GetDefaultTestHost() (*host.Host, error) {
 
 	driver := nodriver.NewDriver(DefaultHostName, "/tmp/artifacts")
 
-	host := &host.Host{
+	h := &host.Host{
 		ConfigVersion: version.ConfigVersion,
 		Name:          DefaultHostName,
 		Driver:        driver,
@@ -86,9 +86,9 @@ func GetDefaultTestHost() (*host.Host, error) {
 	}
 
 	flags := GetTestDriverFlags()
-	if err := host.Driver.SetConfigFromFlags(flags); err != nil {
+	if err := h.Driver.SetConfigFromFlags(flags); err != nil {
 		return nil, err
 	}
 
-	return host, nil
+	return h, nil
 }

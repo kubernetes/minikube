@@ -97,7 +97,7 @@ func ISO(urls []string, skipChecksum bool) (string, error) {
 	var msg strings.Builder
 	msg.WriteString("unable to cache ISO: \n")
 	for u, err := range errs {
-		msg.WriteString(fmt.Sprintf("  %s: %s\n", u, err))
+		fmt.Fprintf(&msg, "  %s: %s\n", u, err)
 	}
 
 	return "", errors.New(msg.String())

@@ -174,15 +174,15 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 	rr, err := cr.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", fmt.Sprintf("/proc/%d/cgroup", pid)))
 	if err != nil {
 		// Try cgroup v2 before giving up
-		if paused, err2 := isCgroupV2Paused(cr, pid); err2 == nil {
+		paused, err2 := isCgroupV2Paused(cr, pid)
+		if err2 == nil {
 			if paused {
 				return state.Paused, nil
 			}
 			return apiServerHealthz(hostname, port)
-		} else {
-			// Log cgroup v2 check failure at debug level for troubleshooting
-			klog.V(1).Infof("cgroup v2 apiserver status check for pid %d failed: %v", pid, err2)
 		}
+		// Log cgroup v2 check failure at debug level for troubleshooting
+		klog.V(1).Infof("cgroup v2 apiserver status check for pid %d failed: %v", pid, err2)
 
 		klog.Warningf("unable to find freezer cgroup: %v", err)
 		return nonFreezerServerStatus(cr, hostname, port)

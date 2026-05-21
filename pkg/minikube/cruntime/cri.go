@@ -356,7 +356,7 @@ func criContainerLogCmd(cr CommandRunner, id string, length int, follow bool) st
 	cmd.WriteString(crictl)
 	cmd.WriteString(" logs ")
 	if length > 0 {
-		cmd.WriteString(fmt.Sprintf("--tail %d ", length))
+		fmt.Fprintf(&cmd, "--tail %d ", length)
 	}
 	if follow {
 		cmd.WriteString("--follow ")

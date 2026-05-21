@@ -63,10 +63,7 @@ func CreateDstDownloadMock(_, dst string) error {
 	if err != nil {
 		return err
 	}
-	if err := f.Close(); err != nil {
-		return err
-	}
-	return nil
+	return f.Close()
 }
 
 // download is a well-configured atomic download function

@@ -18,7 +18,7 @@ package ktmpl
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 )
 
 // printMapInOrder sorts the keys and prints the map in order, combining key
@@ -33,7 +33,7 @@ func printMapInOrder(m map[string]string, sep string) []string {
 	for k := range m {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 	for i, k := range keys {
 		keys[i] = fmt.Sprintf("%s%s\"%s\"", k, sep, m[k])
 	}

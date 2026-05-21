@@ -70,9 +70,9 @@ func (fs *FakeStore) Remove(name string) error {
 	return nil
 }
 
-func (fs *FakeStore) Save(host *host.Host) error {
+func (fs *FakeStore) Save(h *host.Host) error {
 	if fs.SaveErr == nil {
-		fs.Hosts = append(fs.Hosts, host)
+		fs.Hosts = append(fs.Hosts, h)
 		return nil
 	}
 	return fs.SaveErr

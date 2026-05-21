@@ -149,7 +149,7 @@ func (api *Client) Load(name string) (*host.Host, error) {
 // actually creating, provisioning, and persisting an instance in the store.
 func (api *Client) Create(h *host.Host) error {
 	if err := cert.BootstrapCertificates(h.AuthOptions()); err != nil {
-		return fmt.Errorf("Error generating certificates: %s", err)
+		return fmt.Errorf("error generating certificates: %w", err)
 	}
 
 	log.Info("Running pre-create checks...")
@@ -161,13 +161,13 @@ func (api *Client) Create(h *host.Host) error {
 	}
 
 	if err := api.Save(h); err != nil {
-		return fmt.Errorf("Error saving host to store before attempting creation: %s", err)
+		return fmt.Errorf("error saving host to store before attempting creation: %w", err)
 	}
 
 	log.Info("Creating machine...")
 
 	if err := api.performCreate(h); err != nil {
-		return fmt.Errorf("Error creating machine: %s", err)
+		return fmt.Errorf("error creating machine: %w", err)
 	}
 
 	log.Debug("Reticulating splines...")
