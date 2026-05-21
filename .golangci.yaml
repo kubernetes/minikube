@@ -36,11 +36,11 @@ linters:
       rules:
         # See https://revive.run/r
 
-        ##### P0: we should do it ASAP.
+        ##### P0
         - name: max-control-nesting
           arguments: [7]
         - name: enforce-switch-style
-          disabled: true
+          arguments: ["allow-no-default"]
         ##### P1: consider making a dent on these, but not critical.
         - name: argument-limit
           arguments: [12]
@@ -179,6 +179,14 @@ linters:
         linter: revive
       - path: 'pkg/gvisor/'
         text: "deep-exit:"
+        linter: revive
+      # Ignore package-naming rule in pkg/util/ because renaming the package would be a massive, high-risk refactoring affecting the entire codebase.
+      - path: 'pkg/util/'
+        text: "package-naming:"
+        linter: revive
+      # Ignore package-naming rule in pkg/drivers/common/ because renaming it would create massive code churn and refactoring.
+      - path: 'pkg/drivers/common/'
+        text: "package-naming:"
         linter: revive
 formatters:
   enable:
