@@ -84,14 +84,14 @@ func localISOPath(u *url.URL) string {
 func ISO(urls []string, skipChecksum bool) (string, error) {
 	errs := map[string]string{}
 
-	for _, url := range urls {
-		err := downloadISO(url, skipChecksum)
+	for _, u := range urls {
+		err := downloadISO(u, skipChecksum)
 		if err != nil {
-			klog.Errorf("Unable to download %s: %v", url, err)
-			errs[url] = err.Error()
+			klog.Errorf("Unable to download %s: %v", u, err)
+			errs[u] = err.Error()
 			continue
 		}
-		return url, nil
+		return u, nil
 	}
 
 	var msg strings.Builder

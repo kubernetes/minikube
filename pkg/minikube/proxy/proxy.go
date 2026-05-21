@@ -182,8 +182,8 @@ func SetDockerEnv() []string {
 			// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
 			k = strings.ToUpper(k)
 			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
-				isLocalProxy := func(url string) bool {
-					return strings.HasPrefix(url, "localhost") || strings.HasPrefix(url, "127.0")
+				isLocalProxy := func(u string) bool {
+					return strings.HasPrefix(u, "localhost") || strings.HasPrefix(u, "127.0")
 				}
 
 				normalizedURL := v

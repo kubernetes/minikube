@@ -43,8 +43,6 @@ linters:
           disabled: true
         - name: bare-return
           disabled: true
-        - name: import-shadowing
-          disabled: true
         - name: use-errors-new
           disabled: true
         - name: package-naming

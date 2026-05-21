@@ -1061,8 +1061,8 @@ func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
 
 	if cmd.Flags().Changed(extraDisks) {
 		supported := false
-		for _, driver := range supportedDrivers {
-			if driverName == driver {
+		for _, d := range supportedDrivers {
+			if driverName == d {
 				supported = true
 				break
 			}
