@@ -41,8 +41,6 @@ linters:
           arguments: [7]
         - name: deep-exit
           disabled: true
-        - name: unchecked-type-assertion
-          disabled: true
         - name: bare-return
           disabled: true
         - name: import-shadowing
@@ -62,8 +60,6 @@ linters:
         - name: use-waitgroup-go
           disabled: true
         - name: unnecessary-format
-          disabled: true
-        - name: identical-ifelseif-branches
           disabled: true
         ##### P1: consider making a dent on these, but not critical.
         - name: argument-limit

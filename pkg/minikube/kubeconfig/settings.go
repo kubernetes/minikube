@@ -72,7 +72,10 @@ func (k *Settings) SetPath(kubeConfigFile string) {
 
 // filePath gets the kubeconfig file
 func (k *Settings) filePath() string {
-	return k.kubeConfigFile.Load().(string)
+	if val, ok := k.kubeConfigFile.Load().(string); ok {
+		return val
+	}
+	return ""
 }
 
 // PopulateFromSettings populates an api.Config object with values from *Settings

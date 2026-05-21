@@ -50,8 +50,10 @@ func T(s string) string {
 	}
 
 	if t, ok := Translations[s]; ok {
-		if len(t.(string)) > 0 && t.(string) != " " {
-			return t.(string)
+		if str, ok := t.(string); ok {
+			if len(str) > 0 && str != " " {
+				return str
+			}
 		}
 	}
 

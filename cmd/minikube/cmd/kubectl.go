@@ -132,8 +132,11 @@ host. Please be aware that when using --ssh all paths will apply to the remote m
 		if err := c.Run(); err != nil {
 			var rc int
 			if exitError, ok := err.(*exec.ExitError); ok {
-				waitStatus := exitError.Sys().(syscall.WaitStatus)
-				rc = waitStatus.ExitStatus()
+				if waitStatus, ok := exitError.Sys().(syscall.WaitStatus); ok {
+					rc = waitStatus.ExitStatus()
+				} else {
+					rc = 1
+				}
 			} else {
 				fmt.Fprintf(os.Stderr, "Error running %s: %v\n", c.Path, err)
 				rc = 1

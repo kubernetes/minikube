@@ -222,7 +222,10 @@ func decode(data []byte) (*api.Config, error) {
 		return nil, fmt.Errorf("decode data: %s: %w", string(data), err)
 	}
 
-	return kcfg.(*api.Config), nil
+	if cfg, ok := kcfg.(*api.Config); ok {
+		return cfg, nil
+	}
+	return nil, fmt.Errorf("decoded object has unexpected type %T", kcfg)
 }
 
 // writeToFile encodes the configuration and writes it to the given file.

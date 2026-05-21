@@ -201,7 +201,10 @@ func writeFile(dst string, f assets.CopyableFile, perms os.FileMode) error {
 	}
 	defer w.Close()
 
-	r := f.(io.Reader)
+	r, ok := f.(io.Reader)
+	if !ok {
+		return fmt.Errorf("file %s does not implement io.Reader", f.GetSourcePath())
+	}
 	n, err := io.Copy(w, r)
 	if err != nil {
 		return fmt.Errorf("copy: %w", err)

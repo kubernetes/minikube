@@ -217,7 +217,10 @@ func (s *SSHServer) SetCommandToOutput(cmdToOutput map[string]string) {
 
 // GetCommandToOutput gets command to output
 func (s *SSHServer) GetCommandToOutput(cmd string) (string, error) {
-	cmdMap := s.commandToOutput.Load().(map[string]string)
+	cmdMap, ok := s.commandToOutput.Load().(map[string]string)
+	if !ok {
+		return "", fmt.Errorf("commandToOutput map has unexpected type")
+	}
 	val, ok := cmdMap[cmd]
 	if !ok {
 		return "", fmt.Errorf("unavailable command %s", cmd)
