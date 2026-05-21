@@ -1255,7 +1255,7 @@ func getDHCPAddressRange(dhcpAddr net.IP, network *net.IPNet) (lowerIP net.IP, u
 		// between x.x.x.100 and x.x.x.254.
 		lowerIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], byte(100))
 		upperIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], byte(254))
-		return
+		return lowerIP, upperIP
 	}
 
 	// Start the lowerIP range one address above the selected DHCP address.
@@ -1267,7 +1267,7 @@ func getDHCPAddressRange(dhcpAddr net.IP, network *net.IPNet) (lowerIP net.IP, u
 	// is at (2^n - 1) - 1 == 2^n - 2.
 	maxAssignableSubnetAddress := (byte)((1 << (uint)(bits-ones)) - 2)
 	upperIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], maxAssignableSubnetAddress)
-	return
+	return lowerIP, upperIP
 }
 
 func parseAndValidateCIDR(hostOnlyCIDR string) (net.IP, *net.IPNet, error) {
