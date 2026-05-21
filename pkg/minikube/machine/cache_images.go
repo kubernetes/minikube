@@ -17,13 +17,14 @@ limitations under the License.
 package machine
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -776,7 +777,9 @@ func ListImages(profile *config.Profile, format string, options *run.CommandOpti
 		for _, item := range uniqueImages {
 			res = append(res, item.RepoTags...)
 		}
-		sort.Sort(sort.Reverse(sort.StringSlice(res)))
+		slices.SortFunc(res, func(a, b string) int {
+			return cmp.Compare(b, a)
+		})
 		fmt.Printf("%s\n", strings.Join(res, "\n"))
 	}
 

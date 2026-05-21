@@ -22,7 +22,7 @@ import (
 	"os/exec"
 	"path"
 	"runtime"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -537,7 +537,7 @@ func Enable(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bo
 			toEnableList = append(toEnableList, k)
 		}
 	}
-	sort.Strings(toEnableList)
+	slices.Sort(toEnableList)
 
 	var awg sync.WaitGroup
 
