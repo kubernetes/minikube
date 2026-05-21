@@ -22,6 +22,7 @@ minikube dashboard [flags]
 ```
       --port int   Exposed port of the proxyfied dashboard. Set to 0 to pick a random port.
       --url        Display dashboard URL instead of opening a browser
+      --provider   Which dashboard to run, such as headlamp, yakd(default = kubernetes dashboard, i.e: yakd)
 ```
 
 ### Options inherited from parent commands
