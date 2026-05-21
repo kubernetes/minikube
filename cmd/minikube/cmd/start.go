@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -29,7 +30,6 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -768,11 +768,11 @@ func selectDriver(existing *config.ClusterConfig, options *run.CommandOptions) (
 	pick, alts, rejects := driver.Suggest(choices)
 	if pick.Name == "" {
 		out.Step(style.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
-		sort.Slice(rejects, func(i, j int) bool {
-			if rejects[i].Priority == rejects[j].Priority {
-				return rejects[i].Preference > rejects[j].Preference
+		slices.SortFunc(rejects, func(a, b registry.DriverState) int {
+			if c := cmp.Compare(b.Priority, a.Priority); c != 0 {
+				return c
 			}
-			return rejects[i].Priority > rejects[j].Priority
+			return cmp.Compare(b.Preference, a.Preference)
 		})
 
 		// Display the issue for installed drivers

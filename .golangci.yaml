@@ -49,8 +49,6 @@ linters:
           disabled: true
         - name: unsecure-url-scheme
           disabled: true
-        - name: use-slices-sort
-          disabled: true
         - name: identical-switch-branches
           disabled: true
         - name: enforce-switch-style
