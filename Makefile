@@ -71,7 +71,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v2.11.4
+GOLINT_VERSION ?= v2.12.2
 # see https://golangci-lint.run/docs/configuration/file/ for config details
 GOLINT_CONFIG ?= .golangci.min.yaml
 # Set this to --verbose to see details about the linters and formatters used
@@ -486,8 +486,24 @@ gocyclo: ## Run gocyclo (calculates cyclomatic complexities)
 
 out/linters/golangci-lint-$(GOLINT_VERSION):
 	mkdir -p out/linters
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b out/linters $(GOLINT_VERSION)
-	mv out/linters/golangci-lint out/linters/golangci-lint-$(GOLINT_VERSION)
+	version="$(GOLINT_VERSION)"; \
+	version=$${version#v}; \
+	os=$$(go env GOOS); \
+	arch=$$(go env GOARCH); \
+	name="golangci-lint-$${version}-$${os}-$${arch}"; \
+	archive="out/linters/$${name}.tar.gz"; \
+	checksums="out/linters/golangci-lint-$${version}-checksums.txt"; \
+	curl -sfL -o "$${archive}" "https://github.com/golangci/golangci-lint/releases/download/$(GOLINT_VERSION)/$${name}.tar.gz"; \
+	curl -sfL -o "$${checksums}" "https://github.com/golangci/golangci-lint/releases/download/$(GOLINT_VERSION)/golangci-lint-$${version}-checksums.txt"; \
+	want=$$(awk -v file="$${name}.tar.gz" '$$2 == file { print $$1; exit }' "$${checksums}"); \
+	test -n "$${want}"; \
+	got=$$(openssl sha256 "$${archive}" | awk '{print $$2}'); \
+	test "$${want}" = "$${got}"; \
+	tmpdir=$$(mktemp -d); \
+	tar -xzf "$${archive}" -C "$${tmpdir}"; \
+	mv "$${tmpdir}/$${name}/golangci-lint" "$@"; \
+	chmod +x "$@"; \
+	rm -rf "$${tmpdir}" "$${archive}" "$${checksums}"
 
 # this one is meant for local use
 .PHONY: lint
