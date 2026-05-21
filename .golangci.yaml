@@ -57,8 +57,6 @@ linters:
           disabled: true
         - name: enforce-switch-style
           disabled: true
-        - name: use-waitgroup-go
-          disabled: true
         - name: unnecessary-format
           disabled: true
         ##### P1: consider making a dent on these, but not critical.
