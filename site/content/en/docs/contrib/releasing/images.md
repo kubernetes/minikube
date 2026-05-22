@@ -24,9 +24,14 @@ graph LR
 
 ### 1. Trigger the Staging Build
 Once the staging job has been registered in `kubernetes/test-infra` once, it will not trigger automatically unless a change occurs in the paths defined in its `run_if_changed` pattern.
+
 To trigger a new staging build for a release:
-* Make your code modifications or simply "touch" a tracked file inside the image's source directory (e.g., create a minor commit or bump a version in the addon directory).
-* Merge the PR to the `master` branch. This triggers the postsubmit GCB job.
+* Make your code modifications or simply "touch" a tracked file inside the image's source directory.
+  
+  > [!TIP]
+  > **Example (storage-provisioner)**: If you need to trigger a release build of the `storage-provisioner` image without making functional code changes, you can add a dummy comment with a timestamp directly into its Dockerfile at `deploy/storage-provisioner/Dockerfile` (e.g., `# Trigger rebuild: 2026-05-22`). Since the `Dockerfile` is in the path monitored by the job's `run_if_changed` pattern, merging this change will launch the GCB postsubmit build.
+
+* Merge the PR to the `master` branch. This triggers the Prow postsubmit GCB job.
 
 ### 2. Grab the SHA Digest
 Once the postsubmit build successfully finishes:
