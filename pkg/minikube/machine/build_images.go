@@ -42,7 +42,11 @@ import (
 // buildRoot is where images should be built from within the guest VM
 var buildRoot = path.Join(vmpath.GuestPersistentDir, "build")
 
-// BuildImage builds image to all profiles
+// BuildImage builds a container image inside the minikube cluster.
+// By default, the image is built only on the primary control-plane node of each profile (when allNodes is false and nodeName is empty).
+// Behavior can be modified using the following parameters:
+//   - allNodes (bool): If true, builds the image on every node in the cluster.
+//   - nodeName (string): If non-empty, builds the image only on the node whose name or full VM machine name matches nodeName.
 func BuildImage(srcPath string, file string, tag string, push bool, env []string, opt []string, profiles []*config.Profile, allNodes bool, nodeName string, options *run.CommandOptions) error {
 	api, err := NewAPIClient(options)
 	if err != nil {
@@ -89,11 +93,8 @@ func BuildImage(srcPath string, file string, tag string, push bool, env []string
 		for _, n := range c.Nodes {
 			m := config.MachineName(*c, n)
 
-			if !allNodes {
-				// build images on the control-plane node by default
-				if (nodeName == "" && n != cp) || (nodeName != n.Name && nodeName != m) {
-					continue
-				}
+			if shouldSkipNode(n, cp, m, allNodes, nodeName) {
+				continue
 			}
 
 			status, err := Status(api, m)
@@ -132,6 +133,18 @@ func BuildImage(srcPath string, file string, tag string, push bool, env []string
 	klog.Infof("succeeded building to: %s", strings.Join(succeeded, " "))
 	klog.Infof("failed building to: %s", strings.Join(failed, " "))
 	return nil
+}
+
+// shouldSkipNode decides whether to skip building the image on node n based on filtering flags.
+func shouldSkipNode(n config.Node, cp config.Node, machineName string, allNodes bool, nodeName string) bool {
+	if allNodes {
+		return false
+	}
+	if nodeName == "" {
+		return n != cp
+	}
+	// nodeName can match either the user-friendly node name (n.Name) or the full VM machine name (machineName).
+	return nodeName != n.Name && nodeName != machineName
 }
 
 // buildImage builds a single image
