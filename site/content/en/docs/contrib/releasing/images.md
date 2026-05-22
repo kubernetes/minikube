@@ -35,7 +35,7 @@ To trigger a new staging build for a release:
 
 ### 2. Grab the SHA Digest
 Once the postsubmit build successfully finishes:
-1. Navigate to the Prow postsubmit build status dashboard (or check the Cloud Build execution history).
+1. Navigate to the Prow postsubmit build status dashboard. You can monitor job logs and status on the **[minikube-images Testgrid Dashboard](https://testgrid.k8s.io/minikube-images)**.
 2. Look at the build logs or image metadata.
 3. Copy the exact **SHA-256 image digest** (e.g., `sha256:57f19c6a0b6a78f180f0ed65b7d548602839f2a5379f1febf3bd7055e729f629`).
 
