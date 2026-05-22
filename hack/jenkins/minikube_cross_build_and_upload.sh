@@ -25,6 +25,15 @@ set -eux -o pipefail
 
 readonly bucket="minikube-builds"
 
+# Set up isolated gsutil state directory to avoid resumable upload conflicts
+export WORKSPACE_TMP="${WORKSPACE_TMP:-/tmp}"
+mkdir -p "${WORKSPACE_TMP}/.gsutil_state"
+cat <<EOF > "${WORKSPACE_TMP}/.gsutil_boto"
+[GSUtil]
+state_dir = ${WORKSPACE_TMP}/.gsutil_state
+EOF
+export BOTO_PATH="${WORKSPACE_TMP}/.gsutil_boto:${HOME}/.boto"
+
 # Make sure the right golang version is installed based on Makefile
 ./hack/jenkins/installers/check_install_golang.sh /usr/local
 
@@ -52,10 +61,10 @@ make -j 16 \
 && failed=$? || failed=$?
 
 BUILT_VERSION=$("out/minikube-$(go env GOOS)-$(go env GOARCH)" version)
-echo ${BUILT_VERSION}
+echo "${BUILT_VERSION}"
 
-COMMIT=$(echo ${BUILT_VERSION} | grep 'commit:' | awk '{print $2}')
-if (echo ${COMMIT} | grep -q dirty); then
+COMMIT=$(echo "${BUILT_VERSION}" | grep 'commit:' | awk '{print $2}')
+if echo "${COMMIT}" | grep -q dirty; then
   echo "'minikube version' reports dirty commit: ${COMMIT}"
   exit 1
 fi
