@@ -819,3 +819,14 @@ func TestGetKubeConfigPath(t *testing.T) {
 		}
 	}
 }
+
+func TestSettingsFilePathUninitialized(t *testing.T) {
+	kcs := &Settings{}
+	// Verify that calling filePath() on an uninitialized Settings struct
+	// does not panic and correctly falls back to PathFromEnv().
+	result := kcs.filePath()
+	expected := PathFromEnv()
+	if result != expected {
+		t.Errorf("filePath() on uninitialized settings = %q; want %q", result, expected)
+	}
+}
