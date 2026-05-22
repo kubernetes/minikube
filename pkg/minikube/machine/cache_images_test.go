@@ -72,6 +72,9 @@ func TestRemoveExistingImage(t *testing.T) {
 			if len(r.removed) != tt.wantCalls {
 				t.Errorf("RemoveImage called %d times, want %d", len(r.removed), tt.wantCalls)
 			}
+			if tt.wantCalls == 1 && r.removed[0] != tt.imgName {
+				t.Errorf("RemoveImage called with %q, want %q", r.removed[0], tt.imgName)
+			}
 		})
 	}
 }
