@@ -103,6 +103,11 @@ See the [Testing Guide](../testing.en.md) for information on testing minikube.
 
 See [Building the minikube ISO](../iso)
 
+## Building & Publishing Container Images
+
+See [Publishing Container Images to registry.k8s.io](../images)
+
+
 ## Continuous Integration Builds
 
 We publish CI builds of minikube, built at every Pull Request. Builds are available at (substitute in the relevant PR number):
