@@ -70,7 +70,7 @@ func (k *Settings) SetPath(kubeConfigFile string) {
 	k.kubeConfigFile.Store(kubeConfigFile)
 }
 
-// filePath gets the kubeconfig file, falling back to PathFromEnv() if unset or empty.
+// filePath gets the kubeconfig file, falling back to PathFromEnv() if empty or uninitialized.
 func (k *Settings) filePath() string {
 	if val, ok := k.kubeConfigFile.Load().(string); ok && val != "" {
 		return val
