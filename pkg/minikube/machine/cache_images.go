@@ -336,7 +336,7 @@ func removeExistingImage(r cruntime.Manager, src string, imgName string) {
 	}
 
 	if err := r.RemoveImage(imgName); err != nil {
-		klog.Warningf("failed to remove existing image %q (will attempt load anyway): %v", imgName, err)
+		klog.V(1).Infof("failed to remove existing image %q (will attempt load anyway): %v", imgName, err)
 	}
 }
 
