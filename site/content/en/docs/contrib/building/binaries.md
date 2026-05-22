@@ -103,7 +103,7 @@ See the [Testing Guide](../testing.en.md) for information on testing minikube.
 
 See [Building the minikube ISO](../iso)
 
-## Building & Publishing Container Images
+## Building & Publishing Container Images in Prow
 
 See [Publishing Container Images to registry.k8s.io](../images)
 
