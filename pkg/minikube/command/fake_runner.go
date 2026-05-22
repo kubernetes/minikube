@@ -71,8 +71,10 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	var buf bytes.Buffer
 	outStr := ""
 	if out != nil {
-		if str, ok := out.(string); ok {
-			outStr = str
+		var ok bool
+		outStr, ok = out.(string)
+		if !ok {
+			return rr, fmt.Errorf("unregistered or invalid command output type for %q: expected string but got %T", key, out)
 		}
 	}
 	_, err := buf.WriteString(outStr)
@@ -115,8 +117,10 @@ func (f *FakeCommandRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 	var buf bytes.Buffer
 	outStr := ""
 	if out != nil {
-		if str, ok := out.(string); ok {
-			outStr = str
+		var ok bool
+		outStr, ok = out.(string)
+		if !ok {
+			return sc, fmt.Errorf("unregistered or invalid command output type for %q: expected string but got %T", key, out)
 		}
 	}
 	_, err := buf.WriteString(outStr)
