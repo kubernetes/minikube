@@ -9,6 +9,11 @@ aliases:
 
 [HyperKit](https://github.com/moby/hyperkit) is an open-source hypervisor for macOS hypervisor, optimized for lightweight virtual machines and container deployment.
 
+> [!WARNING]
+> The brew package "hyperkit" has been deprecated because it is no longer
+> maintained upstream! It was disabled on 2025-06-21. Apple Silicon users 
+> have hypervisor options with "krunkit" or "vfkit".
+
 {{% readfile file="/docs/drivers/includes/hyperkit_usage.inc" %}}
 
 ## Special features
