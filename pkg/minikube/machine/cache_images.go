@@ -284,10 +284,6 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 		return fmt.Errorf("runtime: %w", err)
 	}
 
-	if err := removeExistingImage(r, src, imgName); err != nil {
-		return err
-	}
-
 	klog.Infof("Loading image from: %s", src)
 	filename := filepath.Base(src)
 	if _, err := os.Stat(src); err != nil {
@@ -321,26 +317,6 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 	}
 
 	klog.Infof("Transferred and loaded %s from cache", src)
-	return nil
-}
-
-func removeExistingImage(r cruntime.Manager, src string, imgName string) error {
-	// if loading an image from tar, skip deleting as we don't have the actual image name
-	// ie. imgName = "C:\this_is_a_dir\image.tar.gz"
-	if src == imgName {
-		return nil
-	}
-
-	err := r.RemoveImage(imgName)
-	if err == nil {
-		return nil
-	}
-
-	errStr := strings.ToLower(err.Error())
-	if !strings.Contains(errStr, "no such image") && !strings.Contains(errStr, "unable to remove the image") {
-		return fmt.Errorf("removing image: %w", err)
-	}
-
 	return nil
 }
 
