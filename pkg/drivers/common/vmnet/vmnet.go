@@ -99,7 +99,18 @@ var (
 // on the first call.
 func getHelperInfo() (helperInfo, error) {
 	once.Do(func() {
-		cached.Path, cached.Err = findHelper()
+		versionStr, err := macOSVersion()
+		if err != nil {
+			cached.Err = err
+			return
+		}
+		// ParseTolerant handles "26.2" by normalizing it to "26.2.0".
+		macOSVer, err := semver.ParseTolerant(versionStr)
+		if err != nil {
+			cached.Err = fmt.Errorf("invalid macOS version %q: %w", versionStr, err)
+			return
+		}
+		cached.Path, cached.Err = findHelper(macOSVer)
 		if cached.Err != nil {
 			return
 		}
@@ -107,12 +118,7 @@ func getHelperInfo() (helperInfo, error) {
 		if cached.Err != nil {
 			return
 		}
-		var macosVersion string
-		macosVersion, cached.Err = macOSVersion()
-		if cached.Err != nil {
-			return
-		}
-		cached.NeedsSudo, cached.Err = helperNeedsSudo(cached.Version, macosVersion)
+		cached.NeedsSudo, cached.Err = helperNeedsSudo(cached.Version, macOSVer)
 	})
 	return cached, cached.Err
 }
@@ -425,9 +431,13 @@ func validateRunningWithSudo(helperPath string, options *run.CommandOptions) err
 
 // findHelper finds the path to the vmnet-helper executable.
 // Prefer brew install path since it is the recommended install method on macOS 26+.
-func findHelper() (string, error) {
-	brewInstallPath := filepath.Join(detect.BrewPrefix(), "opt", "vmnet-helper", "libexec", "vmnet-helper")
-	paths := []string{brewInstallPath, legacyInstallPath}
+func findHelper(macOSVer semver.Version) (string, error) {
+	var paths []string
+	if macOSVer.Major >= 26 {
+		brewInstallPath := filepath.Join(detect.BrewPrefix(), "opt", "vmnet-helper", "libexec", "vmnet-helper")
+		paths = append(paths, brewInstallPath)
+	}
+	paths = append(paths, legacyInstallPath)
 	for _, path := range paths {
 		if _, err := os.Stat(path); err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
@@ -443,13 +453,8 @@ func findHelper() (string, error) {
 
 // helperNeedsSudo returns true if vmnet-helper needs sudo to run based on the
 // helper version and macOS version.
-func helperNeedsSudo(version helperVersion, macosVersion string) (bool, error) {
-	// ParseTolerant handles "26.2" by normalizing it to "26.2.0".
-	macVer, err := semver.ParseTolerant(macosVersion)
-	if err != nil {
-		return false, fmt.Errorf("invalid macOS version %q: %w", macosVersion, err)
-	}
-	if macVer.LT(semver.MustParse("26.0.0")) {
+func helperNeedsSudo(version helperVersion, macOSVer semver.Version) (bool, error) {
+	if macOSVer.Major < 26 {
 		return true, nil
 	}
 

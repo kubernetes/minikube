@@ -23,6 +23,8 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/blang/semver/v4"
 )
 
 func TestMacOSVersion(t *testing.T) {
@@ -47,50 +49,50 @@ func TestHelperNeedsSudo(t *testing.T) {
 	tests := []struct {
 		name          string
 		helperVersion helperVersion
-		macOSVersion  string
+		macOSVer      semver.Version
 		want          bool
 	}{
 		{
 			name:          "old macOS new helper",
 			helperVersion: helperVersion{Version: "v0.9.0"},
-			macOSVersion:  "15.0",
+			macOSVer:      semver.MustParse("15.0.0"),
 			want:          true,
 		},
 		{
 			name:          "macOS 26 old helper",
 			helperVersion: helperVersion{Version: "v0.8.0"},
-			macOSVersion:  "26.0",
+			macOSVer:      semver.MustParse("26.0.0"),
 			want:          true,
 		},
 		{
 			name:          "macOS 26 new helper",
 			helperVersion: helperVersion{Version: "v0.9.0"},
-			macOSVersion:  "26.0",
+			macOSVer:      semver.MustParse("26.0.0"),
 			want:          false,
 		},
 		{
 			name:          "macOS 26 newer helper",
 			helperVersion: helperVersion{Version: "v1.0.0"},
-			macOSVersion:  "26.0",
+			macOSVer:      semver.MustParse("26.0.0"),
 			want:          false,
 		},
 		{
 			name:          "macOS 27 new helper",
 			helperVersion: helperVersion{Version: "v0.9.0"},
-			macOSVersion:  "27.0",
+			macOSVer:      semver.MustParse("27.0.0"),
 			want:          false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := helperNeedsSudo(tt.helperVersion, tt.macOSVersion)
+			got, err := helperNeedsSudo(tt.helperVersion, tt.macOSVer)
 			if err != nil {
 				t.Fatalf("helperNeedsSudo() failed: %v", err)
 			}
 			if got != tt.want {
 				t.Errorf("helperNeedsSudo(%v, %s) = %v, want %v",
-					tt.helperVersion.Version, tt.macOSVersion, got, tt.want)
+					tt.helperVersion.Version, tt.macOSVer, got, tt.want)
 			}
 		})
 	}
