@@ -201,6 +201,25 @@ func MacOS13Plus() bool {
 	return major >= 13
 }
 
+// BrewPrefix returns the default Homebrew installation prefix for the current OS
+// and architecture. See https://docs.brew.sh/Installation
+//
+// Returns an empty string on unsupported platforms (e.g. Windows) where Homebrew
+// has no standard prefix.
+func BrewPrefix() string {
+	switch runtime.GOOS {
+	case "darwin":
+		if runtime.GOARCH == "arm64" {
+			return "/opt/homebrew"
+		}
+		return "/usr/local"
+	case "linux":
+		return "/home/linuxbrew/.linuxbrew"
+	default:
+		return ""
+	}
+}
+
 // NestedVM returns true if the current machine is running a nested VM (like in MacOs in Github Action)
 // this func tries its best but not guaranteed to be 100% accurate, and if not sure will return false (default behaviour).
 func NestedVM() bool {

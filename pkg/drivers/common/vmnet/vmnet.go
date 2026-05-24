@@ -37,6 +37,7 @@ import (
 
 	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -49,10 +50,9 @@ const (
 	logfileName  = "vmnet-helper.log"
 	sockfileName = "vmnet-helper.sock"
 
-	// Installed from GitHub releases.
-	installPath = "/opt/vmnet-helper/bin/vmnet-helper"
-	// Installed via Homebrew (macOS 26+ only).
-	brewInstallPath = "/opt/homebrew/opt/vmnet-helper/libexec/vmnet-helper"
+	// Legacy install path for macOS < 26 (installed from GitHub releases).
+	// Since macOS 26 the recommended install method is Homebrew.
+	legacyInstallPath = "/opt/vmnet-helper/bin/vmnet-helper"
 )
 
 // Helper manages the vmnet-helper process.
@@ -424,8 +424,10 @@ func validateRunningWithSudo(helperPath string, options *run.CommandOptions) err
 }
 
 // findHelper finds the path to the vmnet-helper executable.
+// Prefer brew install path since it is the recommended install method on macOS 26+.
 func findHelper() (string, error) {
-	paths := []string{brewInstallPath, installPath}
+	brewInstallPath := filepath.Join(detect.BrewPrefix(), "opt", "vmnet-helper", "libexec", "vmnet-helper")
+	paths := []string{brewInstallPath, legacyInstallPath}
 	for _, path := range paths {
 		if _, err := os.Stat(path); err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
