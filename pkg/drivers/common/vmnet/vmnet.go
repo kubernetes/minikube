@@ -434,8 +434,14 @@ func validateRunningWithSudo(helperPath string, options *run.CommandOptions) err
 func findHelper(macOSVer semver.Version) (string, error) {
 	var paths []string
 	if macOSVer.Major >= 26 {
-		brewInstallPath := filepath.Join(detect.BrewPrefix(), "opt", "vmnet-helper", "libexec", "vmnet-helper")
-		paths = append(paths, brewInstallPath)
+		brewPrefix := detect.BrewPrefix()
+		paths = append(paths,
+			// Homebrew >= 1.0 installs to bin.
+			// See https://github.com/nirs/homebrew-vmnet-helper/issues/4
+			filepath.Join(brewPrefix, "bin", "vmnet-helper"),
+			// Homebrew < 1.0 installs to libexec.
+			filepath.Join(brewPrefix, "opt", "vmnet-helper", "libexec", "vmnet-helper"),
+		)
 	}
 	paths = append(paths, legacyInstallPath)
 	for _, path := range paths {
