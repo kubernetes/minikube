@@ -15,7 +15,7 @@ aliases:
 > have hypervisor options with
 > the preferred [vfkit driver]({{< ref "vfkit.md" >}}) or
 > the experimental [krunit driver]({{< ref "krunkit.md" >}}), or a
-> "[qemu]({{< ref "qemu.md" >}}) virtual machine.
+> [qemu]({{< ref "qemu.md" >}}) virtual machine.
 
 {{% readfile file="/docs/drivers/includes/hyperkit_usage.inc" %}}
 
