@@ -54,7 +54,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	version, err := latestNodeVersionByMajor(ctx, "v20")
+	version, err := latestNodeVersionByMajor(ctx, "v22")
 	if err != nil {
 		klog.Fatalf("Unable to get stable version: %v", err)
 	}
