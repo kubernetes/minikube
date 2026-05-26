@@ -12,7 +12,10 @@ aliases:
 > [!WARNING]
 > The brew package "hyperkit" has been deprecated because it is no longer
 > maintained upstream! It was disabled on 2025-06-21. Apple Silicon users 
-> have hypervisor options with "krunkit" or "vfkit".
+> have hypervisor options with
+> the preferred [vfkit driver]({{< ref "vfkit.md" >}}) or
+> the experimental [krunit driver]({{< ref "krunkit.md" >}}), or a
+> "[qemu]({{< ref "qemu.md" >}}) virtual machine.
 
 {{% readfile file="/docs/drivers/includes/hyperkit_usage.inc" %}}
 
