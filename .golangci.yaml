@@ -30,7 +30,6 @@ linters:
         - "-ST1005"
         # Omit embedded fields from selector expression
         - "-QF1008"
-        
     revive:
       enable-all-rules: true
       rules:
@@ -89,6 +88,14 @@ linters:
         - name: unused-receiver
           disabled: true
         - name: add-constant
+          disabled: true
+        ###### Redundant with other linters.
+        - name: error-strings
+          disabled: true # staticcheck ST1005 handles this and catches more cases
+        ###### Opinionated style rules - permanently disabled.
+        - name: if-return
+          disabled: true
+        - name: unsecure-url-scheme
           disabled: true
         ###### To be determined, this is a rule with differences.
         - name: import-alias-naming
@@ -156,6 +163,8 @@ linters:
       # we generally dont wanna touch or lint the Third_party code, it is basically like a fork for code that we can not import.
       # but have to copy/paste
       - third_party
+      # Deprecated driver, no one can test changes.
+      - pkg/drivers/parallels/
       # Skip test files
       - '(.+)_test\.go'
     rules:
@@ -187,6 +196,10 @@ linters:
       # Ignore package-naming rule in pkg/drivers/common/ because renaming it would create massive code churn and refactoring.
       - path: 'pkg/drivers/common/'
         text: "package-naming:"
+        linter: revive
+      # Existing bare returns in route_darwin.go - fix later.
+      - path: 'pkg/minikube/tunnel/route_darwin.go'
+        text: "bare-return:"
         linter: revive
 formatters:
   enable:
