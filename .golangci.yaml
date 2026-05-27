@@ -197,6 +197,10 @@ linters:
       - path: 'pkg/drivers/common/'
         text: "package-naming:"
         linter: revive
+      # pkg/libmachine/log shadows the standard library "log" package, but renaming it would touch the entire codebase.
+      - path: 'pkg/libmachine/log/'
+        text: "package-naming:"
+        linter: revive
       # Existing bare returns in route_darwin.go - fix later.
       - path: 'pkg/minikube/tunnel/route_darwin.go'
         text: "bare-return:"
