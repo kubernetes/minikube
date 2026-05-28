@@ -79,8 +79,8 @@ func tagFromKubeadm(v, name string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed getting kubeadm image list: %v", err)
 	}
-	lines := strings.Split(string(b), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(b), "\n")
+	for line := range lines {
 		if !strings.Contains(line, name) {
 			continue
 		}

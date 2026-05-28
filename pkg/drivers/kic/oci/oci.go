@@ -375,8 +375,8 @@ func ContainerExists(ociBin string, name string, warnSlow ...bool) (bool, error)
 		return false, err
 	}
 
-	containers := strings.Split(rr.Stdout.String(), "\n")
-	for _, c := range containers {
+	containers := strings.SplitSeq(rr.Stdout.String(), "\n")
+	for c := range containers {
 		if strings.TrimSpace(c) == name {
 			return true, nil
 		}

@@ -451,7 +451,7 @@ func (r *Docker) ListContainers(o ListContainersOptions) ([]string, error) {
 		return nil, fmt.Errorf("docker: %w", err)
 	}
 	var ids []string
-	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
+	for line := range strings.SplitSeq(rr.Stdout.String(), "\n") {
 		if line != "" {
 			ids = append(ids, line)
 		}
@@ -686,7 +686,7 @@ func dockerImagesPreloaded(runner command.Runner, imgs []string) bool {
 		return false
 	}
 	preloadedImages := map[string]struct{}{}
-	for _, i := range strings.Split(rr.Stdout.String(), "\n") {
+	for i := range strings.SplitSeq(rr.Stdout.String(), "\n") {
 		i = image.TrimDockerIO(i)
 		preloadedImages[i] = struct{}{}
 	}

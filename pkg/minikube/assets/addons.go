@@ -801,7 +801,7 @@ func parseMapString(str string) map[string]string {
 	if str == "" {
 		return mapResult
 	}
-	for _, pairText := range strings.Split(str, ",") {
+	for pairText := range strings.SplitSeq(str, ",") {
 		vals := strings.Split(pairText, "=")
 		if len(vals) != 2 {
 			out.WarningT("Ignoring invalid pair entry {{.pair}}", out.V{"pair": pairText})

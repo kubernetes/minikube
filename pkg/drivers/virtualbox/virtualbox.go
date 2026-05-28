@@ -992,7 +992,7 @@ func parseHostOnlyNet(listOutput, name string) (mask net.IPMask, network net.IP,
 		return true, m, lip.Mask(m), nil
 	}
 
-	for _, line := range strings.Split(listOutput, "\n") {
+	for line := range strings.SplitSeq(listOutput, "\n") {
 		parts := strings.SplitN(strings.TrimSpace(line), ":", 2)
 		if len(parts) != 2 {
 			continue
