@@ -131,7 +131,7 @@ func ParseMountString(spec string) (m Mount, err error) {
 	case 1:
 		m.ContainerPath = fields[0]
 	case 3:
-		for _, opt := range strings.Split(fields[2], ",") {
+		for opt := range strings.SplitSeq(fields[2], ",") {
 			switch opt {
 			case "Z":
 				m.SelinuxRelabel = true

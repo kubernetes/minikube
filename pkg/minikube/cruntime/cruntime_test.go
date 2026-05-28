@@ -300,8 +300,8 @@ func (f *FakeRunner) dockerPs(args []string) (string, error) {
 }
 
 func (f *FakeRunner) dockerStop(args []string) (string, error) {
-	ids := strings.Split(args[1], " ")
-	for _, id := range ids {
+	ids := strings.SplitSeq(args[1], " ")
+	for id := range ids {
 		f.t.Logf("fake docker: Stopping id %q", id)
 		if f.containers[id] == "" {
 			return "", errors.New("no such container")

@@ -92,7 +92,7 @@ func binariesExist(cfg config.KubernetesConfig, c command.Runner) (bool, error) 
 	}
 	stdout := rr.Stdout.String()
 	foundBinaries := map[string]struct{}{}
-	for _, binary := range strings.Split(stdout, "\n") {
+	for binary := range strings.SplitSeq(stdout, "\n") {
 		foundBinaries[binary] = struct{}{}
 	}
 	for _, name := range constants.KubernetesReleaseBinaries {

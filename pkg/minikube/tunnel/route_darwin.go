@@ -76,7 +76,7 @@ func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, ove
 func (router *osRouter) parseTable(table []byte) routingTable {
 	t := routingTable{}
 	skip := true
-	for _, line := range strings.Split(string(table), "\n") {
+	for line := range strings.SplitSeq(string(table), "\n") {
 		// header
 		if strings.HasPrefix(line, "Destination") {
 			skip = false

@@ -90,7 +90,7 @@ func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) (
 	// Avoid an id named ""
 	var ids []string
 	seen := map[string]bool{}
-	for _, id := range strings.Split(rr.Stdout.String(), "\n") {
+	for id := range strings.SplitSeq(rr.Stdout.String(), "\n") {
 		klog.Infof("found id: %q", id)
 		if id != "" && !seen[id] {
 			ids = append(ids, id)

@@ -115,8 +115,8 @@ func checkEnv(ip string, env string) bool {
 		return true
 	}
 	// Checks if included in IP ranges, i.e., 192.168.39.13/24
-	noProxyBlocks := strings.Split(v, ",")
-	for _, b := range noProxyBlocks {
+	noProxyBlocks := strings.SplitSeq(v, ",")
+	for b := range noProxyBlocks {
 		yes, err := isInBlock(ip, b)
 		if err != nil {
 			klog.Warningf("fail to check proxy env: %v", err)

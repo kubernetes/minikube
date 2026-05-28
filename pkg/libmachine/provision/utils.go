@@ -215,7 +215,7 @@ func matchNetstatOut(reDaemonListening, netstatOut string) bool {
 	// manipulation hokey-pokey.
 	//
 	// TODO: Unit test this matching.
-	for _, line := range strings.Split(netstatOut, "\n") {
+	for line := range strings.SplitSeq(netstatOut, "\n") {
 		match, err := regexp.MatchString(reDaemonListening, line)
 		if err != nil {
 			log.Warnf("Regex warning: %s", err)

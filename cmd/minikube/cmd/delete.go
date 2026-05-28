@@ -723,8 +723,8 @@ func getPids(path string) ([]int, error) {
 	klog.Infof("pidfile contents: %s", data)
 
 	pids := []int{}
-	strPids := strings.Fields(string(data))
-	for _, p := range strPids {
+	strPids := strings.FieldsSeq(string(data))
+	for p := range strPids {
 		intPid, err := strconv.Atoi(p)
 		if err != nil {
 			return nil, err

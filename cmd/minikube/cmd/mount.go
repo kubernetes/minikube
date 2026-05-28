@@ -323,8 +323,8 @@ func removePid(path string, pid string) error {
 	pids := []string{}
 	// we're splitting the mount-pids file content into a slice of strings
 	// so that we can compare each to the PID we're looking for
-	strPids := strings.Fields(string(data))
-	for _, p := range strPids {
+	strPids := strings.FieldsSeq(string(data))
+	for p := range strPids {
 		// If we find the PID, we don't add it to the slice
 		if p == pid {
 			continue
