@@ -19,6 +19,7 @@ package config
 import (
 	"fmt"
 	"net"
+	"net/netip"
 	"net/url"
 	"os"
 	"strconv"
@@ -152,6 +153,16 @@ func IsValidRuntime(_, runtime string) error {
 	_, err := cruntime.New(cruntime.Config{Type: runtime})
 	if err != nil {
 		return fmt.Errorf("invalid runtime: %v", err)
+	}
+	return nil
+}
+
+// IsValidIPAddressSlice checks that a comma-separated value contains only valid IP addresses (IPv4 or IPv6)
+func IsValidIPAddressSlice(name, val string) error {
+	for s := range strings.SplitSeq(val, ",") {
+		if _, err := netip.ParseAddr(s); err != nil {
+			return fmt.Errorf("%s: %q is not a valid IP address", name, s)
+		}
 	}
 	return nil
 }
