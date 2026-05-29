@@ -59,6 +59,8 @@ const (
 	EmbedCerts = "EmbedCerts"
 	// MaxAuditEntries is the maximum number of audit entries to retain
 	MaxAuditEntries = "MaxAuditEntries"
+	// DNSServers is the key for static DNS server addresses for VM drivers
+	DNSServers = "dns-servers"
 )
 
 var (
