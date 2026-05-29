@@ -676,6 +676,8 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 		return runner, preExists, m, hostInfo, fmt.Errorf("Failed to get command runner: %w", err)
 	}
 
+	configureDNS(runner, cfg.DNSServers)
+
 	ip, err := validateNetwork(hostInfo, runner, cfg.KubernetesConfig.ImageRepository)
 	if err != nil {
 		return runner, preExists, m, hostInfo, fmt.Errorf("Failed to validate network: %w", err)
