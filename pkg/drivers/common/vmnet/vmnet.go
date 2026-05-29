@@ -430,8 +430,24 @@ func validateRunningWithSudo(helperPath string, options *run.CommandOptions) err
 }
 
 // findHelper finds the path to the vmnet-helper executable.
-// Prefer brew install path since it is the recommended install method on macOS 26+.
 func findHelper(macOSVer semver.Version) (string, error) {
+	paths := helperSearchPaths(macOSVer)
+	for _, path := range paths {
+		if _, err := os.Stat(path); err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				return "", &Error{Kind: reason.HostPathStat, Err: err}
+			}
+			continue
+		}
+		return path, nil
+	}
+	err := fmt.Errorf("failed to find vmnet-helper at %q", paths)
+	return "", &Error{Kind: reason.NotFoundVmnetHelper, Err: err}
+}
+
+// helperSearchPaths returns vmnet-helper paths to search, in priority order.
+// Prefer brew install paths on macOS 26+ since Homebrew is the recommended install method.
+func helperSearchPaths(macOSVer semver.Version) []string {
 	var paths []string
 	if macOSVer.Major >= 26 {
 		brewPrefix := detect.BrewPrefix()
@@ -444,17 +460,7 @@ func findHelper(macOSVer semver.Version) (string, error) {
 		)
 	}
 	paths = append(paths, legacyInstallPath)
-	for _, path := range paths {
-		if _, err := os.Stat(path); err != nil {
-			if !errors.Is(err, os.ErrNotExist) {
-				return "", &Error{Kind: reason.HostPathStat, Err: err}
-			}
-			continue
-		}
-		return path, nil
-	}
-	err := fmt.Errorf("failed to find vmnet-helper at %q", paths)
-	return "", &Error{Kind: reason.NotFoundVmnetHelper, Err: err}
+	return paths
 }
 
 // helperNeedsSudo returns true if vmnet-helper needs sudo to run based on the

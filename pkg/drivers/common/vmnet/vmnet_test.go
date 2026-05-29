@@ -21,11 +21,60 @@ package vmnet
 import (
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/blang/semver/v4"
 )
+
+func TestHelperSearchPaths(t *testing.T) {
+	var macOS26Paths []string
+	if runtime.GOARCH == "arm64" {
+		macOS26Paths = []string{
+			"/opt/homebrew/bin/vmnet-helper",
+			"/opt/homebrew/opt/vmnet-helper/libexec/vmnet-helper",
+			legacyInstallPath,
+		}
+	} else {
+		macOS26Paths = []string{
+			"/usr/local/bin/vmnet-helper",
+			"/usr/local/opt/vmnet-helper/libexec/vmnet-helper",
+			legacyInstallPath,
+		}
+	}
+
+	tests := []struct {
+		name     string
+		macOSVer semver.Version
+		want     []string
+	}{
+		{
+			name:     "macOS 15 legacy only",
+			macOSVer: semver.MustParse("15.0.0"),
+			want:     []string{legacyInstallPath},
+		},
+		{
+			name:     "macOS 26 brew",
+			macOSVer: semver.MustParse("26.0.0"),
+			want:     macOS26Paths,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := helperSearchPaths(tt.macOSVer)
+			if len(got) != len(tt.want) {
+				t.Fatalf("helperSearchPaths() = %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Fatalf("helperSearchPaths()[%d] = %q, want %q", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
 
 func TestMacOSVersion(t *testing.T) {
 	version, err := macOSVersion()
