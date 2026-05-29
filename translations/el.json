@@ -353,7 +353,7 @@
 	"If set, pause all namespaces": "Εάν οριστεί, γίνεται παύση όλων των χώρων ονομάτων",
 	"If set, unpause all namespaces": "Εάν οριστεί, γίνεται κατάργηση παύσης όλων των χώρων ονομάτων",
 	"If the above advice does not help, please let us know:": "Εάν οι παραπάνω συμβουλές δεν βοηθήσουν, ενημερώστε μας:",
-	"If the host has a firewall:\n\n\t\t1. Allow a port through the firewall\n\t\t2. Specify \"--port=\u003cport_number\u003e\" for \"minikube mount\"": "Εάν ο κεντρικός υπολογιστής διαθέτει τείχος προστασίας:\n\n\t\t1. Επιτρέψτε μια θύρα μέσω του τείχους προστασίας\n\t\t2. Καθορίστε \"--port=\u003cαριθμός_θύρας\u003e\" για \"minikube mount\"",
+	"If the host has a firewall:\n\t\t1. Allow inbound port 22 to minikube from the host\n\t\t2. Allow an inbound port of your choosing from minikube to the host\n\t\t3. Specify \"--port=\u003cyour_inbound_port_number\u003e\" for \"minikube mount\"": "",
 	"If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.": "Εάν true, αποθηκεύει τα images docker για τον τρέχοντα bootstrapper στην κρυφή μνήμη και τα φορτώνει στο μηχάνημα. Πάντα false με --driver=none.",
 	"If true, only download and cache files for later use - don't install or start anything.": "Εάν true, γίνεται μόνο λήψη και αποθήκευση αρχείων στην κρυφή μνήμη για μελλοντική χρήση - να μη γίνει εγκατάσταση ή εκκίνηση τίποτα.",
 	"If true, pods might get deleted and restarted on addon enable": "Εάν true, τα pods ενδέχεται να διαγραφούν και να επανεκκινηθούν κατά την ενεργοποίηση του πρόσθετου",

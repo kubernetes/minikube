@@ -353,7 +353,7 @@
 	"If set, pause all namespaces": "如果设置为 true，则暂停所有 namespace",
 	"If set, unpause all namespaces": "如果设置为 true，取消暂停所有 namespace",
 	"If the above advice does not help, please let us know:": "如果上述建议无法帮助解决问题，请告知我们：",
-	"If the host has a firewall:\n\n\t\t1. Allow a port through the firewall\n\t\t2. Specify \"--port=\u003cport_number\u003e\" for \"minikube mount\"": "如果主机有防火墙：\n\n1. 允许防火墙通过一个端口\n2. 对于 'minikube mount'，指定 '--port=\u003c端口号\u003e'",
+	"If the host has a firewall:\n\t\t1. Allow inbound port 22 to minikube from the host\n\t\t2. Allow an inbound port of your choosing from minikube to the host\n\t\t3. Specify \"--port=\u003cyour_inbound_port_number\u003e\" for \"minikube mount\"": "",
 	"If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.": "如果设置为 true，则缓存当前引导程序的 docker 镜像并加载到机器中。当使用--driver=none时，始终为false。",
 	"If true, only download and cache files for later use - don't install or start anything.": "如果为 true，仅会下载和缓存文件以备后用 - 不会安装或启动任何项。",
 	"If true, pods might get deleted and restarted on addon enable": "如果为 true，pods可能会被删除并在启用插件时重新启动",
