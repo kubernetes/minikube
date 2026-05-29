@@ -353,7 +353,7 @@
 	"If set, pause all namespaces": "設定すると、全ネームスペースを一旦停止します",
 	"If set, unpause all namespaces": "設定すると、全ネームスペースを一旦停止解除します",
 	"If the above advice does not help, please let us know:": "上記アドバイスが参考にならない場合は、我々に教えてください:",
-	"If the host has a firewall:\n\n\t\t1. Allow a port through the firewall\n\t\t2. Specify \"--port=\u003cport_number\u003e\" for \"minikube mount\"": "",
+	"If the host has a firewall:\n\t\t1. Allow inbound port 22 to minikube from the host\n\t\t2. Allow an inbound port of your choosing from minikube to the host\n\t\t3. Specify \"--port=\u003cyour_inbound_port_number\u003e\" for \"minikube mount\"": "",
 	"If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.": "true の場合、現在のブートストラッパーの Docker イメージをキャッシュに保存して、マシンに読み込みます。--driver=none の場合は常に false です。",
 	"If true, only download and cache files for later use - don't install or start anything.": "true の場合、後の使用のためのファイルのダウンロードとキャッシュ保存のみ行われます。インストールも起動も行いません",
 	"If true, pods might get deleted and restarted on addon enable": "true の場合、有効なアドオンの Pod は削除され、再起動されます",
