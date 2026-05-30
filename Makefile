@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= "v1.38.0"-1778539887-22974
+ISO_VERSION ?= "v1.38.0"-1779921764-23057
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -43,7 +43,7 @@ export GOTOOLCHAIN := go$(GO_VERSION)
 GO_K8S_VERSION_PREFIX ?= v1.36.0
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2025.02
+BUILDROOT_BRANCH ?= 2025.02.14
 GOLANG_OPTIONS = GOWORK=off GO_VERSION=$(GO_VERSION)
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
