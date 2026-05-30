@@ -68,8 +68,7 @@ sudo apt-get install \
     wget \
 ```
 
-Install Go using these instructions:
-https://go.dev/doc/install
+Install Go using the [Go installation instructions](https://go.dev/doc/install).
 
 To build without docker run:
 
@@ -77,9 +76,10 @@ To build without docker run:
 IN_DOCKER=1 make minikube-iso-<arch>
 ```
 
-> [!IMPORTANT]
-> Some external projects will try to use docker even when building
-> without docker. You must install docker on the build host.
+{{% alert title="Note" color="primary" %}}
+Some external projects will try to use docker even when building
+without docker. You must install docker on the build host.
+{{% /alert %}}
 
 ## Using a local ISO image
 
@@ -133,4 +133,3 @@ We publish CI builds of minikube, built at every Pull Request. Builds are availa
 - <https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-darwin-amd64>
 - <https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-linux-amd64>
 - <https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-windows-amd64.exe>
-
