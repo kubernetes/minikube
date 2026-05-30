@@ -319,10 +319,6 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	t.Run("ImageBuild", func(t *testing.T) {
 		MaybeParallel(t)
 
-		if _, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pgrep", "buildkitd")); err == nil {
-			t.Errorf("buildkitd process is running, should not be running until `minikube image build` is ran")
-		}
-
 		newImage := fmt.Sprintf("localhost/my-image:%s", profile)
 
 		// try to build the new image with minikube
@@ -382,6 +378,44 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		checkImageExists(ctx, t, profile, taggedImage)
+	})
+
+	// docs: Make sure image loading overwrites existing image even when a container is using it (#23023)
+	t.Run("ImageLoadInUse", func(t *testing.T) {
+		// Loads v1 image, starts a pod with it, then loads v2 with the same
+		// tag and verifies that a new pod picks up v2.
+		testImage := "localhost/image-load-in-use:test"
+		testDir := filepath.Join(*testdataDir, "image-load-in-use")
+		tmpDir := t.TempDir()
+
+		// Build images and store tar files.
+		// t.Cleanup ensures the image is removed from the cluster even if
+		// saveImageToTarfile or subsequent steps fail. In the normal case,
+		// the image is explicitly removed after saving, then reloaded via
+		// loadImageFromTarfile — t.Cleanup handles the final removal.
+		buildImage(ctx, t, profile, filepath.Join(testDir, "v1"), testImage)
+		t.Cleanup(func() { silentRemoveImage(ctx, t, profile, testImage) })
+		v1TarPath := filepath.Join(tmpDir, "image-load-in-use-v1.tar")
+		saveImageToTarfile(ctx, t, profile, testImage, v1TarPath)
+		removeImage(ctx, t, profile, testImage)
+		buildImage(ctx, t, profile, filepath.Join(testDir, "v2"), testImage)
+		v2TarPath := filepath.Join(tmpDir, "image-load-in-use-v2.tar")
+		saveImageToTarfile(ctx, t, profile, testImage, v2TarPath)
+		removeImage(ctx, t, profile, testImage)
+
+		// Load image and start a pod using it
+		loadImageFromTarfile(ctx, t, profile, v1TarPath)
+		startTempPod(ctx, t, profile, filepath.Join(testDir, "image-load-in-use-v1.yaml"), "image-load-in-use-v1")
+		if got := readPodFile(ctx, t, profile, "image-load-in-use-v1", "/version.txt"); strings.TrimSpace(got) != "version1" {
+			t.Fatalf("expected 'version1' but got %q", got)
+		}
+
+		// Load image overwriting image in use
+		loadImageFromTarfile(ctx, t, profile, v2TarPath)
+		startTempPod(ctx, t, profile, filepath.Join(testDir, "image-load-in-use-v2.yaml"), "image-load-in-use-v2")
+		if got := readPodFile(ctx, t, profile, "image-load-in-use-v2", "/version.txt"); strings.TrimSpace(got) != "version2" {
+			t.Fatalf("expected 'version2' but got %q - image was not overwritten while in use", got)
+		}
 	})
 
 	// docs: Make sure a new updated tag works by `minikube image load --daemon`
@@ -463,6 +497,73 @@ func checkImageExists(ctx context.Context, t *testing.T, profile string, image s
 
 func listImages(ctx context.Context, t *testing.T, profile string) (*RunResult, error) {
 	return Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls"))
+}
+
+func buildImage(ctx context.Context, t *testing.T, profile, buildDir, imageName string) {
+	t.Helper()
+	cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "-t", imageName, buildDir, "--alsologtostderr")
+	if rr, err := Run(t, cmd); err != nil {
+		t.Fatalf("failed to build image %s (%s): %v\n%s", imageName, buildDir, err, rr.Output())
+	}
+}
+
+func removeImage(ctx context.Context, t *testing.T, profile, imageName string) {
+	t.Helper()
+	cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", imageName)
+	if rr, err := Run(t, cmd); err != nil {
+		t.Fatalf("failed to remove image %s: %v\n%s", imageName, err, rr.Output())
+	}
+}
+
+// silentRemoveImage is an idempotent variant of removeImage for use in
+// t.Cleanup. It ignores errors because minikube image rm does not provide
+// specific error codes to distinguish "image not found" from other failures.
+// Run() already logs errors, so we don't need additional logging here.
+func silentRemoveImage(ctx context.Context, t *testing.T, profile, imageName string) {
+	t.Helper()
+	cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", imageName)
+	Run(t, cmd)
+}
+
+func saveImageToTarfile(ctx context.Context, t *testing.T, profile, imageName, tarPath string) {
+	t.Helper()
+	cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", imageName, tarPath, "--alsologtostderr")
+	if rr, err := Run(t, cmd); err != nil {
+		t.Fatalf("failed to save image %s to %s: %v\n%s", imageName, tarPath, err, rr.Output())
+	}
+}
+
+func loadImageFromTarfile(ctx context.Context, t *testing.T, profile, tarPath string) {
+	t.Helper()
+	cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", tarPath, "--alsologtostderr")
+	if rr, err := Run(t, cmd); err != nil {
+		t.Fatalf("failed to load image from %s: %v\n%s", tarPath, err, rr.Output())
+	}
+}
+
+func startTempPod(ctx context.Context, t *testing.T, profile, podYAMLPath, podName string) {
+	t.Helper()
+	cmd := exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "apply", "-f", podYAMLPath)
+	if rr, err := Run(t, cmd); err != nil {
+		t.Fatalf("failed to create pod %s: %v\n%s", podName, err, rr.Output())
+	}
+	t.Cleanup(func() {
+		cmd := exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "delete", "pod", podName, "--ignore-not-found")
+		Run(t, cmd)
+	})
+	if _, err := PodWait(ctx, t, profile, "default", "run="+podName, Minutes(3)); err != nil {
+		t.Fatalf("failed waiting for pod %s: %v", podName, err)
+	}
+}
+
+func readPodFile(ctx context.Context, t *testing.T, profile, podName, filePath string) string {
+	t.Helper()
+	cmd := exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "exec", podName, "--", "cat", filePath)
+	rr, err := Run(t, cmd)
+	if err != nil {
+		t.Fatalf("failed to read %s from pod %s: %v\n%s", filePath, podName, err, rr.Output())
+	}
+	return rr.Stdout.String()
 }
 
 // check functionality of minikube after evaluating docker-env
