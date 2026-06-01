@@ -42,6 +42,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/drivers/common/dhcp"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
@@ -514,7 +515,7 @@ func (d *Driver) Start() error {
 	case "socket_vmnet":
 		var err error
 		getIP := func() error {
-			d.IPAddress, err = common.GetIPAddressByMACAddress(d.MACAddress)
+			d.IPAddress, err = dhcp.IPAddressForMAC(d.MACAddress)
 			if err != nil {
 				return fmt.Errorf("failed to get IP address: %w", err)
 			}

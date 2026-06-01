@@ -1,0 +1,143 @@
+/*
+Copyright 2026 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package dhcp
+
+import (
+	"bufio"
+	"bytes"
+	"fmt"
+	"io"
+	"net"
+	"os"
+	"strings"
+
+	"k8s.io/minikube/pkg/libmachine/log"
+)
+
+const (
+	// leasesPath is the path to dhcpd leases file
+	leasesPath = "/var/db/dhcpd_leases"
+)
+
+// Entry holds a parsed DHCP lease entry.
+type Entry struct {
+	Name      string
+	IPAddress string
+	HWAddress net.HardwareAddr
+	ID        string
+	Lease     string
+}
+
+// IPAddressForMAC returns the IP address leased to the given MAC address.
+func IPAddressForMAC(mac string) (string, error) {
+	return ipAddressFromFile(mac, leasesPath)
+}
+
+func ipAddressFromFile(mac, path string) (string, error) {
+	// Due to https://openradar.appspot.com/FB15382970 we need to parse the MAC
+	// address and compare the bytes.
+	macAddress, err := parseMAC(mac)
+	if err != nil {
+		return "", err
+	}
+
+	log.Debugf("Searching for %s in %s ...", mac, path)
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	entries, err := parseLeases(file)
+	if err != nil {
+		return "", err
+	}
+	log.Debugf("Found %d entries in %s!", len(entries), path)
+	for _, entry := range entries {
+		log.Debugf("dhcp entry: %+v", entry)
+		if entry.HWAddress == nil {
+			continue
+		}
+		if bytes.Equal(entry.HWAddress, macAddress) {
+			log.Debugf("Found match: %s", mac)
+			return entry.IPAddress, nil
+		}
+	}
+	return "", fmt.Errorf("could not find an IP address for %s", mac)
+}
+
+func parseLeases(r io.Reader) ([]Entry, error) {
+	var (
+		entry   *Entry
+		entries []Entry
+	)
+
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "{" {
+			entry = new(Entry)
+			continue
+		} else if line == "}" {
+			entries = append(entries, *entry)
+			continue
+		}
+
+		split := strings.SplitN(line, "=", 2)
+		if len(split) != 2 {
+			return nil, fmt.Errorf("invalid line in dhcp leases file: %s", line)
+		}
+		key, val := split[0], split[1]
+		switch key {
+		case "name":
+			entry.Name = val
+		case "ip_address":
+			entry.IPAddress = val
+		case "hw_address":
+			// The mac addresses have a '1,' at the start.
+			macAddress, err := parseMAC(val[2:])
+			if err != nil {
+				log.Warnf("unable to parse hw_address in dhcp leases file: %q: %s",
+					val[2:], err)
+				continue
+			}
+			entry.HWAddress = macAddress
+		case "identifier":
+			entry.ID = val
+		case "lease":
+			entry.Lease = val
+		default:
+			return entries, fmt.Errorf("unable to parse line: %s", line)
+		}
+	}
+	return entries, scanner.Err()
+}
+
+// parseMAC parses both standard fixed-size MAC address "%02x:..." and the
+// variable-size MAC address on darwin "%x:...".
+func parseMAC(mac string) (net.HardwareAddr, error) {
+	hw := make(net.HardwareAddr, 6)
+	n, err := fmt.Sscanf(mac, "%x:%x:%x:%x:%x:%x",
+		&hw[0], &hw[1], &hw[2], &hw[3], &hw[4], &hw[5])
+	if n != len(hw) {
+		return nil, fmt.Errorf("invalid MAC address: %q", mac)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse MAC address: %q: %s", mac, err)
+	}
+	return hw, nil
+}

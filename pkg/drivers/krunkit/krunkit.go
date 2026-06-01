@@ -42,6 +42,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/drivers/common/dhcp"
 	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -281,7 +282,7 @@ func (d *Driver) openLogfile() (*os.File, error) {
 func (d *Driver) setupIP(mac string) error {
 	var err error
 	getIP := func() error {
-		d.IPAddress, err = common.GetIPAddressByMACAddress(mac)
+		d.IPAddress, err = dhcp.IPAddressForMAC(mac)
 		if err != nil {
 			return fmt.Errorf("failed to get IP address: %w", err)
 		}

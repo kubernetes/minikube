@@ -35,6 +35,7 @@ import (
 	hyperkit "github.com/moby/hyperkit/go"
 	"github.com/shirou/gopsutil/v4/process"
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/drivers/common/dhcp"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/state"
@@ -293,7 +294,7 @@ func (d *Driver) setupIP(mac string) error {
 			return fmt.Errorf("hyperkit crashed! command line:\n  hyperkit %s", d.Cmdline)
 		}
 
-		d.IPAddress, err = common.GetIPAddressByMACAddress(mac)
+		d.IPAddress, err = dhcp.IPAddressForMAC(mac)
 		if err != nil {
 			return &tempError{err}
 		}
