@@ -60,13 +60,15 @@ func WaitForLease(mac string, timeout time.Duration) (string, error) {
 		log.Debugf("Nested VM detected, increasing timeout from %s to %s", timeout, timeout*3)
 		timeout *= 3
 	}
+	log.Infof("Waiting for DHCP lease for %s (timeout %s)", mac, timeout)
 
-	deadline := time.Now().Add(timeout)
+	start := time.Now()
+	deadline := start.Add(timeout)
 	for i := 0; ; i++ {
-		log.Debugf("Attempt %d", i)
+		log.Debugf("Searching for %s in %s (attempt %d) ...", mac, leasesPath, i)
 		ip, err := ipAddressFromFile(mac, leasesPath)
 		if err == nil {
-			log.Debugf("IP: %s", ip)
+			log.Infof("Found DHCP lease for %s: %s in %.3f seconds", mac, ip, time.Since(start).Seconds())
 			return ip, nil
 		}
 		if time.Now().After(deadline) {
@@ -84,7 +86,6 @@ func ipAddressFromFile(mac, path string) (string, error) {
 		return "", err
 	}
 
-	log.Debugf("Searching for %s in %s ...", mac, path)
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -95,14 +96,11 @@ func ipAddressFromFile(mac, path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	log.Debugf("Found %d entries in %s!", len(entries), path)
 	for _, entry := range entries {
-		log.Debugf("dhcp entry: %+v", entry)
 		if entry.HWAddress == nil {
 			continue
 		}
 		if bytes.Equal(entry.HWAddress, macAddress) {
-			log.Debugf("Found match: %s", mac)
 			return entry.IPAddress, nil
 		}
 	}
