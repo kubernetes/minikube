@@ -1028,7 +1028,7 @@
 	"status text failure": "status text невдача",
 	"too many arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE": "забагато аргументів ({{.ArgCount}}).\nвикористання: minikube config set PROPERTY_NAME PROPERTY_VALUE",
 	"true": "",
-	"tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer": "tunnel створює маршрут до сервісів, розгорнутих з типом LoadBalancer, і встановлює їх Ingress рівним їх ClusterIP. Детальний приклад дивіться за посиланням https://minikube.sigs.k8s.io/docs/tasks/loadbalancer",
+	"tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. For a detailed example see https://minikube.sigs.k8s.io/docs/handbook/accessing": "",
 	"unable to bind flags": "неможливо привʼязати прапорці",
 	"unable to daemonize: {{.err}}": "неможливо запустити в режимі демона: {{.err}}",
 	"unable to delete minikube config folder": "неможливо видалити теку конфігурації minikube",

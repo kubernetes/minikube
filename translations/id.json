@@ -1028,7 +1028,7 @@
 	"status text failure": "Gagal mendapatkan status dalam format teks",
 	"too many arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE": "Terlalu banyak argumen ({{.ArgCount}})\nPenggunaan: minikube config set PROPERTY_NAME PROPERTY_VALUE",
 	"true": "benar",
-	"tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer": "Tunnel membuat rute ke layanan yang diterapkan dengan tipe LoadBalancer dan menetapkan Ingress ke ClusterIP mereka. Untuk contoh detail, lihat https://minikube.sigs.k8s.io/docs/tasks/loadbalancer",
+	"tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. For a detailed example see https://minikube.sigs.k8s.io/docs/handbook/accessing": "",
 	"unable to bind flags": "Tidak dapat mengikat flag",
 	"unable to daemonize: {{.err}}": "Tidak dapat menjalankan sebagai daemon: {{.err}}",
 	"unable to delete minikube config folder": "Tidak dapat menghapus folder konfigurasi minikube",

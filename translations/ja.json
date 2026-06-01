@@ -1028,7 +1028,7 @@
 	"status text failure": "status text に失敗しました",
 	"too many arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE": "引数 ({{.ArgCount}} 個) が多すぎます。\n使用法: minikube config set PROPERTY_NAME PROPERTY_VALUE",
 	"true": "",
-	"tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer": "tunnel は LoadBalancer タイプで作成されたサービスへのルートを作成し、Ingress をサービスの ClusterIP に設定します。詳細例は https://minikube.sigs.k8s.io/docs/tasks/loadbalancer を参照してください",
+	"tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. For a detailed example see https://minikube.sigs.k8s.io/docs/handbook/accessing": "",
 	"unable to bind flags": "フラグをバインドできません",
 	"unable to daemonize: {{.err}}": "デーモン化できません: {{.err}}",
 	"unable to delete minikube config folder": "minikube の設定フォルダーを削除できません",
