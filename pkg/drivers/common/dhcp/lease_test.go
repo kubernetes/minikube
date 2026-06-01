@@ -39,6 +39,13 @@ var validLeases = []byte(`{
         lease=0x597e1268
 }
 {
+        name=duid-vm
+        ip_address=192.168.64.30
+        hw_address=ff,f1:f5:dd:7f:0:2:0:0:ab:11:b5:40:7c:3:e2:a9:8c:b3
+        identifier=ff,f1:f5:dd:7f:0:2:0:0:ab:11:b5:40:7c:3:e2:a9:8c:b3
+        lease=0x6782bfd4
+}
+{
         name=bar
         ip_address=192.168.64.3
         hw_address=1,a4:b5:c6:d7:e8:f9
@@ -91,7 +98,9 @@ func Test_ipAddressFromFile(t *testing.T) {
 			false,
 		},
 		{
-			"duplicate",
+			// DUID entries (hw_address=ff,...) should be skipped without
+			// breaking parsing of subsequent Ethernet entries.
+			"after-duid",
 			args{"a4:b5:c6:d7:e8:f9", dhcpFile},
 			"192.168.64.3",
 			false,

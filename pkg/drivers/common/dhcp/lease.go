@@ -135,14 +135,29 @@ func parseLeases(r io.Reader) ([]Entry, error) {
 		case "ip_address":
 			entry.IPAddress = val
 		case "hw_address":
-			// The mac addresses have a '1,' at the start.
-			macAddress, err := parseMAC(val[2:])
-			if err != nil {
-				log.Warnf("unable to parse hw_address in dhcp leases file: %q: %s",
-					val[2:], err)
+			hwType, hwAddr, ok := strings.Cut(val, ",")
+			if !ok {
+				log.Warnf("invalid hw_address in dhcp leases file: %q", val)
 				continue
 			}
-			entry.HWAddress = macAddress
+			switch hwType {
+			case "1":
+				// Ethernet MAC address (ARP hardware type 1).
+				// Example: hw_address=1,52:e9:a0:9b:7d:7b
+				macAddress, err := parseMAC(hwAddr)
+				if err != nil {
+					log.Warnf("unable to parse hw_address in dhcp leases file: %q: %s", val, err)
+					continue
+				}
+				entry.HWAddress = macAddress
+			case "ff":
+				// DUID (DHCP Unique Identifier), not a MAC address.
+				// Example: hw_address=ff,f1:f5:dd:7f:0:2:0:0:ab:11:ad:75:7f:d2:b5:8d:7a:74
+				// Minikube VMs always use Ethernet so they never create these entries,
+				// but other VMs on the same host may.
+			default:
+				log.Warnf("unknown hw_address type in dhcp leases file: %q", val)
+			}
 		case "identifier":
 			entry.ID = val
 		case "lease":
