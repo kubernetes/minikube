@@ -194,8 +194,8 @@ func testImageToCache(t *testing.T) {
 // the local cache is absent and remote existence checks are required.
 // In summary, this test enforces that:
 // - PreloadExists performs remote checks only on cache misses.
-// - Negative and positive results are cached per (k8sVersion, containerVersion, runtime) key.
-// - GitHub is only consulted when GCS reports the preload as not existing.
+// - Negative and positive results are cached per (k8sVersion, containerRuntime) key.
+// - GCS is only consulted when GitHub reports the preload as not existing.
 // - Global state is correctly restored after the test.
 func testPreloadExistsCaching(t *testing.T) {
 	setupTestMiniHome(t)
