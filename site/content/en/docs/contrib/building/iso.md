@@ -77,9 +77,10 @@ To build without docker run:
 IN_DOCKER=1 make minikube-iso-<arch>
 ```
 
-> [!IMPORTANT]
-> Some external projects will try to use docker even when building
-> without docker. You must install docker on the build host.
+{{% alert title="Note" color="primary" %}}
+Some external projects will try to use docker even when building
+without docker. You must install docker on the build host.
+{{% /alert %}}
 
 ## Using a local ISO image
 
