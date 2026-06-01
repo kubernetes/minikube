@@ -114,7 +114,11 @@ func Test_ipAddressFromFile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ipAddressFromFile(tt.args.mac, tt.args.path)
+			macAddress, err := parseMAC(tt.args.mac)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := ipAddressFromFile(macAddress, tt.args.path)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ipAddressFromFile() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -49,13 +49,21 @@ type Entry struct {
 
 // IPAddressForMAC returns the IP address leased to the given MAC address.
 func IPAddressForMAC(mac string) (string, error) {
-	return ipAddressFromFile(mac, leasesPath)
+	macAddress, err := parseMAC(mac)
+	if err != nil {
+		return "", err
+	}
+	return ipAddressFromFile(macAddress, leasesPath)
 }
 
 // WaitForLease polls the DHCP leases file until a lease for the given MAC
 // address appears or the timeout expires. In nested VMs the timeout is tripled
 // automatically.
 func WaitForLease(mac string, timeout time.Duration) (string, error) {
+	macAddress, err := parseMAC(mac)
+	if err != nil {
+		return "", err
+	}
 	if detect.NestedVM() {
 		log.Debugf("Nested VM detected, increasing timeout from %s to %s", timeout, timeout*3)
 		timeout *= 3
@@ -66,7 +74,7 @@ func WaitForLease(mac string, timeout time.Duration) (string, error) {
 	deadline := start.Add(timeout)
 	for i := 0; ; i++ {
 		log.Debugf("Searching for %s in %s (attempt %d) ...", mac, leasesPath, i)
-		ip, err := ipAddressFromFile(mac, leasesPath)
+		ip, err := ipAddressFromFile(macAddress, leasesPath)
 		if err == nil {
 			log.Infof("Found DHCP lease for %s: %s in %.3f seconds", mac, ip, time.Since(start).Seconds())
 			return ip, nil
@@ -78,14 +86,10 @@ func WaitForLease(mac string, timeout time.Duration) (string, error) {
 	}
 }
 
-func ipAddressFromFile(mac, path string) (string, error) {
-	// Due to https://openradar.appspot.com/FB15382970 we need to parse the MAC
-	// address and compare the bytes.
-	macAddress, err := parseMAC(mac)
-	if err != nil {
-		return "", err
-	}
-
+// ipAddressFromFile finds the IP address for macAddress in the DHCP leases file.
+// Due to https://openradar.appspot.com/FB15382970 we compare parsed MAC bytes
+// rather than strings.
+func ipAddressFromFile(macAddress net.HardwareAddr, path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -104,7 +108,7 @@ func ipAddressFromFile(mac, path string) (string, error) {
 			return entry.IPAddress, nil
 		}
 	}
-	return "", fmt.Errorf("could not find an IP address for %s", mac)
+	return "", fmt.Errorf("could not find an IP address for %s", macAddress)
 }
 
 func parseLeases(r io.Reader) ([]Entry, error) {
