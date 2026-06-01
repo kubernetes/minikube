@@ -43,9 +43,10 @@ instructions below.
 The command downloads the latest release from github and installs it to
 `/opt/vmnet-helper`.
 
-> [!IMPORTANT]
-> The vmnet-helper executable and the directory where it is installed
-> must be owned by root and may not be modifiable by unprivileged users.
+{{% alert title="Note" color="primary" %}}
+The vmnet-helper executable and the directory where it is installed
+must be owned by root and may not be modifiable by unprivileged users.
+{{% /alert %}}
 
 ### Grant permission to run vmnet-helper manually (if said no to script above)
 
@@ -81,9 +82,10 @@ from a local registry, RBD mirroring):
 minikube start --driver krunkit --vmnet-offloading
 ```
 
-> [!WARNING]
-> Offloading may not work for all workloads. Review the limitations below
-> and verify that this flag works for your workload before relying on it.
+{{% alert title="Warning" color="warning" %}}
+Offloading may not work for all workloads. Review the limitations below
+and verify that this flag works for your workload before relying on it.
+{{% /alert %}}
 
 #### Limitations
 

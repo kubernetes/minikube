@@ -53,9 +53,8 @@ You can change the sudoers configuration to allow access to specific
 users or other groups.
 
 
-**IMPORTANT**: The vmnet-helper executable and the directory where it is
-installed must be owned by root and may not be modifiable by
-unprivileged users.
+**IMPORTANT**: The vmnet-helper executable and the directory where it is installed must be owned by root and may not be modifiable by unprivileged users.
+
 
 
 ### Usage
