@@ -34,8 +34,9 @@ const (
 	// leasesPath is the path to dhcpd leases file
 	leasesPath = "/var/db/dhcpd_leases"
 
-	// pollInterval is how long to wait between attempts in WaitForLease.
-	pollInterval = 2 * time.Second
+	// pollInterval is how long the caller should wait before retrying when the
+	// leases file is missing.
+	pollInterval = 1 * time.Second
 )
 
 // Entry holds a parsed DHCP lease entry.
@@ -71,18 +72,48 @@ func WaitForLease(mac string, timeout time.Duration) (string, error) {
 	log.Infof("Waiting for DHCP lease for %s (timeout %s)", mac, timeout)
 
 	start := time.Now()
-	deadline := start.Add(timeout)
-	for i := 0; ; i++ {
-		log.Debugf("Searching for %s in %s (attempt %d) ...", mac, leasesPath, i)
-		ip, err := ipAddressFromFile(macAddress, leasesPath)
-		if err == nil {
-			log.Infof("Found DHCP lease for %s: %s in %.3f seconds", mac, ip, time.Since(start).Seconds())
-			return ip, nil
+	lastWaitingLog := start
+	waiting := false
+
+	w, err := newWatcher(timeout)
+	if err != nil {
+		return "", err
+	}
+	defer w.Close()
+
+	for {
+		ev, err := w.watch()
+		if err != nil {
+			return "", fmt.Errorf("watching DHCP lease for %s: %w", mac, err)
 		}
-		if time.Now().After(deadline) {
-			return "", err
+		switch ev {
+		case fileMissing:
+			if !waiting {
+				log.Infof("Leases file removed, waiting until %s is created ...", leasesPath)
+				lastWaitingLog = time.Now()
+				waiting = true
+			} else if time.Since(lastWaitingLog) >= time.Minute {
+				log.Infof("Still waiting until %s is created ...", leasesPath)
+				lastWaitingLog = time.Now()
+			}
+			time.Sleep(pollInterval)
+		case fileCreated, fileChanged, periodicCheck:
+			switch ev {
+			case fileCreated:
+				log.Infof("Leases file created, searching for %s in %s", mac, leasesPath)
+				waiting = false
+			case fileChanged:
+				log.Debugf("Leases file changed, searching for %s in %s", mac, leasesPath)
+			case periodicCheck:
+				log.Debugf("Periodic check, searching for %s in %s", mac, leasesPath)
+			}
+			if ip, err := ipAddressFromFile(macAddress, leasesPath); err == nil {
+				log.Infof("Found DHCP lease for %s: %s in %.3f seconds", mac, ip, time.Since(start).Seconds())
+				return ip, nil
+			}
+		case deadlineExceeded:
+			return "", fmt.Errorf("timeout waiting for DHCP lease for %s after %s", mac, timeout)
 		}
-		time.Sleep(pollInterval)
 	}
 }
 
