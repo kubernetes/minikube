@@ -24,13 +24,18 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/minikube/detect"
 )
 
 const (
 	// leasesPath is the path to dhcpd leases file
 	leasesPath = "/var/db/dhcpd_leases"
+
+	// pollInterval is how long to wait between attempts in WaitForLease.
+	pollInterval = 2 * time.Second
 )
 
 // Entry holds a parsed DHCP lease entry.
@@ -45,6 +50,30 @@ type Entry struct {
 // IPAddressForMAC returns the IP address leased to the given MAC address.
 func IPAddressForMAC(mac string) (string, error) {
 	return ipAddressFromFile(mac, leasesPath)
+}
+
+// WaitForLease polls the DHCP leases file until a lease for the given MAC
+// address appears or the timeout expires. In nested VMs the timeout is tripled
+// automatically.
+func WaitForLease(mac string, timeout time.Duration) (string, error) {
+	if detect.NestedVM() {
+		log.Debugf("Nested VM detected, increasing timeout from %s to %s", timeout, timeout*3)
+		timeout *= 3
+	}
+
+	deadline := time.Now().Add(timeout)
+	for i := 0; ; i++ {
+		log.Debugf("Attempt %d", i)
+		ip, err := ipAddressFromFile(mac, leasesPath)
+		if err == nil {
+			log.Debugf("IP: %s", ip)
+			return ip, nil
+		}
+		if time.Now().After(deadline) {
+			return "", err
+		}
+		time.Sleep(pollInterval)
+	}
 }
 
 func ipAddressFromFile(mac, path string) (string, error) {
