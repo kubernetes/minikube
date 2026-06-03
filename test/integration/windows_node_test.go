@@ -251,7 +251,8 @@ func validateWindowsKubeletService(ctx context.Context, t *testing.T, profile st
 }
 
 // validateWindowsKubeletArgs reads the kubelet process command line via WMI and asserts
-// that required flags are present.
+// that required flags are present. Since Kubernetes 1.27 containerRuntimeEndpoint may be
+// set in config.yaml instead of on the command line, so we check both.
 func validateWindowsKubeletArgs(ctx context.Context, t *testing.T, profile string) {
 	t.Helper()
 	node := windowsNodeName(ctx, t, profile)
@@ -263,9 +264,18 @@ func validateWindowsKubeletArgs(ctx context.Context, t *testing.T, profile strin
 	}
 	t.Logf("kubelet command line: %s", cmdLine)
 
-	for _, flag := range []string{"--container-runtime-endpoint", "--kubeconfig"} {
-		if !strings.Contains(cmdLine, flag) {
-			t.Errorf("kubelet command line missing flag %q", flag)
+	if !strings.Contains(cmdLine, "--kubeconfig") {
+		t.Errorf("kubelet command line missing flag %q", "--kubeconfig")
+	}
+
+	// --container-runtime-endpoint may be on the CLI or in config.yaml (k8s 1.27+).
+	if !strings.Contains(cmdLine, "--container-runtime-endpoint") {
+		configYAML, err := winSSH(ctx, t, profile, node,
+			`powershell -Command "Get-Content 'C:\var\lib\kubelet\config.yaml'"`)
+		if err != nil || !strings.Contains(configYAML, "containerRuntimeEndpoint") {
+			t.Errorf("containerRuntimeEndpoint not found in kubelet command line or config.yaml")
+		} else {
+			t.Logf("containerRuntimeEndpoint found in kubelet config.yaml")
 		}
 	}
 }
@@ -301,10 +311,25 @@ func validateWindowsContainerdConfig(ctx context.Context, t *testing.T, profile 
 	t.Helper()
 	node := windowsNodeName(ctx, t, profile)
 
-	config, err := winSSH(ctx, t, profile, node,
-		`powershell -Command "Get-Content 'C:\ProgramData\containerd\config.toml'"`)
-	if err != nil {
-		t.Fatalf("failed to read containerd config.toml: %v", err)
+	candidates := []string{
+		`C:\Program Files\containerd\config.toml`,
+		`C:\ProgramData\containerd\config.toml`,
+		`C:\k\containerd\config.toml`,
+	}
+	var config string
+	var found bool
+	for _, path := range candidates {
+		out, err := winSSH(ctx, t, profile, node,
+			fmt.Sprintf(`powershell -Command "Get-Content '%s'"`, path))
+		if err == nil && strings.Contains(out, "containerd") {
+			config = out
+			found = true
+			t.Logf("containerd config.toml found at %s", path)
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("containerd config.toml not found at any candidate path: %v", candidates)
 	}
 	t.Logf("containerd config.toml:\n%s", config)
 
