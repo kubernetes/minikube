@@ -334,14 +334,18 @@ func validateWindowsContainerdConfig(ctx context.Context, t *testing.T, profile 
 	t.Logf("containerd config.toml:\n%s", config)
 
 	checks := map[string]string{
-		"pause image":           "pause",
-		"runhcs-wcow-process":   "runhcs-wcow-process",
-		"containerd named pipe": "npipe://",
+		"pause image":         "pause",
+		"runhcs-wcow-process": "runhcs-wcow-process",
 	}
 	for desc, want := range checks {
 		if !strings.Contains(config, want) {
 			t.Errorf("containerd config.toml missing %s (expected to contain %q)", desc, want)
 		}
+	}
+	// containerd on Windows expresses the named pipe as \\.\pipe\... in config.toml,
+	// not as npipe:// — both formats refer to the same Windows named pipe transport.
+	if !strings.Contains(config, `npipe://`) && !strings.Contains(config, `\\.\pipe\`) {
+		t.Errorf("containerd config.toml missing named pipe endpoint (expected npipe:// or \\\\.\\pipe\\)")
 	}
 }
 
