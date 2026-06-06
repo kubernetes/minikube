@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-DOCKER_BUILDX_AARCH64_VERSION = v0.33.0
+DOCKER_BUILDX_AARCH64_VERSION = v0.34.1
 DOCKER_BUILDX_AARCH64_SITE = https://github.com/docker/buildx/releases/download/$(DOCKER_BUILDX_AARCH64_VERSION)
 DOCKER_BUILDX_AARCH64_SOURCE = buildx-$(DOCKER_BUILDX_AARCH64_VERSION).linux-arm64
 
