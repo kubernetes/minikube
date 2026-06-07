@@ -76,7 +76,6 @@ func TestCopyBinary(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			err := copyBinary(tc.runner, tc.src, tc.dst)
 			if (err != nil) != tc.wantErr {
