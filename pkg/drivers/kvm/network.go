@@ -517,61 +517,25 @@ func dhcpLease(conn *libvirt.Connect, networkName, hostname, mac, ip string) (le
 	return nil, nil
 }
 
-// ipFromAPI returns current primary IP address of domain interface in network.
-func ipFromAPI(conn *libvirt.Connect, domain, networkName string) (string, error) {
-	mac, err := macFromXML(conn, domain, networkName)
-	if err != nil {
-		return "", fmt.Errorf("failed getting MAC address: %w", err)
-	}
-
-	ifaces, err := ifListFromAPI(conn, domain)
-	if err != nil {
-		return "", fmt.Errorf("failed getting network %s interfaces using API of domain %s: %w", networkName, domain, err)
-	}
-	for _, i := range ifaces {
-		if i.Hwaddr == mac {
-			if i.Addrs != nil {
-				log.Debugf("domain %s has current primary IP address %s and MAC address %s in network %s", domain, i.Addrs[0].Addr, mac, networkName)
-				return i.Addrs[0].Addr, nil
-			}
-			log.Debugf("domain %s with MAC address %s doesn't have current IP address in network %s: %+v", domain, mac, networkName, i)
-			return "", nil
-		}
-	}
-
-	log.Debugf("unable to find current IP address of domain %s in network %s (interfaces detected: %+v)", domain, networkName, ifaces)
-	return "", nil
-}
-
-// ifListFromAPI returns current domain interfaces.
-func ifListFromAPI(conn *libvirt.Connect, domain string) ([]libvirt.DomainInterface, error) {
-	dom, err := conn.LookupDomainByName(domain)
-	if err != nil {
-		return nil, fmt.Errorf("failed looking up domain %s: %w", domain, lvErr(err))
-	}
-	defer func() {
-		if dom == nil {
-			log.Warnf("nil domain, cannot free")
-		} else if err := dom.Free(); err != nil {
-			log.Errorf("failed freeing %s domain: %v", domain, lvErr(err))
-		}
-	}()
-
+// lookupIP returns the current IP address for the domain's private interface, or "" if not yet available.
+func (d *Driver) lookupIP(dom *libvirt.Domain) string {
 	ifs, err := dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
+	if err != nil {
+		log.Debugf("failed listing interface addresses (source=lease): %v", lvErr(err))
+	}
 	if len(ifs) == 0 {
+		ifs, err = dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_ARP)
 		if err != nil {
-			log.Debugf("failed listing network interface addresses of domain %s (source=lease): %v", domain, lvErr(err))
-		} else {
-			log.Debugf("no network interface addresses found for domain %s (source=lease)", domain)
-		}
-		log.Debugf("trying to list again with source=arp")
-
-		if ifs, err = dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_ARP); err != nil {
-			return nil, fmt.Errorf("failed listing network interface addresses of domain %s (source=arp): %w", domain, lvErr(err))
+			log.Debugf("failed listing interface addresses (source=arp): %v", lvErr(err))
 		}
 	}
 
-	return ifs, nil
+	for _, iface := range ifs {
+		if iface.Hwaddr == d.PrivateMAC && len(iface.Addrs) > 0 {
+			return iface.Addrs[0].Addr
+		}
+	}
+	return ""
 }
 
 // ipFromXML returns defined IP address of interface in network.
