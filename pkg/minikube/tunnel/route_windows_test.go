@@ -72,7 +72,7 @@ func TestWindowsRouteIdempotentIntegrationTest(t *testing.T) {
 	cleanRoute(t, "10.96.0.0")
 }
 
-func TestWindowsRouteCleanupIdempontentIntegrationTest(t *testing.T) {
+func TestWindowsRouteCleanupIdempotentIntegrationTest(t *testing.T) {
 	route := &Route{
 		Gateway: net.IPv4(1, 2, 3, 4),
 		DestCIDR: &net.IPNet{

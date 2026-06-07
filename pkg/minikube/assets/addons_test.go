@@ -122,7 +122,7 @@ func TestFilterKeySpace(t *testing.T) {
 	}
 }
 
-func TestOverrideDefautls(t *testing.T) {
+func TestOverrideDefaults(t *testing.T) {
 	type TestCase struct {
 		defaultMap  map[string]string
 		overrideMap map[string]string

@@ -65,7 +65,7 @@ func TestLinuxRouteIdempotentIntegrationTest(t *testing.T) {
 	cleanRoute(t, "10.96.0.0/12")
 }
 
-func TestLinuxRouteCleanupIdempontentIntegrationTest(t *testing.T) {
+func TestLinuxRouteCleanupIdempotentIntegrationTest(t *testing.T) {
 
 	r := &osRouter{}
 	route := &Route{

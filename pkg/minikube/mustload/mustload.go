@@ -53,7 +53,7 @@ type ControlPlane struct {
 	Node *config.Node
 	// Runner provides command execution
 	Runner command.Runner
-	// Hostname is the host-accesible target for the apiserver
+	// Hostname is the host-accessible target for the apiserver
 	Hostname string
 	// Port is the host-accessible port for the apiserver
 	Port int
