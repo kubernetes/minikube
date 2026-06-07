@@ -129,27 +129,38 @@ func machineState(lvs libvirt.DomainState) state.State {
 }
 
 // GetIP returns an IP or hostname that this host is available at
+// Returns the stored address if available, otherwise queries libvirt.
 func (d *Driver) GetIP() (string, error) {
+	if d.IPAddress != "" {
+		return d.IPAddress, nil
+	}
+
 	s, err := d.GetState()
 	if err != nil {
 		return "", fmt.Errorf("getting domain state: %w", err)
 	}
 
 	if s != state.Running {
-		return "", errors.New("domain is not running")
+		return "", errors.New("IP address is not set and domain is not running")
 	}
 
-	conn, err := getConnection(d.ConnectionURI)
+	dom, conn, err := d.getDomain()
 	if err != nil {
-		return "", fmt.Errorf("failed opening libvirt connection: %w", err)
+		return "", fmt.Errorf("failed getting domain: %w", err)
 	}
 	defer func() {
-		if _, err := conn.Close(); err != nil {
-			log.Errorf("failed closing libvirt connection: %v", lvErr(err))
+		if err := closeDomain(dom, conn); err != nil {
+			log.Errorf("failed closing domain: %v", err)
 		}
 	}()
 
-	return ipFromXML(conn, d.MachineName, d.PrivateNetwork)
+	ip := d.lookupIP(dom)
+	if ip == "" {
+		return "", fmt.Errorf("IP address not found for domain %s", d.MachineName)
+	}
+
+	d.IPAddress = ip
+	return ip, nil
 }
 
 // GetSSHHostname returns hostname for use with ssh

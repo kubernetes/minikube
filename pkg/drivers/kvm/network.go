@@ -538,26 +538,6 @@ func (d *Driver) lookupIP(dom *libvirt.Domain) string {
 	return ""
 }
 
-// ipFromXML returns defined IP address of interface in network.
-func ipFromXML(conn *libvirt.Connect, domain, networkName string) (string, error) {
-	mac, err := macFromXML(conn, domain, networkName)
-	if err != nil {
-		return "", fmt.Errorf("failed getting MAC address: %w", err)
-	}
-
-	lease, err := dhcpLease(conn, networkName, "", mac, "")
-	if err != nil {
-		return "", fmt.Errorf("failed looking up network %s for host DHCP lease {name: <any>, mac: %q, ip: <any>}: %w", networkName, mac, err)
-	}
-	if lease == nil {
-		log.Debugf("unable to find defined IP address of network %s interface with MAC address %s", networkName, mac)
-		return "", nil
-	}
-
-	log.Debugf("domain %s has defined IP address %s and MAC address %s in network %s", domain, lease.IPaddr, mac, networkName)
-	return lease.IPaddr, nil
-}
-
 // macFromXML returns defined MAC address of interface in network from domain XML.
 func macFromXML(conn *libvirt.Connect, domain, networkName string) (string, error) {
 	domIfs, err := ifListFromXML(conn, domain)
