@@ -106,9 +106,9 @@ jobs:
           USER="minikubeadmin"
           
           # Copy binaries
-          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./out/minikube-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
-          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./out/e2e-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
-          sshpass -e scp -r -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./test/integration/testdata "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=9 ./out/minikube-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=9 ./out/e2e-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e scp -r -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=9 ./test/integration/testdata "$USER@$HOST:C:/Users/$USER/"
 
       - name: Run Functional Test
         continue-on-error: true
@@ -339,9 +339,9 @@ jobs:
         run: |
           HOST="${{ env.VM_NAME }}.${{ env.AZURE_DEFAULTS_LOCATION }}.cloudapp.azure.com"
           USER="${{ env.ADMIN_USER }}"
-          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./out/minikube-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
-          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./out/e2e-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
-          sshpass -e scp -r -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./test/integration/testdata "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=9 ./out/minikube-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=9 ./out/e2e-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e scp -r -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=9 ./test/integration/testdata "$USER@$HOST:C:/Users/$USER/"
 
       - name: Run TestWindowsNode
         id: run_tests
