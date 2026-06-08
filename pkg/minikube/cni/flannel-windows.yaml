@@ -16,7 +16,13 @@
 # Uses a HostProcess container so no Windows base-image OS-version matching
 # is required — the pod runs directly on the host.
 #
-# Image source: https://github.com/flannel-io/flannel
+# Image source: https://hub.docker.com/r/syck0/flannel/tags
+# syck0/flannel:v0.21.5-hostprocess is the last version confirmed to ship
+# flannel.exe CNI binaries compatible with Windows Server 2025. Newer syck0
+# tags (v0.26.x) and the official ghcr.io/flannel-io/flannel image both
+# produce "not compatible with the version of Windows" errors on WS2025.
+# Bump only after verifying binary compatibility with the WS2025 VHD.
+#
 # Mounts the Linux kube-flannel-cfg ConfigMap (created by the Linux flannel
 # CNI apply) so that Windows flannel uses the same network configuration.
 ---
@@ -120,7 +126,7 @@ spec:
         operator: Exists
       containers:
       - name: kube-flannel
-        image: syck0/flannel:v0.26.1-hostprocess
+        image: syck0/flannel:v0.21.5-hostprocess
         imagePullPolicy: Always
         volumeMounts:
         - name: flannel-cfg
