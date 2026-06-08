@@ -1089,13 +1089,29 @@ func configureFlannelCNI() error {
 	return nil
 }
 
-// prepare windows node by flannel  configuration
-func prepareWindowsNodeFlannel() error {
-	err := cmd("kubectl apply -f https://raw.githubusercontent.com/vrapolinario/MinikubeWindowsContainers/main/flannel-overlay.yaml")
+// applyWindowsManifest writes content to a temp file then runs kubectl apply -f
+// against it. Using a file avoids PowerShell stdin piping complexity.
+func applyWindowsManifest(content string) error {
+	f, err := os.CreateTemp("", "minikube-windows-*.yaml")
 	if err != nil {
-		klog.Errorf("failed to apply flannel configuration: %v\n", err)
+		return fmt.Errorf("create temp manifest: %w", err)
 	}
-	klog.Infof("Successfully applied the configuration.")
+	defer os.Remove(f.Name())
+	if _, err := f.WriteString(content); err != nil {
+		f.Close()
+		return fmt.Errorf("write temp manifest: %w", err)
+	}
+	f.Close()
+	return cmd("kubectl", "apply", "-f", f.Name())
+}
+
+// prepareWindowsNodeFlannel applies the Windows flannel DaemonSet from the
+// manifest bundled in the minikube binary (pkg/minikube/cni/flannel-windows.yaml)
+func prepareWindowsNodeFlannel() error {
+	if err := applyWindowsManifest(cni.FlannelWindowsManifest()); err != nil {
+		klog.Errorf("failed to apply flannel-windows: %v", err)
+	}
+	klog.Infof("Successfully applied flannel Windows configuration.")
 	return nil
 }
 
@@ -1110,13 +1126,13 @@ func prepareLinuxNode(runner command.Runner) error {
 	return nil
 }
 
-// prepare windows node kube-proxy yaml configuration
+// prepareWindowsNodeKubeProxy applies the Windows kube-proxy DaemonSet from
+// the manifest bundled in the minikube binary (pkg/minikube/cni/kube-proxy-windows.yaml)
 func prepareWindowsNodeKubeProxy() error {
-	err := cmd("kubectl apply -f https://raw.githubusercontent.com/vrapolinario/MinikubeWindowsContainers/main/kube-proxy.yaml")
-	if err != nil {
-		klog.Errorf("failed to apply kube-proxy configuration: %v\n", err)
+	if err := applyWindowsManifest(cni.KubeProxyWindowsManifest()); err != nil {
+		klog.Errorf("failed to apply kube-proxy-windows: %v", err)
 	}
-	klog.Infof("Successfully applied the configuration.")
+	klog.Infof("Successfully applied kube-proxy Windows configuration.")
 	return nil
 }
 

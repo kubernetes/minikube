@@ -1,0 +1,77 @@
+# Copyright 2026 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Windows kube-proxy DaemonSet for minikube mixed-OS clusters.
+# Uses a HostProcess container so no Windows base-image OS-version matching
+# is required — the pod runs directly on the host.
+#
+# Image source: https://hub.docker.com/r/sigwindowstools/kube-proxy/tags?name=flannel
+# Bump the image tag here when a newer flannel-hostprocess version is published.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    k8s-app: kube-proxy
+  name: kube-proxy-windows
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: kube-proxy-windows
+  template:
+    metadata:
+      labels:
+        k8s-app: kube-proxy-windows
+    spec:
+      serviceAccountName: kube-proxy
+      securityContext:
+        windowsOptions:
+          hostProcess: true
+          runAsUserName: "NT AUTHORITY\\system"
+      hostNetwork: true
+      containers:
+      - image: sigwindowstools/kube-proxy:v1.32.3-flannel-hostprocess
+        name: kube-proxy
+        imagePullPolicy: IfNotPresent
+        env:
+        # kube-proxy will use this value to select the correct network
+        # https://github.com/kubernetes/kubernetes/blob/b0bc8adbc2178e15872f9ef040355c51c45d04bb/pkg/proxy/winkernel/proxier.go#L155-L158
+        - name: KUBE_NETWORK
+          value: "flannel.4096"
+        - name: CNI_BIN_PATH
+          value: C:\\opt\\cni\\bin
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        volumeMounts:
+        - mountPath: /mounts/var/lib/kube-proxy
+          name: kube-proxy
+      nodeSelector:
+        kubernetes.io/os: windows
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - operator: Exists
+      volumes:
+      - configMap:
+          name: kube-proxy
+        name: kube-proxy
+  updateStrategy:
+    type: RollingUpdate
