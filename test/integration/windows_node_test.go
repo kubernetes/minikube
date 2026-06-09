@@ -360,8 +360,9 @@ func validateWindowsWorkload(ctx context.Context, t *testing.T, profile string) 
 		t.Fatalf("failed to apply windows workload: %v\n%s", err, rr.Stderr.String())
 	}
 
-	// Windows containers can take several minutes to pull and start on first run.
-	if _, err := PodWait(ctx, t, profile, "default", "app=win-webserver", Minutes(15)); err != nil {
+	// Windows containers can take many minutes to pull and start on first run — the
+	// Windows Server Core image is several GB and cold pulls on Azure VMs can exceed 15m.
+	if _, err := PodWait(ctx, t, profile, "default", "app=win-webserver", Minutes(25)); err != nil {
 		t.Errorf("win-webserver pod did not reach Running state: %v", err)
 	}
 }
@@ -429,7 +430,9 @@ func validateWorkloadsOnCorrectOS(ctx context.Context, t *testing.T, profile str
 }
 
 // validateWindowsPodDNS verifies DNS resolution works from inside the Windows pod by running
-// Resolve-DnsName against the cluster DNS service name.
+// nslookup against the cluster DNS service name. nslookup is used instead of Resolve-DnsName
+// because Resolve-DnsName formats output as a PowerShell table that wraps across lines depending
+// on console width, making reliable string matching fragile.
 func validateWindowsPodDNS(ctx context.Context, t *testing.T, profile string) {
 	t.Helper()
 	winPod := podName(ctx, t, profile, "app=win-webserver")
@@ -441,15 +444,15 @@ func validateWindowsPodDNS(ctx context.Context, t *testing.T, profile string) {
 			"--context", profile,
 			"exec", winPod, "--",
 			"powershell", "-Command",
-			"Resolve-DnsName kubernetes.default.svc.cluster.local"))
+			"nslookup kubernetes.default.svc.cluster.local"))
 		if err != nil {
 			lastErr = err
 			time.Sleep(5 * time.Second)
 			continue
 		}
 		out := rr.Stdout.String()
-		t.Logf("Resolve-DnsName output: %s", out)
-		if strings.Contains(out, "Address") || strings.Contains(out, "IP4Address") {
+		t.Logf("nslookup output: %s", out)
+		if strings.Contains(out, "Address") {
 			t.Logf("DNS resolution from Windows pod succeeded")
 			return
 		}
