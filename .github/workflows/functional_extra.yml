@@ -359,6 +359,7 @@ jobs:
           Set-Location "C:\Users\minikubeadmin";
           .\e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --binary=.\minikube-windows-amd64.exe "-test.run" TestWindowsNode "-test.v" "-test.timeout=90m" | Tee-Object -FilePath testout.txt;
           $env:result = $lastexitcode;
+          Get-Content testout.txt | go tool test2json -t | Out-File -Encoding UTF8 testout.json;
           if ($env:result -eq 0) { Write-Output "minikube: SUCCESS" } else { Write-Output "minikube: FAIL" };
           exit $env:result
           PSEOF
@@ -374,12 +375,11 @@ jobs:
         run: |
           HOST="${{ env.VM_NAME }}.${{ env.AZURE_DEFAULTS_LOCATION }}.cloudapp.azure.com"
           USER="${{ env.ADMIN_USER }}"
+          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST:C:/Users/$USER/testout.json" . || true
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST:C:/Users/$USER/testout.txt" . || true
           mkdir -p report
-          if [ -f testout.txt ]; then
-            cat testout.txt | go tool test2json -t > report/testout.json || true
-            mv testout.txt report/
-          fi
+          [ -f testout.json ] && mv testout.json report/
+          [ -f testout.txt ] && mv testout.txt report/
 
       - name: Generate Gopogh HTML Report
         uses: ./.github/actions/generate-report
