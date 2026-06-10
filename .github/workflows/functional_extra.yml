@@ -370,7 +370,7 @@ jobs:
           Set-Location "C:\Users\minikubeadmin";
           .\e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --binary=.\minikube-windows-amd64.exe "-test.run" TestWindowsNode "-test.v" "-test.timeout=90m" | Tee-Object -FilePath testout.txt;
           $env:result = $lastexitcode;
-          Get-Content testout.txt | go tool test2json -t | Out-File -Encoding UTF8 testout.json;
+          $jsonLines = Get-Content testout.txt | go tool test2json -t; [System.IO.File]::WriteAllLines("testout.json", $jsonLines, (New-Object System.Text.UTF8Encoding $false));
           if ($env:result -eq 0) { Write-Output "minikube: SUCCESS" } else { Write-Output "minikube: FAIL" };
           exit $env:result
           PSEOF
