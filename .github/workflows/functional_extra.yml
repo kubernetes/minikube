@@ -339,9 +339,20 @@ jobs:
         run: |
           HOST="${{ env.VM_NAME }}.${{ env.AZURE_DEFAULTS_LOCATION }}.cloudapp.azure.com"
           USER="${{ env.ADMIN_USER }}"
-          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=100 ./out/minikube-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
-          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=100 ./out/e2e-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
-          sshpass -e scp -r -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=100 ./test/integration/testdata "$USER@$HOST:C:/Users/$USER/"
+          SCP="sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=100"
+
+          retry_scp() {
+            for attempt in 1 2 3 4 5; do
+              $SCP "$@" && return 0
+              echo "SCP attempt $attempt/5 failed, retrying in 30s..."
+              sleep 30
+            done
+            return 1
+          }
+
+          retry_scp ./out/minikube-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
+          retry_scp ./out/e2e-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
+          retry_scp -r ./test/integration/testdata "$USER@$HOST:C:/Users/$USER/"
 
       - name: Run TestWindowsNode
         id: run_tests
