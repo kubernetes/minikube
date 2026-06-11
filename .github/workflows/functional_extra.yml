@@ -385,11 +385,25 @@ jobs:
         run: |
           HOST="${{ env.VM_NAME }}.${{ env.AZURE_DEFAULTS_LOCATION }}.cloudapp.azure.com"
           USER="${{ env.ADMIN_USER }}"
-          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no "$USER@$HOST:C:/Users/$USER/testout.txt" . || true
           mkdir -p report
+
+          for attempt in 1 2 3; do
+            if sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
+                 "$USER@$HOST:C:/Users/$USER/testout.txt" .; then
+              echo "testout.txt copied on attempt $attempt"
+              break
+            fi
+            echo "SCP attempt $attempt/3 failed"
+            [ $attempt -lt 3 ] && sleep 20
+          done
+
           if [ -f testout.txt ]; then
+            echo "testout.txt: $(wc -c < testout.txt) bytes"
             iconv -f UTF-16 -t UTF-8 testout.txt | go tool test2json -t > report/testout.json || true
+            echo "testout.json: $(wc -c < report/testout.json 2>/dev/null || echo 0) bytes"
             mv testout.txt report/
+          else
+            echo "WARNING: testout.txt not found - tests may not have completed or SCP failed"
           fi
 
       - name: Generate Gopogh HTML Report
