@@ -42,6 +42,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/drivers/common/dhcp"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
@@ -513,40 +514,18 @@ func (d *Driver) Start() error {
 		d.IPAddress = "127.0.0.1"
 	case "socket_vmnet":
 		var err error
-		getIP := func() error {
-			d.IPAddress, err = common.GetIPAddressByMACAddress(d.MACAddress)
-			if err != nil {
-				return fmt.Errorf("failed to get IP address: %w", err)
+		d.IPAddress, err = dhcp.WaitForLease(d.MACAddress, 2*time.Minute)
+		if err != nil {
+			if !isBootpdError(err) {
+				return fmt.Errorf("IP address never found in dhcp leases file: %w", err)
 			}
-			return nil
-		}
-		// Implement a retry loop because IP address isn't added to dhcp leases file immediately
-		multiplier := 1
-		if detect.NestedVM() {
-			multiplier = 3 // will help with running in Free github action Macos VMs (takes 112+ retries on average)
-		}
-		for i := 0; i < 60*multiplier; i++ {
-			log.Debugf("Attempt %d", i)
-			err = getIP()
-			if err == nil {
-				break
+			if unblockErr := firewall.UnblockBootpd(&d.CommandOptions); unblockErr != nil {
+				klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
+				exit.Error(reason.IfBootpdFirewall, "ip not found", err)
 			}
-			time.Sleep(2 * time.Second)
+			out.Styled(style.Restarting, "Successfully unblocked bootpd process from firewall, retrying")
+			return fmt.Errorf("ip not found: %v", err)
 		}
-
-		if err == nil {
-			log.Debugf("IP: %s", d.IPAddress)
-			break
-		}
-		if !isBootpdError(err) {
-			return fmt.Errorf("IP address never found in dhcp leases file: %w", err)
-		}
-		if unblockErr := firewall.UnblockBootpd(&d.CommandOptions); unblockErr != nil {
-			klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
-			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
-		}
-		out.Styled(style.Restarting, "Successfully unblocked bootpd process from firewall, retrying")
-		return fmt.Errorf("ip not found: %v", err)
 	}
 
 	return common.WaitForSSHAccess(d)
