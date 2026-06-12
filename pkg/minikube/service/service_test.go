@@ -471,7 +471,6 @@ func TestPrintURLsForService(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			svcURL, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
@@ -527,7 +526,6 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			httpsFormattedURLString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(test.bareURLString, test.https)
@@ -600,7 +598,6 @@ func TestGetServiceURLs(t *testing.T) {
 
 	defer revertK8sClient(K8s)
 	for _, test := range tests {
-		test := test
 		t.Run(test.description, func(t *testing.T) {
 			K8s = &MockClientGetter{
 				servicesMap:      serviceNamespaces,

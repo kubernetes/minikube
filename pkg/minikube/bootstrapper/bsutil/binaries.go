@@ -60,7 +60,6 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.
 
 	var g errgroup.Group
 	for _, name := range constants.KubernetesReleaseBinaries {
-		name := name
 		g.Go(func() error {
 			src, err := download.Binary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH, binariesURL)
 			if err != nil {

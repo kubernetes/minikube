@@ -105,7 +105,6 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, imgs []st
 	}
 
 	for _, img := range imgs {
-		img := img
 		g.Go(func() error {
 			// Put a ten second limit on deciding if an image needs transfer
 			// because it takes much less than that time to just transfer the image.
@@ -175,7 +174,6 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 func LoadLocalImages(cc *config.ClusterConfig, runner command.Runner, images []string) error {
 	var g errgroup.Group
 	for _, img := range images {
-		img := img
 		g.Go(func() error {
 			return transferAndLoadImage(runner, cc.KubernetesConfig, img, img)
 		})
@@ -332,7 +330,6 @@ func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 	var g errgroup.Group
 
 	for _, img := range images {
-		img := img
 		g.Go(func() error {
 			return transferAndSaveCachedImage(runner, cc.KubernetesConfig, img, cacheDir)
 		})
@@ -348,7 +345,6 @@ func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 func SaveLocalImages(cc *config.ClusterConfig, runner command.Runner, images []string, output string) error {
 	var g errgroup.Group
 	for _, img := range images {
-		img := img
 		g.Go(func() error {
 			return transferAndSaveImage(runner, cc.KubernetesConfig, output, img)
 		})
@@ -516,7 +512,6 @@ func pullImages(crMgr cruntime.Manager, imgs []string) error {
 	var g errgroup.Group
 
 	for _, img := range imgs {
-		img := img
 		g.Go(func() error {
 			return crMgr.PullImage(img)
 		})
@@ -597,7 +592,6 @@ func removeImages(crMgr cruntime.Manager, imgs []string) error {
 	var g errgroup.Group
 
 	for _, img := range imgs {
-		img := img
 		g.Go(func() error {
 			return crMgr.RemoveImage(img)
 		})
@@ -771,7 +765,6 @@ func mergeImageLists(lists [][]cruntime.ListImage) []cruntime.ListImage {
 	imageTagAndIDSet := map[string]struct{}{}
 	for _, list := range lists {
 		for _, img := range list {
-			img := img
 			_, existingImg := images[img.ID]
 			if !existingImg {
 				images[img.ID] = &img
@@ -907,7 +900,6 @@ func pushImages(crMgr cruntime.Manager, imgs []string) error {
 	var g errgroup.Group
 
 	for _, img := range imgs {
-		img := img
 		g.Go(func() error {
 			return crMgr.PushImage(img)
 		})

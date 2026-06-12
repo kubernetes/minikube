@@ -380,7 +380,6 @@ func TestVerifyEndpoint(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
@@ -460,7 +459,6 @@ func TestUpdateIP(t *testing.T) {
 	t.Setenv(localpath.MinikubeHome, "/home/la-croix")
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)

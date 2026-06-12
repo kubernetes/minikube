@@ -82,7 +82,6 @@ func TestVersionIsBetween(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			between := versionIsBetween(test.ver, test.gte, test.lte)
