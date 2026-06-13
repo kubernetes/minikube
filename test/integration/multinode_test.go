@@ -311,6 +311,9 @@ func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile strin
 
 // validateRestartKeepsNodes restarts minikube cluster and checks if the reported node list is unchanged
 func validateRestartKeepsNodes(ctx context.Context, t *testing.T, profile string) {
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23134")
+	}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "node", "list", "-p", profile))
 	if err != nil {
 		t.Errorf("failed to run node list. args %q : %v", rr.Command(), err)
@@ -371,6 +374,9 @@ func validateStopMultiNodeCluster(ctx context.Context, t *testing.T, profile str
 
 // validateRestartMultiNodeCluster verifies a soft restart on a multinode cluster works
 func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile string) {
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23136")
+	}
 	// Restart a full cluster with minikube start
 	startArgs := append([]string{"start", "-p", profile, "--wait=true", "-v=5", "--alsologtostderr"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
@@ -412,6 +418,9 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 
 // validateDeleteNodeFromMultiNode tests the minikube node delete command
 func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile string) {
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23135")
+	}
 	// Delete a node from the current cluster
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "delete", ThirdNodeName))
 	if err != nil {

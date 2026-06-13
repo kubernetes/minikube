@@ -916,6 +916,9 @@ func imageID(image string) string {
 // NOTE: It expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23142")
+	}
 
 	// The ComponentStatus API is deprecated in v1.19, so do the next closest thing.
 	found := map[string]bool{
