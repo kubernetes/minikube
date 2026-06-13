@@ -27,7 +27,7 @@ minikube start [flags]
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-pause-interval duration      Duration of inactivity before the minikube VM is paused (default 1m0s) (default 1m0s)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.50-1781273264-23119@sha256:8af5c89b5430408cb93833f88cd0a4ccae8ccc92704b7dcd3b7f1b61311cea44")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.50-1781342201-23130@sha256:d608b436dad27686df6fbe0361e2baff250c3a5c098c83a1bb802d88883aac4b")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
@@ -104,7 +104,7 @@ minikube start [flags]
   -o, --output string                     Format to print stdout in. Options include: [text,json] (default "text")
       --ports strings                     List of ports that should be exposed (docker and podman driver only)
       --preload                           If set, download tarball of preloaded images if available to improve start time. Defaults to true. (default true)
-      --preload-source string             Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try both). (default "auto")
+      --preload-source string             Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try github first, then gcs as failover). (default "auto")
       --qemu-firmware-path string         Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\Program Files\qemu\share
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --rosetta                           Enable Rosetta to support apps built for Intel processor on a Mac with Apple silicon (vfkit driver only)

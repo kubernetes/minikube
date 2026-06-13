@@ -881,7 +881,7 @@
 	"Want kubectl {{.version}}? Try 'minikube kubectl -- get pods -A'": "想要使用 kubectl {{.version}} 吗？尝试使用 'minikube kubectl -- get pods -A' 命令",
 	"Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only)": "NFS 共享的根目录位置，默认为 /nfsshares（仅限 hyperkit 驱动程序）",
 	"Whether to use external switch over Default Switch if virtual switch not explicitly specified. (hyperv driver only)": "是否在未显式指定虚拟开关时使用外部开关而不是默认开关。仅适用于 hyperv 驱动程序。",
-	"Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try both).": "",
+	"Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try github first, then gcs as failover).": "",
 	"With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative": "使用 --network-plugin=cni，您需要提供自己的 CNI。查看 --cni 标志作为用户友好的替代方法",
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).": "您似乎在使用代理，但您的 NO_PROXY 环境不包含 minikube IP ({{.ip_address}})。",
 	"You are trying to run a windows .exe binary inside WSL. For better integration please use a Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force": "您正在尝试在 WSL 中运行 Windows .exe 二进制文件。为了更好的集成，请改为使用 Linux 二进制文件（在 https://minikube.sigs.k8s.io/docs/start/ 下载）。如果仍然想要执行此操作，您可以使用 --force。",
