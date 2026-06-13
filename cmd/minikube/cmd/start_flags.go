@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 
+	"net/netip"
+
 	"github.com/blang/semver/v4"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/spf13/cobra"
@@ -149,6 +151,7 @@ const (
 	preloadSrc              = "preload-source"
 	rosetta                 = "rosetta"
 	vmnetOffloading         = "vmnet-offloading"
+	dnsServers              = config.DNSServers
 )
 
 var (
@@ -312,6 +315,9 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(sshSSHUser, defaultSSHUser, "SSH user (ssh driver only)")
 	startCmd.Flags().String(sshSSHKey, "", "SSH key (ssh driver only)")
 	startCmd.Flags().Int(sshSSHPort, defaultSSHPort, "SSH port (ssh driver only)")
+
+	// dns
+	startCmd.Flags().StringSlice(dnsServers, nil, "Static DNS server IP addresses for the VM (VM drivers only)")
 
 	// socket vmnet
 	startCmd.Flags().String(socketVMnetClientPath, "", "Path to the socket vmnet client binary (QEMU driver only)")
@@ -589,6 +595,35 @@ func getVmnetOffloading(driverName string) bool {
 	return enabled
 }
 
+// getDNSServers returns the configured DNS servers for VM drivers.
+// For non-VM drivers the value is ignored since DNS configuration via
+// systemd-resolved is not applicable.
+func getDNSServers(cmd *cobra.Command, driverName string) []netip.Addr {
+	servers := viper.GetStringSlice(dnsServers)
+	if len(servers) == 0 {
+		return nil
+	}
+	addrs := make([]netip.Addr, 0, len(servers))
+	for _, s := range servers {
+		addr, err := netip.ParseAddr(s)
+		if err != nil {
+			exit.Message(reason.Usage, "dns-servers: '{{.value}}' is not a valid IP address", out.V{"value": s})
+		}
+		addrs = append(addrs, addr)
+	}
+	// We handle only VMs managed by minikube.
+	if !driver.IsVM(driverName) || driver.IsSSH(driverName) {
+		// Only warn when the flag was explicitly passed. Config values are
+		// silently ignored for non-VM drivers to avoid noisy warnings when
+		// the user has both VM and container-based clusters.
+		if cmd.Flags().Changed(dnsServers) {
+			out.WarningT("--dns-servers flag is only valid with VM drivers, it will be ignored")
+		}
+		return nil
+	}
+	return addrs
+}
+
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
 func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string, options *run.CommandOptions) config.ClusterConfig {
 	var cc config.ClusterConfig
@@ -695,6 +730,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
 		Rosetta:            getRosetta(drvName),
 		VmnetOffloading:    getVmnetOffloading(drvName),
+		DNSServers:         getDNSServers(cmd, drvName),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 
