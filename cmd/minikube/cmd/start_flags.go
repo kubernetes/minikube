@@ -44,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -1071,4 +1072,48 @@ func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
 			out.WarningT("Specifying extra disks is currently only supported for the following drivers: {{.supported_drivers}}. If you can contribute to add this feature, please create a PR.", out.V{"supported_drivers": supportedDrivers})
 		}
 	}
+}
+
+// warnVirtualBoxDriver warns the user when the configured driver is
+// virtualbox (--driver/--vm-driver flag or MINIKUBE_DRIVER env) and better
+// alternatives are installed and healthy. This intentionally lives in the argument-validation
+// phase so the warning never fires when minikube auto-selects virtualbox
+// (auto-selection already implies the alternatives were rejected). Callers
+// must skip it when reusing an existing cluster, which keeps its original
+// driver.
+func warnVirtualBoxDriver(options *run.CommandOptions) {
+	if !viper.GetBool(config.WantVirtualBoxDriverWarning) {
+		return
+	}
+
+	requested := viper.GetString("driver")
+	if requested == "" {
+		requested = viper.GetString("vm-driver")
+	}
+	if !driver.IsVirtualBox(requested) {
+		return
+	}
+
+	var altDriverList strings.Builder
+	for _, choice := range driver.Choices(true, options) {
+		if !driver.IsVirtualBox(choice.Name) && choice.Priority != registry.Discouraged && choice.State.Installed && choice.State.Healthy {
+			fmt.Fprintf(&altDriverList, "\n\t- %s", choice.Name)
+		}
+	}
+	if altDriverList.Len() == 0 {
+		return
+	}
+
+	out.Boxed(`You have selected "virtualbox" driver, but there are better options !
+For better performance and support consider using a different driver: {{.drivers}}
+
+To turn off this warning run:
+
+	$ minikube config set WantVirtualBoxDriverWarning false
+
+
+To learn more about on minikube drivers checkout https://minikube.sigs.k8s.io/docs/drivers/
+To see benchmarks checkout https://minikube.sigs.k8s.io/docs/benchmarks/cpuusage/
+
+`, out.V{"drivers": altDriverList.String()})
 }

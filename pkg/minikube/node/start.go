@@ -64,7 +64,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
-	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -214,11 +213,6 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		list := addons.ToEnable(starter.Cfg, starter.ExistingAddons, addonList)
 		wg.Add(1)
 		go addons.Enable(&wg, starter.Cfg, list, enabledAddons, options)
-	}
-
-	// discourage use of the virtualbox driver
-	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) {
-		warnVirtualBox(options)
 	}
 
 	// special ops for "none" driver on control-plane node, like change minikube directory
@@ -991,29 +985,4 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 	klog.Infof("{%q: %s} host record injected into CoreDNS's ConfigMap", name, ip)
 
 	return nil
-}
-
-// prints a warning to the console against the use of the 'virtualbox' driver, if alternatives are available and healthy
-func warnVirtualBox(options *run.CommandOptions) {
-	var altDriverList strings.Builder
-	for _, choice := range driver.Choices(true, options) {
-		if !driver.IsVirtualBox(choice.Name) && choice.Priority != registry.Discouraged && choice.State.Installed && choice.State.Healthy {
-			fmt.Fprintf(&altDriverList, "\n\t- %s", choice.Name)
-		}
-	}
-
-	if altDriverList.Len() != 0 {
-		out.Boxed(`You have selected "virtualbox" driver, but there are better options !
-For better performance and support consider using a different driver: {{.drivers}}
-
-To turn off this warning run:
-
-	$ minikube config set WantVirtualBoxDriverWarning false
-
-
-To learn more about on minikube drivers checkout https://minikube.sigs.k8s.io/docs/drivers/
-To see benchmarks checkout https://minikube.sigs.k8s.io/docs/benchmarks/cpuusage/
-
-`, out.V{"drivers": altDriverList.String()})
-	}
 }
