@@ -61,12 +61,11 @@ For a development/learning setup, **`t3.medium` is the practical minimum**. Use 
 
 ## Install Docker
 
-minikube needs a container engine on the host to run the cluster. We'll use the `docker` driver — the most common choice on Linux. `podman` is also supported as an alternative, though it has known issues on some setups; if you prefer it, expect to debug occasionally. Other drivers (`none`, `kvm`, `ssh`) exist for different scenarios — see the [drivers documentation](/docs/drivers/) for the full list.
-
+minikube needs a container engine on the host to run the cluster. We'll use the `docker` driver — the most common choice on Linux. Install Docker Engine (the vendor `docker-ce` package) by following the [official Docker Engine install guide](https://docs.docker.com/engine/install/ubuntu/); note minikube's docker driver expects vendor Docker rather than the distro `docker.io` package (see the [docker driver docs](https://minikube.sigs.k8s.io/docs/drivers/docker/)). `podman` is also supported as an alternative, though it has known issues on some setups. Other drivers (`none`, `kvm`, `ssh`) exist for different scenarios — see the [drivers documentation](/docs/drivers/) for the full list.
 ```bash
-# Install Docker
-sudo apt update
-sudo apt install -y docker.io
+
+# Install Docker Engine (vendor docker-ce) — follow the official guide:
+#   https://docs.docker.com/engine/install/ubuntu/
 sudo systemctl enable --now docker
 
 # Add your user to the docker group so you can run docker without sudo
@@ -226,7 +225,7 @@ You can also resize the EBS volume in AWS Console without losing the instance.
 ## Next steps
 
 - Deploy your first app: [Hello minikube]({{< ref "/docs/start" >}})
-- Try multi-node clusters on EC2: [multi_node tutorial]({{< ref "/docs/tutorials/multi_node" >}})
+- Try multi-node clusters: [multi_node tutorial]({{< ref "/docs/tutorials/multi_node" >}})
 - Explore add-ons: `minikube addons list`
 
 ## See also
@@ -236,9 +235,9 @@ You can also resize the EBS volume in AWS Console without losing the instance.
 ## Notes
 
 {{% pageinfo %}}
-minikube is **not intended for production Kubernetes hosting** — for that, use EKS or self-managed clusters. This guide treats EC2 as an extension of your local development environment, like a remote dev box.
+minikube is **not intended for production Kubernetes hosting** — for that, use a managed or self-managed Kubernetes cluster (see the Kubernetes [production environment](https://kubernetes.io/docs/setup/production-environment/) docs). This guide treats EC2 as an extension of your local development environment, like a remote dev box.
 {{% /pageinfo %}}
 
 {{% pageinfo %}}
-This page refers to third-party products and services (Amazon EC2, Ubuntu). The minikube project authors aren't responsible for those third-party products or services. See the [CNCF website guidelines](https://www.cncf.io/website-guidelines/) for more details.
+This page refers to third-party products and services (Amazon EC2, Ubuntu). The minikube project authors aren't responsible for those third-party products or services. See the [CNCF website guidelines](https://github.com/cncf/foundation/blob/main/policies-guidance/website-guidelines.md) for more details.
 {{% /pageinfo %}}
