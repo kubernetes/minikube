@@ -44,7 +44,7 @@ minikube requires at least **2 CPUs and 2 GB RAM** to start (this is a Kubernete
 | `t3.medium` | 2 | 4 GB | ✅ | Recommended minimum for comfortable use |
 | `t3.large`  | 2 | 8 GB | ✅ | Better for running multiple workloads |
 
-For a development/learning setup, **`t3.medium` is the practical minimum**. Use AWS credits or budget around $0.04/hr (us-east-1). Always **stop the instance when you're not using it** to avoid charges.
+For a development/learning setup, **`t3.medium` is the practical minimum**. Pricing varies by region and over time — as a rough guide it costs a few cents per hour in most regions (check the [current EC2 pricing](https://aws.amazon.com/ec2/pricing/) for your region). Always **stop the instance when you're not using it** to avoid charges.
 
 ## Launch the EC2 instance
 
@@ -132,7 +132,7 @@ minikube stop
 Then **stop the EC2 instance from the AWS Console** — `Instance State → Stop`. A stopped EC2 instance costs near zero (you only pay for the attached EBS volume). When you're back, **Start** the instance and `minikube start` picks up where you left off.
 
 {{% pageinfo color="warning" %}}
-Don't forget this step. A running `t3.medium` costs about $1/day. A stopped one costs only a few cents/month for storage.
+Don't forget this step. A running `t3.medium` costs roughly a dollar a day depending on region; a stopped one costs only a few cents per month for storage.
 {{% /pageinfo %}}
 
 
