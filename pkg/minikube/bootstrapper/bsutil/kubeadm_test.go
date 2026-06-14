@@ -287,9 +287,9 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 	}
 }
 
-func assertGeneratedYAML(t *testing.T, got []byte, version, name string) {
+func assertValidYAMLDocs(t *testing.T, data []byte) {
 	t.Helper()
-	dec := yaml.NewDecoder(bytes.NewReader(got))
+	dec := yaml.NewDecoder(bytes.NewReader(data))
 	for i := 0; ; i++ {
 		var doc any
 		err := dec.Decode(&doc)
@@ -297,10 +297,15 @@ func assertGeneratedYAML(t *testing.T, got []byte, version, name string) {
 			break
 		}
 		if err != nil {
-			t.Errorf("GenerateKubeadmYAML produced invalid YAML (doc #%d): %v\n--- got ---\n%s", i, err, got)
+			t.Errorf("invalid YAML (doc #%d): %v\n--- got ---\n%s", i, err, data)
 			break
 		}
 	}
+}
+
+func assertGeneratedYAML(t *testing.T, got []byte, version, name string) {
+	t.Helper()
+	assertValidYAMLDocs(t, got)
 	path := fmt.Sprintf("testdata/%s/%s.yaml", version, name)
 	expected, err := os.ReadFile(path)
 	if err != nil {
