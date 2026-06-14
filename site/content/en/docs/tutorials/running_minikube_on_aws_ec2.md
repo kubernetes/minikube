@@ -22,6 +22,10 @@ Most people should run minikube locally — it's simpler. But a few cases where 
 
 If you're already running minikube fine on your laptop, you don't need this guide.
 
+![minikube running on an iPad via SSH to EC2](/images/minikube-on-ipad-via-ssh.jpeg)
+
+*Above: minikube running on an EC2 t3.medium, accessed from an iPad over SSH. The iPad itself can't run minikube — but it doesn't need to.*
+
 > **Note:** running minikube remotely works differently from the local drivers. Normally your editor, `docker`, and `kubectl` all run on the same machine as the cluster — here they run on the remote EC2 host. You'll edit files over SSH, and reach `kubectl` and services through an SSH session or port-forwarding rather than directly. Steps that "just work" locally usually need a tunnel here.
 
 ## Prerequisites
