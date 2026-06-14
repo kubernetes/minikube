@@ -132,6 +132,27 @@ Then **stop the EC2 instance from the AWS Console** — `Instance State → Stop
 Don't forget this step. A running `t3.medium` costs roughly a dollar a day depending on region; a stopped one costs only a few cents per month for storage.
 {{% /pageinfo %}}
 
+## Deploying to a remote cluster
+
+With local minikube you'd write manifests in your editor and apply them directly. On a remote host there's no local editor on the cluster machine, so author them on the instance itself — a heredoc over SSH is the quickest way:
+
+```bash
+cat > my-pod.yaml <<'EOF'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-app
+spec:
+  containers:
+  - name: my-app
+    image: nginx
+EOF
+
+kubectl apply -f my-pod.yaml
+```
+
+For anything bigger than a quick test, edit locally and copy it over with `scp my-pod.yaml ubuntu@<EC2_IP>:~/`, or use VS Code's Remote-SSH extension to edit files on the instance as if they were local.
+
 
 ## Accessing services from outside the EC2 instance
 
