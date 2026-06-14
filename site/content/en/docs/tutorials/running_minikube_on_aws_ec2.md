@@ -239,5 +239,5 @@ minikube is **not intended for production Kubernetes hosting** — for that, use
 {{% /pageinfo %}}
 
 {{% pageinfo %}}
-This page refers to third-party products and services (Amazon EC2, Ubuntu). The minikube project authors aren't responsible for those third-party products or services. See the [CNCF website guidelines](https://github.com/cncf/foundation/blob/main/policies-guidance/website-guidelines.md) for more details.
+This page refers to third-party products and services (Amazon EC2, Ubuntu, Docker). The minikube project authors aren't responsible for those third-party products or services. See the [CNCF website guidelines](https://github.com/cncf/foundation/blob/main/policies-guidance/website-guidelines.md) for more details.
 {{% /pageinfo %}}
