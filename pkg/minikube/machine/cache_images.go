@@ -193,12 +193,17 @@ func CacheAndLoadImages(images []string, profiles []*config.Profile, overwrite b
 		return nil
 	}
 
-	// This is the most important thing
-	if err := image.SaveToDir(images, detect.ImageCacheDir(), overwrite); err != nil {
+	tmpDir, err := os.MkdirTemp("", "minikube-image-*")
+	if err != nil {
+		return fmt.Errorf("creating temp dir for images: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	if err := image.SaveToDir(images, tmpDir, true); err != nil {
 		return fmt.Errorf("save to dir: %w", err)
 	}
 
-	return DoLoadImages(images, profiles, detect.ImageCacheDir(), overwrite, options)
+	return DoLoadImages(images, profiles, tmpDir, overwrite, options)
 }
 
 // DoLoadImages loads images to all profiles
