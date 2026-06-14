@@ -17,7 +17,7 @@ require (
 	github.com/containerd/errdefs v1.0.0
 	github.com/diskfs/go-diskfs v1.9.3
 	github.com/distribution/reference v0.6.0
-	github.com/docker/cli v29.4.1+incompatible
+	github.com/docker/cli v29.5.2+incompatible
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.7.0
 	github.com/docker/go-units v0.5.0
