@@ -551,17 +551,29 @@ func validateVfkitNetwork(n string, options *run.CommandOptions) string {
 	case "nat":
 		// always available
 	case "vmnet-shared":
-		// "vment-shared" provides access between machines, with lower performance compared to "nat".
+		// "vmnet-shared" provides access between machines, with lower performance compared to "nat".
 		if err := vmnet.ValidateHelper(options); err != nil {
-			if vmnetErr, ok := err.(*vmnet.Error); ok {
-				exit.Message(vmnetErr.Kind, "failed to validate {{.network}} network: {{.reason}}", out.V{"network": n, "reason": err})
-			} else {
+			if vmnetErr, ok := err.(*vmnet.Error); !ok {
 				exit.Message(reason.Usage, "failed to validate {{.network}} network: {{.reason}}", out.V{"network": n, "reason": err})
+			} else {
+				exit.Message(vmnetErr.Kind, "failed to validate {{.network}} network: {{.reason}}", out.V{"network": n, "reason": err})
 			}
 		}
 	case "":
-		// Default to nat since it is always available and provides the best performance.
-		n = "nat"
+		// Use vmnet-helper if installed, fallback to nat otherwise.
+		if err := vmnet.ValidateHelper(options); err != nil {
+			if vmnetErr, ok := err.(*vmnet.Error); !ok {
+				exit.Message(reason.Usage, "failed to validate vmnet-shared network: {{.reason}}", out.V{"reason": err})
+			} else if !vmnetErr.IsNotFound() {
+				exit.Message(vmnetErr.Kind, "failed to validate vmnet-shared network: {{.reason}}", out.V{"reason": err})
+			}
+			// vmnet-helper is not installed.
+			n = "nat"
+		} else {
+			// vmnet-helper is installed and validated.
+			n = "vmnet-shared"
+		}
+		out.Styled(style.Internet, "Automatically selected the {{.network}} network", out.V{"network": n})
 	default:
 		exit.Message(reason.Usage, "--network with vfkit must be 'nat' or 'vmnet-shared'")
 	}
