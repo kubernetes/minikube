@@ -9,9 +9,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        timeout-minutes: 1
       - name: Set env
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        timeout-minutes: 1
       - uses: openvex/generate-vex@31b415924ea0d72ed5f2640f1dee59dea6c2770b
+        timeout-minutes: 1
         name: Run vexctl
         with:
           product: pkg:golang/k8s.io/minikube@${{ env.RELEASE_VERSION }}
