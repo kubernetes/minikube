@@ -31,7 +31,7 @@ require (
 	github.com/hashicorp/go-getter v1.8.4
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hashicorp/go-version v1.9.0
-	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95
+	github.com/hectane/go-acl v1.0.0
 	github.com/icza/dyno v0.0.0-20230330125955-09f820a8d9c0
 	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
@@ -64,7 +64,7 @@ require (
 	golang.org/x/mod v0.36.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.20.0
-	golang.org/x/sys v0.45.0
+	golang.org/x/sys v0.46.0
 	golang.org/x/term v0.43.0
 	golang.org/x/text v0.37.0
 	google.golang.org/api v0.274.0
