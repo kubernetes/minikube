@@ -18,18 +18,22 @@ jobs:
         working-directory: ./image-syncer
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        timeout-minutes: 1
         with:
           repository: denverdino/image-syncer
           path: ./image-syncer
 
       - name: Set up Go
+        timeout-minutes: 1
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Build
+        timeout-minutes: 1
         run: make
 
       - name: Synchronize images to Alibaba Cloud Container Registry Service
+        timeout-minutes: 137
         env:
           ACR_USER: ${{ secrets.ALIBABA_CLOUD_ACR_USER }}
           ACR_PASSWORD: ${{ secrets.ALIBABA_CLOUD_ACR_PASSWORD }}
