@@ -49,17 +49,22 @@ jobs:
     name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        timeout-minutes: 1
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        timeout-minutes: 2
         with:
           go-version: ${{env.GO_VERSION}}
           cache: true      
       - name: Download Dependencies
+        timeout-minutes: 1
         run: go mod download
       - name: Build minikube and e2e test binaries
+        timeout-minutes: 7
         run: |
           make ${{ matrix.make-targets }}
           cp -r test/integration/testdata ./out
       - name: Upload Test Binaries
+        timeout-minutes: 1
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: binaries-${{ matrix.arch }}
@@ -143,16 +148,21 @@ jobs:
     steps:
       - id: info-block
         uses: medyagh/info-block@f5c042624acf8ce21bed4b0de77962e0a56ad88e # v1
+        timeout-minutes: 1
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        timeout-minutes: 1
 
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        timeout-minutes: 2
         with:
           go-version: ${{env.GO_VERSION}}
           cache: true      
       - name: Install gopogh
+        timeout-minutes: 1
         uses: ./.github/actions/install-gopogh
       - name: Set up cgroup v2 delegation (rootless)
         if: ${{ matrix.rootless }}
+        timeout-minutes: 1
         run: |
           sudo mkdir -p /etc/systemd/system/user@.service.d
           cat <<EOF | sudo tee /etc/systemd/system/user@.service.d/delegate.conf
@@ -162,6 +172,7 @@ jobs:
           sudo systemctl daemon-reload
       - name: Set up Rootless Docker (rootless)
         if: ${{ matrix.rootless }}
+        timeout-minutes: 3
         run: |
           sudo apt-get remove moby-engine-*
           curl https://get.docker.com | sudo sh
@@ -169,13 +180,16 @@ jobs:
           docker context use rootless
       - name: Update brew package index (macos)
         if: contains(matrix.os, 'macos')
+        timeout-minutes: 1
         run: brew update
       - name: Update apt-get package index (ubuntu)
         if: runner.os == 'Linux' && (matrix.driver == 'podman' || matrix.driver == 'none')
+        timeout-minutes: 2
         run: sudo apt-get update -qq
       - name: Install cri_dockerd (baremetal only)
         shell: bash
         if: matrix.driver == 'none' && matrix.cruntime == 'docker'
+        timeout-minutes: 1
         run: |
           CRI_DOCKERD_VERSION="v0.4.3"
           ARCH="${{ matrix.arch }}"
@@ -189,6 +203,7 @@ jobs:
       - name: Install crictl (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
+        timeout-minutes: 1
         run: |
           CRICTL_VERSION="v1.35.0"
           ARCH="${{ matrix.arch }}"
@@ -199,15 +214,18 @@ jobs:
       - name: Install conntrack & socat (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
+        timeout-minutes: 1
         run: sudo apt-get -qq -y install conntrack
       # socat is required for kubectl port forward which is used in some tests
       - name: Install socat (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
+        timeout-minutes: 1
         run: sudo apt-get -qq -y install socat        
       - name: Install container networking plugins (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
+        timeout-minutes: 1
         run: |
           CNI_PLUGIN_VERSION="v1.9.1"
           ARCH="${{ matrix.arch }}"
@@ -218,6 +236,7 @@ jobs:
           sudo tar -xf "$CNI_PLUGIN_TAR" -C "$CNI_PLUGIN_INSTALL_DIR"
           rm "$CNI_PLUGIN_TAR"
       - name: Install docker-cli
+        timeout-minutes: 1
         run: |
           set -x
           if [[ "$RUNNER_OS" == "macOS" ]]; then
@@ -244,6 +263,7 @@ jobs:
       - name: Install podman
         if: matrix.driver == 'podman'
         shell: bash
+        timeout-minutes: 1
         run: |
           sudo apt -q update
           sudo apt install -q -y podman
@@ -259,28 +279,34 @@ jobs:
           echo "=== podman ps ==="
           podman ps || true
       - name: Install kubectl
+        timeout-minutes: 1
         uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
       - name: Install qemu and socket_vmnet (macos)
         if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
+        timeout-minutes: 1
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
       - name: Install vfkit and vmnet_helper (macos)
         if: matrix.driver == 'vfkit'
+        timeout-minutes: 1
         run: |
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
       - name: Download Test Binaries
+        timeout-minutes: 1
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: binaries-${{ matrix.arch }}
       - name: Disable AppArmor for MySQL
         if: runner.os == 'Linux'
+        timeout-minutes: 1
         run: |
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
       - name: Install containerd (baremetal only)
         if: matrix.driver == 'none' && matrix.cruntime == 'containerd'
+        timeout-minutes: 1
         run: |
           sudo apt-get update
           sudo apt-get install -y containerd
@@ -292,6 +318,7 @@ jobs:
         id: run_test
         continue-on-error: true
         shell: bash
+        timeout-minutes: 18
         run: |
           set -x
           mkdir -p report
@@ -299,7 +326,8 @@ jobs:
           chmod a+x ./minikube-*
           ./minikube-$(go env GOOS)-$(go env GOARCH) delete --all --purge
           START_TIME=$(date -u +%s)
-          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr"  -test.run TestFunctional -test.timeout=${{ matrix.test-timeout }} -test.v -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt
+          # -test.timeout=0 disables the go test timeout; the step timeout-minutes above enforces the actual deadline
+          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr"  -test.run TestFunctional -test.timeout=0 -test.v -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -309,10 +337,12 @@ jobs:
           echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Convert Test Output to JSON
         if: always()
+        timeout-minutes: 1
         shell: bash
         run: go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
       - name: Generate Gopogh HTML Report
         uses: ./.github/actions/generate-report
+        timeout-minutes: 1
         if: always()
         with:
           json_report_path: './report/testout.json'
