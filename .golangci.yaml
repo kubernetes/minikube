@@ -27,27 +27,19 @@ linters:
         - "-ST1020"
         - "-ST1021"
         - "-ST1022"
+        - "-ST1005"
         # Omit embedded fields from selector expression
         - "-QF1008"
-        
     revive:
       enable-all-rules: true
       rules:
         # See https://revive.run/r
 
-        ##### P0: we should do it ASAP.
+        ##### P0
         - name: max-control-nesting
-          arguments: [7]
-        - name: deep-exit
-          disabled: true
-        - name: unchecked-type-assertion
-          disabled: true
-        - name: bare-return
-          disabled: true
-        - name: import-shadowing
-          disabled: true
-        - name: use-errors-new
-          disabled: true
+          arguments: [5]
+        - name: enforce-switch-style
+          arguments: ["allow-no-default"]
         ##### P1: consider making a dent on these, but not critical.
         - name: argument-limit
           arguments: [12]
@@ -96,6 +88,14 @@ linters:
         - name: unused-receiver
           disabled: true
         - name: add-constant
+          disabled: true
+        ###### Redundant with other linters.
+        - name: error-strings
+          disabled: true # staticcheck ST1005 handles this and catches more cases
+        ###### Opinionated style rules - permanently disabled.
+        - name: if-return
+          disabled: true
+        - name: unsecure-url-scheme
           disabled: true
         ###### To be determined, this is a rule with differences.
         - name: import-alias-naming
@@ -163,6 +163,8 @@ linters:
       # we generally dont wanna touch or lint the Third_party code, it is basically like a fork for code that we can not import.
       # but have to copy/paste
       - third_party
+      # Deprecated driver, no one can test changes.
+      - pkg/drivers/parallels/
       # Skip test files
       - '(.+)_test\.go'
     rules:
@@ -170,6 +172,39 @@ linters:
       - path: '(.+)\.go$'
         text: "Error return value of `.*` is not checked"
         linter: errcheck
+      # Allow deep-exit in CLI command files, exit helpers, and main entry points
+      - path: 'cmd/'
+        text: "deep-exit:"
+        linter: revive
+      - path: 'deploy/'
+        text: "deep-exit:"
+        linter: revive
+      - path: 'pkg/minikube/exit/'
+        text: "deep-exit:"
+        linter: revive
+      # Allow deep-exit in libmachine driver plugins, which run as standalone sub-processes communicating via RPC
+      - path: 'pkg/libmachine/drivers/plugin/'
+        text: "deep-exit:"
+        linter: revive
+      - path: 'pkg/gvisor/'
+        text: "deep-exit:"
+        linter: revive
+      # Ignore package-naming rule in pkg/util/ because renaming the package would be a massive, high-risk refactoring affecting the entire codebase.
+      - path: 'pkg/util/'
+        text: "package-naming:"
+        linter: revive
+      # Ignore package-naming rule in pkg/drivers/common/ because renaming it would create massive code churn and refactoring.
+      - path: 'pkg/drivers/common/'
+        text: "package-naming:"
+        linter: revive
+      # pkg/libmachine/log shadows the standard library "log" package, but renaming it would touch the entire codebase.
+      - path: 'pkg/libmachine/log/'
+        text: "package-naming:"
+        linter: revive
+      # Existing bare returns in route_darwin.go - fix later.
+      - path: 'pkg/minikube/tunnel/route_darwin.go'
+        text: "bare-return:"
+        linter: revive
 formatters:
   enable:
     - gofmt

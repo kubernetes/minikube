@@ -42,6 +42,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/drivers/common/dhcp"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
@@ -368,7 +369,7 @@ func getAvailableTCPPortFromRange(minPort, maxPort int) (int, error) {
 		}
 		time.Sleep(time.Second)
 	}
-	return 0, fmt.Errorf("unable to allocate tcp port")
+	return 0, errors.New("unable to allocate tcp port")
 }
 
 func (d *Driver) Start() error {
@@ -394,7 +395,7 @@ func (d *Driver) Start() error {
 			startCmd = append(startCmd,
 				"-drive", fmt.Sprintf("file=%s,readonly=on,format=raw,if=pflash", d.Firmware))
 		} else {
-			return fmt.Errorf("unknown firmware")
+			return errors.New("unknown firmware")
 		}
 	}
 
@@ -513,40 +514,18 @@ func (d *Driver) Start() error {
 		d.IPAddress = "127.0.0.1"
 	case "socket_vmnet":
 		var err error
-		getIP := func() error {
-			d.IPAddress, err = common.GetIPAddressByMACAddress(d.MACAddress)
-			if err != nil {
-				return fmt.Errorf("failed to get IP address: %w", err)
+		d.IPAddress, err = dhcp.WaitForLease(d.MACAddress, 2*time.Minute)
+		if err != nil {
+			if !isBootpdError(err) {
+				return fmt.Errorf("IP address never found in dhcp leases file: %w", err)
 			}
-			return nil
-		}
-		// Implement a retry loop because IP address isn't added to dhcp leases file immediately
-		multiplier := 1
-		if detect.NestedVM() {
-			multiplier = 3 // will help with running in Free github action Macos VMs (takes 112+ retries on average)
-		}
-		for i := 0; i < 60*multiplier; i++ {
-			log.Debugf("Attempt %d", i)
-			err = getIP()
-			if err == nil {
-				break
+			if unblockErr := firewall.UnblockBootpd(&d.CommandOptions); unblockErr != nil {
+				klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
+				exit.Error(reason.IfBootpdFirewall, "ip not found", err)
 			}
-			time.Sleep(2 * time.Second)
+			out.Styled(style.Restarting, "Successfully unblocked bootpd process from firewall, retrying")
+			return fmt.Errorf("ip not found: %v", err)
 		}
-
-		if err == nil {
-			log.Debugf("IP: %s", d.IPAddress)
-			break
-		}
-		if !isBootpdError(err) {
-			return fmt.Errorf("IP address never found in dhcp leases file: %w", err)
-		}
-		if unblockErr := firewall.UnblockBootpd(&d.CommandOptions); unblockErr != nil {
-			klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
-			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
-		}
-		out.Styled(style.Restarting, "Successfully unblocked bootpd process from firewall, retrying")
-		return fmt.Errorf("ip not found: %v", err)
 	}
 
 	return common.WaitForSSHAccess(d)
@@ -654,11 +633,11 @@ func (d *Driver) Kill() error {
 }
 
 func (d *Driver) StartDocker() error {
-	return fmt.Errorf("hosts without a driver cannot start docker")
+	return errors.New("hosts without a driver cannot start docker")
 }
 
 func (d *Driver) StopDocker() error {
-	return fmt.Errorf("hosts without a driver cannot stop docker")
+	return errors.New("hosts without a driver cannot stop docker")
 }
 
 func (d *Driver) GetDockerConfigDir() string {
@@ -666,7 +645,7 @@ func (d *Driver) GetDockerConfigDir() string {
 }
 
 func (d *Driver) Upgrade() error {
-	return fmt.Errorf("hosts without a driver cannot be upgraded")
+	return errors.New("hosts without a driver cannot be upgraded")
 }
 
 func (d *Driver) sshKeyPath() string {

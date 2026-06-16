@@ -71,7 +71,7 @@ func UnblockBootpd(options *run.CommandOptions) error {
 
 	var cmdString strings.Builder
 	for _, c := range cmds {
-		cmdString.WriteString(fmt.Sprintf("    $ %s \n", strings.Join(c.Args, " ")))
+		fmt.Fprintf(&cmdString, "    $ %s \n", strings.Join(c.Args, " "))
 	}
 
 	out.Styled(style.Permissions, "Your firewall is blocking bootpd which is required for this configuration. The following commands will be executed to unblock bootpd:\n\n{{.commands}}\n", out.V{"commands": cmdString.String()})

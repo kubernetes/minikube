@@ -77,7 +77,7 @@ func main() {
 func handler(w http.ResponseWriter, _ *http.Request) {
 	unpauseRequests <- struct{}{}
 	<-done
-	fmt.Fprintf(w, "allow")
+	fmt.Fprint(w, "allow")
 }
 
 func runPause() {

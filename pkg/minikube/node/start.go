@@ -64,7 +64,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
-	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -171,9 +170,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		}
 		// configure CoreDNS concurrently from primary control-plane node only and only on first node start
 		if !starter.PreExists {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				// inject {"host.minikube.internal": hostIP} record into coredns for primary control-plane node host ip
 				if hostIP != nil {
 					if err := addCoreDNSEntry(starter.Runner, constants.HostAlias, hostIP.String(), *starter.Cfg); err != nil {
@@ -187,7 +184,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 						klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
 					}
 				}
-			}()
+			})
 		}
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
@@ -221,9 +218,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 
 	go configureMounts(&wg, *starter.Cfg)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		profile, err := config.LoadProfile(starter.Cfg.Name)
 		if err != nil {
 			out.FailureT("Unable to load profile: {{.error}}", out.V{"error": err})
@@ -231,7 +226,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		if err := CacheAndLoadImagesInConfig([]*config.Profile{profile}, options); err != nil {
 			out.FailureT("Unable to push cached images: {{.error}}", out.V{"error": err})
 		}
-	}()
+	})
 
 	// enable addons, both old and new!
 	addonList := viper.GetStringSlice(config.AddonListFlag)
@@ -243,11 +238,6 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		list := addons.ToEnable(starter.Cfg, starter.ExistingAddons, addonList)
 		wg.Add(1)
 		go addons.Enable(&wg, starter.Cfg, list, enabledAddons, options)
-	}
-
-	// discourage use of the virtualbox driver
-	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) {
-		warnVirtualBox(options)
 	}
 
 	// special ops for "none" driver on control-plane node, like change minikube directory
@@ -327,7 +317,7 @@ func handleNoKubernetes(starter Starter) (bool, error) {
 // startPrimaryControlPlane starts control-plane node.
 func startPrimaryControlPlane(starter Starter, cr cruntime.Manager, options *run.CommandOptions) (*kubeconfig.Settings, bootstrapper.Bootstrapper, error) {
 	if !config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
-		return nil, nil, fmt.Errorf("node not marked as primary control-plane")
+		return nil, nil, errors.New("node not marked as primary control-plane")
 	}
 
 	if config.IsHA(*starter.Cfg) {
@@ -803,6 +793,8 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	}
 	// log that we managed to get a command runner
 	klog.Infof("CommandRunner returned: %v", runner)
+
+	configureDNS(runner, cfg.DNSServers)
 
 	ip, err := validateNetwork(hostInfo, runner, cfg.KubernetesConfig.ImageRepository)
 	if err != nil {

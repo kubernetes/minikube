@@ -26,6 +26,7 @@ set -x -o pipefail
 
 # Make sure golang is installed and configured
 ./hack/jenkins/installers/check_install_golang.sh "/usr/local"
+export PATH=/usr/local/go/bin:$PATH
 
 # install cron jobs
 source ./hack/jenkins/installers/check_install_linux_crons.sh

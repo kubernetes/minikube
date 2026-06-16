@@ -18,6 +18,7 @@ package cruntime
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -299,11 +300,11 @@ func (f *FakeRunner) dockerPs(args []string) (string, error) {
 }
 
 func (f *FakeRunner) dockerStop(args []string) (string, error) {
-	ids := strings.Split(args[1], " ")
-	for _, id := range ids {
+	ids := strings.SplitSeq(args[1], " ")
+	for id := range ids {
 		f.t.Logf("fake docker: Stopping id %q", id)
 		if f.containers[id] == "" {
-			return "", fmt.Errorf("no such container")
+			return "", errors.New("no such container")
 		}
 		delete(f.containers, id)
 	}
@@ -315,7 +316,7 @@ func (f *FakeRunner) dockerRm(args []string) (string, error) {
 	for _, id := range args[2:] {
 		f.t.Logf("fake docker: Removing id %q", id)
 		if f.containers[id] == "" {
-			return "", fmt.Errorf("no such container")
+			return "", errors.New("no such container")
 		}
 		delete(f.containers, id)
 	}
@@ -338,7 +339,7 @@ func (f *FakeRunner) dockerRmi(args []string) (string, error) {
 	for _, id := range args[1:] {
 		f.t.Logf("fake docker: Removing id %q", id)
 		if f.images[id] == "" {
-			return "", fmt.Errorf("no such image")
+			return "", errors.New("no such image")
 		}
 		delete(f.images, id)
 	}
@@ -419,7 +420,7 @@ func (f *FakeRunner) containerd(args []string, _ bool) (string, error) {
 		return "containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39", nil
 	}
 	if args[0] != "--version" { // doing this to suppress lint "result 1 (error) is always nil"
-		return "", fmt.Errorf("unknown args[0]")
+		return "", errors.New("unknown args[0]")
 	}
 	return "", nil
 }
@@ -470,7 +471,7 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 		for _, id := range args[2:] {
 			f.t.Logf("fake crictl: Stopping id %q", id)
 			if f.containers[id] == "" {
-				return "", fmt.Errorf("no such container")
+				return "", errors.New("no such container")
 			}
 			delete(f.containers, id)
 		}
@@ -478,7 +479,7 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 		for _, id := range args[2:] {
 			f.t.Logf("fake crictl: Removing id %q", id)
 			if f.containers[id] == "" {
-				return "", fmt.Errorf("no such container")
+				return "", errors.New("no such container")
 			}
 			delete(f.containers, id)
 
@@ -487,7 +488,7 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 		for _, id := range args[1:] {
 			f.t.Logf("fake crictl: Removing id %q", id)
 			if f.images[id] == "" {
-				return "", fmt.Errorf("no such image")
+				return "", errors.New("no such image")
 			}
 			delete(f.images, id)
 		}
@@ -538,19 +539,19 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 		switch action {
 		case "stop":
 			if !root {
-				return out, fmt.Errorf("not root")
+				return out, errors.New("not root")
 			}
 			f.services[svc] = SvcExited
 			f.t.Logf("fake systemctl: stopped %s", svc)
 		case "start":
 			if !root {
-				return out, fmt.Errorf("not root")
+				return out, errors.New("not root")
 			}
 			f.services[svc] = SvcRunning
 			f.t.Logf("fake systemctl: started %s", svc)
 		case "restart":
 			if !root {
-				return out, fmt.Errorf("not root")
+				return out, errors.New("not root")
 			}
 			f.services[svc] = SvcRestarted
 			f.t.Logf("fake systemctl: SvcRestarted %s", svc)

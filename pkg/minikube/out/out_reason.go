@@ -56,7 +56,7 @@ func indentMultiLine(s string) string {
 	}
 
 	cleaned := []string{"\n"}
-	for _, sn := range strings.Split(s, "\n") {
+	for sn := range strings.SplitSeq(s, "\n") {
 		cleaned = append(cleaned, style.Indented+strings.TrimSpace(sn))
 	}
 	return strings.Join(cleaned, "\n")

@@ -28,6 +28,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/drivers/virtualbox"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -76,7 +77,9 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 		// We don't have direct access to hyperv.Driver so use reflection to retrieve the virtual switch name
 		for i := 0; i < v.NumField(); i++ {
 			if v.Type().Field(i).Name == "VSwitch" {
-				hypervVirtualSwitch = v.Field(i).Interface().(string)
+				if val, ok := v.Field(i).Interface().(string); ok {
+					hypervVirtualSwitch = val
+				}
 
 				break
 			}
@@ -91,21 +94,11 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 
 		return ip, nil
 	case driver.VirtualBox:
-		vBoxManageCmd := driver.VBoxManagePath()
-		out, err := exec.Command(vBoxManageCmd, "showvminfo", hostInfo.Name, "--machinereadable").Output()
-		if err != nil {
-			return []byte{}, fmt.Errorf("vboxmanage: %w", err)
+		vbxDriver, ok := hostInfo.Driver.(*virtualbox.Driver)
+		if !ok {
+			return []byte{}, fmt.Errorf("unexpected driver type %T for virtualbox case", hostInfo.Driver)
 		}
-		re := regexp.MustCompile(`hostonlyadapter2="(.*?)"`)
-		iface := re.FindStringSubmatch(string(out))[1]
-		ipList, err := exec.Command(vBoxManageCmd, "list", "hostonlyifs").Output()
-		if err != nil {
-			return []byte{}, fmt.Errorf("Error getting VM/Host IP address: %w", err)
-		}
-		re = regexp.MustCompile(`(?sm)Name:\s*` + iface + `\s*$.+?IPAddress:\s*(\S+)`)
-		ip := re.FindStringSubmatch(string(ipList))[1]
-
-		return net.ParseIP(ip), nil
+		return vbxDriver.HostInterfaceIP()
 	case driver.Parallels:
 		bin := "prlsrvctl"
 		var binPath string
@@ -126,7 +119,11 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 		ip := ipMatch[1]
 
 		return net.ParseIP(ip), nil
-	case driver.HyperKit:
+	case driver.HyperKit, driver.VFKit, driver.Krunkit:
+		// TODO: check why we need this and test with:
+		// - vfkkit+nat
+		// - vfkit+vmnet-shared
+		// - krunkit+vmnet-shared
 		vmIPString, _ := hostInfo.Driver.GetIP()
 		gatewayIPString := vmIPString[:strings.LastIndex(vmIPString, ".")+1] + "1"
 		return net.ParseIP(gatewayIPString), nil
@@ -140,14 +137,6 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 			return []byte{}, fmt.Errorf("Error converting VM IP address to IPv4 address: %w", err)
 		}
 		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
-	case driver.VFKit, driver.Krunkit:
-		// TODO: check why we need this and test with:
-		// - vfkkit+nat
-		// - vfkit+vmnet-shared
-		// - krunkit+vmnet-shared
-		vmIPString, _ := hostInfo.Driver.GetIP()
-		gatewayIPString := vmIPString[:strings.LastIndex(vmIPString, ".")+1] + "1"
-		return net.ParseIP(gatewayIPString), nil
 	case driver.None:
 		return net.ParseIP("127.0.0.1"), nil
 	default:

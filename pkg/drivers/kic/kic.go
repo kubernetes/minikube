@@ -18,6 +18,7 @@ package kic
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os/exec"
@@ -114,7 +115,7 @@ func (d *Driver) Create() error {
 		// calculate the container IP based on guessing the machine index
 		index := driver.IndexFromMachineName(d.NodeConfig.MachineName)
 		if int(ip[3])+index > 253 { // reserve last client ip address for multi-control-plane loadbalancer vip address in ha cluster
-			return fmt.Errorf("too many machines to calculate an IP")
+			return errors.New("too many machines to calculate an IP")
 		}
 		ip[3] += byte(index)
 		klog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
@@ -489,7 +490,7 @@ func (d *Driver) Stop() error {
 
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
-	return fmt.Errorf("driver does not support RunSSHCommandFromDriver commands")
+	return errors.New("driver does not support RunSSHCommandFromDriver commands")
 }
 
 // killAPIServerProc will kill an api server proc if it exists

@@ -41,7 +41,7 @@ func RoutableHostIPFromInside(ociBin string, clusterName string, containerName s
 	}
 	if si.Rootless {
 		if IsExternalDaemonHost(ociBin) {
-			return nil, fmt.Errorf("function RoutableHostIPFromInside is not implemented for external rootless daemons")
+			return nil, errors.New("function RoutableHostIPFromInside is not implemented for external rootless daemons")
 			// TODO: parse DaemonHost()
 		}
 		addrs, err := net.InterfaceAddrs()
@@ -195,7 +195,7 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	p, err := strconv.Atoi(o)
 
 	if err != nil {
-		return p, fmt.Errorf("convert host-port %q to number: %w", p, err)
+		return p, fmt.Errorf("convert host-port %q to number: %w", o, err)
 	}
 
 	return p, nil

@@ -19,6 +19,7 @@ limitations under the License.
 package hyperkit
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -45,7 +46,7 @@ func GetNetAddr() (net.IP, error) {
 	}
 	ip := net.ParseIP(strings.TrimSpace(string(out)))
 	if ip == nil {
-		return nil, fmt.Errorf("could not get the network address for vmnet")
+		return nil, errors.New("could not get the network address for vmnet")
 	}
 	return ip, nil
 }

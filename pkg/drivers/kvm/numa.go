@@ -18,6 +18,7 @@ package kvm
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -47,10 +48,10 @@ type NUMA struct {
 // evenly distributed cpu core & memory to each numa node
 func numaXML(cpu, memory, numaCount int) (string, error) {
 	if numaCount < 1 {
-		return "", fmt.Errorf("numa node count must >= 1")
+		return "", errors.New("numa node count must >= 1")
 	}
 	if cpu < numaCount {
-		return "", fmt.Errorf("cpu count must >= numa node count")
+		return "", errors.New("cpu count must >= numa node count")
 	}
 	numaNodes := make([]*NUMA, numaCount)
 	CPUSeq := 0

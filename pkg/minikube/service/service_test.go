@@ -19,7 +19,6 @@ package service
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -62,7 +61,7 @@ var getCoreClientFail bool
 
 func (m *MockClientGetter) GetCoreClient(string) (typed_core.CoreV1Interface, error) {
 	if getCoreClientFail {
-		return nil, fmt.Errorf("test Error - Mocked Get")
+		return nil, errors.New("test Error - Mocked Get")
 	}
 	return &MockCoreClient{
 		FakeCoreV1:       fake.FakeCoreV1{Fake: &testing_fake.Fake{}},
@@ -472,7 +471,6 @@ func TestPrintURLsForService(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			svcURL, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
@@ -528,7 +526,6 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			httpsFormattedURLString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(test.bareURLString, test.https)
@@ -601,7 +598,6 @@ func TestGetServiceURLs(t *testing.T) {
 
 	defer revertK8sClient(K8s)
 	for _, test := range tests {
-		test := test
 		t.Run(test.description, func(t *testing.T) {
 			K8s = &MockClientGetter{
 				servicesMap:      serviceNamespaces,

@@ -36,19 +36,31 @@ type DriverOptionsMock struct {
 }
 
 func (d DriverOptionsMock) String(key string) string {
-	return d.Data[key].(string)
+	if val, ok := d.Data[key].(string); ok {
+		return val
+	}
+	return ""
 }
 
 func (d DriverOptionsMock) StringSlice(key string) []string {
-	return d.Data[key].([]string)
+	if val, ok := d.Data[key].([]string); ok {
+		return val
+	}
+	return nil
 }
 
 func (d DriverOptionsMock) Int(key string) int {
-	return d.Data[key].(int)
+	if val, ok := d.Data[key].(int); ok {
+		return val
+	}
+	return 0
 }
 
 func (d DriverOptionsMock) Bool(key string) bool {
-	return d.Data[key].(bool)
+	if val, ok := d.Data[key].(bool); ok {
+		return val
+	}
+	return false
 }
 
 func GetTestDriverFlags() *DriverOptionsMock {
@@ -77,7 +89,7 @@ func GetDefaultTestHost() (*host.Host, error) {
 
 	driver := nodriver.NewDriver(DefaultHostName, "/tmp/artifacts")
 
-	host := &host.Host{
+	h := &host.Host{
 		ConfigVersion: version.ConfigVersion,
 		Name:          DefaultHostName,
 		Driver:        driver,
@@ -86,9 +98,9 @@ func GetDefaultTestHost() (*host.Host, error) {
 	}
 
 	flags := GetTestDriverFlags()
-	if err := host.Driver.SetConfigFromFlags(flags); err != nil {
+	if err := h.Driver.SetConfigFromFlags(flags); err != nil {
 		return nil, err
 	}
 
-	return host, nil
+	return h, nil
 }

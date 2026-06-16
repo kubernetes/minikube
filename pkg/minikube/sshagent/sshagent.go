@@ -41,7 +41,7 @@ type sshAgent struct {
 // Start an ssh-agent process
 func Start(profile string) error {
 	if runtime.GOOS == "windows" {
-		return fmt.Errorf("starting an SSH agent on Windows is not yet supported")
+		return errors.New("starting an SSH agent on Windows is not yet supported")
 	}
 	cc, err := config.Load(profile)
 	if err != nil {

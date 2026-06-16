@@ -60,7 +60,6 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.
 
 	var g errgroup.Group
 	for _, name := range constants.KubernetesReleaseBinaries {
-		name := name
 		g.Go(func() error {
 			src, err := download.Binary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH, binariesURL)
 			if err != nil {
@@ -92,7 +91,7 @@ func binariesExist(cfg config.KubernetesConfig, c command.Runner) (bool, error) 
 	}
 	stdout := rr.Stdout.String()
 	foundBinaries := map[string]struct{}{}
-	for _, binary := range strings.Split(stdout, "\n") {
+	for binary := range strings.SplitSeq(stdout, "\n") {
 		foundBinaries[binary] = struct{}{}
 	}
 	for _, name := range constants.KubernetesReleaseBinaries {

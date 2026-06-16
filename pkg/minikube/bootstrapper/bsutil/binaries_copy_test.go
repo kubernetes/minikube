@@ -17,7 +17,7 @@ limitations under the License.
 package bsutil
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,7 +31,7 @@ type copyFailRunner struct {
 }
 
 func (copyFailRunner) Copy(_ assets.CopyableFile) error {
-	return fmt.Errorf("test error during copy file")
+	return errors.New("test error during copy file")
 }
 
 func newFakeCommandRunnerCopyFail() command.Runner {
@@ -76,7 +76,6 @@ func TestCopyBinary(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			err := copyBinary(tc.runner, tc.src, tc.dst)
 			if (err != nil) != tc.wantErr {

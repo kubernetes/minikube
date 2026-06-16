@@ -106,7 +106,6 @@ func TestProfileNameValid(t *testing.T) {
 	}
 
 	for name, exp := range testCases {
-		name, exp := name, exp // capture range variables
 
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

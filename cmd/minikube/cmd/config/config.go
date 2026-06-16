@@ -172,6 +172,11 @@ var settings = []Setting{
 		name: config.MaxAuditEntries,
 		set:  SetInt,
 	},
+	{
+		name:        config.DNSServers,
+		set:         SetStringSlice,
+		validations: []setFn{IsValidIPAddressSlice},
+	},
 }
 
 // ConfigCmd represents the config command

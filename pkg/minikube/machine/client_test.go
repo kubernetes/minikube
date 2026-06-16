@@ -100,7 +100,6 @@ func TestLocalClientNewHost(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			host, err := c.NewHost(test.driver, test.guest, test.rawDriver)

@@ -92,10 +92,10 @@ func (rr RunResult) Command() string {
 	sb.WriteString(rr.Args[0])
 	for _, a := range rr.Args[1:] {
 		if strings.Contains(a, " ") {
-			sb.WriteString(fmt.Sprintf(` "%s"`, a))
+			fmt.Fprintf(&sb, ` "%s"`, a)
 			continue
 		}
-		sb.WriteString(fmt.Sprintf(" %s", a))
+		fmt.Fprintf(&sb, " %s", a)
 	}
 	return sb.String()
 }
@@ -104,10 +104,10 @@ func (rr RunResult) Command() string {
 func (rr RunResult) Output() string {
 	var sb strings.Builder
 	if rr.Stdout.Len() > 0 {
-		sb.WriteString(fmt.Sprintf("-- stdout --\n%s\n-- /stdout --", rr.Stdout.Bytes()))
+		fmt.Fprintf(&sb, "-- stdout --\n%s\n-- /stdout --", rr.Stdout.Bytes())
 	}
 	if rr.Stderr.Len() > 0 {
-		sb.WriteString(fmt.Sprintf("\n** stderr ** \n%s\n** /stderr **", rr.Stderr.Bytes()))
+		fmt.Fprintf(&sb, "\n** stderr ** \n%s\n** /stderr **", rr.Stderr.Bytes())
 	}
 	return sb.String()
 }
@@ -201,7 +201,10 @@ func writeFile(dst string, f assets.CopyableFile, perms os.FileMode) error {
 	}
 	defer w.Close()
 
-	r := f.(io.Reader)
+	r, ok := f.(io.Reader)
+	if !ok {
+		return fmt.Errorf("file %s does not implement io.Reader", f.GetSourcePath())
+	}
 	n, err := io.Copy(w, r)
 	if err != nil {
 		return fmt.Errorf("copy: %w", err)

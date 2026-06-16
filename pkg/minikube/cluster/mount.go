@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -165,7 +165,7 @@ func mntCmd(source string, target string, c *MountConfig) string {
 		}
 		opts = append(opts, fmt.Sprintf("%s=%s", k, v))
 	}
-	sort.Strings(opts)
+	slices.Sort(opts)
 	return fmt.Sprintf("sudo mount -t %s -o %s %s %s", c.Type, strings.Join(opts, ","), source, target)
 }
 

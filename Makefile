@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.38.0
+ISO_VERSION ?= "v1.38.0"-1781468667-23151
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -35,15 +35,15 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.25.5
+GO_VERSION ?= 1.26.2
 # set GOTOOLCHAIN to GO_VERSION to override any toolchain version specified in
 # go.mod (ref: https://go.dev/doc/toolchain#GOTOOLCHAIN)
 export GOTOOLCHAIN := go$(GO_VERSION)
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.35.0
+GO_K8S_VERSION_PREFIX ?= v1.36.0
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2025.02
+BUILDROOT_BRANCH ?= 2025.02.14
 GOLANG_OPTIONS = GOWORK=off GO_VERSION=$(GO_VERSION)
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
@@ -71,9 +71,9 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v2.10.1
+GOLINT_VERSION ?= v2.12.2
 # see https://golangci-lint.run/docs/configuration/file/ for config details
-GOLINT_CONFIG ?= .golangci.min.yaml
+GOLINT_CONFIG ?= .golangci.yaml
 # Set this to --verbose to see details about the linters and formatters used
 GOLINT_VERBOSE ?=
 # Limit number of default jobs, to avoid the CI builds running out of memory
@@ -292,6 +292,11 @@ buildroot:
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
+		for p in $(CURDIR)/deploy/iso/minikube-iso/patches/buildroot/*.patch; do \
+			[ -f "$$p" ] || continue; \
+			echo "Applying buildroot patch: $$p"; \
+			(cd $(BUILD_DIR)/buildroot && patch -p1 -i "$$p") || exit 1; \
+		done; \
 	fi;
 
 # Change buildroot configuration for the minikube ISO
@@ -481,8 +486,24 @@ gocyclo: ## Run gocyclo (calculates cyclomatic complexities)
 
 out/linters/golangci-lint-$(GOLINT_VERSION):
 	mkdir -p out/linters
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b out/linters $(GOLINT_VERSION)
-	mv out/linters/golangci-lint out/linters/golangci-lint-$(GOLINT_VERSION)
+	version="$(GOLINT_VERSION)"; \
+	version=$${version#v}; \
+	os=$$(go env GOOS); \
+	arch=$$(go env GOARCH); \
+	name="golangci-lint-$${version}-$${os}-$${arch}"; \
+	archive="out/linters/$${name}.tar.gz"; \
+	checksums="out/linters/golangci-lint-$${version}-checksums.txt"; \
+	curl -sfL -o "$${archive}" "https://github.com/golangci/golangci-lint/releases/download/$(GOLINT_VERSION)/$${name}.tar.gz"; \
+	curl -sfL -o "$${checksums}" "https://github.com/golangci/golangci-lint/releases/download/$(GOLINT_VERSION)/golangci-lint-$${version}-checksums.txt"; \
+	want=$$(awk -v file="$${name}.tar.gz" '$$2 == file { print $$1; exit }' "$${checksums}"); \
+	test -n "$${want}"; \
+	got=$$(openssl sha256 "$${archive}" | awk '{print $$2}'); \
+	test "$${want}" = "$${got}"; \
+	tmpdir=$$(mktemp -d); \
+	tar -xzf "$${archive}" -C "$${tmpdir}"; \
+	mv "$${tmpdir}/$${name}/golangci-lint" "$@"; \
+	chmod +x "$@"; \
+	rm -rf "$${tmpdir}" "$${archive}" "$${checksums}"
 
 # this one is meant for local use
 .PHONY: lint

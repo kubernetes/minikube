@@ -1,4 +1,4 @@
-//go:build !386 && !amd64
+//go:build !386 && !amd64 && !(darwin && arm64)
 
 /*
 Copyright 2022 The Kubernetes Authors All rights reserved.

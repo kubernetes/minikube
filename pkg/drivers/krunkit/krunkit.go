@@ -42,6 +42,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/drivers/common/dhcp"
 	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -276,40 +277,21 @@ func (d *Driver) openLogfile() (*os.File, error) {
 	return os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 }
 
-// TODO: duplicate from vfkit and hyperkit:
-// https://github.com/kubernetes/minikube/issues/21093
 func (d *Driver) setupIP(mac string) error {
 	var err error
-	getIP := func() error {
-		d.IPAddress, err = common.GetIPAddressByMACAddress(mac)
-		if err != nil {
-			return fmt.Errorf("failed to get IP address: %w", err)
+	d.IPAddress, err = dhcp.WaitForLease(mac, 2*time.Minute)
+	if err != nil {
+		if !isBootpdError(err) {
+			return fmt.Errorf("IP address never found in dhcp leases file: %w", err)
 		}
-		return nil
-	}
-	// Implement a retry loop because IP address isn't added to dhcp leases file immediately
-	for i := 0; i < 60; i++ {
-		log.Debugf("Attempt %d", i)
-		err = getIP()
-		if err == nil {
-			break
+		if unblockErr := firewall.UnblockBootpd(&d.CommandOptions); unblockErr != nil {
+			klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
+			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
 		}
-		time.Sleep(2 * time.Second)
+		out.Styled(style.Restarting, "Successfully unblocked bootpd process from firewall, retrying")
+		return fmt.Errorf("ip not found: %v", err)
 	}
-
-	if err == nil {
-		log.Debugf("IP: %s", d.IPAddress)
-		return nil
-	}
-	if !isBootpdError(err) {
-		return fmt.Errorf("IP address never found in dhcp leases file: %w", err)
-	}
-	if unblockErr := firewall.UnblockBootpd(&d.CommandOptions); unblockErr != nil {
-		klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
-		exit.Error(reason.IfBootpdFirewall, "ip not found", err)
-	}
-	out.Styled(style.Restarting, "Successfully unblocked bootpd process from firewall, retrying")
-	return fmt.Errorf("ip not found: %v", err)
+	return nil
 }
 
 func isBootpdError(err error) bool {

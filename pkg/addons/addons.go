@@ -22,7 +22,7 @@ import (
 	"os/exec"
 	"path"
 	"runtime"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -364,7 +364,7 @@ func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, run
 
 	// we cannot use volcano for crio
 	if name == "volcano" && cc.KubernetesConfig.ContainerRuntime == constants.CRIO && enable {
-		return false, fmt.Errorf("volcano addon does not support crio")
+		return false, errors.New("volcano addon does not support crio")
 	}
 
 	return false, nil
@@ -537,7 +537,7 @@ func Enable(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bo
 			toEnableList = append(toEnableList, k)
 		}
 	}
-	sort.Strings(toEnableList)
+	slices.Sort(toEnableList)
 
 	var awg sync.WaitGroup
 

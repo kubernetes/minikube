@@ -12,7 +12,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.25.5'
+  GO_VERSION: '1.26.2'
 permissions:
   contents: read
 
@@ -20,13 +20,17 @@ jobs:
   build_minikube:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        timeout-minutes: 1
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        timeout-minutes: 1
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Download Dependencies
+        timeout-minutes: 1
         run: go mod download
       - name: Build Binaries
+        timeout-minutes: 32
         run: |
           make cross
           make e2e-cross
@@ -39,24 +43,30 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        timeout-minutes: 3
         with:
           name: minikube_binaries
           path: out
   lint:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        timeout-minutes: 1
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        timeout-minutes: 1
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Install libvirt
+        timeout-minutes: 2
         run: |
           sudo apt-get update
           sudo apt-get install -y libvirt-dev
       - name: Download Dependencies
+        timeout-minutes: 1
         run: go mod download
       - name: Lint
+        timeout-minutes: 13
         env:
           TESTSUITE: lintall
         run: make test
@@ -64,17 +74,22 @@ jobs:
   unit_test:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        timeout-minutes: 1
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        timeout-minutes: 1
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Install libvirt
+        timeout-minutes: 2
         run: |
           sudo apt-get update
           sudo apt-get install -y libvirt-dev
       - name: Download Dependencies
+        timeout-minutes: 1
         run: go mod download
       - name: Unit Test
+        timeout-minutes: 9
         env:
           TESTSUITE: unittest
         run: make test

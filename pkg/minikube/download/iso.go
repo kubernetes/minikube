@@ -41,7 +41,7 @@ const fileScheme = "file"
 // DefaultISOURLs returns a list of ISO URL's to consult by default, in priority order
 func DefaultISOURLs() []string {
 	v := version.GetISOVersion()
-	isoBucket := "minikube/iso"
+	isoBucket := "minikube-builds/iso/23151"
 
 	return []string{
 		fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s-%s.iso", isoBucket, v, runtime.GOARCH),
@@ -84,20 +84,20 @@ func localISOPath(u *url.URL) string {
 func ISO(urls []string, skipChecksum bool) (string, error) {
 	errs := map[string]string{}
 
-	for _, url := range urls {
-		err := downloadISO(url, skipChecksum)
+	for _, u := range urls {
+		err := downloadISO(u, skipChecksum)
 		if err != nil {
-			klog.Errorf("Unable to download %s: %v", url, err)
-			errs[url] = err.Error()
+			klog.Errorf("Unable to download %s: %v", u, err)
+			errs[u] = err.Error()
 			continue
 		}
-		return url, nil
+		return u, nil
 	}
 
 	var msg strings.Builder
 	msg.WriteString("unable to cache ISO: \n")
 	for u, err := range errs {
-		msg.WriteString(fmt.Sprintf("  %s: %s\n", u, err))
+		fmt.Fprintf(&msg, "  %s: %s\n", u, err)
 	}
 
 	return "", errors.New(msg.String())

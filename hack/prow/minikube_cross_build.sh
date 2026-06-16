@@ -43,10 +43,10 @@ chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}"
 if [ "${OS}" != "darwin" ]; then
 
 	BUILT_VERSION=$("out/minikube-${OS_ARCH}" version)
-	echo ${BUILT_VERSION}
+	echo "${BUILT_VERSION}"
 
-	COMMIT=$(echo ${BUILT_VERSION} | grep 'commit:' | awk '{print $2}')
-	if (echo ${COMMIT} | grep -q dirty); then
+	COMMIT=$(echo "${BUILT_VERSION}" | grep 'commit:' | awk '{print $2}')
+	if echo "${COMMIT}" | grep -q dirty; then
 		echo "'minikube version' reports dirty commit: ${COMMIT}"
 		exit 1
 	fi
