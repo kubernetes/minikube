@@ -113,6 +113,7 @@ type ClusterConfig struct {
 	Rosetta                 bool          // Only used by vfkit driver
 	VmnetOffloading         bool          // Only used by krunkit driver
 	DNSServers              []netip.Addr  // Static DNS servers for the VM (VM drivers only)
+	MDNS                    bool          // Enable mDNS (.local) resolution via systemd-resolved
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

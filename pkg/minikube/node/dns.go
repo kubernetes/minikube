@@ -27,6 +27,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
+// primaryInterface is the main network interface in the buildroot-based minikube ISO.
+// Update this if the ISO switches to a different distro or naming scheme.
+const primaryInterface = "eth0"
+
 // configureDNS configures static DNS servers on the VM, overriding DHCP-provided
 // DNS settings. This fixes DNS resolution on managed Macs where network extensions
 // block DNS traffic from the VM bridge to the host resolver.
@@ -54,10 +58,10 @@ func configureDNS(runner command.Runner, servers []netip.Addr) {
 	dnsServers := strings.Join(values, " ")
 
 	script := fmt.Sprintf(`
-resolvectl dns eth0 %s
-resolvectl domain eth0 "~."
+resolvectl dns %s %s
+resolvectl domain %s "~."
 resolvectl flush-caches
-`, dnsServers)
+`, primaryInterface, dnsServers, primaryInterface)
 
 	cmd := exec.Command("sudo", "bash", "-o", "errexit", "-c", script)
 	if _, err := runner.RunCmd(cmd); err != nil {
@@ -67,4 +71,20 @@ resolvectl flush-caches
 	}
 
 	klog.Infof("Configured static DNS servers: %s", dnsServers)
+}
+
+// configureMDNS enables mDNS (.local address resolution) on the VM by configuring
+// systemd-resolved. This allows the guest to resolve other machines on the local
+// network that advertise via mDNS.
+func configureMDNS(runner command.Runner, enabled bool) {
+	if !enabled {
+		return
+	}
+	cmd := exec.Command("sudo", "resolvectl", "mdns", primaryInterface, "yes")
+	if _, err := runner.RunCmd(cmd); err != nil {
+		klog.Warningf("Failed to enable mDNS on %s: %v", primaryInterface, err)
+		out.WarningT("Failed to enable mDNS on {{.iface}}", out.V{"iface": primaryInterface})
+		return
+	}
+	klog.Infof("Enabled mDNS on %s", primaryInterface)
 }

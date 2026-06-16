@@ -671,6 +671,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	}
 
 	configureDNS(runner, cfg.DNSServers)
+	configureMDNS(runner, cfg.MDNS)
 
 	ip, err := validateNetwork(hostInfo, runner, cfg.KubernetesConfig.ImageRepository)
 	if err != nil {
