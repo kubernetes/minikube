@@ -17,7 +17,7 @@ limitations under the License.
 package download
 
 import (
-	"fmt"
+	"errors"
 	"io/fs"
 	"os"
 	"sync"
@@ -78,7 +78,7 @@ func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 
 	checkCache = func(_ string) (fs.FileInfo, error) {
 		if downloadNum == 0 {
-			return nil, fmt.Errorf("some error")
+			return nil, errors.New("some error")
 		}
 		return nil, nil
 	}
@@ -118,7 +118,7 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 
 	checkCache = func(_ string) (fs.FileInfo, error) {
 		if downloadNum == 0 {
-			return nil, fmt.Errorf("some error")
+			return nil, errors.New("some error")
 		}
 		return os.Stat(f.Name())
 	}
@@ -149,7 +149,7 @@ func testPreloadNotExists(t *testing.T) {
 	downloadNum := 0
 	DownloadMock = mockSleepDownload(&downloadNum)
 
-	checkCache = func(_ string) (fs.FileInfo, error) { return nil, fmt.Errorf("cache not found") }
+	checkCache = func(_ string) (fs.FileInfo, error) { return nil, errors.New("cache not found") }
 	checkPreloadExists = func(_, _, _ string, _ ...bool) bool { return false }
 	getChecksumGCS = func(_, _ string) ([]byte, error) { return []byte("check"), nil }
 
@@ -194,15 +194,16 @@ func testImageToCache(t *testing.T) {
 // the local cache is absent and remote existence checks are required.
 // In summary, this test enforces that:
 // - PreloadExists performs remote checks only on cache misses.
-// - Negative and positive results are cached per (k8sVersion, containerVersion, runtime) key.
-// - GitHub is only consulted when GCS reports the preload as not existing.
+// - Negative and positive results are cached per (k8sVersion, containerRuntime) key.
+// - GCS is only consulted when GitHub reports the preload as not existing.
 // - Global state is correctly restored after the test.
 func testPreloadExistsCaching(t *testing.T) {
 	setupTestMiniHome(t)
 	checkCache = func(_ string) (fs.FileInfo, error) {
-		return nil, fmt.Errorf("cache not found")
+		return nil, errors.New("cache not found")
 	}
-	doesPreloadExist := false
+	doesPreloadExistGCS := false
+	doesPreloadExistGH := false
 	gcsCheckCalls := 0
 	ghCheckCalls := 0
 	savedGCSCheck := checkRemotePreloadExistsGCS
@@ -210,11 +211,11 @@ func testPreloadExistsCaching(t *testing.T) {
 	preloadStates = make(map[string]map[string]preloadState)
 	checkRemotePreloadExistsGCS = func(_, _ string) bool {
 		gcsCheckCalls++
-		return doesPreloadExist
+		return doesPreloadExistGCS
 	}
 	checkRemotePreloadExistsGitHub = func(_, _ string) bool {
 		ghCheckCalls++
-		return false
+		return doesPreloadExistGH
 	}
 	t.Cleanup(func() {
 		checkRemotePreloadExistsGCS = savedGCSCheck
@@ -232,17 +233,28 @@ func testPreloadExistsCaching(t *testing.T) {
 	if existence || gcsCheckCalls != 0 || ghCheckCalls != 0 {
 		t.Errorf("Expected preload not to exist and no checks to be performed. Existence: %v, GCS Calls: %d, GH Calls: %d", existence, gcsCheckCalls, ghCheckCalls)
 	}
-	doesPreloadExist = true
+	doesPreloadExistGCS = true
+	doesPreloadExistGH = false
 	gcsCheckCalls = 0
 	ghCheckCalls = 0
 	existence = PreloadExists("v2", "c1", "docker", true)
-	if !existence || gcsCheckCalls != 1 || ghCheckCalls != 0 {
-		t.Errorf("Expected preload to exist via GCS. Existence: %v, GCS Calls: %d, GH Calls: %d", existence, gcsCheckCalls, ghCheckCalls)
+	if !existence || gcsCheckCalls != 1 || ghCheckCalls != 1 {
+		t.Errorf("Expected preload to exist via GCS failover. Existence: %v, GCS Calls: %d, GH Calls: %d", existence, gcsCheckCalls, ghCheckCalls)
 	}
+	doesPreloadExistGCS = false
+	doesPreloadExistGH = true
+	gcsCheckCalls = 0
+	ghCheckCalls = 0
+	existence = PreloadExists("v3", "c1", "docker", true)
+	if !existence || gcsCheckCalls != 0 || ghCheckCalls != 1 {
+		t.Errorf("Expected preload to exist via GitHub without GCS check. Existence: %v, GCS Calls: %d, GH Calls: %d", existence, gcsCheckCalls, ghCheckCalls)
+	}
+	doesPreloadExistGCS = true
+	doesPreloadExistGH = false
 	gcsCheckCalls = 0
 	ghCheckCalls = 0
 	existence = PreloadExists("v2", "c2", "docker", true)
-	if !existence || gcsCheckCalls != 1 || ghCheckCalls != 0 {
+	if !existence || gcsCheckCalls != 1 || ghCheckCalls != 1 {
 		t.Errorf("Expected preload to exist via GCS for new runtime. Existence: %v, GCS Calls: %d, GH Calls: %d", existence, gcsCheckCalls, ghCheckCalls)
 	}
 	gcsCheckCalls = 0

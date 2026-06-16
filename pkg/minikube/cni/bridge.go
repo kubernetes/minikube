@@ -18,6 +18,7 @@ package cni
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os/exec"
 	"text/template"
@@ -88,7 +89,7 @@ func (c Bridge) netconf() (assets.CopyableFile, error) {
 // Apply enables the CNI
 func (c Bridge) Apply(r Runner) error {
 	if len(c.cc.Nodes) > 1 {
-		return fmt.Errorf("bridge CNI is incompatible with multi-node clusters")
+		return errors.New("bridge CNI is incompatible with multi-node clusters")
 	}
 
 	if _, err := r.RunCmd(exec.Command("sudo", "mkdir", "-p", "/etc/cni/net.d")); err != nil {

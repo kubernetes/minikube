@@ -17,6 +17,7 @@ limitations under the License.
 package download
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -63,10 +64,7 @@ func CreateDstDownloadMock(_, dst string) error {
 	if err != nil {
 		return err
 	}
-	if err := f.Close(); err != nil {
-		return err
-	}
-	return nil
+	return f.Close()
 }
 
 // download is a well-configured atomic download function
@@ -107,7 +105,7 @@ func download(src, dst string, options ...getter.ClientOption) error {
 
 	// Politely prevent tests from shooting themselves in the foot
 	if withinUnitTest() {
-		return fmt.Errorf("unmocked download under test")
+		return errors.New("unmocked download under test")
 	}
 
 	klog.Infof("Downloading: %s -> %s", src, dst)

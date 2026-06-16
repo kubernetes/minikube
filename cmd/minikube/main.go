@@ -114,7 +114,7 @@ func (lb stdLogBridge) Write(b []byte) (n int, err error) {
 	parts := bytes.SplitN(b, []byte{':'}, 3)
 	if len(parts) != 3 || len(parts[0]) < 1 || len(parts[2]) < 1 {
 		klog.Errorf("bad log format: %s", b)
-		return
+		return len(b), nil
 	}
 
 	file := string(parts[0])

@@ -314,7 +314,7 @@ func (d *Driver) Create() error {
 	}
 
 	if ip == "" {
-		return fmt.Errorf("Machine didn't return an IP after 120 seconds, aborting")
+		return errors.New("Machine didn't return an IP after 120 seconds, aborting")
 	}
 
 	d.IPAddress = ip

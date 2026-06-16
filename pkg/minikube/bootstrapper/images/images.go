@@ -18,6 +18,7 @@ limitations under the License.
 package images
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"path"
@@ -67,7 +68,7 @@ func componentImage(name string, v semver.Version, mirror string) string {
 // tagFromKubeadm gets the image tag by running kubeadm image list command on the host machine (Linux only)
 func tagFromKubeadm(v, name string) (string, error) {
 	if runtime.GOOS != "linux" {
-		return "", fmt.Errorf("can only get tag from kubeadm on Linux")
+		return "", errors.New("can only get tag from kubeadm on Linux")
 	}
 	kubeadm, err := download.Binary("kubeadm", v, "linux", runtime.GOARCH, "")
 	if err != nil {
@@ -78,8 +79,8 @@ func tagFromKubeadm(v, name string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed getting kubeadm image list: %v", err)
 	}
-	lines := strings.Split(string(b), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(b), "\n")
+	for line := range lines {
 		if !strings.Contains(line, name) {
 			continue
 		}
@@ -181,11 +182,11 @@ func KindNet(repo string) string {
 	if repo == "" {
 		repo = "docker.io/kindest"
 	}
-	return path.Join(repo, "kindnetd:v20260213-ea8e5717")
+	return path.Join(repo, "kindnetd:v20260528-9350166c")
 }
 
 // all calico images are from https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
-const calicoVersion = "v3.31.4"
+const calicoVersion = "v3.32.0"
 const calicoRepo = "docker.io/calico"
 
 // CalicoDaemonSet returns the image used for calicoDaemonSet

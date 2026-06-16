@@ -44,7 +44,6 @@ REM @FOR /f "tokens=*" %i IN ('bar --shell cmd') DO @%i`},
 		{EnvConfig{"tcsh"}, "\n: \"foo\"\n: eval `bar`\n"},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.ec.Shell, func(t *testing.T) {
 			got := strings.TrimSpace(generateUsageHint(tc.ec, "foo", "bar"))
 			expected := strings.TrimSpace(tc.expected)
@@ -71,7 +70,6 @@ func TestCfgSet(t *testing.T) {
 		{"", "eval", EnvConfig{"tcsh"}, `";`},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.ec.Shell, func(t *testing.T) {
 			conf := CfgSet(tc.ec, tc.plz, tc.cmd)
 			expected := strings.TrimSpace(tc.expected)
@@ -105,7 +103,6 @@ set -e bar;`},
 		{[]string{"baz", "bar"}, EnvConfig{"tcsh"}, "unsetenv baz;\nunsetenv bar;"},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.ec.Shell, func(t *testing.T) {
 			var b bytes.Buffer
 

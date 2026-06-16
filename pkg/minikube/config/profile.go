@@ -18,6 +18,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -38,7 +39,7 @@ var keywords = []string{"start", "stop", "status", "delete", "config", "open", "
 func ControlPlane(cc ClusterConfig) (Node, error) {
 	cps := ControlPlanes(cc)
 	if len(cps) == 0 {
-		return Node{}, fmt.Errorf("no control-plane nodes found")
+		return Node{}, errors.New("no control-plane nodes found")
 	}
 	return cps[0], nil
 }

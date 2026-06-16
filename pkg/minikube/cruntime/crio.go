@@ -362,7 +362,7 @@ func (r *CRIO) CGroupDriver() (string, error) {
 		return "", err
 	}
 	cgroupManager := "systemd" // default
-	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
+	for line := range strings.SplitSeq(rr.Stdout.String(), "\n") {
 		if strings.HasPrefix(line, "cgroup_manager") {
 			// cgroup_manager = "cgroupfs"
 			f := strings.Split(strings.TrimSpace(line), " = ")
@@ -436,7 +436,7 @@ func (r *CRIO) Preload(cc config.ClusterConfig) error {
 	// Double check if there are any images in the runtime to avoid data loss on restart
 	// The crio preload tarball is a filesystem dump that overwrites /var
 	// we backup and restore any existing images
-	// simmilar to  docker runtime implemented in pkg/minikube/cruntime/docker.go.
+	// similar to  docker runtime implemented in pkg/minikube/cruntime/docker.go.
 	// It uses a special helper (pkg/minikube/docker/store.go) to explicitly save and merge the repositories.json file (Docker's image index)
 	// before and after the tarball extraction.
 	allImages, err := r.ListImages(ListImagesOptions{})

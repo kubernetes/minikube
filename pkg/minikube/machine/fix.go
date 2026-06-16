@@ -258,11 +258,8 @@ func machineExistsMessage(s state.State, err error, msg string) (bool, error) {
 func machineExistsDocker(s state.State, err error) (bool, error) {
 
 	switch s {
-	case state.Error:
-		// if the kic image is not present on the host machine, when user cancel `minikube start`, state.Error will be return
-		return false, constants.ErrMachineMissing
-	case state.None:
-		// if the kic image is present on the host machine, when user cancel `minikube start`, state.None will be return
+	case state.Error, state.None:
+		// if the kic image is not present on the host machine, when user cancel `minikube start`, ErrMachineMissing will be returned
 		return false, constants.ErrMachineMissing
 	}
 	return true, err
@@ -275,20 +272,12 @@ func machineExists(d string, s state.State, err error) (bool, error) {
 		return true, nil
 	}
 	switch d {
-	case driver.HyperKit:
+	case driver.HyperKit, driver.Parallels:
 		return machineExistsMessage(s, err, "connection is shut down")
-	case driver.HyperV:
+	case driver.HyperV, driver.KVM2, driver.None, driver.VMware:
 		return machineExistsState(s, err)
-	case driver.KVM2:
-		return machineExistsState(s, err)
-	case driver.None:
-		return machineExistsState(s, err)
-	case driver.Parallels:
-		return machineExistsMessage(s, err, "connection is shut down")
 	case driver.VirtualBox:
 		return machineExistsMessage(s, err, "machine does not exist")
-	case driver.VMware:
-		return machineExistsState(s, err)
 	case driver.Docker:
 		return machineExistsDocker(s, err)
 	case driver.Mock:

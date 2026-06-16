@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -138,7 +139,7 @@ func checkRunning(p CreateParams) func() error {
 			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
 		}
 		if !iptablesFileExists(p.OCIBinary, p.Name) {
-			return fmt.Errorf("iptables file doesn't exist, see #8179")
+			return errors.New("iptables file doesn't exist, see #8179")
 		}
 		klog.Infof("the created container %q has a running status.", p.Name)
 		return nil
@@ -374,8 +375,8 @@ func ContainerExists(ociBin string, name string, warnSlow ...bool) (bool, error)
 		return false, err
 	}
 
-	containers := strings.Split(rr.Stdout.String(), "\n")
-	for _, c := range containers {
+	containers := strings.SplitSeq(rr.Stdout.String(), "\n")
+	for c := range containers {
 		if strings.TrimSpace(c) == name {
 			return true, nil
 		}
@@ -453,14 +454,12 @@ func generateMountBindings(mounts ...Mount) []string {
 			attrs = append(attrs, "Z")
 		}
 		switch m.Propagation {
-		case MountPropagationNone:
-			// noop, private is default
 		case MountPropagationBidirectional:
 			attrs = append(attrs, "rshared")
 		case MountPropagationHostToContainer:
 			attrs = append(attrs, "rslave")
 		default:
-			// Falls back to "private"
+			// Falls back to "private" (including MountPropagationNone)
 		}
 
 		if len(attrs) > 0 {
@@ -633,12 +632,10 @@ func ContainerStatus(ociBin string, name string, warnSlow ...bool) (state.State,
 	rr, err := runCmd(cmd, warnSlow...)
 	o := strings.TrimSpace(rr.Stdout.String())
 	switch o {
-	case "configured":
+	case "configured", "exited":
 		return state.Stopped, nil
 	case "running":
 		return state.Running, nil
-	case "exited":
-		return state.Stopped, nil
 	case "paused":
 		return state.Paused, nil
 	case "restarting":

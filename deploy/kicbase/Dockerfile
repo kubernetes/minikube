@@ -17,21 +17,20 @@
 # For systemd + docker configuration used below, see the following references:
 # https://systemd.io/CONTAINER_INTERFACE/
 
-
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
-ARG KICBASE_IMAGE="debian:bookworm-20260223-slim"
+ARG KICBASE_IMAGE="debian:bookworm-20260518-slim"
 # start from debin 12, this image is reasonably small as a starting point
-# for a kubernetes node image, it doesn't contain much we don't need
+# for a kubernetes node image, it doesn't contain much we don't need.
 FROM ${KICBASE_IMAGE} AS kicbase
 
-ARG BUILDKIT_VERSION="v0.26.3"
+ARG BUILDKIT_VERSION="v0.29.0"
 ARG CRIO_VERSION="v1.35"
 ARG CRICTL_VERSION="v1.35.0"
-ARG CRI_DOCKERD_VERSION="v0.4.1"
-ARG CRI_DOCKERD_COMMIT="55d6e1a1d6f2ee58949e13a0c66afe7d779ac942"
-ARG CNI_PLUGINS_VERSION="v1.9.0"
+ARG CRI_DOCKERD_VERSION="v0.4.3"
+ARG CRI_DOCKERD_COMMIT="d969e29f500151687337b2a896ab65e8192f3145"
+ARG CNI_PLUGINS_VERSION="v1.9.1"
 ARG TARGETARCH
-ARG NERDCTL_VERSION="2.2.1"
+ARG NERDCTL_VERSION="2.3.1"
 ARG NERDCTLD_VERSION="0.7.0"
 
 # copy in static files (configs, scripts)
@@ -109,11 +108,21 @@ ARG COMMIT_SHA
 # could be changed to any debian that can run systemd
 USER root
 
-# Install cri-dockerd from pre-compiled binaries stored in GCS, this is way faster than building from source in multi-arch
-RUN echo "Installing cri-dockerd ${CRI_DOCKERD_VERSION}" && \
-	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}/${TARGETARCH}/cri-dockerd" -o /usr/bin/cri-dockerd && chmod +x /usr/bin/cri-dockerd && \
-	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket && \
-	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+# Install cri-dockerd from official GitHub releases
+RUN export VERSION=$(echo "${CRI_DOCKERD_VERSION}" | sed 's/^v//') && \
+    #TODO: add other archs after this PR is merged https://github.com/Mirantis/cri-dockerd/pull/556
+	if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
+		echo "Installing cri-dockerd ${CRI_DOCKERD_VERSION} for ${TARGETARCH}" && \
+		curl -L "https://github.com/Mirantis/cri-dockerd/releases/download/${CRI_DOCKERD_VERSION}/cri-dockerd-${VERSION}.${TARGETARCH}.tgz" -o /tmp/cri-dockerd.tgz && \
+		tar -C /tmp -xzvf /tmp/cri-dockerd.tgz && \
+		mv /tmp/cri-dockerd/cri-dockerd /usr/bin/cri-dockerd && \
+		chmod +x /usr/bin/cri-dockerd && \
+		rm -rf /tmp/cri-dockerd /tmp/cri-dockerd.tgz && \
+		curl -L "https://raw.githubusercontent.com/Mirantis/cri-dockerd/${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket && \
+		curl -L "https://raw.githubusercontent.com/Mirantis/cri-dockerd/${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service; \
+	else \
+		echo "WARNING: cri-dockerd is not pre-compiled for ${TARGETARCH}, skipping installation."; \
+	fi
 
 # install system requirements from the regular distro repositories
 RUN clean-install \

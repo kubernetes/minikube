@@ -20,6 +20,7 @@ package hyperv
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -165,7 +166,7 @@ func chooseSwitch(adapterName string) (string, netAdapter, error) {
 	}
 
 	if len(adapters) == 0 {
-		return "", netAdapter{}, fmt.Errorf("no connected adapter available")
+		return "", netAdapter{}, errors.New("no connected adapter available")
 	}
 
 	externalVMSwitches, err := getVMSwitch("($_.SwitchType -eq 2)")

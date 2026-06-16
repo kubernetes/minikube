@@ -37,6 +37,7 @@ import (
 
 	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -49,10 +50,9 @@ const (
 	logfileName  = "vmnet-helper.log"
 	sockfileName = "vmnet-helper.sock"
 
-	// Installed from GitHub releases.
-	installPath = "/opt/vmnet-helper/bin/vmnet-helper"
-	// Installed via Homebrew (macOS 26+ only).
-	brewInstallPath = "/opt/homebrew/opt/vmnet-helper/libexec/vmnet-helper"
+	// Legacy install path for macOS < 26 (installed from GitHub releases).
+	// Since macOS 26 the recommended install method is Homebrew.
+	legacyInstallPath = "/opt/vmnet-helper/bin/vmnet-helper"
 )
 
 // Helper manages the vmnet-helper process.
@@ -99,7 +99,18 @@ var (
 // on the first call.
 func getHelperInfo() (helperInfo, error) {
 	once.Do(func() {
-		cached.Path, cached.Err = findHelper()
+		versionStr, err := macOSVersion()
+		if err != nil {
+			cached.Err = err
+			return
+		}
+		// ParseTolerant handles "26.2" by normalizing it to "26.2.0".
+		macOSVer, err := semver.ParseTolerant(versionStr)
+		if err != nil {
+			cached.Err = fmt.Errorf("invalid macOS version %q: %w", versionStr, err)
+			return
+		}
+		cached.Path, cached.Err = findHelper(macOSVer)
 		if cached.Err != nil {
 			return
 		}
@@ -107,12 +118,7 @@ func getHelperInfo() (helperInfo, error) {
 		if cached.Err != nil {
 			return
 		}
-		var macosVersion string
-		macosVersion, cached.Err = macOSVersion()
-		if cached.Err != nil {
-			return
-		}
-		cached.NeedsSudo, cached.Err = helperNeedsSudo(cached.Version, macosVersion)
+		cached.NeedsSudo, cached.Err = helperNeedsSudo(cached.Version, macOSVer)
 	})
 	return cached, cached.Err
 }
@@ -424,8 +430,8 @@ func validateRunningWithSudo(helperPath string, options *run.CommandOptions) err
 }
 
 // findHelper finds the path to the vmnet-helper executable.
-func findHelper() (string, error) {
-	paths := []string{brewInstallPath, installPath}
+func findHelper(macOSVer semver.Version) (string, error) {
+	paths := helperSearchPaths(macOSVer)
 	for _, path := range paths {
 		if _, err := os.Stat(path); err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
@@ -439,15 +445,28 @@ func findHelper() (string, error) {
 	return "", &Error{Kind: reason.NotFoundVmnetHelper, Err: err}
 }
 
+// helperSearchPaths returns vmnet-helper paths to search, in priority order.
+// Prefer brew install paths on macOS 26+ since Homebrew is the recommended install method.
+func helperSearchPaths(macOSVer semver.Version) []string {
+	var paths []string
+	if macOSVer.Major >= 26 {
+		brewPrefix := detect.BrewPrefix()
+		paths = append(paths,
+			// Homebrew >= 1.0 installs to bin.
+			// See https://github.com/nirs/homebrew-vmnet-helper/issues/4
+			filepath.Join(brewPrefix, "bin", "vmnet-helper"),
+			// Homebrew < 1.0 installs to libexec.
+			filepath.Join(brewPrefix, "opt", "vmnet-helper", "libexec", "vmnet-helper"),
+		)
+	}
+	paths = append(paths, legacyInstallPath)
+	return paths
+}
+
 // helperNeedsSudo returns true if vmnet-helper needs sudo to run based on the
 // helper version and macOS version.
-func helperNeedsSudo(version helperVersion, macosVersion string) (bool, error) {
-	// ParseTolerant handles "26.2" by normalizing it to "26.2.0".
-	macVer, err := semver.ParseTolerant(macosVersion)
-	if err != nil {
-		return false, fmt.Errorf("invalid macOS version %q: %w", macosVersion, err)
-	}
-	if macVer.LT(semver.MustParse("26.0.0")) {
+func helperNeedsSudo(version helperVersion, macOSVer semver.Version) (bool, error) {
+	if macOSVer.Major < 26 {
 		return true, nil
 	}
 

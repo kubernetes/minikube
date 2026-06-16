@@ -123,9 +123,7 @@ func machineState(lvs libvirt.DomainState) state.State {
 		return state.Stopped
 	case libvirt.DOMAIN_PMSUSPENDED:
 		return state.Saved
-	case libvirt.DOMAIN_NOSTATE:
-		return state.None
-	default:
+	default: // includes libvirt.DOMAIN_NOSTATE
 		return state.None
 	}
 }

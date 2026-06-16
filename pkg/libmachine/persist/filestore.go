@@ -19,7 +19,6 @@ package persist
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,16 +47,16 @@ func (s Filestore) GetMachinesDir() string {
 
 func (s Filestore) saveToFile(data []byte, file string) error {
 	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return ioutil.WriteFile(file, data, 0600)
+		return os.WriteFile(file, data, 0600)
 	}
 
-	tmpfi, err := ioutil.TempFile(filepath.Dir(file), "config.json.tmp")
+	tmpfi, err := os.CreateTemp(filepath.Dir(file), "config.json.tmp")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(tmpfi.Name())
 
-	if err = ioutil.WriteFile(tmpfi.Name(), data, 0600); err != nil {
+	if err = os.WriteFile(tmpfi.Name(), data, 0600); err != nil {
 		return err
 	}
 
@@ -73,13 +72,13 @@ func (s Filestore) saveToFile(data []byte, file string) error {
 	return err
 }
 
-func (s Filestore) Save(host *host.Host) error {
-	data, err := json.MarshalIndent(host, "", "    ")
+func (s Filestore) Save(h *host.Host) error {
+	data, err := json.MarshalIndent(h, "", "    ")
 	if err != nil {
 		return err
 	}
 
-	hostPath := filepath.Join(s.GetMachinesDir(), host.Name)
+	hostPath := filepath.Join(s.GetMachinesDir(), h.Name)
 
 	// Ensure that the directory we want to save to exists.
 	if err := os.MkdirAll(hostPath, 0700); err != nil {
@@ -95,7 +94,7 @@ func (s Filestore) Remove(name string) error {
 }
 
 func (s Filestore) List() ([]string, error) {
-	dir, err := ioutil.ReadDir(s.GetMachinesDir())
+	dir, err := os.ReadDir(s.GetMachinesDir())
 	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
@@ -124,7 +123,7 @@ func (s Filestore) Exists(name string) (bool, error) {
 }
 
 func (s Filestore) loadConfig(h *host.Host) error {
-	data, err := ioutil.ReadFile(filepath.Join(s.GetMachinesDir(), h.Name, "config.json"))
+	data, err := os.ReadFile(filepath.Join(s.GetMachinesDir(), h.Name, "config.json"))
 	if err != nil {
 		return err
 	}
@@ -165,13 +164,13 @@ func (s Filestore) Load(name string) (*host.Host, error) {
 		}
 	}
 
-	host := &host.Host{
+	h := &host.Host{
 		Name: name,
 	}
 
-	if err := s.loadConfig(host); err != nil {
+	if err := s.loadConfig(h); err != nil {
 		return nil, err
 	}
 
-	return host, nil
+	return h, nil
 }

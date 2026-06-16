@@ -17,7 +17,7 @@ limitations under the License.
 package nodriver
 
 import (
-	"fmt"
+	"errors"
 	neturl "net/url"
 
 	"k8s.io/minikube/pkg/libmachine/drivers"
@@ -92,7 +92,7 @@ func (d *Driver) GetState() (state.State, error) {
 }
 
 func (d *Driver) Kill() error {
-	return fmt.Errorf("hosts without a driver cannot be killed")
+	return errors.New("hosts without a driver cannot be killed")
 }
 
 func (d *Driver) Remove() error {
@@ -100,14 +100,14 @@ func (d *Driver) Remove() error {
 }
 
 func (d *Driver) Restart() error {
-	return fmt.Errorf("hosts without a driver cannot be restarted")
+	return errors.New("hosts without a driver cannot be restarted")
 }
 
 func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	url := flags.String("url")
 
 	if url == "" {
-		return fmt.Errorf("--url option is required when no driver is selected")
+		return errors.New("--url option is required when no driver is selected")
 	}
 
 	d.URL = url
@@ -121,9 +121,9 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 }
 
 func (d *Driver) Start() error {
-	return fmt.Errorf("hosts without a driver cannot be started")
+	return errors.New("hosts without a driver cannot be started")
 }
 
 func (d *Driver) Stop() error {
-	return fmt.Errorf("hosts without a driver cannot be stopped")
+	return errors.New("hosts without a driver cannot be stopped")
 }

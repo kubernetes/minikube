@@ -26,3 +26,7 @@ type Error struct {
 func (e Error) Error() string {
 	return e.Err.Error()
 }
+
+func (e Error) IsNotFound() bool {
+	return e.Kind.ID == reason.NotFoundVmnetHelper.ID
+}

@@ -39,7 +39,7 @@ func supportedFG(featureName string) bool {
 func parseFeatureArgs(featureGates string) (map[string]bool, string, error) {
 	kubeadmFeatureArgs := map[string]bool{}
 	componentFeatureArgs := ""
-	for _, s := range strings.Split(featureGates, ",") {
+	for s := range strings.SplitSeq(featureGates, ",") {
 		if len(s) == 0 {
 			continue
 		}

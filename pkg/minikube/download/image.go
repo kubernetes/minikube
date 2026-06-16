@@ -292,7 +292,7 @@ func CacheToDaemon(img string) (string, error) {
 	// do not use cache if image is set in format <name>:latest
 	if _, ok := ref.(name.Tag); ok {
 		if tag.Name() == "latest" {
-			return "", fmt.Errorf("can't cache 'latest' tag")
+			return "", errors.New("can't cache 'latest' tag")
 		}
 	}
 

@@ -117,7 +117,7 @@ func removeAppArmorProfile(ciliumConfig string) (string, error) {
 			return "", fmt.Errorf("failed to remove securityContext yaml: %v", err)
 		}
 		if err := encoder.Encode(obj); err != nil {
-			return "", fmt.Errorf("failed to encode yaml")
+			return "", fmt.Errorf("failed to encode yaml: %w", err)
 		}
 
 	}

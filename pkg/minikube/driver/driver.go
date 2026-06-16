@@ -17,10 +17,11 @@ limitations under the License.
 package driver
 
 import (
+	"cmp"
 	"fmt"
 	"os"
 	"runtime"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -321,8 +322,8 @@ func Choices(vm bool, options *run.CommandOptions) []registry.DriverState {
 	available := registry.Available(vm, options)
 
 	// Descending priority for predictability and appearance
-	sort.Slice(available, func(i, j int) bool {
-		return available[i].Priority > available[j].Priority
+	slices.SortFunc(available, func(a, b registry.DriverState) int {
+		return cmp.Compare(b.Priority, a.Priority)
 	})
 	return available
 }

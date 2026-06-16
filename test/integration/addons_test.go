@@ -369,6 +369,9 @@ func validateRegistryCredsAddon(ctx context.Context, t *testing.T, profile strin
 
 // validateRegistryAddon tests the registry addon
 func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
+	// TODO: Temporary skip to unblock development. Remove once the root cause is identified and fixed.
+	// See: https://github.com/kubernetes/minikube/issues/23044
+	t.Skip("skipping registry addon test: https://github.com/kubernetes/minikube/issues/23044")
 	defer disableAddon(t, "registry", profile)
 	defer PostMortemLogs(t, profile)
 

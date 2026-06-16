@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: image-load-in-use-v2
+  labels:
+    run: image-load-in-use-v2
+spec:
+  containers:
+  - name: test
+    image: localhost/image-load-in-use:test
+    imagePullPolicy: Never
+    command: ["sleep", "infinity"]
+  restartPolicy: Never

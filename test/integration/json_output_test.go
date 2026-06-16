@@ -91,7 +91,6 @@ func TestJSONOutput(t *testing.T) {
 					{"IncreasingCurrentSteps", validateIncreasingCurrentSteps},
 				}
 				for _, stc := range parallelTests {
-					stc := stc
 					t.Run(stc.name, func(t *testing.T) {
 						MaybeParallel(t)
 						stc.validator(ctx, t, ces)

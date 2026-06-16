@@ -17,6 +17,7 @@ limitations under the License.
 package kubeconfig
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -39,7 +40,7 @@ import (
 // Returns if the change was made and any error occurred.
 func UpdateEndpoint(contextName string, host string, port int, configPath string, ext *Extension) (bool, error) {
 	if host == "" {
-		return false, fmt.Errorf("empty host")
+		return false, errors.New("empty host")
 	}
 
 	if err := VerifyEndpoint(contextName, host, port, configPath); err != nil {
@@ -86,7 +87,7 @@ func UpdateEndpoint(contextName string, host string, port int, configPath string
 // VerifyEndpoint verifies the host:port stored in kubeconfig.
 func VerifyEndpoint(contextName string, host string, port int, configPath string) error {
 	if host == "" {
-		return fmt.Errorf("empty host")
+		return errors.New("empty host")
 	}
 
 	if configPath == "" {
@@ -141,7 +142,7 @@ func configIssues(cfg *api.Config, contextName string, address string) []error {
 	if _, ok := cfg.Clusters[contextName]; !ok {
 		errs = append(errs, fmt.Errorf("kubeconfig missing %q cluster setting", contextName))
 	} else if cfg.Clusters[contextName].Server != address {
-		errs = append(errs, fmt.Errorf("kubeconfig needs server address update"))
+		errs = append(errs, errors.New("kubeconfig needs server address update"))
 	}
 
 	if _, ok := cfg.Contexts[contextName]; !ok {
@@ -222,7 +223,10 @@ func decode(data []byte) (*api.Config, error) {
 		return nil, fmt.Errorf("decode data: %s: %w", string(data), err)
 	}
 
-	return kcfg.(*api.Config), nil
+	if cfg, ok := kcfg.(*api.Config); ok {
+		return cfg, nil
+	}
+	return nil, fmt.Errorf("decoded object has unexpected type %T", kcfg)
 }
 
 // writeToFile encodes the configuration and writes it to the given file.

@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -238,7 +239,7 @@ func waitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Du
 	klog.Infof("waiting for apiserver process to appear ...")
 	err := apiWait.PollUntilContextTimeout(context.Background(), time.Millisecond*500, timeout, true, func(_ context.Context) (bool, error) {
 		if time.Since(start) > timeout {
-			return false, fmt.Errorf("cluster wait timed out during process check")
+			return false, errors.New("cluster wait timed out during process check")
 		}
 
 		if time.Since(start) > minLogCheckTime {
@@ -253,7 +254,7 @@ func waitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Du
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf("apiserver process never appeared")
+		return errors.New("apiserver process never appeared")
 	}
 	klog.Infof("duration metric: took %s to wait for apiserver process to appear ...", time.Since(start))
 	return nil
@@ -673,11 +674,11 @@ func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 
 func dockerEnvSupported(containerRuntime, driverName string) error {
 	if containerRuntime != constants.Docker && containerRuntime != constants.Containerd {
-		return fmt.Errorf("the docker-env command only supports the docker and containerd runtimes")
+		return errors.New("the docker-env command only supports the docker and containerd runtimes")
 	}
 	// we only support containerd-env on the Docker driver
 	if containerRuntime == constants.Containerd && driverName != driver.Docker {
-		return fmt.Errorf("the docker-env command only supports the containerd runtime with the docker driver")
+		return errors.New("the docker-env command only supports the containerd runtime with the docker driver")
 	}
 	return nil
 }

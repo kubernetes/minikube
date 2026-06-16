@@ -206,6 +206,7 @@ func readByteWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, er
 // dashboardURL generates a URL for accessing the dashboard service
 func dashboardURL(addr string, ns string, svc string) string {
 	// Reference: https://github.com/kubernetes/dashboard/wiki/Accessing-Dashboard---1.7.X-and-above
+	//nolint:revive
 	return fmt.Sprintf("http://%s/api/v1/namespaces/%s/services/http:%s:/proxy/", addr, ns, svc)
 }
 

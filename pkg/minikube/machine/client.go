@@ -19,6 +19,7 @@ package machine
 import (
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -266,7 +267,7 @@ func (api *LocalClient) bootstrapCertificatesWithLock(h *host.Host) error {
 			break
 		}
 		if time.Since(start) > timeout {
-			lockErr = fmt.Errorf("timeout acquiring lock")
+			lockErr = errors.New("timeout acquiring lock")
 			break
 		}
 		time.Sleep(constants.LockRetryInterval)

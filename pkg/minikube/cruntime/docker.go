@@ -19,6 +19,7 @@ package cruntime
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -450,7 +451,7 @@ func (r *Docker) ListContainers(o ListContainersOptions) ([]string, error) {
 		return nil, fmt.Errorf("docker: %w", err)
 	}
 	var ids []string
-	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
+	for line := range strings.SplitSeq(rr.Stdout.String(), "\n") {
 		if line != "" {
 			ids = append(ids, line)
 		}
@@ -534,7 +535,7 @@ func (r *Docker) ContainerLogCmd(id string, length int, follow bool) string {
 	var cmd strings.Builder
 	cmd.WriteString("docker logs ")
 	if length > 0 {
-		cmd.WriteString(fmt.Sprintf("--tail %d ", length))
+		fmt.Fprintf(&cmd, "--tail %d ", length)
 	}
 	if follow {
 		cmd.WriteString("--follow ")
@@ -571,7 +572,7 @@ type dockerDaemonRuntimes struct {
 // ref: https://docs.docker.com/engine/reference/commandline/dockerd/#options-for-the-runtime
 func (r *Docker) configureDocker(driver string) error {
 	if driver == constants.UnknownCgroupDriver {
-		return fmt.Errorf("unable to configure docker to use unknown cgroup driver")
+		return errors.New("unable to configure docker to use unknown cgroup driver")
 	}
 
 	klog.Infof("configuring docker to use %q as cgroup driver...", driver)
@@ -685,7 +686,7 @@ func dockerImagesPreloaded(runner command.Runner, imgs []string) bool {
 		return false
 	}
 	preloadedImages := map[string]struct{}{}
-	for _, i := range strings.Split(rr.Stdout.String(), "\n") {
+	for i := range strings.SplitSeq(rr.Stdout.String(), "\n") {
 		i = image.TrimDockerIO(i)
 		preloadedImages[i] = struct{}{}
 	}

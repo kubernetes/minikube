@@ -67,7 +67,6 @@ func DeleteFromCacheDir(images []string) error {
 func SaveToDir(images []string, cacheDir string, overwrite bool) error {
 	var g errgroup.Group
 	for _, image := range images {
-		image := image
 		g.Go(func() error {
 			dst := filepath.Join(cacheDir, image)
 			dst = localpath.SanitizeCacheDir(dst)

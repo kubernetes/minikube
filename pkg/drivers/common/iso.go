@@ -71,7 +71,7 @@ func ExtractFile(isoPath, srcPath, destPath string) error {
 // while the requested path might be in lowercase.
 func findCaseInsensitivePath(fs filesystem.FileSystem, targetPath string) (string, error) {
 	parts := strings.Split(targetPath, "/")
-	currentPath := "/"
+	currentPath := "."
 
 	for _, part := range parts {
 		if part == "" || part == "." {

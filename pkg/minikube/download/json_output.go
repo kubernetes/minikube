@@ -65,8 +65,8 @@ type jsonReader struct {
 	time.Time
 }
 
-func (r *jsonReader) Read(p []byte) (n int, err error) {
-	n, err = r.Reader.Read(p)
+func (r *jsonReader) Read(p []byte) (int, error) {
+	n, err := r.Reader.Read(p)
 	r.current += int64(n)
 	progress := float64(r.current) / float64(r.total)
 	// print progress every second so user isn't overwhelmed with events
@@ -74,5 +74,5 @@ func (r *jsonReader) Read(p []byte) (n int, err error) {
 		register.PrintDownloadProgress(r.artifact, fmt.Sprintf("%v", progress))
 		r.Time = t
 	}
-	return
+	return n, err
 }

@@ -18,7 +18,7 @@ package storageclass
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -77,7 +77,7 @@ func (mockStorageV1InterfaceWithBadItem) StorageClasses() storagev1.StorageClass
 
 func (mockStorageClassInterfaceOk) Get(_ context.Context, name string, _ metav1.GetOptions) (*v1.StorageClass, error) {
 	if strings.HasPrefix(name, "bad-class") {
-		return nil, fmt.Errorf("mocked error. No such class")
+		return nil, errors.New("mocked error. No such class")
 	}
 	sc := v1.StorageClass{Provisioner: name}
 	return &sc, nil
@@ -97,19 +97,19 @@ func (m mockStorageClassInterfaceWithBadItem) List(_ context.Context, _ metav1.L
 	return &scl, nil
 }
 func (mockStorageClassInterfaceListErr) List(_ context.Context, _ metav1.ListOptions) (*v1.StorageClassList, error) {
-	return nil, fmt.Errorf("mocked list error")
+	return nil, errors.New("mocked list error")
 }
 
 func (mockStorageClassInterfaceOk) Update(_ context.Context, sc *v1.StorageClass, _ metav1.UpdateOptions) (*v1.StorageClass, error) {
 	if strings.HasPrefix(sc.Provisioner, "bad") {
-		return nil, fmt.Errorf("bad provisioner")
+		return nil, errors.New("bad provisioner")
 	}
 	return &v1.StorageClass{}, nil
 }
 
 func (mockStorageClassInterfaceWithBadItem) Update(_ context.Context, sc *v1.StorageClass, _ metav1.UpdateOptions) (*v1.StorageClass, error) {
 	if strings.HasPrefix(sc.Provisioner, "bad") {
-		return nil, fmt.Errorf("bad provisioner")
+		return nil, errors.New("bad provisioner")
 	}
 	return &v1.StorageClass{}, nil
 }

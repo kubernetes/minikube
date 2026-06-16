@@ -128,7 +128,7 @@ func TestParseAddr(t *testing.T) {
 		mask, _ := cidr.Mask.Size()
 		expectedMask := 30
 		if mask != expectedMask {
-			t.Errorf("expected mask = %q; got = %q", mask, expectedMask)
+			t.Errorf("expected mask = %d; got = %d", expectedMask, mask)
 		}
 	})
 

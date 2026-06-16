@@ -60,7 +60,6 @@ func MatchKnownIssue(r Kind, err error, goos string) *Kind {
 	var genericMatch *Kind
 
 	for _, ki := range knownIssues() {
-		ki := ki
 		if ki.Regexp == nil {
 			klog.Errorf("known issue has no regexp: %+v", ki)
 			continue

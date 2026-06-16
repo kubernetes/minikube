@@ -20,7 +20,6 @@ package bsutil
 import (
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/blang/semver/v4"
@@ -219,7 +218,7 @@ func convertToFlags(opts map[string]string) string {
 	for k := range opts {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 	for _, k := range keys {
 		flags = append(flags, fmt.Sprintf("--%s=%s", k, opts[k]))
 	}

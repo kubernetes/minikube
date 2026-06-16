@@ -94,6 +94,12 @@ func SetBool(m config.MinikubeConfig, name string, val string) error {
 	return nil
 }
 
+// SetStringSlice sets a []string value from a comma-separated string
+func SetStringSlice(m config.MinikubeConfig, name string, val string) error {
+	m[name] = strings.Split(val, ",")
+	return nil
+}
+
 // ErrValidateProfile Error to validate profile
 type ErrValidateProfile struct {
 	Name string

@@ -17,7 +17,10 @@ limitations under the License.
 package bsutil
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -25,6 +28,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"golang.org/x/mod/semver"
+	"gopkg.in/yaml.v2"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -188,13 +192,7 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 				if tc.shouldErr {
 					return
 				}
-				expected, err := os.ReadFile(fmt.Sprintf("testdata/%s/%s.yaml", version, tc.name))
-				if err != nil {
-					t.Fatalf("unable to read testdata: %v", err)
-				}
-				if diff := cmp.Diff(string(expected), string(got)); diff != "" {
-					t.Errorf("GenerateKubeadmYAMLDNS mismatch (-want +got):\n%s", diff)
-				}
+				assertGeneratedYAML(t, got, version, tc.name)
 			})
 		}
 	}
@@ -229,6 +227,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 		{"containerd-api-port", "containerd", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ContainerRuntime: constants.Containerd}, Nodes: []config.Node{{Port: 12345}}}},
 		{"containerd-pod-network-cidr", "containerd", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ContainerRuntime: constants.Containerd, ExtraOptions: extraOptsPodCidr}}},
 		{"image-repository", "docker", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ImageRepository: "test/repo"}}},
+		{"etcd-extra-args", "docker", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ExtraOptions: config.ExtraOptionSlice{config.ExtraOption{Component: Etcd, Key: "listen-metrics-urls", Value: "http://0.0.0.0:2381"}}}}},
 	}
 	for _, version := range versions {
 		for _, tc := range tests {
@@ -282,15 +281,38 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 				if tc.shouldErr {
 					return
 				}
-				expected, err := os.ReadFile(fmt.Sprintf("testdata/%s/%s.yaml", version, tc.name))
-				if err != nil {
-					t.Fatalf("unable to read testdata: %v", err)
-				}
-				if diff := cmp.Diff(string(expected), string(got)); diff != "" {
-					t.Errorf("GenerateKubeadmYAML mismatch (-want +got):\n%s", diff)
-				}
+				assertGeneratedYAML(t, got, version, tc.name)
 			})
 		}
+	}
+}
+
+func assertValidYAMLDocs(t *testing.T, data []byte) {
+	t.Helper()
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	for i := 0; ; i++ {
+		var doc any
+		err := dec.Decode(&doc)
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			t.Errorf("invalid YAML (doc #%d): %v\n--- got ---\n%s", i, err, data)
+			break
+		}
+	}
+}
+
+func assertGeneratedYAML(t *testing.T, got []byte, version, name string) {
+	t.Helper()
+	assertValidYAMLDocs(t, got)
+	path := fmt.Sprintf("testdata/%s/%s.yaml", version, name)
+	expected, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("unable to read testdata: %v", err)
+	}
+	if diff := cmp.Diff(string(expected), string(got)); diff != "" {
+		t.Errorf("GenerateKubeadmYAML mismatch (-want +got):\n%s", diff)
 	}
 }
 

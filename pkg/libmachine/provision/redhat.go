@@ -98,9 +98,7 @@ func (provisioner *RedHatProvisioner) Package(name string, action pkgaction.Pack
 	switch action {
 	case pkgaction.Install:
 		packageAction = "install"
-	case pkgaction.Remove:
-		packageAction = "remove"
-	case pkgaction.Purge:
+	case pkgaction.Remove, pkgaction.Purge:
 		packageAction = "remove"
 	case pkgaction.Upgrade:
 		packageAction = "upgrade"

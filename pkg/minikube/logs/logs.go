@@ -25,7 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
 	"k8s.io/klog/v2"
@@ -179,7 +179,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	out.SetErrFile(logOutput)
 	defer out.SetErrFile(os.Stderr)
 
-	sort.Strings(names)
+	slices.Sort(names)
 	for i, name := range names {
 		if i > 0 {
 			out.Styled(style.None, "")

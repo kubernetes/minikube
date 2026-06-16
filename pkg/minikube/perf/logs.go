@@ -59,10 +59,13 @@ func timeCommandLogs(cmd *exec.Cmd) (*result, error) {
 		logs = append(logs, logData)
 		timings = append(timings, timeTaken)
 	}
+	if err := scanner.Err(); err != nil {
+		klog.Warningf("failed to read command output: %v", err)
+	}
 	// add the time it took to get from the final log to finishing the command
 	timings = append(timings, time.Since(timer).Seconds())
-	for i, log := range logs {
-		r.addTimedLog(strings.Trim(log, "\n"), timings[i+1])
+	for i, lg := range logs {
+		r.addTimedLog(strings.Trim(lg, "\n"), timings[i+1])
 	}
 
 	if err := cmd.Wait(); err != nil {

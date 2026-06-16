@@ -82,6 +82,37 @@ func TestSetBool(t *testing.T) {
 	}
 }
 
+func TestSetStringSlice(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{"single", "8.8.8.8", []string{"8.8.8.8"}},
+		{"multiple", "8.8.8.8,1.1.1.1", []string{"8.8.8.8", "1.1.1.1"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := make(config.MinikubeConfig)
+			if err := SetStringSlice(m, "dns-servers", tt.input); err != nil {
+				t.Fatalf("SetStringSlice(%q) error: %v", tt.input, err)
+			}
+			val, ok := m["dns-servers"].([]string)
+			if !ok {
+				t.Fatalf("Type not set to []string")
+			}
+			if len(val) != len(tt.expected) {
+				t.Fatalf("got %v, want %v", val, tt.expected)
+			}
+			for i := range val {
+				if val[i] != tt.expected[i] {
+					t.Fatalf("got %v, want %v", val, tt.expected)
+				}
+			}
+		})
+	}
+}
+
 func TestValidateProfile(t *testing.T) {
 	testCases := []string{"82374328742_2974224498", "validate_test"}
 	for _, name := range testCases {

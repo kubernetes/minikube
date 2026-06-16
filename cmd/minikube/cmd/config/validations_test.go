@@ -179,3 +179,90 @@ func TestIsValidMemory(t *testing.T) {
 
 	runValidations(t, tests, "memory", IsValidMemory)
 }
+
+func TestIsValidIPAddressSlice(t *testing.T) {
+	var tests = []validationTest{
+		{
+			value:     "8.8.8.8",
+			shouldErr: false,
+		},
+		{
+			value:     "8.8.8.8,1.1.1.1",
+			shouldErr: false,
+		},
+		{
+			value:     "192.168.1.1",
+			shouldErr: false,
+		},
+		{
+			value:     "10.0.0.1,172.16.0.1,8.8.4.4",
+			shouldErr: false,
+		},
+		{
+			value:     "::1",
+			shouldErr: false,
+		},
+		{
+			value:     "2001:4860:4860::8888",
+			shouldErr: false,
+		},
+		{
+			value:     "8.8.8.8,2001:4860:4860::8844",
+			shouldErr: false,
+		},
+		{
+			value:     "::ffff:8.8.8.8",
+			shouldErr: false,
+		},
+		{
+			value:     "",
+			shouldErr: true,
+		},
+		{
+			value:     "   ",
+			shouldErr: true,
+		},
+		{
+			value:     " 8.8.8.8",
+			shouldErr: true,
+		},
+		{
+			value:     "8.8.8.8 ",
+			shouldErr: true,
+		},
+		{
+			value:     "8.8.8.8, 1.1.1.1",
+			shouldErr: true,
+		},
+		{
+			value:     "not-an-ip",
+			shouldErr: true,
+		},
+		{
+			value:     "8.8.8.8,not-valid",
+			shouldErr: true,
+		},
+		{
+			value:     ",8.8.8.8",
+			shouldErr: true,
+		},
+		{
+			value:     "8.8.8.8,",
+			shouldErr: true,
+		},
+		{
+			value:     "8.8.8.8,,1.1.1.1",
+			shouldErr: true,
+		},
+		{
+			value:     "999.999.999.999",
+			shouldErr: true,
+		},
+		{
+			value:     "8.8.8",
+			shouldErr: true,
+		},
+	}
+
+	runValidations(t, tests, "dns-servers", IsValidIPAddressSlice)
+}

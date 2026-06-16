@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -51,7 +52,7 @@ func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 	klog.Infof("waiting for apiserver process to appear ...")
 	err := wait.PollUntilContextTimeout(context.Background(), time.Millisecond*500, timeout, true, func(_ context.Context) (bool, error) {
 		if time.Since(start) > timeout {
-			return false, fmt.Errorf("cluster wait timed out during process check")
+			return false, errors.New("cluster wait timed out during process check")
 		}
 
 		if time.Since(start) > minLogCheckTime {
@@ -66,7 +67,7 @@ func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf("apiserver process never appeared")
+		return errors.New("apiserver process never appeared")
 	}
 	klog.Infof("duration metric: took %s to wait for apiserver process to appear ...", time.Since(start))
 	return nil
@@ -89,7 +90,7 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 
 	healthz := func(_ context.Context) (bool, error) {
 		if time.Since(start) > timeout {
-			return false, fmt.Errorf("cluster wait timed out during healthz check")
+			return false, errors.New("cluster wait timed out during healthz check")
 		}
 
 		if time.Since(start) > minLogCheckTime {
@@ -114,7 +115,7 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 
 	vcheck := func(_ context.Context) (bool, error) {
 		if time.Since(start) > timeout {
-			return false, fmt.Errorf("cluster wait timed out during version check")
+			return false, errors.New("cluster wait timed out during version check")
 		}
 		if err := APIServerVersionMatch(client, cfg.KubernetesConfig.KubernetesVersion); err != nil {
 			klog.Warningf("api server version match failed: %v", err)
@@ -174,15 +175,15 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 	rr, err := cr.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", fmt.Sprintf("/proc/%d/cgroup", pid)))
 	if err != nil {
 		// Try cgroup v2 before giving up
-		if paused, err2 := isCgroupV2Paused(cr, pid); err2 == nil {
+		paused, err2 := isCgroupV2Paused(cr, pid)
+		if err2 == nil {
 			if paused {
 				return state.Paused, nil
 			}
 			return apiServerHealthz(hostname, port)
-		} else {
-			// Log cgroup v2 check failure at debug level for troubleshooting
-			klog.V(1).Infof("cgroup v2 apiserver status check for pid %d failed: %v", pid, err2)
 		}
+		// Log cgroup v2 check failure at debug level for troubleshooting
+		klog.V(1).Infof("cgroup v2 apiserver status check for pid %d failed: %v", pid, err2)
 
 		klog.Warningf("unable to find freezer cgroup: %v", err)
 		return nonFreezerServerStatus(cr, hostname, port)

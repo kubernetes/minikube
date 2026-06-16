@@ -23,7 +23,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"os"
@@ -271,19 +270,19 @@ func (xcg *X509CertGenerator) ReadTLSConfig(addr string, authOptions *auth.Optio
 	clientKeyPath := authOptions.ClientKeyPath
 
 	log.Debugf("Reading CA certificate from %s", caCertPath)
-	caCert, err := ioutil.ReadFile(caCertPath)
+	caCert, err := os.ReadFile(caCertPath)
 	if err != nil {
 		return nil, err
 	}
 
 	log.Debugf("Reading client certificate from %s", clientCertPath)
-	clientCert, err := ioutil.ReadFile(clientCertPath)
+	clientCert, err := os.ReadFile(clientCertPath)
 	if err != nil {
 		return nil, err
 	}
 
 	log.Debugf("Reading client key from %s", clientKeyPath)
-	clientKey, err := ioutil.ReadFile(clientKeyPath)
+	clientKey, err := os.ReadFile(clientKeyPath)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +311,7 @@ func (xcg *X509CertGenerator) ValidateCertificate(addr string, authOptions *auth
 
 func CheckCertificateDate(certPath string) (bool, error) {
 	log.Debugf("Reading certificate data from %s", certPath)
-	certBytes, err := ioutil.ReadFile(certPath)
+	certBytes, err := os.ReadFile(certPath)
 	if err != nil {
 		return false, err
 	}

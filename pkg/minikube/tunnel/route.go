@@ -87,7 +87,7 @@ func (t *routingTable) Check(route *Route) (exists bool, conflict string, overla
 			overlaps = append(overlaps, tableLine.line)
 		}
 	}
-	return
+	return exists, conflict, overlaps
 }
 
 func (t *routingTable) String() string {

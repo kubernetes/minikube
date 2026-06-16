@@ -32,6 +32,14 @@ readonly OS_ARCH="${OS}-${ARCH}"
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${MINIKUBE_LOCATION}-$$"
 
+# Set up isolated gsutil state directory to avoid resumable upload/download conflicts
+mkdir -p "${TEST_HOME}/.gsutil_state"
+cat <<EOF > "${TEST_HOME}/.gsutil_boto"
+[GSUtil]
+state_dir = ${TEST_HOME}/.gsutil_state
+EOF
+export BOTO_PATH="${TEST_HOME}/.gsutil_boto:${HOME}/.boto"
+
 export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"

@@ -78,7 +78,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig, options *run.CommandOptions) 
 			if c := os.Getenv("CLOUDSDK_CONFIG"); c != "" {
 				f, err := os.ReadFile(path.Join(c, "application_default_credentials.json"))
 				if err == nil {
-					creds, _ = google.CredentialsFromJSON(ctx, f)
+					creds, _ = google.CredentialsFromJSON(ctx, f) //nolint:staticcheck
 				}
 			}
 		} else {
@@ -325,7 +325,7 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name, val string, options *run
 		return err
 	}
 
-	if enable && err == nil {
+	if enable {
 		out.Styled(style.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cc.Name})
 		out.Styled(style.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
 		if !Refresh {

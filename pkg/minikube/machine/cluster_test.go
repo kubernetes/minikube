@@ -300,9 +300,20 @@ func TestStartHostConfig(t *testing.T) {
 		t.Fatal("Error starting host.")
 	}
 
-	for i := range h.HostOptions.EngineOptions.Env {
-		if h.HostOptions.EngineOptions.Env[i] != cfg.DockerEnv[i] {
-			t.Fatalf("Docker env variables were not set! got %+v but want %+v", h.HostOptions.EngineOptions.Env, cfg.DockerEnv)
+	// Verify that the expected Docker environment variables are set.
+	// Note: We check if the expected variables are present in the actual slice rather than
+	// performing a strict exact-index match because other variables (like proxy variables
+	// e.g., NO_PROXY) may be automatically injected into EngineOptions.Env by minikube.
+	for _, expected := range cfg.DockerEnv {
+		found := false
+		for _, actual := range h.HostOptions.EngineOptions.Env {
+			if actual == expected {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("Docker env variable %q was not set! got %+v", expected, h.HostOptions.EngineOptions.Env)
 		}
 	}
 

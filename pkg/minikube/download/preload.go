@@ -216,13 +216,13 @@ func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload
 			return true
 		}
 	default:
-		// auto or unknown - try both
-		if PreloadExistsGCS(k8sVersion, containerRuntime) {
-			setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGCS})
-			return true
-		}
+		// auto or unknown - try both (GitHub first, GCS as failover)
 		if PreloadExistsGH(k8sVersion, containerRuntime) {
 			setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGitHub})
+			return true
+		}
+		if PreloadExistsGCS(k8sVersion, containerRuntime) {
+			setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGCS})
 			return true
 		}
 	}

@@ -136,6 +136,7 @@ Steps:
 - Make sure image building works by `minikube image build`
 - Make sure image loading from Docker daemon works by `minikube image load --daemon`
 - Try to load image already loaded and make sure `minikube image load --daemon` works
+- Make sure image loading overwrites existing image even when a container is using it (#23023)
 - Make sure a new updated tag works by `minikube image load --daemon`
 - Make sure image saving works by `minikube image load --daemon`
 - Make sure image removal works by `minikube image rm`

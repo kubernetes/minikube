@@ -423,7 +423,7 @@ func (d *Driver) getMacAddressFromVmx() (string, error) {
 	// Look for generatedAddress as we're passing a VMX with addressType = "generated".
 	var macaddr string
 	vmxparse := regexp.MustCompile(`^ethernet0.generatedAddress\s*=\s*"(.*?)"\s*$`)
-	for _, line := range strings.Split(string(vmxcontent), "\n") {
+	for line := range strings.SplitSeq(string(vmxcontent), "\n") {
 		matches := vmxparse.FindStringSubmatch(line)
 		if matches == nil {
 			continue
@@ -504,7 +504,7 @@ func (d *Driver) getIPfromVmnetConfigurationFile(conffile, macaddr string) (stri
 	// we use a block depth so that just in case inner blocks exists
 	// we are not being fooled by them
 	blockdepth := 0
-	for _, line := range strings.Split(string(confcontent), "\n") {
+	for line := range strings.SplitSeq(string(confcontent), "\n") {
 
 		if matches := hostbegin.FindStringSubmatch(line); matches != nil {
 			blockdepth++
@@ -597,7 +597,7 @@ func (d *Driver) getIPfromDHCPLeaseFile(dhcpfile, macaddr string) (string, error
 	// Get the MAC address associated.
 	leasemac := regexp.MustCompile(`^\s*hardware ethernet (.+?);\r?$`)
 
-	for _, line := range strings.Split(string(dhcpcontent), "\n") {
+	for line := range strings.SplitSeq(string(dhcpcontent), "\n") {
 
 		if matches := leaseip.FindStringSubmatch(line); matches != nil {
 			lastipmatch = matches[1]

@@ -17,13 +17,14 @@ limitations under the License.
 package machine
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -104,7 +105,6 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, imgs []st
 	}
 
 	for _, img := range imgs {
-		img := img
 		g.Go(func() error {
 			// Put a ten second limit on deciding if an image needs transfer
 			// because it takes much less than that time to just transfer the image.
@@ -174,7 +174,6 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 func LoadLocalImages(cc *config.ClusterConfig, runner command.Runner, images []string) error {
 	var g errgroup.Group
 	for _, img := range images {
-		img := img
 		g.Go(func() error {
 			return transferAndLoadImage(runner, cc.KubernetesConfig, img, img)
 		})
@@ -283,10 +282,6 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 		return fmt.Errorf("runtime: %w", err)
 	}
 
-	if err := removeExistingImage(r, src, imgName); err != nil {
-		return err
-	}
-
 	klog.Infof("Loading image from: %s", src)
 	filename := filepath.Base(src)
 	if _, err := os.Stat(src); err != nil {
@@ -323,26 +318,6 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 	return nil
 }
 
-func removeExistingImage(r cruntime.Manager, src string, imgName string) error {
-	// if loading an image from tar, skip deleting as we don't have the actual image name
-	// ie. imgName = "C:\this_is_a_dir\image.tar.gz"
-	if src == imgName {
-		return nil
-	}
-
-	err := r.RemoveImage(imgName)
-	if err == nil {
-		return nil
-	}
-
-	errStr := strings.ToLower(err.Error())
-	if !strings.Contains(errStr, "no such image") && !strings.Contains(errStr, "unable to remove the image") {
-		return fmt.Errorf("removing image: %w", err)
-	}
-
-	return nil
-}
-
 // SaveCachedImages saves from the container runtime to the cache
 func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
 	klog.Infof("SaveCachedImages start: %s", images)
@@ -355,7 +330,6 @@ func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 	var g errgroup.Group
 
 	for _, img := range images {
-		img := img
 		g.Go(func() error {
 			return transferAndSaveCachedImage(runner, cc.KubernetesConfig, img, cacheDir)
 		})
@@ -371,7 +345,6 @@ func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 func SaveLocalImages(cc *config.ClusterConfig, runner command.Runner, images []string, output string) error {
 	var g errgroup.Group
 	for _, img := range images {
-		img := img
 		g.Go(func() error {
 			return transferAndSaveImage(runner, cc.KubernetesConfig, output, img)
 		})
@@ -539,7 +512,6 @@ func pullImages(crMgr cruntime.Manager, imgs []string) error {
 	var g errgroup.Group
 
 	for _, img := range imgs {
-		img := img
 		g.Go(func() error {
 			return crMgr.PullImage(img)
 		})
@@ -620,7 +592,6 @@ func removeImages(crMgr cruntime.Manager, imgs []string) error {
 	var g errgroup.Group
 
 	for _, img := range imgs {
-		img := img
 		g.Go(func() error {
 			return crMgr.RemoveImage(img)
 		})
@@ -776,7 +747,9 @@ func ListImages(profile *config.Profile, format string, options *run.CommandOpti
 		for _, item := range uniqueImages {
 			res = append(res, item.RepoTags...)
 		}
-		sort.Sort(sort.Reverse(sort.StringSlice(res)))
+		slices.SortFunc(res, func(a, b string) int {
+			return cmp.Compare(b, a)
+		})
 		fmt.Printf("%s\n", strings.Join(res, "\n"))
 	}
 
@@ -792,7 +765,6 @@ func mergeImageLists(lists [][]cruntime.ListImage) []cruntime.ListImage {
 	imageTagAndIDSet := map[string]struct{}{}
 	for _, list := range lists {
 		for _, img := range list {
-			img := img
 			_, existingImg := images[img.ID]
 			if !existingImg {
 				images[img.ID] = &img
@@ -928,7 +900,6 @@ func pushImages(crMgr cruntime.Manager, imgs []string) error {
 	var g errgroup.Group
 
 	for _, img := range imgs {
-		img := img
 		g.Go(func() error {
 			return crMgr.PushImage(img)
 		})

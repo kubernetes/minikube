@@ -1,0 +1,29 @@
+Add aarch64 as a supported host arch for the Go bootstrap stage 1.
+
+The stage1 gate in the upstream buildroot config only default-y's for
+x86, x86_64 and arm hosts. On an aarch64 host this leaves
+BR2_PACKAGE_HOST_GO_BOOTSTRAP_STAGE1_ARCH_SUPPORTS unset, which in
+turn leaves BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS unset, which
+silently drops every Go-target package (cri-dockerd, cni-plugins,
+podman, crio-bin, ...) from the build. The resulting arm64 minikube
+ISO is ~80 MB short and the provisioner fails at the docker.service
+restart step because no docker.service file was ever installed.
+
+The gate is correct for host-go-src (source bootstrap of Go has real
+host arch restrictions), but minikube resolves host-go via
+host-go-bin (PROVIDES_HOST_GO="host-go-bin"), and prebuilt Go binaries
+support aarch64 natively. Allow aarch64 in the stage1 default list so
+Go-target packages build correctly when the buildroot host is aarch64
+(e.g. Colima on an Apple Silicon Mac).
+
+This is a local patch; the proper fix belongs upstream in buildroot.
+
+Signed-off-by: Jon Williams <jon@jonwilliams.org.uk>
+
+--- a/package/go/go-bootstrap-stage1/Config.in.host
++++ b/package/go/go-bootstrap-stage1/Config.in.host
+@@ -4,3 +4,4 @@ config BR2_PACKAGE_HOST_GO_BOOTSTRAP_STAGE1_ARCH_SUPPORTS
+ 	default y if BR2_HOSTARCH = "x86"
+ 	default y if BR2_HOSTARCH = "x86_64"
+ 	default y if BR2_HOSTARCH = "arm"
++	default y if BR2_HOSTARCH = "aarch64"

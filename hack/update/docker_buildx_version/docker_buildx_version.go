@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"io"
 	"net/http"
@@ -36,13 +35,11 @@ var (
 		"deploy/iso/minikube-iso/arch/aarch64/package/docker-buildx-aarch64/docker-buildx.mk": {
 			Replace: map[string]string{
 				`DOCKER_BUILDX_AARCH64_VERSION = .*`: `DOCKER_BUILDX_AARCH64_VERSION = {{.Version}}`,
-				`DOCKER_BUILDX_AARCH64_COMMIT = .*`:  `DOCKER_BUILDX_AARCH64_COMMIT = {{.Commit}}`,
 			},
 		},
 		"deploy/iso/minikube-iso/arch/x86_64/package/docker-buildx/docker-buildx.mk": {
 			Replace: map[string]string{
 				`DOCKER_BUILDX_VERSION = .*`: `DOCKER_BUILDX_VERSION = {{.Version}}`,
-				`DOCKER_BUILDX_COMMIT = .*`:  `DOCKER_BUILDX_COMMIT = {{.Commit}}`,
 			},
 		},
 	}
@@ -50,7 +47,6 @@ var (
 
 type Data struct {
 	Version string
-	Commit  string
 }
 
 func main() {
@@ -62,7 +58,7 @@ func main() {
 		klog.Fatalf("Unable to get stable version: %v", err)
 	}
 
-	data := Data{Version: stable.Tag, Commit: stable.Commit}
+	data := Data{Version: stable.Tag}
 
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
@@ -73,27 +69,64 @@ func main() {
 	}
 }
 
-func updateHashFiles(version string) error {
-	r, err := http.Get(fmt.Sprintf("https://github.com/docker/buildx/archive/%s.tar.gz", version))
+func getHashesFromChecksums(version string) (map[string]string, error) {
+	url := fmt.Sprintf("https://github.com/docker/buildx/releases/download/%s/checksums.txt", version)
+	r, err := http.Get(url)
 	if err != nil {
-		return fmt.Errorf("failed to download source code: %v", err)
+		return nil, fmt.Errorf("failed to download checksums.txt: %v", err)
 	}
 	defer r.Body.Close()
+	if r.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to download checksums.txt: status %s", r.Status)
+	}
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %v", err)
+		return nil, fmt.Errorf("failed to read checksums body: %v", err)
 	}
-	sum := sha256.Sum256(b)
-	if err := updateHashFile(version, "aarch64", "-aarch64", sum); err != nil {
+	lines := strings.Split(string(b), "\n")
+	hashes := make(map[string]string)
+	for _, line := range lines {
+		parts := strings.Fields(line)
+		if len(parts) < 2 {
+			continue
+		}
+		hash := parts[0]
+		name := strings.TrimPrefix(parts[1], "*")
+		if strings.Contains(name, "linux-amd64") || strings.Contains(name, "linux-arm64") {
+			hashes[name] = hash
+		}
+	}
+	return hashes, nil
+}
+
+func updateHashFiles(version string) error {
+	hashes, err := getHashesFromChecksums(version)
+	if err != nil {
+		return err
+	}
+
+	amd64Binary := fmt.Sprintf("buildx-%s.linux-amd64", version)
+	amd64Hash, ok := hashes[amd64Binary]
+	if !ok {
+		return fmt.Errorf("checksum for %s not found", amd64Binary)
+	}
+
+	arm64Binary := fmt.Sprintf("buildx-%s.linux-arm64", version)
+	arm64Hash, ok := hashes[arm64Binary]
+	if !ok {
+		return fmt.Errorf("checksum for %s not found", arm64Binary)
+	}
+
+	if err := updateHashFile(version, "aarch64", "-aarch64", arm64Binary, arm64Hash); err != nil {
 		return fmt.Errorf("aarch64: %v", err)
 	}
-	if err := updateHashFile(version, "x86_64", "", sum); err != nil {
+	if err := updateHashFile(version, "x86_64", "", amd64Binary, amd64Hash); err != nil {
 		return fmt.Errorf("x86_64: %v", err)
 	}
 	return nil
 }
 
-func updateHashFile(version, arch, folderSuffix string, shaSum [sha256.Size]byte) error {
+func updateHashFile(version, arch, folderSuffix, binaryName, shaSum string) error {
 	filePath := fmt.Sprintf("../deploy/iso/minikube-iso/arch/%s/package/docker-buildx%s/docker-buildx.hash", arch, folderSuffix)
 	b, err := os.ReadFile(filePath)
 	if err != nil {
@@ -108,7 +141,7 @@ func updateHashFile(version, arch, folderSuffix string, shaSum [sha256.Size]byte
 		return fmt.Errorf("failed to open hash file: %v", err)
 	}
 	defer f.Close()
-	if _, err := fmt.Fprintf(f, "sha256 %x  %s.tar.gz\n", shaSum, version); err != nil {
+	if _, err := fmt.Fprintf(f, "sha256 %s  %s\n", shaSum, binaryName); err != nil {
 		return fmt.Errorf("failed to write to hash file: %v", err)
 	}
 	return nil

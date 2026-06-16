@@ -18,6 +18,7 @@ package config
 
 import (
 	"net"
+	"net/netip"
 	"time"
 
 	"github.com/blang/semver/v4"
@@ -111,6 +112,8 @@ type ClusterConfig struct {
 	AutoPauseInterval       time.Duration // Specifies interval of time to wait before checking if cluster should be paused
 	WindowsNodeVersion      string        // OS version of windows node
 	Rosetta                 bool          // Only used by vfkit driver
+	VmnetOffloading         bool          // Only used by krunkit driver
+	DNSServers              []netip.Addr  // Static DNS servers for the VM (VM drivers only)
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

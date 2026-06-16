@@ -26,8 +26,8 @@ Please send a PR to suggest any improvements to it.
 
 ## (#4) Podman
 
-- [ ] Make Podman driver less experimental
+- [ ] Make Podman driver less experimental, more stable like Docker driver
 
 ## (#5) libmachine Refactor
 
-- [ ] Move minikube-machine inside minikube, remove Docker Machine everywhere
+- [x] Move minikube-machine inside minikube, remove Docker Machine everywhere

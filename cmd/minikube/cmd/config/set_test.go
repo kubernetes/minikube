@@ -33,35 +33,53 @@ func TestNotFound(t *testing.T) {
 
 func TestSetNotAllowed(t *testing.T) {
 	createTestConfig(t)
-	err := Set("driver", "123456")
-	if err == nil || err.Error() != "run validations for \"driver\" with value of \"123456\": [driver \"123456\" is not supported]" {
-		t.Fatalf("Set did not return error for unallowed value: %+v", err)
-	}
-	err = Set("memory", "10a")
-	if err == nil || err.Error() != "run validations for \"memory\" with value of \"10a\": [invalid memory size: invalid suffix: 'a']" {
-		t.Fatalf("Set did not return error for unallowed value: %+v", err)
-	}
+	t.Run("driver", func(t *testing.T) {
+		err := Set("driver", "123456")
+		if err == nil || err.Error() != "run validations for \"driver\" with value of \"123456\": [driver \"123456\" is not supported]" {
+			t.Fatalf("Set did not return error for unallowed value: %+v", err)
+		}
+	})
+	t.Run("memory", func(t *testing.T) {
+		err := Set("memory", "10a")
+		if err == nil || err.Error() != "run validations for \"memory\" with value of \"10a\": [invalid memory size: invalid suffix: 'a']" {
+			t.Fatalf("Set did not return error for unallowed value: %+v", err)
+		}
+	})
+	t.Run("dns-servers", func(t *testing.T) {
+		err := Set("dns-servers", ",1.2.3.4")
+		if err == nil {
+			t.Fatalf("Set did not return error for invalid dns-servers value")
+		}
+	})
 }
 
 func TestSetOK(t *testing.T) {
 	createTestConfig(t)
-	err := Set("driver", "ssh")
-	defer func() {
-		err = Unset("driver")
+	t.Run("driver", func(t *testing.T) {
+		err := Set("driver", "ssh")
+		defer func() {
+			err = Unset("driver")
+			if err != nil {
+				t.Errorf("failed to unset driver: %+v", err)
+			}
+		}()
 		if err != nil {
-			t.Errorf("failed to unset driver: %+v", err)
+			t.Fatalf("Set returned error for valid property value: %+v", err)
 		}
-	}()
-	if err != nil {
-		t.Fatalf("Set returned error for valid property value: %+v", err)
-	}
-	val, err := Get("driver")
-	if err != nil {
-		t.Fatalf("Get returned error for valid property: %+v", err)
-	}
-	if val != "ssh" {
-		t.Fatalf("Get returned %s, expected \"ssh\"", val)
-	}
+		val, err := Get("driver")
+		if err != nil {
+			t.Fatalf("Get returned error for valid property: %+v", err)
+		}
+		if val != "ssh" {
+			t.Fatalf("Get returned %s, expected \"ssh\"", val)
+		}
+	})
+	t.Run("dns-servers", func(t *testing.T) {
+		err := Set("dns-servers", "8.8.8.8,1.1.1.1")
+		if err != nil {
+			t.Fatalf("Set returned error for valid dns-servers value: %+v", err)
+		}
+	})
 }
 
 func createTestConfig(t *testing.T) {

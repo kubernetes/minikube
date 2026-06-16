@@ -89,7 +89,6 @@ func runStress(t *testing.T, oldPath string, profile string) {
 			{"ColdHeadRestart", validateColdHeadRestart},
 		}
 		for _, tc := range tests {
-			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(t, oldPath, profile)
 			})

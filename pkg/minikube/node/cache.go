@@ -107,7 +107,7 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, contai
 		exit.Error(reason.InetCacheTar, "Failed to cache images to tar", err)
 	}
 	out.Step(style.Check, "Download complete!")
-	os.Exit(0)
+	os.Exit(0) //nolint:revive
 }
 
 // CacheKubectlBinary caches the kubectl binary
@@ -171,7 +171,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			}
 
 			if cc.Driver == driver.Podman {
-				return fmt.Errorf("not yet implemented, see issue #8426")
+				return errors.New("not yet implemented, see issue #8426")
 			}
 			if driver.IsDocker(cc.Driver) && err == nil {
 				klog.Infof("Loading %s from local cache", img)
@@ -205,7 +205,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		_, err = download.GHKicbaseTarballToCache(kicbaseVersion)
 		if err != nil {
 			klog.Infof("failed to download kicbase from github")
-			return fmt.Errorf("failed to download kic base image or any fallback image")
+			return errors.New("failed to download kic base image or any fallback image")
 		}
 
 		klog.Infof("successfully downloaded kicbase as fall back image from github")
@@ -224,21 +224,18 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 // waitDownloadKicBaseImage blocks until the base image for KIC is downloaded.
 func waitDownloadKicBaseImage(g *errgroup.Group) {
 	if err := g.Wait(); err != nil {
-		if err != nil {
-			if errors.Is(err, image.ErrGithubNeedsLogin) {
-				klog.Warningf("Error downloading kic artifacts: %v", err)
-				out.ErrT(style.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": image.Tag(kic.BaseImage)})
-				out.WarningT("In order to use the fall back image, you need to log in to the github packages registry")
-				out.Styled(style.Documentation, `Please visit the following link for documentation around this:
+		if errors.Is(err, image.ErrGithubNeedsLogin) {
+			klog.Warningf("Error downloading kic artifacts: %v", err)
+			out.ErrT(style.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": image.Tag(kic.BaseImage)})
+			out.WarningT("In order to use the fall back image, you need to log in to the github packages registry")
+			out.Styled(style.Documentation, `Please visit the following link for documentation around this:
 	https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages
 `)
-			}
-			if errors.Is(err, image.ErrGithubNeedsLogin) || errors.Is(err, image.ErrNeedsLogin) {
-				exit.Message(reason.Usage, `Please either authenticate to the registry or use --base-image flag to use a different registry.`)
-			} else {
-				klog.Errorln("Error downloading kic artifacts: ", err)
-			}
-
+		}
+		if errors.Is(err, image.ErrGithubNeedsLogin) || errors.Is(err, image.ErrNeedsLogin) {
+			exit.Message(reason.Usage, `Please either authenticate to the registry or use --base-image flag to use a different registry.`)
+		} else {
+			klog.Errorln("Error downloading kic artifacts: ", err)
 		}
 	}
 	klog.Info("Successfully downloaded all kic artifacts")
@@ -287,9 +284,11 @@ func imagesInConfigFile() ([]string, error) {
 	}
 	if values, ok := configFile[cacheImageConfigKey]; ok {
 		// Type assertion needed because config values are stored as interface{}
-		m := values.(map[string]interface{})
-		images := slices.Collect(maps.Keys(m))
-		return images, nil
+		if m, ok := values.(map[string]interface{}); ok {
+			images := slices.Collect(maps.Keys(m))
+			return images, nil
+		}
+		return nil, fmt.Errorf("cache config value has unexpected type %T", values)
 	}
 	return []string{}, nil
 }

@@ -24,6 +24,8 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // TestPreload verifies that disabling the initial preload, pulling a specific image,
@@ -65,6 +67,11 @@ func TestPreload(t *testing.T) {
 		}
 	}) {
 		t.Run("Restart-With-Preload-Check-User-Image", func(t *testing.T) {
+			// containerd preload overwrites /var and drops user images; unlike docker
+			// and cri-o it has no backup/restore yet (#22269), so this check can't pass.
+			if ContainerRuntime() == constants.Containerd {
+				t.Skip("containerd preload drops user images, see https://github.com/kubernetes/minikube/issues/23035")
+			}
 			// re-start the cluster and check if image is preserved with enabled preload
 			startArgs := []string{"start", "-p", profile, "--preload=true", "--alsologtostderr", "-v=1", "--wait=true"}
 			startArgs = append(startArgs, StartArgs()...)

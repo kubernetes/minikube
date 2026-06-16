@@ -20,6 +20,7 @@ package kvm
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -87,7 +88,7 @@ func getDevicesXML() (string, error) {
 		pciDevices = append(pciDevices, pciDevice)
 	}
 	if len(pciDevices) == 0 {
-		return "", fmt.Errorf("couldn't generate devices XML: parsing failed")
+		return "", errors.New("couldn't generate devices XML: parsing failed")
 	}
 	tmpl := template.Must(template.New("").Parse(devicesTmpl))
 	var devicesXML bytes.Buffer
@@ -142,10 +143,10 @@ func getPassthroughableNVIDIADevices() ([]string, error) {
 		}
 	}
 	if !found {
-		return []string{}, fmt.Errorf("no NVIDIA devices found")
+		return []string{}, errors.New("no NVIDIA devices found")
 	}
 	if len(unboundNVIDIADevices) == 0 {
-		return []string{}, fmt.Errorf("some NVIDIA devices were found but none of them were unbound. See instructions at https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/")
+		return []string{}, errors.New("some NVIDIA devices were found but none of them were unbound. See instructions at https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/")
 	}
 
 	// Make sure all the unbound devices are in IOMMU groups that only contain unbound devices.
@@ -160,7 +161,7 @@ func getPassthroughableNVIDIADevices() ([]string, error) {
 		}
 	}
 	if len(isolatedNVIDIADevices) == 0 {
-		return []string{}, fmt.Errorf("some unbound NVIDIA devices were found but they had other devices in their IOMMU group that were bound. See instructions at https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/")
+		return []string{}, errors.New("some unbound NVIDIA devices were found but they had other devices in their IOMMU group that were bound. See instructions at https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/")
 	}
 
 	return isolatedNVIDIADevices, nil

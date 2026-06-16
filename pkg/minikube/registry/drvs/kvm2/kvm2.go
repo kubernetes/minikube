@@ -20,6 +20,7 @@ package kvm2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -150,7 +151,7 @@ func status(_ *run.CommandOptions) registry.State {
 				Installed: true,
 				Running:   true,
 				// keep the error message in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
-				Error:  fmt.Errorf("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
+				Error:  errors.New("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
 				Reason: "PR_KVM_USER_PERMISSION",
 				Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
 				Doc:    docURL,

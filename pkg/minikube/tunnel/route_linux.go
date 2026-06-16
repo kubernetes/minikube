@@ -59,13 +59,13 @@ func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, ove
 	stdInAndOut, err := cmd.CombinedOutput()
 	if err != nil {
 		err = fmt.Errorf("error running '%v': %s", cmd, err)
-		return
+		return false, "", nil, err
 	}
 	rt := router.parseTable(stdInAndOut)
 
 	exists, conflict, overlaps = rt.Check(route)
 
-	return
+	return exists, conflict, overlaps, nil
 }
 
 func (router *osRouter) parseTable(table []byte) routingTable {

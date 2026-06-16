@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-BUILDKIT_BIN_AARCH64_VERSION = v0.26.3
-BUILDKIT_BIN_AARCH64_COMMIT = c70e8e666f8f6ee3c0d83b20c338be5aedeaa97a
+BUILDKIT_BIN_AARCH64_VERSION = v0.29.0
+BUILDKIT_BIN_AARCH64_COMMIT = 8543ce4428265d547cb009e5ad62348284497a88
 BUILDKIT_BIN_AARCH64_SITE = https://github.com/moby/buildkit/releases/download/$(BUILDKIT_BIN_AARCH64_VERSION)
 BUILDKIT_BIN_AARCH64_SOURCE = buildkit-$(BUILDKIT_BIN_AARCH64_VERSION).linux-arm64.tar.gz
 

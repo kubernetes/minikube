@@ -18,6 +18,7 @@ package command
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
@@ -62,7 +63,7 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 		var txt strings.Builder
 		for _, c := range f.commands() {
-			txt.WriteString(fmt.Sprintf("  `%s`\n", c))
+			fmt.Fprintf(&txt, "  `%s`\n", c)
 		}
 		return rr, fmt.Errorf("unregistered command:\n  `%s`\nexpected one of:\n%s", key, txt.String())
 	}
@@ -70,7 +71,11 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	var buf bytes.Buffer
 	outStr := ""
 	if out != nil {
-		outStr = out.(string)
+		var ok bool
+		outStr, ok = out.(string)
+		if !ok {
+			return rr, fmt.Errorf("unregistered or invalid command output type for %q: expected string but got %T", key, out)
+		}
 	}
 	_, err := buf.WriteString(outStr)
 	if err != nil {
@@ -104,7 +109,7 @@ func (f *FakeCommandRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 
 		var txt strings.Builder
 		for _, c := range f.commands() {
-			txt.WriteString(fmt.Sprintf("  `%s`\n", c))
+			fmt.Fprintf(&txt, "  `%s`\n", c)
 		}
 		return sc, fmt.Errorf("unregistered command:\n  `%s`\nexpected one of:\n%s", key, txt.String())
 	}
@@ -112,7 +117,11 @@ func (f *FakeCommandRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 	var buf bytes.Buffer
 	outStr := ""
 	if out != nil {
-		outStr = out.(string)
+		var ok bool
+		outStr, ok = out.(string)
+		if !ok {
+			return sc, fmt.Errorf("unregistered or invalid command output type for %q: expected string but got %T", key, out)
+		}
 	}
 	_, err := buf.WriteString(outStr)
 	if err != nil {
@@ -144,9 +153,17 @@ func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 func (f *FakeCommandRunner) CopyFrom(file assets.CopyableFile) error {
 	v, ok := f.fileMap.Load(file.GetSourcePath())
 	if !ok {
-		return fmt.Errorf("not found in map")
+		return errors.New("not found in map")
 	}
-	b := v.(bytes.Buffer)
+	var b bytes.Buffer
+	switch val := v.(type) {
+	case string:
+		b.WriteString(val)
+	case bytes.Buffer:
+		b = val
+	default:
+		return fmt.Errorf("file contents for %s is of unexpected type %T", file.GetSourcePath(), v)
+	}
 	_, err := io.Copy(file, &b)
 	if err != nil {
 		return fmt.Errorf("error writing file: %+v: %w", file, err)
@@ -186,7 +203,10 @@ func (f *FakeCommandRunner) GetFileToContents(filename string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("unavailable file: %s", filename)
 	}
-	return contents.(string), nil
+	if str, ok := contents.(string); ok {
+		return str, nil
+	}
+	return "", fmt.Errorf("file contents for %s is of unexpected type %T", filename, contents)
 }
 
 func (f *FakeCommandRunner) commands() []string {

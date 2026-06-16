@@ -20,6 +20,7 @@ package sysinit
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
 	"os/exec"
@@ -165,7 +166,7 @@ func (s *OpenRC) Restart(svc string) error {
 // Reload reloads a service
 // currently only used by our docker-env that doesn't need openrc implementation
 func (s *OpenRC) Reload(_ string) error {
-	return fmt.Errorf("reload is not implemented for OpenRC yet ! Please implement if needed")
+	return errors.New("reload is not implemented for OpenRC yet ! Please implement if needed")
 }
 
 // Stop stops a service

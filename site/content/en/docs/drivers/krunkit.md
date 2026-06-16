@@ -43,9 +43,10 @@ instructions below.
 The command downloads the latest release from github and installs it to
 `/opt/vmnet-helper`.
 
-> [!IMPORTANT]
-> The vmnet-helper executable and the directory where it is installed
-> must be owned by root and may not be modifiable by unprivileged users.
+{{% alert title="Note" color="primary" %}}
+The vmnet-helper executable and the directory where it is installed
+must be owned by root and may not be modifiable by unprivileged users.
+{{% /alert %}}
 
 ### Grant permission to run vmnet-helper manually (if said no to script above)
 
@@ -70,6 +71,30 @@ users or other groups.
 ```shell
 minikube start --driver krunkit
 ```
+
+### Vmnet offloading
+
+The `--vmnet-offloading` flag enables vmnet checksum and TSO offloading,
+which can improve host network throughput by up to 5x (e.g. pulling images
+from a local registry, RBD mirroring):
+
+```shell
+minikube start --driver krunkit --vmnet-offloading
+```
+
+{{% alert title="Warning" color="warning" %}}
+Offloading may not work for all workloads. Review the limitations below
+and verify that this flag works for your workload before relying on it.
+{{% /alert %}}
+
+#### Limitations
+
+- All VMs connected to the same vmnet bridge must enable offloading.
+  If any VM on the bridge does not use offloading, the bridge disables
+  TSO and TX performance drops significantly.
+- Pod-to-VM network RX performance is severely degraded when offloading
+  is enabled, making it almost unusable. Pod-to-host network works well
+  and is faster than without offloading.
 
 ## Issues
 
