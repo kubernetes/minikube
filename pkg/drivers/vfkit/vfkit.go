@@ -247,8 +247,6 @@ func (d *Driver) Start() error {
 		if err := d.VmnetHelper.Start(socketPath); err != nil {
 			return err
 		}
-
-		d.MACAddress = d.VmnetHelper.GetMACAddress()
 	}
 
 	if err := d.startVfkit(socketPath); err != nil {

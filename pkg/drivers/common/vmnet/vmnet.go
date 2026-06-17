@@ -60,8 +60,9 @@ type Helper struct {
 	// The pidfile and log are stored here.
 	MachineDir string
 
-	// InterfaceID is a random UUID for the vmnet interface. Using the same UUID
-	// will obtain the same MAC address from vmnet.
+	// InterfaceID is an optional UUID for the vmnet interface. When set,
+	// vmnet-helper passes --interface-id to obtain a deterministic MAC address
+	// from vmnet.
 	InterfaceID string
 
 	// Offloading is required for krunkit, does not work with vfkit.
@@ -184,7 +185,11 @@ func (h *Helper) Start(socketPath string) error {
 		executable = helper.Path
 	}
 
-	args = append(args, "--socket", socketPath, "--interface-id", h.InterfaceID)
+	args = append(args, "--socket", socketPath)
+
+	if h.InterfaceID != "" {
+		args = append(args, "--interface-id", h.InterfaceID)
+	}
 
 	if h.Offloading {
 		args = append(args, "--enable-tso", "--enable-checksum-offload")
@@ -229,8 +234,10 @@ func (h *Helper) Start(socketPath string) error {
 		return fmt.Errorf("failed to decode vmnet interface info: %w", err)
 	}
 
-	log.Infof("Got mac address %q", info.MACAddress)
 	h.macAddress = info.MACAddress
+	if h.InterfaceID != "" {
+		log.Infof("Got mac address %q", info.MACAddress)
+	}
 
 	return nil
 }
