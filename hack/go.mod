@@ -3,7 +3,7 @@ module k8s.io/minikube/hack
 go 1.26.0
 
 require (
-	cloud.google.com/go/storage v1.62.2
+	cloud.google.com/go/storage v1.62.3
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.7
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.55.0
 	github.com/cenkalti/backoff/v5 v5.0.3
