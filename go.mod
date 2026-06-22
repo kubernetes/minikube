@@ -3,7 +3,7 @@ module k8s.io/minikube
 go 1.26.0
 
 require (
-	cloud.google.com/go/storage v1.62.2
+	cloud.google.com/go/storage v1.62.3
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.32.0
 	github.com/VividCortex/godaemon v1.0.0
 	github.com/Xuanwo/go-locale v1.1.3
