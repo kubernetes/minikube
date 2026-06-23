@@ -643,10 +643,7 @@ func getDNSServers(cmd *cobra.Command, driverName string) []netip.Addr {
 // systemd-resolved is not applicable.
 func getMDNS(cmd *cobra.Command, driverName string) bool {
 	enabled := viper.GetBool(mdns)
-	if !enabled {
-		return false
-	}
-	if !driver.IsVM(driverName) || driver.IsSSH(driverName) {
+	if enabled && (!driver.IsVM(driverName) || driver.IsSSH(driverName)) {
 		if cmd.Flags().Changed(mdns) {
 			out.WarningT("--mdns flag is only valid with VM drivers, it will be ignored")
 		}
