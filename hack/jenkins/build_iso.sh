@@ -21,6 +21,17 @@
 
 set -x -o pipefail
 
+# Clean build artifacts first - if available space is very low, anything else may fail.
+# Preserves ccache in $HOME/.buildroot-ccache.
+echo "Cleaning out directory"
+rm -rf out
+
+# Clean Jenkins deferred wipeout leftovers and stale workspaces that may still occupy disk.
+echo "Stale workspace copies:"
+find "$(dirname "${WORKSPACE}")" -maxdepth 1 -name "$(basename "${WORKSPACE}")@*" | sed 's/^/  /'
+echo ""
+rm -rf "${WORKSPACE}"@* || true
+
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh
 
@@ -71,6 +82,24 @@ else
 	release=true
 	export ISO_VERSION
 	export ISO_BUCKET
+fi
+
+# Check available space after all installs - fail early if insufficient
+echo "Disk space before ISO build:"
+df -h .
+
+available_gb=$(df --output=avail . | tail -1 | awk '{printf "%.0f", $1/1024/1024}')
+echo "Available disk space: ${available_gb}GB"
+if [ "$available_gb" -lt 50 ]; then
+    echo "ERROR: Not enough disk space for ISO build. Available: ${available_gb}GB, required: at least 50GB"
+    body=$(cat << EOF
+Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed for Commit ${ghprbActualCommit}
+Not enough disk space on build machine (${available_gb}GB available, need 50GB).
+Please contact the maintainers to clean up the ISO build node.
+EOF
+)
+    gh pr comment "${ghprbPullId}" --body "$body"
+    exit 1
 fi
 
 if ! make release-iso 2>&1 | tee iso-logs.txt; then
