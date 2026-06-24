@@ -21,6 +21,29 @@
 
 set -x -o pipefail
 
+# Clean build artifacts first - if available space is very low, anything else may fail.
+echo "Cleaning out directory"
+rm -rf out
+
+# Clean stale Go caches that accumulate over time and can consume tens of GB.
+# The ISO build uses buildroot and does not need the host Go cache.
+# Clean it to prevent unbounded growth - only make generate-docs uses host Go.
+echo "Cleaning Go caches"
+go clean -cache -modcache || true
+chmod -R u+w "${GOPATH}/src" || true
+rm -rf "${GOPATH}/src" || true
+
+# Clean Jenkins deferred wipeout leftovers and stale workspaces that may still occupy disk.
+# Matches both @* (Jenkins deferred wipeout) and _ws-cleanup_* (WS-CLEANUP plugin) leftovers.
+echo "Stale workspace copies:"
+find "$(dirname "${WORKSPACE}")" -maxdepth 1 -name "$(basename "${WORKSPACE}")_*" -o -name "$(basename "${WORKSPACE}")@*" | sed 's/^/  /'
+echo ""
+chmod -R u+w "${WORKSPACE}"@* "${WORKSPACE}"_* || true
+rm -rf "${WORKSPACE}"@* "${WORKSPACE}"_* || true
+
+# Trim systemd journal to 1GB - no reason to keep gigabytes of logs on a build machine.
+sudo journalctl --vacuum-size=1G || true
+
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh
 
@@ -71,6 +94,30 @@ else
 	release=true
 	export ISO_VERSION
 	export ISO_BUCKET
+fi
+
+# Check available space after all installs - fail early if insufficient
+echo "Disk space before ISO build:"
+df -h .
+
+required_gb=100
+available_gb=$(df --output=avail . | tail -1 | awk '{printf "%.0f", $1/1024/1024}')
+echo "Available disk space: ${available_gb}GB"
+if [ "$available_gb" -lt "$required_gb" ]; then
+    echo "ERROR: Not enough disk space for ISO build. Available: ${available_gb}GB, required: at least ${required_gb}GB"
+    ./hack/jenkins/investigate_disk_usage.sh || true
+    body=$(cat << EOF
+Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed for Commit ${ghprbActualCommit}
+Not enough disk space on build machine (${available_gb}GB available, need ${required_gb}GB).
+
+See the logs at:
+https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
+
+Please contact the maintainers to clean up the ISO build node.
+EOF
+)
+    gh pr comment "${ghprbPullId}" --body "$body"
+    exit 1
 fi
 
 if ! make release-iso 2>&1 | tee iso-logs.txt; then
