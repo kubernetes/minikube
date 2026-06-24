@@ -121,7 +121,7 @@ func Available(vm bool, options *run.CommandOptions) []DriverState {
 			klog.Errorf("%q does not implement Status", d.Name)
 			continue
 		}
-		stateChannel := make(chan State)
+		stateChannel := make(chan State, 1)
 		timeoutChannel := time.After(20 * time.Second)
 		go func() {
 			stateChannel <- d.Status(options)
