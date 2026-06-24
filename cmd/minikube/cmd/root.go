@@ -209,6 +209,14 @@ func usageTemplate() string {
 
 func init() {
 	klog.InitFlags(nil)
+	if err := flag.Set("legacy_stderr_threshold_behavior", "false"); err != nil {
+		klog.Warningf("Unable to set default flag value for legacy_stderr_threshold_behavior: %v", err)
+	}
+	// default stderrthreshold to INFO so --logtostderr shows all severity levels by default;
+	// users can override with --stderrthreshold=WARNING|ERROR
+	if err := flag.Set("stderrthreshold", "INFO"); err != nil {
+		klog.Warningf("Unable to set default flag value for stderrthreshold: %v", err)
+	}
 	// preset logtostderr and alsologtostderr only for test runs, for normal runs consider flags in main()
 	if strings.HasPrefix(filepath.Base(os.Args[0]), "e2e-") || strings.HasSuffix(os.Args[0], "test") {
 		if err := flag.Set("logtostderr", "false"); err != nil {
