@@ -386,7 +386,7 @@ func Suggest(driversState []registry.DriverState) (registry.DriverState, []regis
 // Status returns the status of a driver
 func Status(name string, options *run.CommandOptions) registry.DriverState {
 	d := registry.Driver(name)
-	stateChannel := make(chan registry.State)
+	stateChannel := make(chan registry.State, 1)
 	timeoutChannel := time.After(20 * time.Second)
 	go func() {
 		stateChannel <- registry.Status(name, options)
