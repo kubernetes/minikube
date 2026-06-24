@@ -21,6 +21,14 @@
 
 set -x -o pipefail
 
+source ./hack/jenkins/github.sh
+
+set_status() {
+  retry_github_status "${ghprbActualCommit}" "ISO PR Build Push" "pending" "${access_token}" "${BUILD_URL}" "$1"
+}
+
+set_status "Cleaning up build machine"
+
 # Clean build artifacts first - if available space is very low, anything else may fail.
 # Preserves ccache in $HOME/.buildroot-ccache.
 echo "Cleaning out directory"
@@ -31,6 +39,8 @@ echo "Stale workspace copies:"
 find "$(dirname "${WORKSPACE}")" -maxdepth 1 -name "$(basename "${WORKSPACE}")@*" | sed 's/^/  /'
 echo ""
 rm -rf "${WORKSPACE}"@* || true
+
+set_status "Preparing build machine"
 
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh
@@ -101,6 +111,8 @@ EOF
     gh pr comment "${ghprbPullId}" --body "$body"
     exit 1
 fi
+
+set_status "Building ISO"
 
 if ! make release-iso 2>&1 | tee iso-logs.txt; then
     # Exit of `make` (PIPESTATUS[0]); fallback to 1 if unavailable
