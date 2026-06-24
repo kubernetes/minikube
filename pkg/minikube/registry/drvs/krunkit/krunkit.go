@@ -88,6 +88,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		VirtiofsMounts: mounts,
 		VmnetHelper: vmnet.Helper{
 			MachineDir:  filepath.Join(storePath, "machines", machineName),
+			MachineName: machineName,
 			InterfaceID: u,
 			Offloading:  cfg.VmnetOffloading,
 		},
