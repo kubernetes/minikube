@@ -11,11 +11,14 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        timeout-minutes: 1
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        timeout-minutes: 1
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Bump versions
         id: bumpVersions
+        timeout-minutes: 3
         run: |
           MAKEALL_OUTPUT=$(make _update-all)
           echo "changes<<EOF" >> "$GITHUB_OUTPUT"
@@ -26,6 +29,7 @@ jobs:
         id: createPR
         if: ${{ steps.bumpVersions.outputs.changes != '' }}
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
+        timeout-minutes: 2
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Kicbase/ISO: Update dependency versions'

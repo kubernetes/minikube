@@ -14,17 +14,22 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        timeout-minutes: 1
       - name: Checkout submodules
+        timeout-minutes: 1
         run: git submodule update --init
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        timeout-minutes: 1
         with:
           go-version: ${{env.GO_VERSION}}
       - name: time-to-k8s Benchmark
+        timeout-minutes: 79
         id: timeToK8sBenchmark
         run: |
           ./hack/benchmark/time-to-k8s/time-to-k8s.sh
           echo "version=$(minikube version --short)" >> "$GITHUB_OUTPUT"
       - name: Create PR
+        timeout-minutes: 2
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
