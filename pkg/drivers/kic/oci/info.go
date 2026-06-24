@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -246,7 +247,9 @@ type podmanSysInfo struct {
 }
 
 var dockerInfoGetter = func() (string, error) {
-	rr, err := runCmd(exec.Command(Docker, "system", "info", "--format", "{{json .}}"))
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	rr, err := runCmd(exec.CommandContext(ctx, Docker, "system", "info", "--format", "{{json .}}"))
 	return rr.Stdout.String(), err
 }
 
