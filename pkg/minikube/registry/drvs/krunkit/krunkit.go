@@ -25,9 +25,10 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/google/uuid"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
+	"k8s.io/minikube/pkg/drivers/common/mac"
 	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/krunkit"
@@ -61,13 +62,8 @@ func init() {
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	machineName := config.MachineName(cfg, n)
 	storePath := localpath.MiniPath()
-
-	// We generate a random UUID (or use a user provided one). vment-helper will
-	// obtain a mac address from the vmnet framework using the UUID.
-	u := cfg.UUID
-	if u == "" {
-		u = uuid.NewString()
-	}
+	macAddr := mac.FromName(machineName)
+	klog.Infof("Using mac address %s", macAddr)
 
 	mounts, err := virtiofs.ValidateMountString(cfg.MountString)
 	if err != nil {
@@ -85,11 +81,11 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		Memory:         cfg.Memory,
 		CPU:            cfg.CPUs,
 		ExtraDisks:     cfg.ExtraDisks,
+		MACAddress:     macAddr,
 		VirtiofsMounts: mounts,
 		VmnetHelper: vmnet.Helper{
-			MachineDir:  filepath.Join(storePath, "machines", machineName),
-			InterfaceID: u,
-			Offloading:  cfg.VmnetOffloading,
+			MachineDir: filepath.Join(storePath, "machines", machineName),
+			Offloading: cfg.VmnetOffloading,
 		},
 	}, nil
 }
