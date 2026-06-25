@@ -19,6 +19,7 @@ package machine
 import (
 	"fmt"
 	"runtime"
+	"slices"
 
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -30,12 +31,7 @@ func isExcluded(binary string, excludedBinaries []string) bool {
 	if excludedBinaries == nil {
 		return false
 	}
-	for _, excludedBinary := range excludedBinaries {
-		if binary == excludedBinary {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(excludedBinaries, binary)
 }
 
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper

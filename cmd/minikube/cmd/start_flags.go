@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -1126,14 +1127,7 @@ func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
 	supportedDrivers := []string{driver.HyperKit, driver.KVM2, driver.QEMU2, driver.VFKit, driver.Krunkit}
 
 	if cmd.Flags().Changed(extraDisks) {
-		supported := false
-		for _, d := range supportedDrivers {
-			if driverName == d {
-				supported = true
-				break
-			}
-		}
-		if !supported {
+		if !slices.Contains(supportedDrivers, driverName) {
 			out.WarningT("Specifying extra disks is currently only supported for the following drivers: {{.supported_drivers}}. If you can contribute to add this feature, please create a PR.", out.V{"supported_drivers": supportedDrivers})
 		}
 	}
