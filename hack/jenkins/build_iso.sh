@@ -132,22 +132,7 @@ EOF
     exit 1
 fi
 
-if ! make release-iso 2>&1 | tee iso-logs.txt; then
-    # Exit of `make` (PIPESTATUS[0]); fallback to 1 if unavailable
-    ec=${PIPESTATUS[0]:-1}
-
-    # Only comment on non-release; default release=false if unset
-    if [[ ${release:-false} != "true" ]]; then
-        body=$(cat << EOF
-Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed for Commit ${ghprbActualCommit}
-See the logs at:
-https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
-EOF
-)
-	    gh pr comment "${ghprbPullId}" --body "$body"
-    fi
-    exit "$ec"
-fi
+# DO NOT MERGE: skip ISO build for testing push logic
 
 git config user.name "minikube-bot"
 git config user.email "20374350+minikube-bot@users.noreply.github.com"
