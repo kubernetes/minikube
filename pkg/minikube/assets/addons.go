@@ -793,6 +793,13 @@ var Addons = map[string]*Addon{
 		map[string]string{
 			"Kubetail": "docker.io",
 		}, nil),
+	"traefik": NewAddon([]*BinAsset{}, false, "traefik", "3rd party (Traefik Labs)", "traefik", "https://doc.traefik.io/traefik/", nil, nil,
+		&HelmChart{
+			Name:      "traefik",
+			Repo:      "oci://ghcr.io/traefik/helm/traefik",
+			Namespace: "kube-system",
+		},
+	),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...

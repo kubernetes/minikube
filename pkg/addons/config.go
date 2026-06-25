@@ -246,4 +246,9 @@ var Addons = []*Addon{
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
 	},
+	{
+		name:      "traefik",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
 }
