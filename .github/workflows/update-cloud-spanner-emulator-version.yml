@@ -38,8 +38,8 @@ jobs:
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from ${{ steps.bumpCloudSpannerEmulator.outputs.OLD_VERSION }} to ${{ steps.bumpCloudSpannerEmulator.outputs.NEW_VERSION }}'
-          committer: minikube-bot <minikube-bot@google.com>
-          author: minikube-bot <minikube-bot@google.com>
+          committer: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
+          author: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
           branch: auto_bump_cloud_spanner_emulator_version
           push-to-fork: minikube-bot/minikube
           base: master

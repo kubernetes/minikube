@@ -38,8 +38,8 @@ jobs:
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'HA (multi-control plane): Update kube-vip from ${{ steps.bumpKubeVip.outputs.OLD_VERSION }} to ${{ steps.bumpKubeVip.outputs.NEW_VERSION }}'
-          committer: minikube-bot <minikube-bot@google.com>
-          author: minikube-bot <minikube-bot@google.com>
+          committer: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
+          author: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
           branch: auto_bump_kube_vip_version
           push-to-fork: minikube-bot/minikube
           base: master

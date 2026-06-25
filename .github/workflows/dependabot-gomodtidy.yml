@@ -34,7 +34,7 @@ jobs:
           make gomodtidy
           if [[ -n $(git status --porcelain) ]]; then
             git config --global user.name "minikube-bot"
-            git config --global user.email "minikube-bot@google.com"
+            git config --global user.email "20374350+minikube-bot@users.noreply.github.com"
             git add .
             git commit -m "update go.mod and go.sum"
             git push origin HEAD:${{ github.event.pull_request.head.ref }}

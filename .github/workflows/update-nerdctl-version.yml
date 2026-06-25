@@ -39,8 +39,8 @@ jobs:
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Kicbase/ISO: Update nerdctl from ${{ steps.bumpNerdctl.outputs.OLD_VERSION }} to ${{ steps.bumpNerdctl.outputs.NEW_VERSION }}'
-          committer: minikube-bot <minikube-bot@google.com>
-          author: minikube-bot <minikube-bot@google.com>
+          committer: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
+          author: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
           branch: auto_bump_nerdctl_version
           branch-suffix: short-commit-hash
           push-to-fork: minikube-bot/minikube

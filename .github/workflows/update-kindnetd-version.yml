@@ -37,8 +37,8 @@ jobs:
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'CNI: Update kindnetd from ${{ steps.bumpKindnetd.outputs.OLD_VERSION }} to ${{ steps.bumpKindnetd.outputs.NEW_VERSION }}'
-          committer: minikube-bot <minikube-bot@google.com>
-          author: minikube-bot <minikube-bot@google.com>
+          committer: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
+          author: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
           branch: auto_bump_kindnetd_version
           push-to-fork: minikube-bot/minikube
           base: master
