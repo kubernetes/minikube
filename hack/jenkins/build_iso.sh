@@ -153,16 +153,31 @@ if [ "$release" = false ]; then
 
 	git add Makefile pkg/minikube/download/iso.go site/content/en/docs/commands/start.md
 	git commit -m "Updating ISO to ${ISO_VERSION}"
-	git push ${ghprbPullAuthorLogin} HEAD:${ghprbSourceBranch}
+	if git push ${ghprbPullAuthorLogin} HEAD:${ghprbSourceBranch}; then
+		message=$(cat <<EOF
+Hi ${ghprbPullAuthorLoginMention}, we have updated your PR with the reference to newly built ISO.
+Pull the changes locally if you want to test with them or update your PR further.
 
-	message="Hi ${ghprbPullAuthorLoginMention}, we have updated your PR with the reference to newly built ISO. Pull the changes locally if you want to test with them or update your PR further."
-	if [ $? -gt 0 ]; then
-		message="Hi ${ghprbPullAuthorLoginMention}, we failed to push the reference to the ISO to your PR. Please run the following command and push manually.
+Build logs (for reference):
+https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
+EOF
+)
+	else
+		message=$(cat <<EOF
+Hi ${ghprbPullAuthorLoginMention}, we built a new ISO but failed to push the update to your PR.
+Please run the following commands and push manually:
 
-		sed -i 's/ISO_VERSION ?= .*/ISO_VERSION ?= ${ISO_VERSION}/' Makefile; sed -i 's|isoBucket := .*|isoBucket := "${ISO_BUCKET}"|' pkg/minikube/download/iso.go; make generate-docs;
-		"
+\`\`\`
+sed -i 's/ISO_VERSION ?= .*/ISO_VERSION ?= ${ISO_VERSION}/' Makefile
+sed -i 's|isoBucket := .*|isoBucket := "${ISO_BUCKET}"|' pkg/minikube/download/iso.go
+make generate-docs
+\`\`\`
+
+See the build logs for more details:
+https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
+EOF
+)
 	fi
-	
 	gh pr comment ${ghprbPullId} --body "${message}"
 else
 	# Release!
