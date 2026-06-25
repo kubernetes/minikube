@@ -70,14 +70,25 @@ if dpkg --compare-versions "$CMAKE_VERSION" lt "3.20"; then
 fi
 
 # Let's make sure we have the newest ISO reference
+
+# ISO tags are of the form VERSION-TIMESTAMP-PR, so this grep finds that TIMESTAMP in the middle.
+# If it doesn't exist, it will just return VERSION, which is covered in the if statement below.
+# Example: "v1.38.0-1782213340-23211" -> 1782213340
+# NOTE: tr -d '"' is needed because Makefile-head (from master) may still have quoted values.
+# This can be simplified once master no longer uses quotes around ISO_VERSION.
 curl -L https://github.com/kubernetes/minikube/raw/master/Makefile --output Makefile-head
-# ISO tags are of the form VERSION-TIMESTAMP-PR, so this grep finds that TIMESTAMP in the middle
-# if it doesn't exist, it will just return VERSION, which is covered in the if statement below
-HEAD_ISO_TIMESTAMP=$(grep -E "ISO_VERSION \?= " Makefile-head | cut -d \" -f 2 | cut -d "-" -f 2)
-CURRENT_ISO_TS=$(grep -E "ISO_VERSION \?= " Makefile | cut -d \" -f 2 | cut -d "-" -f 2)
-if [[ $HEAD_ISO_TIMESTAMP != v* ]]; then
-	diff=$((CURRENT_ISO_TS-HEAD_ISO_TIMESTAMP))
-	if [[ $CURRENT_ISO_TS == v* ]] || [ $diff -lt 0 ]; then
+head_iso_timestamp=$(grep -E "ISO_VERSION \?= " Makefile-head | cut -d " " -f 3 | tr -d '"' | cut -d "-" -f 2)
+
+# NOTE: The PR's Makefile may also have quoted values if the PR was created before this fix.
+# Example: ISO_VERSION ?= "v1.38.0-1782213340-23211" -> v1.38.0-1782213340-23211
+current_iso_value=$(grep -E "ISO_VERSION \?= " Makefile | cut -d " " -f 3 | tr -d '"')
+
+# Example: v1.38.0-1782213340-23211 -> 1782213340
+current_iso_timestamp=$(echo "$current_iso_value" | cut -d "-" -f 2)
+
+if [[ $head_iso_timestamp != v* ]]; then
+	diff=$((current_iso_timestamp-head_iso_timestamp))
+	if [[ $current_iso_timestamp == v* ]] || [ $diff -lt 0 ]; then
 		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, your ISO info is out of date. Please rebase."
 		exit 1
 	fi
@@ -86,9 +97,10 @@ rm Makefile-head
 
 if [[ -z $ISO_VERSION ]]; then
 	release=false
-	IV=$(grep -E "ISO_VERSION \?=" Makefile | cut -d " " -f 3 | cut -d "-" -f 1)
+	# Example: v1.38.0-1782213340-23211 -> v1.38.0
+	current_iso_version=$(echo "$current_iso_value" | cut -d "-" -f 1)
 	now=$(date +%s)
-	export ISO_VERSION=$IV-$now-$ghprbPullId
+	export ISO_VERSION=$current_iso_version-$now-$ghprbPullId
 	export ISO_BUCKET=minikube-builds/iso/$ghprbPullId
 else
 	release=true
