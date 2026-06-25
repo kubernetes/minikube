@@ -141,11 +141,14 @@ git config user.name "minikube-bot"
 git config user.email "20374350+minikube-bot@users.noreply.github.com"
 
 if [ "$release" = false ]; then
-	# Update the user's PR with newly build ISO
+	# Update the user's PR with the newly built ISO.
+	# We use `gh pr checkout` because it sets up the fork remote over HTTPS
+	# using the gh auth token, which allows pushing to fork PRs when "Allow
+	# edits from maintainers" is enabled. SSH-based push cannot work since
+	# the bot does not have SSH access to contributors' forks.
 
-	git remote add ${ghprbPullAuthorLogin} git@github.com:${ghprbPullAuthorLogin}/minikube.git
-	git fetch ${ghprbPullAuthorLogin}
-	git checkout -b ${ghprbPullAuthorLogin}-${ghprbSourceBranch} ${ghprbPullAuthorLogin}/${ghprbSourceBranch}
+	gh auth setup-git
+	gh pr checkout ${ghprbPullId}
 
 	sed -i "s/ISO_VERSION ?= .*/ISO_VERSION ?= ${ISO_VERSION}/" Makefile
 	sed -i "s|isoBucket := .*|isoBucket := \"${ISO_BUCKET}\"|" pkg/minikube/download/iso.go
@@ -153,7 +156,7 @@ if [ "$release" = false ]; then
 
 	git add Makefile pkg/minikube/download/iso.go site/content/en/docs/commands/start.md
 	git commit -m "Updating ISO to ${ISO_VERSION}"
-	if git push ${ghprbPullAuthorLogin} HEAD:${ghprbSourceBranch}; then
+	if git push; then
 		message=$(cat <<EOF
 Hi ${ghprbPullAuthorLoginMention}, we have updated your PR with the reference to newly built ISO.
 Pull the changes locally if you want to test with them or update your PR further.
