@@ -100,7 +100,7 @@ docker pull $GCR_IMG
 fullsha=$(docker inspect --format='{{index .RepoDigests 0}}' $GCR_IMG)
 sha=$(echo ${fullsha} | cut -d ":" -f 2)
 git config user.name "minikube-bot"
-git config user.email "minikube-bot@google.com"
+git config user.email "20374350+minikube-bot@users.noreply.github.com"
 
 
 if [ "$release" = false ]; then
