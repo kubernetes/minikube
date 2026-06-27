@@ -757,6 +757,9 @@ func validateAuditAfterStart(_ context.Context, t *testing.T, profile string) {
 // validateSoftStart validates that after minikube already started, a `minikube start` should not change the configs.
 func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23153")
+	}
 
 	start := time.Now()
 	// docs: The test `validateStartWithProxy` should have start minikube, make sure the configured node port is `8441`
@@ -867,6 +870,9 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 // validateExtraConfig verifies minikube with --extra-config works as expected
 func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23153")
+	}
 
 	start := time.Now()
 	// docs: The tests before this already created a profile
