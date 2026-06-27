@@ -798,6 +798,7 @@ var Addons = map[string]*Addon{
 			Name:      "traefik",
 			Repo:      "oci://ghcr.io/traefik/helm/traefik",
 			Namespace: "kube-system",
+			Values:    []string{"api.insecure=true", "ports.traefik.expose.default=true"},
 		},
 	),
 }
