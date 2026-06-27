@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - 'site/**'
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.26.2'

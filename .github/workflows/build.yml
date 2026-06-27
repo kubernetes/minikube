@@ -10,6 +10,7 @@ on:
       - "Makefile"
       - "!deploy/kicbase/**"
       - "!deploy/iso/**"
+      - "!site/**"
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.26.2'

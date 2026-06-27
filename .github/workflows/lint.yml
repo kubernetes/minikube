@@ -2,8 +2,12 @@ name: Lint
 on:
   workflow_dispatch:
   pull_request:
+    paths-ignore:
+      - 'site/**'
   push:
     branches: [ master ]
+    paths-ignore:
+      - 'site/**'
 
 # Limit one unit test job running per PR/Branch
 concurrency:
