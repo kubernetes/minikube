@@ -1062,6 +1062,17 @@ func validateTraefikAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: traefik not supported on none driver")
 	}
 
+	// Copy helm binary from host to guest if available to avoid download in sandboxed environments
+	if helmPath, err := exec.LookPath("helm"); err == nil {
+		if _, err1 := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cp", helmPath, "/home/docker/helm")); err1 == nil {
+			if _, err2 := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo mv /home/docker/helm /usr/bin/helm && sudo chmod +x /usr/bin/helm")); err2 != nil {
+				t.Logf("failed to move helm: %v", err2)
+			}
+		} else {
+			t.Logf("failed to cp helm: %v", err1)
+		}
+	}
+
 	// Enable the traefik addon
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "enable", "traefik", "--alsologtostderr", "-v=1"))
 	if err != nil {
