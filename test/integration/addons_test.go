@@ -155,6 +155,7 @@ func TestAddons(t *testing.T) {
 			{"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
 			{"Yakd", validateYakdAddon},
 			{"AmdGpuDevicePlugin", validateAmdGpuDevicePlugin},
+			{"Traefik", validateTraefikAddon},
 		}
 
 		for _, tc := range tests {
@@ -1053,6 +1054,84 @@ func validateYakdAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed waiting for YAKD - Kubernetes Dashboard pod: %v", err)
 	}
 }
+
+// validateTraefikAddon tests the traefik addon by deploying a default nginx pod and routing via Traefik ingress
+func validateTraefikAddon(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("skipping: traefik not supported on none driver")
+	}
+
+	// Enable the traefik addon
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "enable", "traefik", "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Fatalf("failed to enable traefik addon: args %q: %v", rr.Command(), err)
+	}
+	defer disableAddon(t, "traefik", profile)
+	defer PostMortemLogs(t, profile)
+
+	// Wait for Traefik pod to be ready
+	if _, err := PodWait(ctx, t, profile, "kube-system", "app.kubernetes.io/name=traefik", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for traefik pod: %v", err)
+	}
+
+	// Deploy the nginx pod and service (reuses existing test data)
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml")))
+	if err != nil {
+		t.Errorf("failed to kubectl replace nginx-pod-svc. args %q. %v", rr.Command(), err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", Minutes(8)); err != nil {
+		t.Fatalf("failed waiting for nginx pod: %v", err)
+	}
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("failed to get Kubernetes client: %v", err)
+	}
+	if err := kapi.WaitForService(client, "default", "nginx", true, time.Millisecond*500, Minutes(10)); err != nil {
+		t.Errorf("failed waiting for nginx service to be up: %v", err)
+	}
+
+	// Create the traefik ingress
+	createTraefikIngress := func() error {
+		rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "traefik-ingress.yaml")))
+		if err != nil {
+			return err
+		}
+		if rr.Stderr.String() != "" {
+			t.Logf("%v: unexpected stderr: %s (may be temporary)", rr.Command(), rr.Stderr)
+		}
+		return nil
+	}
+	if err := retry.Expo(createTraefikIngress, 1*time.Second, Seconds(90)); err != nil {
+		t.Errorf("failed to create traefik ingress: %v", err)
+	}
+
+	// Check that the ingress routes correctly through Traefik
+	want := "Welcome to nginx!"
+	addr := "http://127.0.0.1/"
+
+	checkTraefikIngress := func() error {
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
+		if err != nil {
+			return err
+		}
+
+		stderr := rr.Stderr.String()
+		if stderr != "" {
+			t.Logf("debug: unexpected stderr for %v:\n%s", rr.Command(), stderr)
+		}
+		stdout := rr.Stdout.String()
+		if !strings.Contains(stdout, want) {
+			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), stdout, want)
+		}
+		return nil
+	}
+	if err := retry.Expo(checkTraefikIngress, 500*time.Millisecond, Seconds(90)); err != nil {
+		t.Errorf("failed to get expected response from %s within minikube: %v", addr, err)
+	}
+}
+
 
 func disableAddon(t *testing.T, addon, profile string) {
 	rr, err := Run(t, exec.Command(Target(), "-p", profile, "addons", "disable", addon, "--alsologtostderr", "-v=1"))
