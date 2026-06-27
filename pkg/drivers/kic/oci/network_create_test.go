@@ -53,6 +53,14 @@ func TestDockerInspect(t *testing.T) {
 			subnetIP:              "172.19.0.0",
 			mtu:                   0,
 		},
+		{
+			// existing network created without --gateway, see https://github.com/kubernetes/minikube/issues/19284
+			name:                  "withoutGateway",
+			dockerInspectResponse: `{"Name": "m2","Driver": "bridge","Subnet": "192.168.150.0/24","Gateway": "","MTU": 0, "ContainerIPs": []}`,
+			gateway:               "",
+			subnetIP:              "192.168.150.0",
+			mtu:                   0,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

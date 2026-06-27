@@ -73,6 +73,28 @@ func NewDriver(c Config) *Driver {
 	return d
 }
 
+// containerNetwork returns the network and IP for the container. The network
+// is empty when the container should use the default network. A static IP
+// requested by the user is used even when the network has no gateway, for
+// example when it is a pre-existing network created without --gateway.
+func containerNetwork(gateway net.IP, networkName, staticIP, machineName string) (string, string, error) {
+	if staticIP != "" {
+		return networkName, staticIP, nil
+	}
+	if gateway == nil {
+		return "", "", nil
+	}
+	ip := gateway.To4()
+	// calculate the container IP based on guessing the machine index
+	index := driver.IndexFromMachineName(machineName)
+	if int(ip[3])+index > 253 { // reserve last client ip address for multi-control-plane loadbalancer vip address in ha cluster
+		return "", "", errors.New("too many machines to calculate an IP")
+	}
+	ip[3] += byte(index)
+	klog.Infof("calculated static IP %q for the %q container", ip.String(), machineName)
+	return networkName, ip.String(), nil
+}
+
 // Create a host using the driver's config
 func (d *Driver) Create() error {
 	ctx := context.Background()
@@ -106,20 +128,8 @@ func (d *Driver) Create() error {
 			exit.Message(reason.IfDedicatedNetwork, msg, args)
 		}
 		out.WarningT(msg, args)
-	} else if gateway != nil && staticIP != "" {
-		params.Network = networkName
-		params.IP = staticIP
-	} else if gateway != nil {
-		params.Network = networkName
-		ip := gateway.To4()
-		// calculate the container IP based on guessing the machine index
-		index := driver.IndexFromMachineName(d.NodeConfig.MachineName)
-		if int(ip[3])+index > 253 { // reserve last client ip address for multi-control-plane loadbalancer vip address in ha cluster
-			return errors.New("too many machines to calculate an IP")
-		}
-		ip[3] += byte(index)
-		klog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
-		params.IP = ip.String()
+	} else if params.Network, params.IP, err = containerNetwork(gateway, networkName, staticIP, d.NodeConfig.MachineName); err != nil {
+		return err
 	}
 	drv := d.DriverName()
 
