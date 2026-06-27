@@ -5,13 +5,14 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-  - host: nginx.example.com
+  - host: traefik-nginx.example.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: nginx
+            name: traefik-nginx
             port:
               number: 80
+

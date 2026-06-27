@@ -40,6 +40,7 @@ import (
 	"github.com/blang/semver/v4"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	core "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -1055,7 +1056,7 @@ func validateYakdAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateTraefikAddon tests the traefik addon by deploying a default nginx pod and routing via Traefik ingress
+// validateTraefikAddon tests the traefik addon by deploying a dedicated nginx pod and routing via Traefik NodePort
 func validateTraefikAddon(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: traefik not supported on none driver")
@@ -1074,22 +1075,22 @@ func validateTraefikAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed waiting for traefik pod: %v", err)
 	}
 
-	// Deploy the nginx pod and service (reuses existing test data)
-	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml")))
+	// Deploy the dedicated nginx pod and service to avoid collision
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "traefik-nginx-pod-svc.yaml")))
 	if err != nil {
-		t.Errorf("failed to kubectl replace nginx-pod-svc. args %q. %v", rr.Command(), err)
+		t.Errorf("failed to kubectl replace traefik-nginx-pod-svc. args %q. %v", rr.Command(), err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", Minutes(8)); err != nil {
-		t.Fatalf("failed waiting for nginx pod: %v", err)
+	if _, err := PodWait(ctx, t, profile, "default", "run=traefik-nginx", Minutes(8)); err != nil {
+		t.Fatalf("failed waiting for traefik-nginx pod: %v", err)
 	}
 
 	client, err := kapi.Client(profile)
 	if err != nil {
 		t.Fatalf("failed to get Kubernetes client: %v", err)
 	}
-	if err := kapi.WaitForService(client, "default", "nginx", true, time.Millisecond*500, Minutes(10)); err != nil {
-		t.Errorf("failed waiting for nginx service to be up: %v", err)
+	if err := kapi.WaitForService(client, "default", "traefik-nginx", true, time.Millisecond*500, Minutes(10)); err != nil {
+		t.Errorf("failed waiting for traefik-nginx service to be up: %v", err)
 	}
 
 	// Create the traefik ingress
@@ -1107,12 +1108,30 @@ func validateTraefikAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to create traefik ingress: %v", err)
 	}
 
-	// Check that the ingress routes correctly through Traefik
+	// Retrieve Traefik service to get the NodePort for port 80
+	svc, err := client.CoreV1().Services("kube-system").Get(ctx, "traefik", metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("failed to get traefik service: %v", err)
+	}
+
+	var nodePort int32
+	for _, p := range svc.Spec.Ports {
+		if p.Port == 80 {
+			nodePort = p.NodePort
+			break
+		}
+	}
+
+	if nodePort == 0 {
+		t.Fatalf("traefik service does not expose port 80")
+	}
+
+	// Check that the ingress routes correctly through Traefik using the NodePort
 	want := "Welcome to nginx!"
-	addr := "http://127.0.0.1/"
+	addr := fmt.Sprintf("http://127.0.0.1:%d/", nodePort)
 
 	checkTraefikIngress := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: traefik-nginx.example.com'", addr)))
 		if err != nil {
 			return err
 		}
@@ -1131,7 +1150,6 @@ func validateTraefikAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to get expected response from %s within minikube: %v", addr, err)
 	}
 }
-
 
 func disableAddon(t *testing.T, addon, profile string) {
 	rr, err := Run(t, exec.Command(Target(), "-p", profile, "addons", "disable", addon, "--alsologtostderr", "-v=1"))
