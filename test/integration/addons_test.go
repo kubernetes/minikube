@@ -854,6 +854,9 @@ func validateVolcanoAddon(ctx context.Context, t *testing.T, profile string) {
 	if ContainerRuntime() == "crio" {
 		t.Skipf("skipping: crio not supported")
 	}
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23138")
+	}
 
 	volcanoNamespace := "volcano-system"
 
