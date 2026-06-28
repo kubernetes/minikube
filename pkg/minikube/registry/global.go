@@ -17,9 +17,10 @@ limitations under the License.
 package registry
 
 import (
+	"cmp"
 	"fmt"
 	"os"
-	"sort"
+	"slices"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -120,7 +121,7 @@ func Available(vm bool, options *run.CommandOptions) []DriverState {
 			klog.Errorf("%q does not implement Status", d.Name)
 			continue
 		}
-		stateChannel := make(chan State)
+		stateChannel := make(chan State, 1)
 		timeoutChannel := time.After(20 * time.Second)
 		go func() {
 			stateChannel <- d.Status(options)
@@ -142,8 +143,8 @@ func Available(vm bool, options *run.CommandOptions) []DriverState {
 	}
 
 	// Descending priority for predictability
-	sort.Slice(sts, func(i, j int) bool {
-		return sts[i].Priority > sts[j].Priority
+	slices.SortFunc(sts, func(a, b DriverState) int {
+		return cmp.Compare(b.Priority, a.Priority)
 	})
 	return sts
 }

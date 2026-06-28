@@ -20,6 +20,7 @@ package kvm2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -30,8 +31,10 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
+	"k8s.io/minikube/pkg/drivers/common/mac"
 	"k8s.io/minikube/pkg/drivers/kvm"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -65,6 +68,9 @@ func init() {
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	name := config.MachineName(cc, n)
+	macAddr := mac.FromName(name)
+	privateMACAddr := mac.FromName(name + "-private")
+	klog.Infof("Using mac address %s, private mac address %s", macAddr, privateMACAddr)
 	return kvm.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
@@ -79,6 +85,8 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		DiskSize:       cc.DiskSize,
 		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", name, fmt.Sprintf("%s.rawdisk", name)),
 		ISO:            filepath.Join(localpath.MiniPath(), "machines", name, "boot2docker.iso"),
+		MAC:            macAddr,
+		PrivateMAC:     privateMACAddr,
 		GPU:            cc.KVMGPU,
 		Hidden:         cc.KVMHidden,
 		ConnectionURI:  cc.KVMQemuURI,
@@ -150,7 +158,7 @@ func status(_ *run.CommandOptions) registry.State {
 				Installed: true,
 				Running:   true,
 				// keep the error message in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
-				Error:  fmt.Errorf("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
+				Error:  errors.New("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
 				Reason: "PR_KVM_USER_PERMISSION",
 				Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
 				Doc:    docURL,

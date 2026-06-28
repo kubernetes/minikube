@@ -18,8 +18,8 @@ package provision
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -140,16 +140,16 @@ func ConfigureAuth(p Provisioner) error {
 	}
 
 	// upload certs and configure TLS auth
-	caCert, err := ioutil.ReadFile(authOptions.CaCertPath)
+	caCert, err := os.ReadFile(authOptions.CaCertPath)
 	if err != nil {
 		return err
 	}
 
-	serverCert, err := ioutil.ReadFile(authOptions.ServerCertPath)
+	serverCert, err := os.ReadFile(authOptions.ServerCertPath)
 	if err != nil {
 		return err
 	}
-	serverKey, err := ioutil.ReadFile(authOptions.ServerKeyPath)
+	serverKey, err := os.ReadFile(authOptions.ServerKeyPath)
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func matchNetstatOut(reDaemonListening, netstatOut string) bool {
 	// manipulation hokey-pokey.
 	//
 	// TODO: Unit test this matching.
-	for _, line := range strings.Split(netstatOut, "\n") {
+	for line := range strings.SplitSeq(netstatOut, "\n") {
 		match, err := regexp.MatchString(reDaemonListening, line)
 		if err != nil {
 			log.Warnf("Regex warning: %s", err)

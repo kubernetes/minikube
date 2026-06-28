@@ -63,40 +63,51 @@ jobs:
             sudo: ""
     steps:
       - id: info-block
-        uses: medyagh/info-block@main
+        uses: medyagh/info-block@f5c042624acf8ce21bed4b0de77962e0a56ad88e # v1
+        timeout-minutes: 1
       - name: Disable spotlight indexing (macos)
+        timeout-minutes: 1
         if: contains(matrix.os, 'macos')
         run: |
           # Disable indexing globally
           sudo mdutil -a -i off
           # Erase Existing Indexes
           sudo mdutil -E /
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        timeout-minutes: 1
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        timeout-minutes: 8
         with:
           go-version-file: go.mod
           cache: true
       - name: Download Golang Dependencies
+        timeout-minutes: 2
         run: go mod download
       - name: Build Binaries
+        timeout-minutes: 8
         run: make
       - name: Update brew (macos)
+        timeout-minutes: 5
         if: contains(matrix.os, 'macos')
         run: brew update
       - name: Install tools (macos)
+        timeout-minutes: 1
         if: contains(matrix.os, 'macos')
         run: brew install tree
       - name: Install vfkit and vmnet-helper (macos)
+        timeout-minutes: 1
         if: matrix.driver == 'vfkit'
         run: |
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
       - name: Install qemu and socket_vmnet (macos)
+        timeout-minutes: 6
         if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
       - name: Inspect host before test (macos)
+        timeout-minutes: 1
         if: contains(matrix.os, 'macos')
         run: |
           echo "=== Top ==="
@@ -108,6 +119,7 @@ jobs:
           echo "=== Packet Filter ==="
           sudo pfctl -s all || true
       - name: Start minikube (1st boot)
+        timeout-minutes: 16
         run: |
           ${{ matrix.sudo }} ./out/minikube start \
               ${{ env.LOG_ARGS }} \
@@ -117,6 +129,7 @@ jobs:
               --driver ${{ matrix.driver }} \
               ${{ matrix.start_flags }}
       - name: Inspect host after test (macos)
+        timeout-minutes: 1
         if: always() && contains(matrix.os, 'macos')
         run: |
           echo "=== Top ==="
@@ -128,6 +141,7 @@ jobs:
           echo "=== Packet Filter ==="
           sudo pfctl -s all || true
       - name: Inspect minikube
+        timeout-minutes: 1
         if: always()
         run: |
           ${{ matrix.sudo }} tree -h ~/.minikube
@@ -139,8 +153,11 @@ jobs:
             ${{ matrix.sudo }} head -n 1000 "$f" || true
           done
       - name: Stop minikube
+        timeout-minutes: 1
         run: ${{ matrix.sudo }} ./out/minikube stop ${{ env.LOG_ARGS }}
       - name: Start minikube again (2nd boot)
+        timeout-minutes: 14
         run: ${{ matrix.sudo }} ./out/minikube start ${{ env.LOG_ARGS }} ${{ matrix.start_flags }}
       - name: Delete minikube
+        timeout-minutes: 1
         run: ${{ matrix.sudo }} ./out/minikube delete ${{ env.LOG_ARGS }}

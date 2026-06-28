@@ -29,7 +29,7 @@ To access the dashboard:
 minikube dashboard
 ```
 
-This will enable the dashboard add-on, and open the proxy in the default web browser.
+This will enable the dashboard add-on and open the proxy in the default web browser.
 
 It's worth noting that web browsers generally do not run properly as the root user, so if you are
 in an environment where you are running as root, see the URL-only option.

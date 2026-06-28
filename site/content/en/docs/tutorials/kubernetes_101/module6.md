@@ -82,7 +82,7 @@ In the `Image` field of the output, verify that you are running the latest image
 
 ## Step 3 - Rollback an update
 
-Let's perform another update, and deploy an image tagged with `v10`:
+Let's perform another update, and deploy an image tagged with `v11`:
 
 ```shell
 kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=gcr.io/k8s-minikube/kubernetes-bootcamp:v11
@@ -108,7 +108,7 @@ To get more insight into the problem, run the `describe pods` command:
 kubectl describe pods
 ```
 
-In the `Events` section of the output for the affected Pods, notice that the `v10` image version did not exist in the repository.
+In the `Events` section of the output for the affected Pods, notice that the `v11` image version did not exist in the repository.
 
 To roll back the deployment to your last working version, use the `rollout undo` command:
 

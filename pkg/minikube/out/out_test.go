@@ -24,7 +24,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Delta456/box-cli-maker/v2"
+	"github.com/box-cli-maker/box-cli-maker/v3"
 	"github.com/spf13/pflag"
 	"golang.org/x/text/language"
 
@@ -278,7 +278,7 @@ func TestBoxedErr(t *testing.T) {
 
 func TestBoxedWithConfig(t *testing.T) {
 	testCases := []struct {
-		config box.Config
+		config *box.Box
 		st     style.Enum
 		title  string
 		format string
@@ -286,7 +286,7 @@ func TestBoxedWithConfig(t *testing.T) {
 		want   string
 	}{
 		{
-			box.Config{Px: 2, Py: 2},
+			box.NewBox().Padding(2, 2),
 			style.None,
 			"",
 			"Boxed content",
@@ -301,7 +301,7 @@ func TestBoxedWithConfig(t *testing.T) {
 `,
 		},
 		{
-			box.Config{Px: 0, Py: 0},
+			box.NewBox().Padding(0, 0),
 			style.None,
 			"",
 			"Boxed content with 0 padding",
@@ -312,7 +312,7 @@ func TestBoxedWithConfig(t *testing.T) {
 `,
 		},
 		{
-			box.Config{Px: 1, Py: 1, TitlePos: "Inside"},
+			box.NewBox().Padding(1, 1).TitlePosition(box.Inside),
 			style.None,
 			"Hello World",
 			"Boxed content with title inside",
@@ -327,7 +327,7 @@ func TestBoxedWithConfig(t *testing.T) {
 `,
 		},
 		{
-			box.Config{Px: 1, Py: 1, TitlePos: "Top"},
+			box.NewBox().Padding(1, 1).TitlePosition(box.Top),
 			style.None,
 			"Hello World",
 			"Boxed content with title inside",
@@ -340,7 +340,7 @@ func TestBoxedWithConfig(t *testing.T) {
 `,
 		},
 		{
-			box.Config{Px: 1, Py: 1, TitlePos: "Top"},
+			box.NewBox().Padding(1, 1).TitlePosition(box.Top),
 			style.Tip,
 			"Hello World",
 			"Boxed content with title inside",
@@ -353,11 +353,11 @@ func TestBoxedWithConfig(t *testing.T) {
 `,
 		},
 		{
-			box.Config{Px: 1, Py: 1, TitlePos: "Top"},
+			box.NewBox().Padding(1, 1).TitlePosition(box.Top),
 			style.Tip,
 			// This case is to make sure newlines (\n) are removed before printing
-			// Otherwise box-cli-maker panices:
-			// https://github.com/Delta456/box-cli-maker/blob/7b5a1ad8a016ce181e7d8b05e24b54ff60b4b38a/box.go#L69-L71
+			// Otherwise box-cli-maker errors:
+			// https://github.com/box-cli-maker/box-cli-maker/blob/4291f909aeab1353356d9c98818de49f31bc8597/box.go#L294-L296
 			"Hello \nWorld",
 			"Boxed content with title inside",
 			nil,

@@ -19,7 +19,6 @@ package ssh
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -80,6 +79,8 @@ const (
 var (
 	baseSSHArgs = []string{
 		"-F", "/dev/null",
+		// Prefer hardware-accelerated AES-GCM over ChaCha20 (https://github.com/kubernetes/minikube/issues/23121)
+		"-o", "Ciphers=^aes128-gcm@openssh.com,aes256-gcm@openssh.com",
 		"-o", "ConnectionAttempts=3", // retry 3 times if SSH connection fails
 		"-o", "ConnectTimeout=10", // timeout after 10 seconds
 		"-o", "ControlMaster=no", // disable ssh multiplexing
@@ -146,7 +147,7 @@ func NewNativeConfig(user string, auth *Auth) (ssh.ClientConfig, error) {
 	)
 
 	for _, k := range auth.Keys {
-		key, err := ioutil.ReadFile(k)
+		key, err := os.ReadFile(k)
 		if err != nil {
 			return ssh.ClientConfig{}, err
 		}
@@ -259,7 +260,7 @@ func (client *NativeClient) Start(command string) (io.ReadCloser, io.ReadCloser,
 
 	client.openClient = conn
 	client.openSession = session
-	return ioutil.NopCloser(stdout), ioutil.NopCloser(stderr), nil
+	return io.NopCloser(stdout), io.NopCloser(stderr), nil
 }
 
 func (client *NativeClient) Wait() error {

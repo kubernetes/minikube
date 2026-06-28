@@ -17,10 +17,11 @@ limitations under the License.
 package driver
 
 import (
+	"cmp"
 	"fmt"
 	"os"
 	"runtime"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -109,12 +110,7 @@ func DisplaySupportedDrivers() string {
 
 // Supported returns if the driver is supported on this host.
 func Supported(name string) bool {
-	for _, d := range SupportedDrivers() {
-		if name == d {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(SupportedDrivers(), name)
 }
 
 // MachineType returns appropriate machine name for the driver
@@ -321,8 +317,8 @@ func Choices(vm bool, options *run.CommandOptions) []registry.DriverState {
 	available := registry.Available(vm, options)
 
 	// Descending priority for predictability and appearance
-	sort.Slice(available, func(i, j int) bool {
-		return available[i].Priority > available[j].Priority
+	slices.SortFunc(available, func(a, b registry.DriverState) int {
+		return cmp.Compare(b.Priority, a.Priority)
 	})
 	return available
 }
@@ -385,7 +381,7 @@ func Suggest(driversState []registry.DriverState) (registry.DriverState, []regis
 // Status returns the status of a driver
 func Status(name string, options *run.CommandOptions) registry.DriverState {
 	d := registry.Driver(name)
-	stateChannel := make(chan registry.State)
+	stateChannel := make(chan registry.State, 1)
 	timeoutChannel := time.After(20 * time.Second)
 	go func() {
 		stateChannel <- registry.Status(name, options)
@@ -409,12 +405,7 @@ func Status(name string, options *run.CommandOptions) registry.DriverState {
 // IsAlias checks if an alias belongs to provided driver by name.
 func IsAlias(name, alias string) bool {
 	d := registry.Driver(name)
-	for _, da := range d.Alias {
-		if da == alias {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(d.Alias, alias)
 }
 
 // SetLibvirtURI sets the URI to perform libvirt health checks against

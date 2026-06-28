@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -29,15 +30,14 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"errors"
 
-	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/blang/semver/v4"
+	"github.com/box-cli-maker/box-cli-maker/v3"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -130,7 +130,7 @@ func platform() string {
 	// Show the distro version if possible
 	hi, err := gopshost.Info()
 	if err == nil {
-		s.WriteString(fmt.Sprintf("%s %s", cases.Title(language.Und).String(hi.Platform), hi.PlatformVersion))
+		fmt.Fprintf(&s, "%s %s", cases.Title(language.Und).String(hi.Platform), hi.PlatformVersion)
 		klog.Infof("hostinfo: %+v", hi)
 	} else {
 		klog.Warningf("gopshost.Info returned error: %v", err)
@@ -147,9 +147,9 @@ func platform() string {
 	// This environment is exotic, let's output a bit more.
 	if vrole == "guest" || runtime.GOARCH != "amd64" {
 		if vrole == "guest" && vsys != "" {
-			s.WriteString(fmt.Sprintf(" (%s/%s)", vsys, runtime.GOARCH))
+			fmt.Fprintf(&s, " (%s/%s)", vsys, runtime.GOARCH)
 		} else {
-			s.WriteString(fmt.Sprintf(" (%s)", runtime.GOARCH))
+			fmt.Fprintf(&s, " (%s)", runtime.GOARCH)
 		}
 	}
 	return s.String()
@@ -209,6 +209,11 @@ func runStart(cmd *cobra.Command, _ []string) {
 	}
 
 	validateSpecifiedDriver(existing, options)
+	if existing == nil {
+		// driver-selection warnings are only meaningful for fresh clusters;
+		// an existing cluster keeps its original driver
+		warnVirtualBoxDriver(options)
+	}
 	validateKubernetesVersion(existing)
 	validateContainerRuntime(existing)
 
@@ -416,6 +421,13 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
 	if !driver.IsVirtualBox(driverName) || !detect.MacOS13Plus() {
 		return
 	}
+	// On darwin/arm64 the virtualbox driver requires VirtualBox 7.1+ (enforced
+	// in the virtualbox driver's status()), which uses Hypervisor.framework
+	// instead of the kernel extensions that broke in macOS 13. The warning
+	// below is about that kext breakage and does not apply on Apple Silicon.
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		return
+	}
 	out.WarningT(`Due to changes in macOS 13+ minikube doesn't currently support VirtualBox. You can use alternative drivers such as 'vfkit', 'qemu', or 'docker'.
     https://minikube.sigs.k8s.io/docs/drivers/vfkit/
     https://minikube.sigs.k8s.io/docs/drivers/qemu/
@@ -584,7 +596,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, rtime, machineName st
 		out.Step(style.Ready, "Done! minikube is ready without Kubernetes!")
 
 		// Runtime message.
-		boxConfig := box.Config{Py: 1, Px: 4, Type: "Round", Color: "Green"}
+		boxConfig := box.NewBox().Padding(4, 1).Style(box.Round).Color(box.Green)
 		switch rtime {
 		case constants.Docker:
 			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
@@ -761,11 +773,11 @@ func selectDriver(existing *config.ClusterConfig, options *run.CommandOptions) (
 	pick, alts, rejects := driver.Suggest(choices)
 	if pick.Name == "" {
 		out.Step(style.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
-		sort.Slice(rejects, func(i, j int) bool {
-			if rejects[i].Priority == rejects[j].Priority {
-				return rejects[i].Preference > rejects[j].Preference
+		slices.SortFunc(rejects, func(a, b registry.DriverState) int {
+			if c := cmp.Compare(b.Priority, a.Priority); c != 0 {
+				return c
 			}
-			return rejects[i].Priority > rejects[j].Priority
+			return cmp.Compare(b.Preference, a.Preference)
 		})
 
 		// Display the issue for installed drivers
@@ -1499,12 +1511,12 @@ func validateGPUs(value, drvName, rtime string) error {
 		return err
 	}
 	if value != "nvidia" && value != "all" && value != "amd" && value != "nvidia.com" {
-		return fmt.Errorf(`The gpus flag must be passed a value of "nvidia", "nvidia.com", "amd" or "all"`)
+		return errors.New(`The gpus flag must be passed a value of "nvidia", "nvidia.com", "amd" or "all"`)
 	}
 	if drvName == constants.Docker && (rtime == constants.Docker || rtime == constants.DefaultContainerRuntime) {
 		return nil
 	}
-	return fmt.Errorf("The gpus flag can only be used with the docker driver and docker container-runtime")
+	return errors.New("The gpus flag can only be used with the docker driver and docker container-runtime")
 }
 
 func validateGPUsArch() error {
@@ -1980,7 +1992,7 @@ func validateSubnet(subnet string) error {
 	if cidr != nil {
 		mask, _ := cidr.Mask.Size()
 		if mask > 30 {
-			return fmt.Errorf("Sorry, the subnet provided does not have a mask less than or equal to /30")
+			return errors.New("Sorry, the subnet provided does not have a mask less than or equal to /30")
 		}
 	}
 	return nil
@@ -1998,14 +2010,14 @@ func validateStaticIP(staticIP, drvName, subnet string) error {
 	}
 	ip := net.ParseIP(staticIP)
 	if !ip.IsPrivate() {
-		return fmt.Errorf("static IP must be private")
+		return errors.New("static IP must be private")
 	}
 	if ip.To4() == nil {
-		return fmt.Errorf("static IP must be IPv4")
+		return errors.New("static IP must be IPv4")
 	}
 	lastOctet, _ := strconv.Atoi(strings.Split(ip.String(), ".")[3])
 	if lastOctet < 2 || lastOctet > 254 {
-		return fmt.Errorf("static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200")
+		return errors.New("static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200")
 	}
 	return nil
 }

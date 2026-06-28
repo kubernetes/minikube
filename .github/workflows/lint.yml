@@ -2,8 +2,12 @@ name: Lint
 on:
   workflow_dispatch:
   pull_request:
+    paths-ignore:
+      - 'site/**'
   push:
     branches: [ master ]
+    paths-ignore:
+      - 'site/**'
 
 # Limit one unit test job running per PR/Branch
 concurrency:
@@ -12,28 +16,32 @@ concurrency:
   cancel-in-progress: true
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.25.5'
+  GO_VERSION: '1.26.2'
 permissions:
   contents: read
 jobs:
     Lint:
         runs-on: ubuntu-22.04
         steps:
-        - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-        - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
+        - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+          timeout-minutes: 1
+        - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+          timeout-minutes: 1
           with:
             go-version: ${{env.GO_VERSION}}
             cache: true      
         - name: Download Dependencies
+          timeout-minutes: 1
           run: go mod download
         # needed because pkg/drivers/kvm/domain.go:28:2:
         - name: Install libvirt (Linux)
+          timeout-minutes: 2
           if: runner.os == 'Linux'
           run: |
               sudo apt-get update              
               sudo apt-get install -y libvirt-dev
         - name: Lint
-          timeout-minutes: 8
+          timeout-minutes: 13
           env:
             TESTSUITE: lint
           run: make test
@@ -41,13 +49,15 @@ jobs:
     Boilerplate:
         runs-on: ubuntu-22.04
         steps:
-        - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-        - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
+        - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+          timeout-minutes: 1
+        - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+          timeout-minutes: 1
           with:
             go-version: ${{env.GO_VERSION}}
             cache: true  
         - name: Boilerplate check
-          timeout-minutes: 2
+          timeout-minutes: 1
           env:
             TESTSUITE: boilerplate
           run: make test
@@ -55,14 +65,18 @@ jobs:
     Housekeeping:
        runs-on: ubuntu-22.04
        steps:
-        - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-        - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
+        - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+          timeout-minutes: 1
+        - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+          timeout-minutes: 1
           with:
             go-version: ${{env.GO_VERSION}}
             cache: true
         - name: Install goimports
+          timeout-minutes: 1
           run: go install golang.org/x/tools/cmd/goimports@latest
         - name: Verify go mod tidy
+          timeout-minutes: 1
           run: |
             make gomodtidy
             if ! git diff-index --quiet HEAD; then
@@ -71,6 +85,7 @@ jobs:
               exit 1
             fi
         - name: Verify make fmt
+          timeout-minutes: 1
           run: |
             make fmt
             if ! git diff-index --quiet HEAD; then
@@ -79,6 +94,7 @@ jobs:
               exit 1
             fi
         - name: Verify make imports
+          timeout-minutes: 1
           run: |
             make imports
             if ! git diff-index --quiet HEAD; then
@@ -87,7 +103,9 @@ jobs:
               exit 1
             fi
         - name: Install markdownlint
+          timeout-minutes: 1
           run: npm install -g markdownlint-cli
         - name: Verify make mdlint
+          timeout-minutes: 1
           run: make mdlint
 

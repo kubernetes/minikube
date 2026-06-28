@@ -18,6 +18,7 @@ package localpath
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -215,7 +216,7 @@ func findPowerShell() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("PowerShell not found in PATH or common locations")
+	return "", errors.New("PowerShell not found in PATH or common locations")
 }
 
 // getWindowsVolumeNameCmd returns the Windows volume GUID for a given drive letter

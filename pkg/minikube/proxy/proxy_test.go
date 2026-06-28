@@ -22,6 +22,7 @@ import (
 	"os"
 	"testing"
 
+	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/rest"
 )
 
@@ -188,6 +189,24 @@ func TestExcludeIP(t *testing.T) {
 	}
 }
 
+// fakeRoundTripperWrapper satisfies utilnet.RoundTripperWrapper for tests
+// that need to simulate the way client-go 0.36's *trackedTransport (or any
+// future wrapping layer) interposes between WrapTransport callers and the
+// underlying *http.Transport.
+type fakeRoundTripperWrapper struct{ rt http.RoundTripper }
+
+func (f *fakeRoundTripperWrapper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f.rt.RoundTrip(req)
+}
+
+func (f *fakeRoundTripperWrapper) WrappedRoundTripper() http.RoundTripper { return f.rt }
+
+// Compile-time assertion: fakeRoundTripperWrapper must satisfy
+// utilnet.RoundTripperWrapper so the test exercises the same interface the
+// helper walks at runtime. Future client-go interface changes will surface
+// here as a build failure rather than a silently irrelevant test.
+var _ utilnet.RoundTripperWrapper = (*fakeRoundTripperWrapper)(nil)
+
 func TestUpdateTransport(t *testing.T) {
 	t.Run("new", func(t *testing.T) {
 		rcBefore := rest.Config{}
@@ -221,6 +240,36 @@ func TestUpdateTransport(t *testing.T) {
 		rt := c.WrapTransport(nil)
 		if rt != nil {
 			t.Fatalf("Expected RoundTripper nil for invocation WrapTransport(nil)")
+		}
+	})
+	t.Run("wrapped", func(t *testing.T) {
+		inner := &http.Transport{Proxy: http.ProxyFromEnvironment}
+		wrapped := &fakeRoundTripperWrapper{rt: inner}
+
+		rc := rest.Config{}
+		c := UpdateTransport(&rc)
+		result := c.WrapTransport(wrapped)
+
+		if result != wrapped {
+			t.Fatalf("expected wrapper to be returned unchanged, got %T", result)
+		}
+		if inner.Proxy != nil {
+			t.Errorf("expected inner transport's Proxy to be nil, got non-nil")
+		}
+	})
+	t.Run("proxy-stripping", func(t *testing.T) {
+		inner := &http.Transport{Proxy: http.ProxyFromEnvironment}
+
+		rc := rest.Config{}
+		c := UpdateTransport(&rc)
+		result := c.WrapTransport(inner)
+
+		resultHT, ok := result.(*http.Transport)
+		if !ok {
+			t.Fatalf("expected *http.Transport from no-wrap path, got %T", result)
+		}
+		if resultHT.Proxy != nil {
+			t.Errorf("expected Proxy to be nil after UpdateTransport, got non-nil")
 		}
 	})
 }

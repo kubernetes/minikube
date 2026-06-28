@@ -19,6 +19,7 @@ limitations under the License.
 package none
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"os/user"
@@ -68,7 +69,7 @@ func status(_ *run.CommandOptions) registry.State {
 	if u.Uid != "0" {
 		test := exec.Command("sudo", "-n", "echo", "-n")
 		if err := test.Run(); err != nil {
-			return registry.State{Error: fmt.Errorf("running the 'none' driver as a regular user requires sudo permissions"), Healthy: false}
+			return registry.State{Error: errors.New("running the 'none' driver as a regular user requires sudo permissions"), Healthy: false}
 		}
 	}
 	return registry.State{Installed: true, Healthy: true}

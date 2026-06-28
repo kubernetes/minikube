@@ -6,7 +6,7 @@ on:
     - cron: "0 8 * * 6"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.25.5'
+  GO_VERSION: '1.26.2'
 permissions:
   contents: read
 
@@ -14,11 +14,14 @@ jobs:
   bump-yakd-version:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        timeout-minutes: 1
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        timeout-minutes: 2
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Bump yakd version
+        timeout-minutes: 1
         id: bumpYakd
         run: |
           echo "OLD_VERSION=$(DEP=yakd make get-dependency-version)" >> "$GITHUB_OUTPUT"
@@ -29,13 +32,14 @@ jobs:
           echo "$(git status --porcelain)" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
+        timeout-minutes: 1
         if: ${{ steps.bumpYakd.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Addon yakd: Update manusa/yakd image from ${{ steps.bumpYakd.outputs.OLD_VERSION }} to ${{ steps.bumpYakd.outputs.NEW_VERSION }}'
-          committer: minikube-bot <minikube-bot@google.com>
-          author: minikube-bot <minikube-bot@google.com>
+          committer: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
+          author: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
           branch: auto_bump_yakd_version
           push-to-fork: minikube-bot/minikube
           base: master

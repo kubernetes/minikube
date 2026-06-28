@@ -87,7 +87,7 @@ var nodeAddCmd = &cobra.Command{
 				cc.Memory = 2200
 			}
 
-			if !cc.MultiNodeRequested || cni.IsDisabled(*cc) {
+			if !cc.MultiNodeRequested && cni.IsDisabled(*cc) {
 				warnAboutMultiNodeCNI()
 			}
 		}

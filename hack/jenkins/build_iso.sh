@@ -26,6 +26,7 @@ set -x -o pipefail
 
 # Make sure golang is installed and configured
 ./hack/jenkins/installers/check_install_golang.sh "/usr/local"
+export PATH=/usr/local/go/bin:$PATH
 
 # install cron jobs
 source ./hack/jenkins/installers/check_install_linux_crons.sh
@@ -90,7 +91,7 @@ EOF
 fi
 
 git config user.name "minikube-bot"
-git config user.email "minikube-bot@google.com"
+git config user.email "20374350+minikube-bot@users.noreply.github.com"
 
 if [ "$release" = false ]; then
 	# Update the user's PR with newly build ISO

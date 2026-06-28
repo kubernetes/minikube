@@ -23,10 +23,12 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	"errors"
 
+	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -40,10 +42,10 @@ var EnvVars = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "h
 // isInBlock checks if ip is a CIDR block
 func isInBlock(ip string, block string) (bool, error) {
 	if ip == "" {
-		return false, fmt.Errorf("ip is nil")
+		return false, errors.New("ip is nil")
 	}
 	if block == "" {
-		return false, fmt.Errorf("CIDR is nil")
+		return false, errors.New("CIDR is nil")
 	}
 
 	if ip == block {
@@ -52,7 +54,7 @@ func isInBlock(ip string, block string) (bool, error) {
 
 	i := net.ParseIP(ip)
 	if i == nil {
-		return false, fmt.Errorf("parsed IP is nil")
+		return false, errors.New("parsed IP is nil")
 	}
 
 	// check the block if it's CIDR
@@ -114,8 +116,8 @@ func checkEnv(ip string, env string) bool {
 		return true
 	}
 	// Checks if included in IP ranges, i.e., 192.168.39.13/24
-	noProxyBlocks := strings.Split(v, ",")
-	for _, b := range noProxyBlocks {
+	noProxyBlocks := strings.SplitSeq(v, ",")
+	for b := range noProxyBlocks {
 		yes, err := isInBlock(ip, b)
 		if err != nil {
 			klog.Warningf("fail to check proxy env: %v", err)
@@ -130,12 +132,7 @@ func checkEnv(ip string, env string) bool {
 
 // isValidEnv checks if the env for proxy settings
 func isValidEnv(env string) bool {
-	for _, e := range EnvVars {
-		if e == env {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(EnvVars, env)
 }
 
 // UpdateTransport takes a k8s client *rest.config and returns a config without a proxy.
@@ -145,15 +142,32 @@ func UpdateTransport(cfg *rest.Config) *rest.Config {
 		if wt != nil {
 			rt = wt(rt)
 		}
-		if ht, ok := rt.(*http.Transport); ok {
-			ht.Proxy = nil
-			rt = ht
-		} else {
-			klog.Errorf("Error while casting RoundTripper (of type %T) to *http.Transport : %v", rt, ok)
+		if t := wrappedHTTPTransport(rt); t != nil {
+			t.Proxy = nil
+		} else if rt != nil {
+			klog.Errorf("transport %T could not be unwrapped to *http.Transport; proxy stripping was skipped", rt)
 		}
 		return rt
 	}
 	return cfg
+}
+
+// wrappedHTTPTransport returns the *http.Transport at the bottom of any
+// RoundTripperWrapper chain wrapping rt, or nil if the chain does not end
+// in one (or rt itself is nil). See
+// https://github.com/kubernetes/minikube/issues/22896 for context.
+func wrappedHTTPTransport(rt http.RoundTripper) *http.Transport {
+	cur := rt
+	for {
+		switch t := cur.(type) {
+		case *http.Transport:
+			return t
+		case utilnet.RoundTripperWrapper:
+			cur = t.WrappedRoundTripper()
+		default:
+			return nil
+		}
+	}
 }
 
 // SetDockerEnv sets the proxy environment variables in the docker environment.
@@ -164,8 +178,8 @@ func SetDockerEnv() []string {
 			// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
 			k = strings.ToUpper(k)
 			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
-				isLocalProxy := func(url string) bool {
-					return strings.HasPrefix(url, "localhost") || strings.HasPrefix(url, "127.0")
+				isLocalProxy := func(u string) bool {
+					return strings.HasPrefix(u, "localhost") || strings.HasPrefix(u, "127.0")
 				}
 
 				normalizedURL := v

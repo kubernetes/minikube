@@ -380,7 +380,6 @@ func TestVerifyEndpoint(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
@@ -460,7 +459,6 @@ func TestUpdateIP(t *testing.T) {
 	t.Setenv(localpath.MinikubeHome, "/home/la-croix")
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
@@ -593,7 +591,7 @@ func Test_Endpoint(t *testing.T) {
 				t.Errorf("got hostname = %q, want hostname = %q", hostname, test.hostname)
 			}
 			if port != test.port {
-				t.Errorf("got port = %q, want port = %q", port, test.port)
+				t.Errorf("got port = %d, want port = %d", port, test.port)
 			}
 		})
 	}
@@ -817,5 +815,16 @@ func TestGetKubeConfigPath(t *testing.T) {
 		if !equalPaths(result, expandedWant) {
 			t.Errorf("Expected first split chunk, got: %s (want %s)", result, expandedWant)
 		}
+	}
+}
+
+func TestSettingsFilePathUninitialized(t *testing.T) {
+	kcs := &Settings{}
+	// Verify that calling filePath() on an uninitialized Settings struct
+	// does not panic and correctly falls back to PathFromEnv().
+	result := kcs.filePath()
+	expected := PathFromEnv()
+	if result != expected {
+		t.Errorf("filePath() on uninitialized settings = %q; want %q", result, expected)
 	}
 }

@@ -19,8 +19,11 @@ package cmd
 import (
 	"fmt"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
+
+	"net/netip"
 
 	"github.com/blang/semver/v4"
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -44,6 +47,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -147,6 +151,9 @@ const (
 	autoPauseInterval       = "auto-pause-interval"
 	preloadSrc              = "preload-source"
 	rosetta                 = "rosetta"
+	vmnetOffloading         = "vmnet-offloading"
+	dnsServers              = config.DNSServers
+	mdns                    = config.MDNS
 )
 
 var (
@@ -212,7 +219,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
 	startCmd.Flags().StringP(gpus, "g", "", "Allow pods to use your GPUs. Options include: [all,nvidia,amd] (Docker driver with Docker container-runtime only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
-	startCmd.Flags().String(preloadSrc, "auto", "Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try both).")
+	startCmd.Flags().String(preloadSrc, "auto", "Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try github first, then gcs as failover).")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -290,6 +297,9 @@ func initDriverFlags() {
 
 	// vfkit
 	startCmd.Flags().Bool(rosetta, false, "Enable Rosetta to support apps built for Intel processor on a Mac with Apple silicon (vfkit driver only)")
+
+	// krunkit
+	startCmd.Flags().Bool(vmnetOffloading, false, "Enable vmnet checksum and TSO offloading. See krunkit driver documentation for known limitations (krunkit driver only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -307,6 +317,10 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(sshSSHUser, defaultSSHUser, "SSH user (ssh driver only)")
 	startCmd.Flags().String(sshSSHKey, "", "SSH key (ssh driver only)")
 	startCmd.Flags().Int(sshSSHPort, defaultSSHPort, "SSH port (ssh driver only)")
+
+	// dns
+	startCmd.Flags().StringSlice(dnsServers, nil, "Static DNS server IP addresses for the VM (VM drivers only)")
+	startCmd.Flags().Bool(mdns, false, "Enable mDNS (.local address resolution) by configuring systemd-resolved inside the node (VM drivers only)")
 
 	// socket vmnet
 	startCmd.Flags().String(socketVMnetClientPath, "", "Path to the socket vmnet client binary (QEMU driver only)")
@@ -540,14 +554,29 @@ func validateVfkitNetwork(n string, options *run.CommandOptions) string {
 	case "nat":
 		// always available
 	case "vmnet-shared":
-		// "vment-shared" provides access between machines, with lower performance compared to "nat".
+		// "vmnet-shared" provides access between machines, with lower performance compared to "nat".
 		if err := vmnet.ValidateHelper(options); err != nil {
-			vmnetErr := err.(*vmnet.Error)
-			exit.Message(vmnetErr.Kind, "failed to validate {{.network}} network: {{.reason}}", out.V{"network": n, "reason": err})
+			if vmnetErr, ok := err.(*vmnet.Error); !ok {
+				exit.Message(reason.Usage, "failed to validate {{.network}} network: {{.reason}}", out.V{"network": n, "reason": err})
+			} else {
+				exit.Message(vmnetErr.Kind, "failed to validate {{.network}} network: {{.reason}}", out.V{"network": n, "reason": err})
+			}
 		}
 	case "":
-		// Default to nat since it is always available and provides the best performance.
-		n = "nat"
+		// Use vmnet-helper if installed, fallback to nat otherwise.
+		if err := vmnet.ValidateHelper(options); err != nil {
+			if vmnetErr, ok := err.(*vmnet.Error); !ok {
+				exit.Message(reason.Usage, "failed to validate vmnet-shared network: {{.reason}}", out.V{"reason": err})
+			} else if !vmnetErr.IsNotFound() {
+				exit.Message(vmnetErr.Kind, "failed to validate vmnet-shared network: {{.reason}}", out.V{"reason": err})
+			}
+			// vmnet-helper is not installed.
+			n = "nat"
+		} else {
+			// vmnet-helper is installed and validated.
+			n = "vmnet-shared"
+		}
+		out.Styled(style.Internet, "Automatically selected the {{.network}} network", out.V{"network": n})
 	default:
 		exit.Message(reason.Usage, "--network with vfkit must be 'nat' or 'vmnet-shared'")
 	}
@@ -568,6 +597,58 @@ func getRosetta(driverName string) bool {
 		if !viper.GetBool(flags.Interactive) {
 			out.Styled(style.Warning, "Skipping Rosetta automatic install in non-interactive mode")
 		}
+	}
+	return enabled
+}
+
+func getVmnetOffloading(driverName string) bool {
+	enabled := viper.GetBool(vmnetOffloading)
+	if enabled && !driver.IsKrunkit(driverName) {
+		out.WarningT("--vmnet-offloading flag is only valid with the krunkit driver, it will be ignored")
+		return false
+	}
+	return enabled
+}
+
+// getDNSServers returns the configured DNS servers for VM drivers.
+// For non-VM drivers the value is ignored since DNS configuration via
+// systemd-resolved is not applicable.
+func getDNSServers(cmd *cobra.Command, driverName string) []netip.Addr {
+	servers := viper.GetStringSlice(dnsServers)
+	if len(servers) == 0 {
+		return nil
+	}
+	addrs := make([]netip.Addr, 0, len(servers))
+	for _, s := range servers {
+		addr, err := netip.ParseAddr(s)
+		if err != nil {
+			exit.Message(reason.Usage, "dns-servers: '{{.value}}' is not a valid IP address", out.V{"value": s})
+		}
+		addrs = append(addrs, addr)
+	}
+	// We handle only VMs managed by minikube.
+	if !driver.IsVM(driverName) || driver.IsSSH(driverName) {
+		// Only warn when the flag was explicitly passed. Config values are
+		// silently ignored for non-VM drivers to avoid noisy warnings when
+		// the user has both VM and container-based clusters.
+		if cmd.Flags().Changed(dnsServers) {
+			out.WarningT("--dns-servers flag is only valid with VM drivers, it will be ignored")
+		}
+		return nil
+	}
+	return addrs
+}
+
+// getMDNS returns true if mDNS should be enabled for the given driver.
+// For non-VM drivers the value is ignored since mDNS configuration via
+// systemd-resolved is not applicable.
+func getMDNS(cmd *cobra.Command, driverName string) bool {
+	enabled := viper.GetBool(mdns)
+	if enabled && (!driver.IsVM(driverName) || driver.IsSSH(driverName)) {
+		if cmd.Flags().Changed(mdns) {
+			out.WarningT("--mdns flag is only valid with VM drivers, it will be ignored")
+		}
+		return false
 	}
 	return enabled
 }
@@ -677,6 +758,9 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		GPUs:               viper.GetString(gpus),
 		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
 		Rosetta:            getRosetta(drvName),
+		VmnetOffloading:    getVmnetOffloading(drvName),
+		DNSServers:         getDNSServers(cmd, drvName),
+		MDNS:               getMDNS(cmd, drvName),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 
@@ -908,6 +992,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 	updateDurationFromFlag(cmd, &cc.AutoPauseInterval, autoPauseInterval)
 	updateBoolFromFlag(cmd, &cc.Rosetta, rosetta)
+	updateBoolFromFlag(cmd, &cc.VmnetOffloading, vmnetOffloading)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		kubeVer, err := getKubernetesVersion(existing)
@@ -1042,15 +1127,52 @@ func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
 	supportedDrivers := []string{driver.HyperKit, driver.KVM2, driver.QEMU2, driver.VFKit, driver.Krunkit}
 
 	if cmd.Flags().Changed(extraDisks) {
-		supported := false
-		for _, driver := range supportedDrivers {
-			if driverName == driver {
-				supported = true
-				break
-			}
-		}
-		if !supported {
+		if !slices.Contains(supportedDrivers, driverName) {
 			out.WarningT("Specifying extra disks is currently only supported for the following drivers: {{.supported_drivers}}. If you can contribute to add this feature, please create a PR.", out.V{"supported_drivers": supportedDrivers})
 		}
 	}
+}
+
+// warnVirtualBoxDriver warns the user when the configured driver is
+// virtualbox (--driver/--vm-driver flag or MINIKUBE_DRIVER env) and better
+// alternatives are installed and healthy. This intentionally lives in the argument-validation
+// phase so the warning never fires when minikube auto-selects virtualbox
+// (auto-selection already implies the alternatives were rejected). Callers
+// must skip it when reusing an existing cluster, which keeps its original
+// driver.
+func warnVirtualBoxDriver(options *run.CommandOptions) {
+	if !viper.GetBool(config.WantVirtualBoxDriverWarning) {
+		return
+	}
+
+	requested := viper.GetString("driver")
+	if requested == "" {
+		requested = viper.GetString("vm-driver")
+	}
+	if !driver.IsVirtualBox(requested) {
+		return
+	}
+
+	var altDriverList strings.Builder
+	for _, choice := range driver.Choices(true, options) {
+		if !driver.IsVirtualBox(choice.Name) && choice.Priority != registry.Discouraged && choice.State.Installed && choice.State.Healthy {
+			fmt.Fprintf(&altDriverList, "\n\t- %s", choice.Name)
+		}
+	}
+	if altDriverList.Len() == 0 {
+		return
+	}
+
+	out.Boxed(`You have selected "virtualbox" driver, but there are better options !
+For better performance and support consider using a different driver: {{.drivers}}
+
+To turn off this warning run:
+
+	$ minikube config set WantVirtualBoxDriverWarning false
+
+
+To learn more about on minikube drivers checkout https://minikube.sigs.k8s.io/docs/drivers/
+To see benchmarks checkout https://minikube.sigs.k8s.io/docs/benchmarks/cpuusage/
+
+`, out.V{"drivers": altDriverList.String()})
 }

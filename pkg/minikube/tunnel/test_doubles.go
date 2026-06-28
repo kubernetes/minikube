@@ -78,7 +78,7 @@ func (r *fakeRouter) Cleanup(route *Route) error {
 func (r *fakeRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
 	err = r.errorResponse
 	exists, conflict, overlaps = r.rt.Check(route)
-	return
+	return exists, conflict, overlaps, err
 }
 
 type stubConfigLoader struct {

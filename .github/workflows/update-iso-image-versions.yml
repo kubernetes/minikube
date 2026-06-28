@@ -11,18 +11,21 @@ on:
         default: "update-buildkit-version,update-cni-plugins-version,update-crun-version,update-docker-version,update-golang-version,update-runc-version,update-debian-version"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.25.5'
+  GO_VERSION: '1.26.2'
 permissions:
   contents: read
 jobs:
   update-all:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        timeout-minutes: 1
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        timeout-minutes: 2
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Bump versions
+        timeout-minutes: 2
         id: bumpVersions
         run: |
           OLD_BUILDKIT=$(DEP=buildkit make get-dependency-version)
@@ -116,12 +119,12 @@ jobs:
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpVersions.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Kicbase/ISO: Update dependency versions'
-          committer: minikube-bot <minikube-bot@google.com>
-          author: minikube-bot <minikube-bot@google.com>
+          committer: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
+          author: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
           branch: bump_iso_image_versions
           branch-suffix: short-commit-hash
           push-to-fork: minikube-bot/minikube
@@ -131,7 +134,7 @@ jobs:
           body: |
             Changelog:
             ${{ steps.bumpVersions.outputs.changelog }}
-      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         if: ${{ steps.bumpVersions.outputs.changes != '' }}
         with:
           github-token: ${{ secrets.MINIKUBE_BOT_PAT }}
@@ -142,7 +145,7 @@ jobs:
               repo: context.repo.repo,
               body: 'ok-to-build-image'
             })
-      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         if: ${{ steps.bumpVersions.outputs.changes != '' }}
         with:
           github-token: ${{ secrets.MINIKUBE_BOT_PAT }}

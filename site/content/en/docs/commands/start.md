@@ -27,7 +27,7 @@ minikube start [flags]
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-pause-interval duration      Duration of inactivity before the minikube VM is paused (default 1m0s) (default 1m0s)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.50@sha256:eb4fec00e8ad70adf8e6436f195cc429825ffb85f95afcdb5d8d9deb576f3e93")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.50-1782213404-23211@sha256:857469ccf068ff0030e27bce1067148ee091d3854f3b20bb381f5607e046b5a6")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
@@ -43,6 +43,7 @@ minikube start [flags]
       --disk-size string                  Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g). (default "20000mb")
       --dns-domain string                 The cluster dns domain name used in the Kubernetes cluster (default "cluster.local")
       --dns-proxy                         Enable proxy for NAT DNS requests (virtualbox driver only)
+      --dns-servers strings               Static DNS server IP addresses for the VM (VM drivers only)
       --docker-env stringArray            Environment variables to pass to the Docker daemon. (format: key=value)
       --docker-opt stringArray            Specify arbitrary flags to pass to the Docker daemon. (format: key=value)
       --download-only                     If true, only download and cache files for later use - don't install or start anything.
@@ -74,13 +75,14 @@ minikube start [flags]
       --interactive                       Allow user prompts for more information (default true)
       --iso-url strings                   Locations to fetch the minikube ISO from. The list depends on the machine architecture.
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.35.1, 'latest' for v1.35.1). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.36.2, 'latest' for v1.36.2). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM default network name. (kvm2 driver only) (default "default")
       --kvm-numa-count int                Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only) (default 1)
       --kvm-qemu-uri string               The KVM QEMU connection URI. (kvm2 driver only) (default "qemu:///system")
       --listen-address string             IP Address to use to expose ports (docker and podman driver only)
+      --mdns                              Enable mDNS (.local address resolution) by configuring systemd-resolved inside the node (VM drivers only)
   -m, --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use "max" to use the maximum amount of memory. Use "no-limit" to not specify a limit (Docker/Podman only)
       --mount                             Kept for backward compatibility, value is ignored.
       --mount-9p-version string           Specify the 9p version that the mount should use (default "9p2000.L")
@@ -104,7 +106,7 @@ minikube start [flags]
   -o, --output string                     Format to print stdout in. Options include: [text,json] (default "text")
       --ports strings                     List of ports that should be exposed (docker and podman driver only)
       --preload                           If set, download tarball of preloaded images if available to improve start time. Defaults to true. (default true)
-      --preload-source string             Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try both). (default "auto")
+      --preload-source string             Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try github first, then gcs as failover). (default "auto")
       --qemu-firmware-path string         Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\Program Files\qemu\share
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --rosetta                           Enable Rosetta to support apps built for Intel processor on a Mac with Apple silicon (vfkit driver only)
@@ -120,6 +122,7 @@ minikube start [flags]
       --trace string                      Send trace events. Options include: [gcp]
       --uuid string                       Provide VM UUID to restore MAC address (hyperkit driver only)
       --vm                                Filter to use only VM Drivers
+      --vmnet-offloading                  Enable vmnet checksum and TSO offloading. See krunkit driver documentation for known limitations (krunkit driver only)
       --wait strings                      comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to "apiserver,system_pods", available options: "apiserver,system_pods,default_sa,apps_running,node_ready,kubelet,extra" . other acceptable values are 'all' or 'none', 'true' and 'false' (default [apiserver,system_pods])
       --wait-timeout duration             max time to wait per Kubernetes or host to be healthy. (default 6m0s)
 ```
@@ -127,24 +130,26 @@ minikube start [flags]
 ### Options inherited from parent commands
 
 ```
-      --add_dir_header                   If true, adds the file directory to the header of the log messages
-      --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
-  -h, --help                             
-      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-      --log_dir string                   If non-empty, write log files in this directory (no effect when -logtostderr=true)
-      --log_file string                  If non-empty, use this log file (no effect when -logtostderr=true)
-      --log_file_max_size uint           Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
-      --logtostderr                      log to standard error instead of files (default true)
-      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
-  -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
-      --rootless                         Force to use rootless driver (docker and podman driver only)
-      --skip-audit                       Skip recording the current command in the audit logs.
-      --skip_headers                     If true, avoid header prefixes in the log messages
-      --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
-      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true) (default 2)
-      --user string                      Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.
-  -v, --v Level                          number for the log level verbosity
-      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+      --add_dir_header                      If true, adds the file directory to the header of the log messages
+      --alsologtostderr                     log to standard error as well as files (no effect when -logtostderr=true)
+      --alsologtostderrthreshold severity   logs at or above this threshold go to stderr when -alsologtostderr=true (no effect when -logtostderr=true)
+  -b, --bootstrapper string                 The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                                
+      --legacy_stderr_threshold_behavior    If true, stderrthreshold is ignored when logtostderr=true (legacy behavior). If false, stderrthreshold is honored even when logtostderr=true (default true)
+      --log_backtrace_at traceLocation      when logging hits line file:N, emit a stack trace (default :0)
+      --log_dir string                      If non-empty, write log files in this directory (no effect when -logtostderr=true)
+      --log_file string                     If non-empty, use this log file (no effect when -logtostderr=true)
+      --log_file_max_size uint              Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
+      --logtostderr                         log to standard error instead of files (default true)
+      --one_output                          If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
+  -p, --profile string                      The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                            Force to use rootless driver (docker and podman driver only)
+      --skip-audit                          Skip recording the current command in the audit logs.
+      --skip_headers                        If true, avoid header prefixes in the log messages
+      --skip_log_headers                    If true, avoid headers when opening log files (no effect when -logtostderr=true)
+      --stderrthreshold severity            logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true unless -legacy_stderr_threshold_behavior=false) (default 2)
+      --user string                         Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.
+  -v, --v Level                             number for the log level verbosity
+      --vmodule moduleSpec                  comma-separated list of pattern=N settings for file-filtered logging
 ```
 

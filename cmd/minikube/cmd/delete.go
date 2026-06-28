@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -177,11 +178,8 @@ func kicbaseImages(ctx context.Context, ociBin string) ([]string, error) {
 
 	var result []string
 	for _, img := range allImages {
-		for _, kicImg := range kicImagesRepo {
-			if kicImg == strings.Split(img, ":")[0] {
-				result = append(result, img)
-				break
-			}
+		if slices.Contains(kicImagesRepo, strings.Split(img, ":")[0]) {
+			result = append(result, img)
 		}
 	}
 	return result, nil
@@ -723,8 +721,8 @@ func getPids(path string) ([]int, error) {
 	klog.Infof("pidfile contents: %s", data)
 
 	pids := []int{}
-	strPids := strings.Fields(string(data))
-	for _, p := range strPids {
+	strPids := strings.FieldsSeq(string(data))
+	for p := range strPids {
 		intPid, err := strconv.Atoi(p)
 		if err != nil {
 			return nil, err

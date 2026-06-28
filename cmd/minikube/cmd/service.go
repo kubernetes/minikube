@@ -48,7 +48,7 @@ import (
 	pkgnetwork "k8s.io/minikube/pkg/network"
 )
 
-const defaultServiceFormatTemplate = "http://{{.IP}}:{{.Port}}"
+const defaultServiceFormatTemplate = "http://{{.IP}}:{{.Port}}" //nolint:revive
 
 var (
 	namespace          string
