@@ -7,7 +7,7 @@ aliases:
 
 ## Overview
 
-[krunkit](https://github.com/containers/krunkit) is an open-source program for
+[krunkit](https://github.com/libkrun/krunkit) is an open-source program for
 macOS virtualization, optimized for GPU accelerated virtual machines and AI
 workloads.
 
@@ -24,9 +24,14 @@ workloads.
 To install krunkit run:
 
 ```shell
-brew tap slp/krunkit
+brew tap libkrun/krun
+brew trust libkrun/krun # trust the tap only required if using Homebrew 6.0 or later
 brew install krunkit
 ```
+
+{{% alert title="Note" color="primary" %}}
+If you've ever installed krunkit from the old tap `slp/krunkit` or `slp/krun`, to upgrade to the latest version you'll need to follow the [Removing the old Homebrew tap](https://github.com/libkrun/krunkit#removing-the-old-homebrew-tap) instructions first before installing as shown above.
+{{% /alert %}}
 
 ## Networking
 
