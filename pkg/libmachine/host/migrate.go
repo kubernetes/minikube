@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers/nodriver"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/version"
 )
 
@@ -93,7 +93,7 @@ func MigrateHost(h *Host, data []byte) (*Host, bool, error) {
 	if migrationNeeded {
 		migrationPerformed = true
 		for h.ConfigVersion = migratedHostMetadata.ConfigVersion; h.ConfigVersion < version.ConfigVersion; h.ConfigVersion++ {
-			log.Debugf("Migrating to config v%d", h.ConfigVersion)
+			diagnostics.Debugf("Migrating to config v%d", h.ConfigVersion)
 			switch h.ConfigVersion {
 			case 0:
 				hostV0 := &V0{

@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 )
 
 type RawHost struct {
@@ -32,7 +32,7 @@ func MigrateHostV2ToHostV3(hostV2 *V2, data []byte, storePath string) *Host {
 	// smoothly.
 	rawHost := &RawHost{}
 	if err := json.Unmarshal(data, &rawHost); err != nil {
-		log.Warnf("Could not unmarshal raw host for RawDriver information: %s", err)
+		diagnostics.Warnf("Could not unmarshal raw host for RawDriver information: %s", err)
 	}
 
 	m := make(map[string]interface{})
@@ -42,7 +42,7 @@ func MigrateHostV2ToHostV3(hostV2 *V2, data []byte, storePath string) *Host {
 	d := json.NewDecoder(bytes.NewReader(*rawHost.Driver))
 	d.UseNumber()
 	if err := d.Decode(&m); err != nil {
-		log.Warnf("Could not unmarshal raw host into map[string]interface{}: %s", err)
+		diagnostics.Warnf("Could not unmarshal raw host into map[string]interface{}: %s", err)
 	}
 
 	m["StorePath"] = storePath
@@ -50,7 +50,7 @@ func MigrateHostV2ToHostV3(hostV2 *V2, data []byte, storePath string) *Host {
 	// Now back to []byte
 	rawDriver, err := json.Marshal(m)
 	if err != nil {
-		log.Warnf("Could not re-marshal raw driver: %s", err)
+		diagnostics.Warnf("Could not re-marshal raw driver: %s", err)
 	}
 
 	h := &Host{

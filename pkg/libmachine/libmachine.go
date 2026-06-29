@@ -41,13 +41,13 @@ import (
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/cert"
 	"k8s.io/minikube/pkg/libmachine/check"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/drivers/errdriver"
 	"k8s.io/minikube/pkg/libmachine/drivers/plugin/localbinary"
 	"k8s.io/minikube/pkg/libmachine/drivers/rpcdriver"
 	"k8s.io/minikube/pkg/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/host"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnerror"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/persist"
@@ -152,7 +152,7 @@ func (api *Client) Create(h *host.Host) error {
 		return fmt.Errorf("error generating certificates: %w", err)
 	}
 
-	log.Info("Running pre-create checks...")
+	diagnostics.Info("Running pre-create checks...")
 
 	if err := h.Driver.PreCreateCheck(); err != nil {
 		return mcnerror.ErrDuringPreCreate{
@@ -164,13 +164,13 @@ func (api *Client) Create(h *host.Host) error {
 		return fmt.Errorf("error saving host to store before attempting creation: %w", err)
 	}
 
-	log.Info("Creating machine...")
+	diagnostics.Info("Creating machine...")
 
 	if err := api.performCreate(h); err != nil {
 		return fmt.Errorf("error creating machine: %w", err)
 	}
 
-	log.Debug("Reticulating splines...")
+	diagnostics.Debug("Reticulating splines...")
 
 	return nil
 }
@@ -189,29 +189,29 @@ func (api *Client) performCreate(h *host.Host) error {
 		return nil
 	}
 
-	log.Info("Waiting for machine to be running, this may take a few minutes...")
+	diagnostics.Info("Waiting for machine to be running, this may take a few minutes...")
 	if err := mcnutils.WaitFor(drivers.MachineInState(h.Driver, state.Running)); err != nil {
 		return fmt.Errorf("Error waiting for machine to be running: %s", err)
 	}
 
-	log.Info("Detecting operating system of created instance...")
+	diagnostics.Info("Detecting operating system of created instance...")
 	provisioner, err := provision.DetectProvisioner(h.Driver)
 	if err != nil {
 		return fmt.Errorf("Error detecting OS: %s", err)
 	}
 
-	log.Infof("Provisioning with %s...", provisioner.String())
+	diagnostics.Infof("Provisioning with %s...", provisioner.String())
 	if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
 		return fmt.Errorf("Error running provisioning: %s", err)
 	}
 
 	// We should check the connection to docker here
-	log.Info("Checking connection to Docker...")
+	diagnostics.Info("Checking connection to Docker...")
 	if _, _, err = check.DefaultConnChecker.Check(h, false); err != nil {
 		return fmt.Errorf("Error checking the host: %s", err)
 	}
 
-	log.Info("Docker is up and running!")
+	diagnostics.Info("Docker is up and running!")
 	return nil
 }
 

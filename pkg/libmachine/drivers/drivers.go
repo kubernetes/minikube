@@ -19,7 +19,7 @@ package drivers
 import (
 	"errors"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/mcnflag"
 	"k8s.io/minikube/pkg/libmachine/state"
 )
@@ -101,7 +101,7 @@ func MachineInState(d Driver, desiredState state.State) func() bool {
 	return func() bool {
 		currentState, err := d.GetState()
 		if err != nil {
-			log.Debugf("Error getting machine state: %s", err)
+			diagnostics.Debugf("Error getting machine state: %s", err)
 		}
 		if currentState == desiredState {
 			return true

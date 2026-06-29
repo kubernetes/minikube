@@ -26,7 +26,7 @@ import (
 	"os"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 )
 
 type FakeExecutor struct {
@@ -99,14 +99,14 @@ func TestExecServer(t *testing.T) {
 	logOutReader, logOutWriter := io.Pipe()
 	logErrReader, logErrWriter := io.Pipe()
 
-	log.SetDebug(true)
-	log.SetOutWriter(logOutWriter)
-	log.SetErrWriter(logErrWriter)
+	diagnostics.SetDebug(true)
+	diagnostics.SetOutWriter(logOutWriter)
+	diagnostics.SetErrWriter(logErrWriter)
 
 	defer func() {
-		log.SetDebug(false)
-		log.SetOutWriter(os.Stdout)
-		log.SetErrWriter(os.Stderr)
+		diagnostics.SetDebug(false)
+		diagnostics.SetOutWriter(os.Stdout)
+		diagnostics.SetErrWriter(os.Stderr)
 	}()
 
 	stdoutReader, stdoutWriter := io.Pipe()

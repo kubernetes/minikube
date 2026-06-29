@@ -28,7 +28,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 )
 
 func TestGetReleaseURL(t *testing.T) {
@@ -335,7 +335,7 @@ func newDummyISO(dir, name, version string) (string, int64, error) {
 	}
 
 	isopath := filepath.Join(tmpDir, name)
-	log.Info("TEST: dummy ISO created at ", isopath)
+	diagnostics.Info("TEST: dummy ISO created at ", isopath)
 
 	// dummy ISO data mimicking the real byte data of a Boot2Docker ISO image
 	padding := "     "
