@@ -1905,6 +1905,7 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
+	t.Skip("skipping: flaky, ECR rate limits cause ImagePullBackOff: https://github.com/kubernetes/minikube/issues/23264")
 	defer PostMortemLogs(t, profile)
 
 	// docs: Run `kubectl replace --force -f testdata/mysql/yaml`
