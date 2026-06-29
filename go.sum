@@ -208,8 +208,8 @@ github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3
 github.com/ebitengine/purego v0.10.0 h1:QIw4xfpWT6GWTzaW5XEKy3HXoqrJGx1ijYHzTF0/ISU=
 github.com/ebitengine/purego v0.10.0/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
-github.com/elazarl/goproxy v1.8.2 h1:keGt9KHFAnrXFEctQuOF9NRxKFCXtd5cQg5PrBdeVW4=
-github.com/elazarl/goproxy v1.8.2/go.mod h1:b5xm6W48AUHNpRTCvlnd0YVh+JafCCtsLsJZvvNTz+E=
+github.com/elazarl/goproxy v1.8.4 h1:tIHKhYHXf8gQracfoHl8Zy7PG/jhvmIMUR5j8OlPUIM=
+github.com/elazarl/goproxy v1.8.4/go.mod h1:b5xm6W48AUHNpRTCvlnd0YVh+JafCCtsLsJZvvNTz+E=
 github.com/elliotwutingfeng/asciiset v0.0.0-20260129054604-cfde2086bc57 h1:x5yxNrq8XffV/OoNUeFPM6hxHVi5OTspSTBxr/9pemg=
 github.com/elliotwutingfeng/asciiset v0.0.0-20260129054604-cfde2086bc57/go.mod h1:GLo/8fDswSAniFG+BFIaiSPcK610jyzgEhWYPQwuQdw=
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
