@@ -14,6 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package addons provides helpers to install and verify Helm-based addons in minikube.
+// We explicitly scope the PATH environment variable for executed commands inside the guest VM (such as iso and kicbase)
+// because /usr/local/bin (and other standard bin directories) are not present in the default non-interactive PATH of the VMs.
+// This ensures that the official get_helm.sh script installer's verification check succeeds and subsequent helm commands are found.
+// For more details, see: https://github.com/kubernetes/minikube/issues/23252
 package addons
 
 import (
@@ -30,6 +35,7 @@ import (
 // runs a helm install within the minikube vm or container based on the contents of chart *assets.HelmChart
 func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 	args := []string{
+		"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"helm", "upgrade", "--install", chart.Name, chart.Repo, "--create-namespace",
 	}
@@ -55,6 +61,7 @@ func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 // runs a helm uninstall based on the contents of chart *assets.HelmChart
 func uninstalllHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 	args := []string{
+		"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"helm", "uninstall", chart.Name,
 	}
@@ -86,7 +93,7 @@ func HelmInstallBinary(_ *assets.Addon, runner command.Runner) error {
 		script := `
 			curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 			chmod 700 get_helm.sh
-			./get_helm.sh
+			env PATH="/usr/local/bin:$PATH" ./get_helm.sh
 		`
 		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-o", "errexit", "-c", script))
 		if err != nil {
