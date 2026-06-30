@@ -157,6 +157,25 @@ kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} |
 
 	minikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard
 `, out.V{"profileArg": tipProfileArg})
+	case "traefik":
+		out.Styled(style.Tip, `To verify Traefik is running:
+
+	kubectl get pods -n kube-system -l app.kubernetes.io/name=traefik
+`)
+		out.Styled(style.Tip, `To access the Traefik dashboard, you can port-forward:
+
+	kubectl port-forward -n kube-system deployment/traefik 9000:8080
+
+Or use the minikube service command:
+
+	minikube{{.profileArg}} service -n kube-system traefik
+
+Then open /dashboard/ on the printed HTTP address (trailing slash is required).
+`, out.V{"profileArg": tipProfileArg})
+		out.Styled(style.Tip, `To expose Traefik's LoadBalancer service, run in a separate terminal:
+
+	minikube{{.profileArg}} tunnel
+`, out.V{"profileArg": tipProfileArg})
 	}
 }
 
