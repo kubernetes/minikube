@@ -43,6 +43,9 @@ import (
 
 // TestDownloadOnly makes sure the --download-only parameter in minikube start caches the appropriate images and tarballs.
 func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
+	if DockerDriver() {
+		t.Skip("skipping: flaky on Docker driver: https://github.com/kubernetes/minikube/issues/23163")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 
 	// separate each k8s version testrun into individual profiles to avoid ending up with subsequently mixed up configs like:
@@ -218,6 +221,9 @@ func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 func TestDownloadOnlyKic(t *testing.T) {
 	if !KicDriver() {
 		t.Skip("skipping, only for docker or podman driver")
+	}
+	if DockerDriver() {
+		t.Skip("skipping: flaky on Docker driver: https://github.com/kubernetes/minikube/issues/23163")
 	}
 	profile := UniqueProfileName("download-docker")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
