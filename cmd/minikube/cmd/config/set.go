@@ -31,7 +31,7 @@ var configSetCmd = &cobra.Command{
 	Use:   "set PROPERTY_NAME PROPERTY_VALUE",
 	Short: "Sets an individual value in a minikube config file",
 	Long: `Sets the PROPERTY_NAME config value to PROPERTY_VALUE
-	These values can be overwritten by flags or environment variables at runtime.`,
+	These values can be overwritten by flags or environment variables at runtime. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/config/#minikube-config-set`,
 	Run: func(_ *cobra.Command, args []string) {
 		if len(args) < 2 {
 			exit.Message(reason.Usage, "not enough arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})

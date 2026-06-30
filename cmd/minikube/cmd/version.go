@@ -43,7 +43,7 @@ var (
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version of minikube",
-	Long:  `Print the version of minikube.`,
+	Long:  `Print the version of minikube. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/version`,
 	Run: func(_ *cobra.Command, _ []string) {
 		options := flags.CommandOptions()
 		minikubeVersion := version.GetVersion()
