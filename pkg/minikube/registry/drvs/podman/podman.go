@@ -96,8 +96,11 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
 		ExtraArgs:         extraArgs,
-		ListenAddress:     cc.ListenAddress,
+		Network:           cc.Network,
 		Subnet:            cc.Subnet,
+		StaticIP:          cc.StaticIP,
+		ListenAddress:     cc.ListenAddress,
+		GPUs:              cc.GPUs,
 	}), nil
 }
 
