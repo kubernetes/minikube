@@ -54,6 +54,7 @@ func init() {
 		Status:   status,
 		Default:  true,
 		Priority: registry.Experimental,
+		Parallel: true,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
