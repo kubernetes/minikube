@@ -31,6 +31,7 @@ import (
 )
 
 // TestHelmInstall integration test verifies helm installation, upgrade, and no-change behavior inside a live guest VM.
+// We test this flow because installing the latest helm allows self-healing and updating the cluster when Helm is missing, outdated, or broken.
 func TestHelmInstall(t *testing.T) {
 	MaybeParallel(t)
 
@@ -70,65 +71,140 @@ func TestHelmInstall(t *testing.T) {
 		t.Fatalf("failed to get command runner: %v", err)
 	}
 
+	// Backup the original helm binaries if they exist in the guest VM/container to keep tests isolated.
+	_, errHasHelm := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
+	if errHasHelm == nil {
+		if _, err := runner.RunCmd(exec.Command("sudo", "mv", "/usr/bin/helm", "/usr/bin/helm.bak")); err != nil {
+			t.Fatalf("failed to backup original /usr/bin/helm: %v", err)
+		}
+	}
+	_, errHasLocalHelm := runner.RunCmd(exec.Command("test", "-f", "/usr/local/bin/helm"))
+	if errHasLocalHelm == nil {
+		if _, err := runner.RunCmd(exec.Command("sudo", "mv", "/usr/local/bin/helm", "/usr/local/bin/helm.bak")); err != nil {
+			t.Fatalf("failed to backup original /usr/local/bin/helm: %v", err)
+		}
+	}
+
+	t.Cleanup(func() {
+		// Clean up any test files we created and restore original helm binaries
+		runner.RunCmd(exec.Command("sudo", "rm", "-f", "/usr/bin/helm", "/usr/local/bin/helm"))
+		if errHasHelm == nil {
+			runner.RunCmd(exec.Command("sudo", "mv", "/usr/bin/helm.bak", "/usr/bin/helm"))
+		}
+		if errHasLocalHelm == nil {
+			runner.RunCmd(exec.Command("sudo", "mv", "/usr/local/bin/helm.bak", "/usr/local/bin/helm"))
+		}
+	})
+
 	// 1. Install test
+	// This test ensures that if helm is not installed at /usr/bin/helm,
+	// InstallHelm will successfully download and install it.
 	t.Run("Install", func(t *testing.T) {
 		_, err := runner.RunCmd(exec.Command("sudo", "rm", "-f", "/usr/bin/helm", "/usr/local/bin/helm"))
 		if err != nil {
 			t.Fatalf("failed to delete helm inside guest: %v", err)
 		}
 
-		err = addons.HelmInstallBinary(nil, runner)
+		err = addons.InstallHelm(nil, runner)
 		if err != nil {
-			t.Fatalf("HelmInstallBinary failed: %v", err)
+			t.Fatalf("InstallHelm failed: %v", err)
 		}
 
-		_, err = runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
+		rr, err := runner.RunCmd(exec.Command("/usr/bin/helm", "version"))
 		if err != nil {
-			t.Errorf("helm binary not found at /usr/bin/helm after install: %v", err)
+			t.Errorf("helm binary at /usr/bin/helm is not executable or failed: %v", err)
+		}
+		if !strings.Contains(rr.Stdout.String(), "Version") {
+			t.Errorf("unexpected helm version output: %s", rr.Stdout.String())
 		}
 	})
 
 	// 2. Upgrade test
+	// This test ensures that if /usr/bin/helm is missing, but an older version of Helm is
+	// installed at /usr/local/bin/helm, InstallHelm will correctly download and install
+	// the latest version of Helm directly to /usr/bin/helm.
 	t.Run("Upgrade", func(t *testing.T) {
+		// Ensure /usr/bin/helm is deleted so the installer triggers
 		_, err := runner.RunCmd(exec.Command("sudo", "rm", "-f", "/usr/bin/helm"))
 		if err != nil {
 			t.Fatalf("failed to delete /usr/bin/helm: %v", err)
 		}
 
-		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", "echo 'echo old-helm' > /usr/local/bin/helm && chmod +x /usr/local/bin/helm"))
+		// Install an older Helm version (e.g. v3.12.0) to /usr/local/bin/helm
+		script := `
+			curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+			chmod 700 get_helm.sh
+			HELM_INSTALL_DIR=/usr/local/bin DESIRED_VERSION=v3.12.0 ./get_helm.sh
+		`
+		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-o", "errexit", "-c", script))
 		if err != nil {
-			t.Fatalf("failed to place old helm script in /usr/local/bin/helm: %v", err)
+			t.Fatalf("failed to install older helm: %v", err)
 		}
 
-		err = addons.HelmInstallBinary(nil, runner)
+		// Verify the older helm was installed and is executable
+		rrOld, err := runner.RunCmd(exec.Command("/usr/local/bin/helm", "version"))
 		if err != nil {
-			t.Fatalf("HelmInstallBinary failed: %v", err)
+			t.Fatalf("older helm at /usr/local/bin/helm version check failed: %v", err)
+		}
+		if !strings.Contains(rrOld.Stdout.String(), "v3.12.0") {
+			t.Fatalf("older helm version mismatch: stdout: %s", rrOld.Stdout.String())
 		}
 
-		_, err = runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
+		// Run InstallHelm, which should download and install the latest helm into /usr/bin/helm
+		err = addons.InstallHelm(nil, runner)
 		if err != nil {
-			t.Errorf("helm binary not found at /usr/bin/helm after upgrade: %v", err)
+			t.Fatalf("InstallHelm failed: %v", err)
 		}
 
-		rr, err := runner.RunCmd(exec.Command("/usr/bin/helm", "version"))
+		// Verify that a newer version of helm has been installed in /usr/bin/helm
+		rrNew, err := runner.RunCmd(exec.Command("/usr/bin/helm", "version"))
 		if err != nil {
-			t.Errorf("helm version command failed after upgrade: %v", err)
+			t.Errorf("helm binary not found or failed at /usr/bin/helm after upgrade: %v", err)
 		}
-		if strings.Contains(rr.Stdout.String(), "old-helm") {
-			t.Errorf("helm was not successfully upgraded/replaced: stdout: %s", rr.Stdout.String())
+		if strings.Contains(rrNew.Stdout.String(), "v3.12.0") {
+			t.Errorf("helm was not successfully upgraded/replaced: stdout: %s", rrNew.Stdout.String())
+		}
+
+		// Clean up the temporary older helm
+		_, err = runner.RunCmd(exec.Command("sudo", "rm", "-f", "/usr/local/bin/helm"))
+		if err != nil {
+			t.Logf("warning: failed to delete temporary older helm: %v", err)
 		}
 	})
 
 	// 3. No Change test
+	// This test verifies that if Helm is already installed in /usr/bin/helm,
+	// running InstallHelm again is a no-op and does not modify or reinstall it.
 	t.Run("NoChange", func(t *testing.T) {
-		err = addons.HelmInstallBinary(nil, runner)
+		// Run InstallHelm to ensure latest helm is present
+		err = addons.InstallHelm(nil, runner)
 		if err != nil {
-			t.Fatalf("HelmInstallBinary failed: %v", err)
+			t.Fatalf("InstallHelm failed: %v", err)
 		}
 
-		_, err = runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
+		// Retrieve current helm version details
+		rrFirst, err := runner.RunCmd(exec.Command("/usr/bin/helm", "version"))
 		if err != nil {
-			t.Errorf("helm binary not found at /usr/bin/helm after second execution: %v", err)
+			t.Fatalf("failed to check helm version: %v", err)
+		}
+		firstVersion := rrFirst.Stdout.String()
+
+		// Run InstallHelm again
+		err = addons.InstallHelm(nil, runner)
+		if err != nil {
+			t.Fatalf("InstallHelm second call failed: %v", err)
+		}
+
+		// Retrieve helm version details again
+		rrSecond, err := runner.RunCmd(exec.Command("/usr/bin/helm", "version"))
+		if err != nil {
+			t.Fatalf("failed to check helm version after second call: %v", err)
+		}
+		secondVersion := rrSecond.Stdout.String()
+
+		// Verify version details did not change
+		if firstVersion != secondVersion {
+			t.Errorf("helm version changed after second InstallHelm call:\nfirst:  %s\nsecond: %s", firstVersion, secondVersion)
 		}
 	})
 }
