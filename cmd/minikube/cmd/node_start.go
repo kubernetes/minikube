@@ -34,9 +34,10 @@ import (
 )
 
 var nodeStartCmd = &cobra.Command{
-	Use:   "start",
-	Short: "Starts a node.",
-	Long:  "Starts an existing stopped node in a cluster.",
+	Use:     "start NODE_NAME",
+	Short:   "Starts a node.",
+	Long:    "Starts an existing stopped node in a cluster.",
+	Example: "minikube node start m02",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Usage: minikube node start [name]")
