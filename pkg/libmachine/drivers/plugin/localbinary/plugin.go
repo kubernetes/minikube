@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 )
 
 var (
@@ -136,7 +136,7 @@ func NewPlugin(driverName string) (*Plugin, error) {
 		return nil, ErrPluginBinaryNotFound{driverName, driverPath}
 	}
 
-	log.Debugf("Found binary path at %s", binaryPath)
+	diagnostics.Debugf("Found binary path at %s", binaryPath)
 
 	return &Plugin{
 		stopCh: make(chan struct{}),
@@ -151,7 +151,7 @@ func NewPlugin(driverName string) (*Plugin, error) {
 func (lbe *Executor) Start() (*bufio.Scanner, *bufio.Scanner, error) {
 	var err error
 
-	log.Debugf("Launching plugin server for driver %s", lbe.DriverName)
+	diagnostics.Debugf("Launching plugin server for driver %s", lbe.DriverName)
 
 	lbe.cmd = exec.Command(lbe.binaryPath)
 
@@ -194,7 +194,7 @@ func stream(scanner *bufio.Scanner, streamOutCh chan<- string, stopCh <-chan str
 	for scanner.Scan() {
 		line := scanner.Text()
 		if err := scanner.Err(); err != nil {
-			log.Warnf("Scanning stream: %s", err)
+			diagnostics.Warnf("Scanning stream: %s", err)
 		}
 		select {
 		case streamOutCh <- strings.Trim(line, "\n"):
@@ -232,9 +232,9 @@ func (lbp *Plugin) execServer() error {
 	for {
 		select {
 		case out := <-stdOutCh:
-			log.Infof(pluginOut, lbp.MachineName, out)
+			diagnostics.Infof(pluginOut, lbp.MachineName, out)
 		case err := <-stdErrCh:
-			log.Debugf(pluginErr, lbp.MachineName, err)
+			diagnostics.Debugf(pluginErr, lbp.MachineName, err)
 		case <-lbp.stopCh:
 			if err := lbp.Executor.Close(); err != nil {
 				return fmt.Errorf("Error closing local plugin binary: %s", err)
@@ -256,7 +256,7 @@ func (lbp *Plugin) Address() (string, error) {
 
 		select {
 		case lbp.Addr = <-lbp.addrCh:
-			log.Debugf("Plugin server listening at address %s", lbp.Addr)
+			diagnostics.Debugf("Plugin server listening at address %s", lbp.Addr)
 			close(lbp.addrCh)
 			return lbp.Addr, nil
 		case <-time.After(lbp.timeout):

@@ -36,8 +36,8 @@ import (
 
 	"errors"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/ssh"
 	"k8s.io/minikube/pkg/libmachine/state"
@@ -139,7 +139,7 @@ func (d *Driver) GetURL() (string, error) {
 	}
 	ip, err := d.GetIP()
 	if err != nil {
-		log.Warnf("Failed to get IP: %v", err)
+		diagnostics.Warnf("Failed to get IP: %v", err)
 		return "", err
 	}
 	if ip == "" {
@@ -168,7 +168,7 @@ func (d *Driver) getVfkitState() (state.State, error) {
 	if !exists {
 		// No process, stale pidfile.
 		if err := os.Remove(pidfile); err != nil {
-			log.Debugf("failed to remove %q: %s", pidfile, err)
+			diagnostics.Debugf("failed to remove %q: %s", pidfile, err)
 		}
 		return state.Stopped, nil
 	}
@@ -207,18 +207,18 @@ func (d *Driver) Create() error {
 		return err
 	}
 
-	log.Info("Creating SSH key...")
+	diagnostics.Info("Creating SSH key...")
 	if err := ssh.GenerateSSHKey(d.sshKeyPath()); err != nil {
 		return err
 	}
 
-	log.Info("Creating Disk image...")
+	diagnostics.Info("Creating Disk image...")
 	if err := d.generateDiskImage(d.DiskSize); err != nil {
 		return err
 	}
 
 	if d.ExtraDisks > 0 {
-		log.Info("Creating extra disk images...")
+		diagnostics.Info("Creating extra disk images...")
 		for i := 0; i < d.ExtraDisks; i++ {
 			path := common.ExtraDiskPath(d.BaseDriver, i)
 			if err := common.CreateRawDisk(path, d.DiskSize); err != nil {
@@ -227,12 +227,12 @@ func (d *Driver) Create() error {
 		}
 	}
 
-	log.Info("Starting vfkit VM...")
+	diagnostics.Info("Starting vfkit VM...")
 	return d.Start()
 }
 
 func (d *Driver) extractKernel() error {
-	log.Info("Extracting bzimage and initrd...")
+	diagnostics.Info("Extracting bzimage and initrd...")
 	if err := common.ExtractFile(d.isoPath(), "/boot/bzimage", d.kernelPath()); err != nil {
 		return err
 	}
@@ -268,7 +268,7 @@ func (d *Driver) Start() error {
 	}
 
 	if len(d.VirtiofsMounts) > 0 {
-		log.Infof("Setup virtiofs mounts ...")
+		diagnostics.Infof("Setup virtiofs mounts ...")
 		if err := virtiofs.SetupMounts(d, d.VirtiofsMounts); err != nil {
 			return err
 		}
@@ -341,7 +341,7 @@ func (d *Driver) startVfkit(socketPath string) error {
 		startCmd = append(startCmd, d.rosettaOptions()...)
 	}
 
-	log.Debugf("executing: vfkit %s", strings.Join(startCmd, " "))
+	diagnostics.Debugf("executing: vfkit %s", strings.Join(startCmd, " "))
 	os.Remove(d.sockfilePath())
 	cmd := exec.Command("vfkit", startCmd...)
 
@@ -445,7 +445,7 @@ func (d *Driver) stopVfkit() error {
 		// vfkit may be already stopped, shutting down, or not listening.
 		// We don't fallback to "HardStop" since it typically fails due to
 		// https://github.com/crc-org/vfkit/issues/277.
-		log.Debugf("Failed to set vfkit state to 'Stop': %s", err)
+		diagnostics.Debugf("Failed to set vfkit state to 'Stop': %s", err)
 		pidfile := d.pidfilePath()
 		pid, err := process.ReadPidfile(pidfile)
 		if err != nil {
@@ -461,7 +461,7 @@ func (d *Driver) stopVfkit() error {
 			}
 			// No process, stale pidfile.
 			if err := os.Remove(pidfile); err != nil {
-				log.Debugf("failed to remove %q: %s", pidfile, err)
+				diagnostics.Debugf("failed to remove %q: %s", pidfile, err)
 			}
 			return nil
 		}
@@ -513,7 +513,7 @@ func (d *Driver) Restart() error {
 func (d *Driver) killVfkit() error {
 	if err := d.SetVFKitState("HardStop"); err != nil {
 		// Typically fails with EOF due to https://github.com/crc-org/vfkit/issues/277.
-		log.Debugf("Failed to set vfkit state to 'HardStop': %s", err)
+		diagnostics.Debugf("Failed to set vfkit state to 'HardStop': %s", err)
 		pidfile := d.pidfilePath()
 		pid, err := process.ReadPidfile(pidfile)
 		if err != nil {
@@ -529,7 +529,7 @@ func (d *Driver) killVfkit() error {
 			}
 			// No process, stale pidfile.
 			if err := os.Remove(pidfile); err != nil {
-				log.Debugf("failed to remove %q: %s", pidfile, err)
+				diagnostics.Debugf("failed to remove %q: %s", pidfile, err)
 			}
 			return nil
 		}
@@ -605,7 +605,7 @@ func (d *Driver) pidfilePath() string {
 
 // Make a boot2docker VM disk image.
 func (d *Driver) generateDiskImage(size int) error {
-	log.Debugf("Creating %d MB hard disk image...", size)
+	diagnostics.Debugf("Creating %d MB hard disk image...", size)
 
 	magicString := "boot2docker, please format-me"
 
@@ -653,7 +653,7 @@ func (d *Driver) generateDiskImage(size int) error {
 	if err := os.Truncate(rawFile, int64(size)*int64(1024*1024)); err != nil {
 		return nil
 	}
-	log.Debugf("DONE writing to %s and %s", rawFile, d.diskPath())
+	diagnostics.Debugf("DONE writing to %s and %s", rawFile, d.diskPath())
 	return nil
 }
 
@@ -683,7 +683,7 @@ func (d *Driver) GetVFKitState() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	log.Debugf("get state: %+v", vmstate)
+	diagnostics.Debugf("get state: %+v", vmstate)
 	return vmstate.State, nil
 }
 
@@ -700,6 +700,6 @@ func (d *Driver) SetVFKitState(s string) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Set vfkit state: %+v", vmstate)
+	diagnostics.Infof("Set vfkit state: %+v", vmstate)
 	return nil
 }

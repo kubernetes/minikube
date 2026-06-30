@@ -28,9 +28,9 @@ import (
 	"time"
 
 	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/provision/pkgaction"
 	"k8s.io/minikube/pkg/libmachine/provision/serviceaction"
@@ -94,7 +94,7 @@ func (provisioner *Boot2DockerProvisioner) upgradeIso() error {
 		return err
 	}
 
-	log.Info("Stopping machine to do the upgrade...")
+	diagnostics.Info("Stopping machine to do the upgrade...")
 
 	if err := provisioner.Driver.Stop(); err != nil {
 		return err
@@ -106,7 +106,7 @@ func (provisioner *Boot2DockerProvisioner) upgradeIso() error {
 
 	machineName := provisioner.GetDriver().GetMachineName()
 
-	log.Infof("Upgrading machine %q...", machineName)
+	diagnostics.Infof("Upgrading machine %q...", machineName)
 
 	// Either download the latest version of the b2d url that was explicitly
 	// specified when creating the VM or copy the (updated) default ISO
@@ -114,7 +114,7 @@ func (provisioner *Boot2DockerProvisioner) upgradeIso() error {
 		return err
 	}
 
-	log.Infof("Starting machine back up...")
+	diagnostics.Infof("Starting machine back up...")
 
 	if err := provisioner.Driver.Start(); err != nil {
 		return err
@@ -224,12 +224,12 @@ func (provisioner *Boot2DockerProvisioner) GetOsReleaseInfo() (*OsRelease, error
 func (provisioner *Boot2DockerProvisioner) AttemptIPContact(dockerPort int) {
 	ip, err := provisioner.Driver.GetIP()
 	if err != nil {
-		log.Warnf("Could not get IP address for created machine: %s", err)
+		diagnostics.Warnf("Could not get IP address for created machine: %s", err)
 		return
 	}
 
 	if conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", ip, dockerPort), 5*time.Second); err != nil {
-		log.Warnf(`
+		diagnostics.Warnf(`
 This machine has been allocated an IP address, but Docker Machine could not
 reach it successfully.
 

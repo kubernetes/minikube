@@ -31,7 +31,7 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 )
 
 type diskType int
@@ -87,7 +87,7 @@ func vmrunCmd(cmd *exec.Cmd) (string, string, error) {
 		cmd.Stderr = io.MultiWriter(os.Stderr, cmd.Stderr)
 	}
 
-	log.Debugf("executing: %v", strings.Join(cmd.Args, " "))
+	diagnostics.Debugf("executing: %v", strings.Join(cmd.Args, " "))
 
 	err := cmd.Run()
 	if err != nil {

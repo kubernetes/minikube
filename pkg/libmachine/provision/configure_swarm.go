@@ -25,8 +25,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcndockerclient"
 	"k8s.io/minikube/pkg/libmachine/swarm"
 )
@@ -36,7 +36,7 @@ func configureSwarm(p Provisioner, swarmOptions swarm.Options, authOptions auth.
 		return nil
 	}
 
-	log.Info("Configuring swarm...")
+	diagnostics.Info("Configuring swarm...")
 
 	ip, err := p.GetDriver().GetIP()
 	if err != nil {

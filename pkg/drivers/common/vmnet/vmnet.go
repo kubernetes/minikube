@@ -35,7 +35,7 @@ import (
 	"golang.org/x/sys/unix"
 	"gopkg.in/yaml.v2"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -142,7 +142,7 @@ func ValidateHelper(options *run.CommandOptions) error {
 	// is called from different places in different drivers, so the easier way
 	// to skip validation is to skip it here.
 	if options.DownloadOnly {
-		log.Debug("Skipping vmnet-helper validation in download-only mode")
+		diagnostics.Debug("Skipping vmnet-helper validation in download-only mode")
 		return nil
 	}
 
@@ -157,7 +157,7 @@ func ValidateHelper(options *run.CommandOptions) error {
 		}
 	}
 
-	log.Debugf("Validated vmnet-helper (path=%q, version=%q, commit=%q, needsSudo=%v)",
+	diagnostics.Debugf("Validated vmnet-helper (path=%q, version=%q, commit=%q, needsSudo=%v)",
 		helper.Path, helper.Version.Version, helper.Version.Commit, helper.NeedsSudo)
 
 	return nil
@@ -218,7 +218,7 @@ func (h *Helper) Start(socketPath string) error {
 		return fmt.Errorf("failed to start vmnet-helper: %w", err)
 	}
 
-	log.Infof("Started vmnet-helper (pid=%v)", cmd.Process.Pid)
+	diagnostics.Infof("Started vmnet-helper (pid=%v)", cmd.Process.Pid)
 
 	if err := process.WritePidfile(h.pidfilePath(), cmd.Process.Pid); err != nil {
 		return fmt.Errorf("failed to write vmnet-helper pidfile: %w", err)
@@ -227,16 +227,16 @@ func (h *Helper) Start(socketPath string) error {
 	var info interfaceInfo
 	if err := json.NewDecoder(stdout).Decode(&info); err != nil {
 		if data, err := os.ReadFile(logfile.Name()); err == nil {
-			log.Infof("vmnet-helper logfile %q content:\n%s", logfile.Name(), string(data))
+			diagnostics.Infof("vmnet-helper logfile %q content:\n%s", logfile.Name(), string(data))
 		} else {
-			log.Infof("failed to read vmnet-helper logfile %q: %s", logfile.Name(), err)
+			diagnostics.Infof("failed to read vmnet-helper logfile %q: %s", logfile.Name(), err)
 		}
 		return fmt.Errorf("failed to decode vmnet interface info: %w", err)
 	}
 
 	h.macAddress = info.MACAddress
 	if h.InterfaceID != "" {
-		log.Infof("Got mac address %q", info.MACAddress)
+		diagnostics.Infof("Got mac address %q", info.MACAddress)
 	}
 
 	return nil
@@ -250,7 +250,7 @@ func (h *Helper) GetMACAddress() string {
 // Stop terminates the executable. If running with sudo, sudo will terminate the
 // helper.
 func (h *Helper) Stop() error {
-	log.Info("Stop vmnet-helper")
+	diagnostics.Info("Stop vmnet-helper")
 	pidfile := h.pidfilePath()
 	pid, err := process.ReadPidfile(pidfile)
 	if err != nil {
@@ -261,14 +261,14 @@ func (h *Helper) Stop() error {
 		return nil
 	}
 	name := h.executableName()
-	log.Debugf("Terminate %s (pid=%v)", name, pid)
+	diagnostics.Debugf("Terminate %s (pid=%v)", name, pid)
 	if err := process.Terminate(pid, name); err != nil {
 		if err != os.ErrProcessDone {
 			return err
 		}
 		// No process, stale pidfile.
 		if err := os.Remove(pidfile); err != nil {
-			log.Debugf("failed to remove %q: %s", pidfile, err)
+			diagnostics.Debugf("failed to remove %q: %s", pidfile, err)
 		}
 	}
 	return nil
@@ -277,7 +277,7 @@ func (h *Helper) Stop() error {
 // Kill the entire process group. If running with sudo, both sudo and
 // vmnet-helper will be killed.
 func (h *Helper) Kill() error {
-	log.Info("Kill vmnet-helper")
+	diagnostics.Info("Kill vmnet-helper")
 	pidfile := h.pidfilePath()
 	pid, err := process.ReadPidfile(pidfile)
 	if err != nil {
@@ -295,18 +295,18 @@ func (h *Helper) Kill() error {
 	if !exists {
 		// No process, stale pidfile.
 		if err := os.Remove(pidfile); err != nil {
-			log.Debugf("failed to remove %q: %s", pidfile, err)
+			diagnostics.Debugf("failed to remove %q: %s", pidfile, err)
 		}
 		return nil
 	}
-	log.Debugf("Kill vmnet-helper process group (pgid=%v)", pid)
+	diagnostics.Debugf("Kill vmnet-helper process group (pgid=%v)", pid)
 	if err := syscall.Kill(-pid, syscall.SIGKILL); err != nil {
 		if err != syscall.ESRCH {
 			return err
 		}
 		// No process, stale pidfile.
 		if err := os.Remove(pidfile); err != nil {
-			log.Debugf("failed to remove %q: %s", pidfile, err)
+			diagnostics.Debugf("failed to remove %q: %s", pidfile, err)
 		}
 	}
 	return nil
@@ -331,7 +331,7 @@ func (h *Helper) GetState() (state.State, error) {
 	if !exists {
 		// No process, stale pidfile.
 		if err := os.Remove(pidfile); err != nil {
-			log.Debugf("failed to remove %q: %s", pidfile, err)
+			diagnostics.Debugf("failed to remove %q: %s", pidfile, err)
 		}
 		return state.Stopped, nil
 	}
@@ -408,7 +408,7 @@ func validateRunningWithSudo(helperPath string, options *run.CommandOptions) err
 			return &Error{Kind: reason.NotConfiguredVmnetHelper, Err: err}
 		}
 
-		log.Debugf("Unable to run vmnet-helper without a password: %v", err)
+		diagnostics.Debugf("Unable to run vmnet-helper without a password: %v", err)
 
 		// We can fall back to interactive sudo this time, but the user should
 		// configure a sudoers rule.
@@ -428,11 +428,11 @@ func validateRunningWithSudo(helperPath string, options *run.CommandOptions) err
 			return &Error{Kind: reason.NotConfiguredVmnetHelper, Err: err}
 		}
 
-		log.Debugf("Authenticated user with sudo")
+		diagnostics.Debugf("Authenticated user with sudo")
 		return nil
 	}
 
-	log.Debug("Validated running vmnet-helper without a password")
+	diagnostics.Debug("Validated running vmnet-helper without a password")
 	return nil
 }
 
