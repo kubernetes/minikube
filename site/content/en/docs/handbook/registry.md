@@ -117,4 +117,31 @@ docker push localhost:5000/myimage
 
 After the image is pushed, refer to it by `localhost:5000/{name}` in kubectl specs.
 
+### Using the registry addon with CRI-O
+
+The `localhost:5000` workflow documented above is aimed at the Docker-based setup and does not directly translate to clusters that use the `cri-o` container runtime.
+For CRI-O, a practical workaround is to refer to the registry addon by its in-cluster Service IP and port `80` from your workload manifests.
+
+First, get the registry Service cluster IP:
+
+```shell
+kubectl get service registry --namespace kube-system --output=jsonpath='{.spec.clusterIP}'
+```
+
+The output is similar to:
+
+```none
+10.98.34.133
+```
+
+Then use that address in your image reference:
+
+```yaml
+image: 10.98.34.133:80/myimage
+```
+
+This workaround is less convenient than the Docker `localhost:5000` flow because the registry Service IP is assigned dynamically. If the Service IP changes, you must update the image reference in your manifests.
+
+If you want a workflow that avoids editing image references with a dynamic Service IP, consider the image pushing approaches documented in [Pushing images](/docs/handbook/pushing/).
+
 ##
