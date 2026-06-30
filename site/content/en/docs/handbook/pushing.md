@@ -107,8 +107,28 @@ By closing the terminal, you will go back to using your own system's docker daem
 
 {{% pageinfo color="info" %}}
 Tip 3:
+You can use the `MINIKUBE_ACTIVE_DOCKERD` environment variable in your shell prompt to remind yourself when `docker` commands are targeting the Docker daemon inside minikube.
+
+For example, in `bash` or `zsh`:
+
+```shell
+__active_minikube() {
+  if [ -n "$MINIKUBE_ACTIVE_DOCKERD" ]; then
+    printf ' minikube (%s)' "$MINIKUBE_ACTIVE_DOCKERD"
+  fi
+}
+
+export PS1='\\u@\\h:\\w$(__active_minikube)\\$ '
+```
+
+When you run `eval $(minikube docker-env)`, the prompt will show the active minikube profile name. If you already use a custom prompt, adapt the example instead of replacing your prompt configuration verbatim.
+{{% /pageinfo %}}
+
+{{% pageinfo color="info" %}}
+Tip 4:
 In container-based drivers such as Docker or Podman, you will need to re-do docker-env each time you restart your minikube cluster.
 {{% /pageinfo %}}
+
 
 More information on [docker-env](https://minikube.sigs.k8s.io/docs/commands/docker-env/)
 
