@@ -111,12 +111,16 @@ func DigestByGoLib(imgName string) string {
 // eg image:tag@sha256:digest -> image:tag if there is an associated tag
 // if not possible, just return the initial img
 func Tag(img string) string {
-	split := strings.Split(img, ":")
-	if len(split) == 3 {
-		tag := strings.Split(split[1], "@")[0]
-		return fmt.Sprintf("%s:%s", split[0], tag)
+	at := strings.LastIndex(img, "@")
+	if at == -1 {
+		return img
 	}
-	return img
+	base := img[:at]
+	slash := strings.LastIndex(base, "/")
+	if strings.IndexByte(base[slash+1:], ':') == -1 {
+		return img
+	}
+	return base
 }
 
 func canonicalName(ref name.Reference) string {
