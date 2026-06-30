@@ -793,6 +793,16 @@ var Addons = map[string]*Addon{
 		map[string]string{
 			"Kubetail": "docker.io",
 		}, nil),
+	"nrc": NewAddon([]*BinAsset{
+		MustBinAsset(addons.NrcAssets, "nrc/crds.yaml", vmpath.GuestAddonsDir, "crds.yaml", "0640"),
+		MustBinAsset(addons.NrcAssets, "nrc/nrc.yaml.tmpl", vmpath.GuestAddonsDir, "nrc.yaml", "0640"),
+	}, false, "nrc", "node-readiness-controller (SIGs)", "", "https://node-readiness-controller.sigs.k8s.io/",
+		map[string]string{
+			"NrcController": "node-readiness-controller/node-readiness-controller:v0.3.0@sha256:5b3e69f24ded5048848d5520ef9c390da364b984f0d3ba3bfcd2a66d556c0295",
+		},
+		map[string]string{
+			"NrcController": "registry.k8s.io",
+		}, nil),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
