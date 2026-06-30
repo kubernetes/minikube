@@ -125,6 +125,7 @@ minikube start [flags]
       --vmnet-offloading                  Enable vmnet checksum and TSO offloading. See krunkit driver documentation for known limitations (krunkit driver only)
       --wait strings                      comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to "apiserver,system_pods", available options: "apiserver,system_pods,default_sa,apps_running,node_ready,kubelet,extra" . other acceptable values are 'all' or 'none', 'true' and 'false' (default [apiserver,system_pods])
       --wait-timeout duration             max time to wait per Kubernetes or host to be healthy. (default 6m0s)
+      --windows-node-version string       The version of Windows to use for the windows node on a multi-node cluster (e.g., 2025). Currently support Windows Server 2025
 ```
 
 ### Options inherited from parent commands

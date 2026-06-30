@@ -1,0 +1,15 @@
+name: Test Windows Self-Hosted Runner
+on: workflow_dispatch
+
+jobs:
+  test:
+    runs-on: [self-hosted, windows, hyper-v]
+    steps:
+      - name: Check Hyper-V
+        run: systeminfo | findstr /C:"Hyper-V"
+
+      - name: Check Go
+        run: go version
+
+      - name: Check kubectl
+        run: kubectl version --client
