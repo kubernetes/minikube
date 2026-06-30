@@ -315,7 +315,9 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	runImageList(ctx, t, profile, "ImageListJson", "json", "[\"%s")
 	runImageList(ctx, t, profile, "ImageListYaml", "yaml", "- %s")
 
-	// docs: Make sure image building works by `minikube image build`
+	// docs: Build an image with `minikube image build` using `test/integration/testdata/build/Dockerfile`
+	// docs: Add `content.txt` from the build context into a `gcr.io/k8s-minikube/busybox` image and tag it as `localhost/my-image:<profile>`
+	// docs: Start `buildkitd` on demand inside minikube only when the build runs, then verify the new image exists in the cluster runtime
 	t.Run("ImageBuild", func(t *testing.T) {
 		MaybeParallel(t)
 
