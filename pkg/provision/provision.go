@@ -135,7 +135,11 @@ func configureAuth(p miniProvisioner) error {
 		return fmt.Errorf("error generating server cert: %v", err)
 	}
 
-	return copyRemoteCerts(authOptions, driver)
+	if err := copyRemoteCerts(authOptions, driver); err != nil {
+		return err
+	}
+
+	return configureRootSSH(p)
 }
 
 func copyHostCerts(authOptions auth.Options) error {
@@ -209,6 +213,14 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 		}
 	}
 
+	return nil
+}
+
+func configureRootSSH(p miniProvisioner) error {
+	cmd := "sudo mkdir -p /root/.ssh && sudo cp /home/docker/.ssh/authorized_keys /root/.ssh/authorized_keys && sudo chown -R root:root /root/.ssh"
+	if _, err := p.SSHCommand(cmd); err != nil {
+		return fmt.Errorf("configure root SSH: %w", err)
+	}
 	return nil
 }
 
