@@ -1,0 +1,200 @@
+# Copyright 2024 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Rook-Ceph Cluster configuration for minikube (single-node, test mode).
+# Uses allowMultiplePerNode + loop devices so it runs without extra disks.
+# References: https://rook.io/docs/rook/latest-release/Getting-Started/quickstart/
+---
+apiVersion: ceph.rook.io/v1
+kind: CephCluster
+metadata:
+  name: my-cluster
+  namespace: rook-ceph
+  labels:
+    kubernetes.io/minikube-addons: rook-ceph
+spec:
+  # Host directory where Ceph daemon data is stored
+  dataDirHostPath: /data/rook/
+  cephVersion:
+    # CephDaemon image is templated so users can override the registry
+    image: {{.CustomRegistries.CephDaemon | default .ImageRepository | default .Registries.CephDaemon}}{{.Images.CephDaemon}}
+    # Allow unsupported versions for minikube's rolling-update testing
+    allowUnsupported: true
+  # Single monitor is enough for a local single-node cluster
+  mon:
+    count: 1
+    allowMultiplePerNode: true
+  # Skip upgrade checks — fine for local testing
+  skipUpgradeChecks: true
+  cleanupPolicy:
+    # Do NOT wipe data on cluster disable unless the user explicitly requests
+    confirmation: ""
+    sanitizeDisks:
+      method: quick
+      dataSource: zero
+      iteration: 1
+    allowUninstallWithVolumes: false
+  mgr:
+    count: 1
+    allowMultiplePerNode: true
+    modules:
+      - name: rook
+        enabled: true
+  dashboard:
+    enabled: true
+    # Serve the dashboard on port 7000 (non-privileged)
+    port: 7000
+    ssl: false
+  # Crash collection is noisy on single-node — disable for minikube
+  crashCollector:
+    disable: true
+  storage:
+    useAllNodes: true
+    useAllDevices: false
+    # Loop devices must be specified explicitly — Rook's deviceFilter intentionally
+    # skips loop devices even when they match the filter pattern.
+    # The enable callback creates a sparse file at /var/lib/rook/ceph-osd-data.img
+    # and attaches it dynamically so Ceph can use it as an OSD.
+    devices:
+      - name: "{{.RookCephOSDDevice}}"
+  monitoring:
+    enabled: false
+  healthCheck:
+    daemonHealth:
+      mon:
+        interval: 45s
+        timeout: 600s
+  priorityClassNames:
+    all: system-node-critical
+    mgr: system-cluster-critical
+  disruptionManagement:
+    managePodBudgets: true
+  # Relax Ceph defaults for a single-replica / single-node scenario
+  cephConfig:
+    global:
+      osd_pool_default_size: "1"
+      mon_warn_on_pool_no_redundancy: "false"
+      bdev_flock_retry: "20"
+      bluefs_buffered_io: "false"
+      mon_data_avail_warn: "10"
+---
+# Built-in mgr pool (required by Ceph MGR internals)
+apiVersion: ceph.rook.io/v1
+kind: CephBlockPool
+metadata:
+  name: builtin-mgr
+  namespace: rook-ceph
+spec:
+  name: .mgr
+  replicated:
+    size: 1
+    requireSafeReplicaSize: false
+---
+# A general-purpose RBD block pool with single replica (minikube only)
+apiVersion: ceph.rook.io/v1
+kind: CephBlockPool
+metadata:
+  name: replicapool
+  namespace: rook-ceph
+spec:
+  replicated:
+    size: 1
+    requireSafeReplicaSize: false
+---
+# StorageClass backed by the replicapool above
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: rook-ceph-block
+  labels:
+    kubernetes.io/minikube-addons: rook-ceph
+provisioner: rook-ceph.rbd.csi.ceph.com
+parameters:
+  clusterID: rook-ceph
+  pool: replicapool
+  imageFormat: "2"
+  imageFeatures: layering
+  csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
+  csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
+  csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
+  csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+  csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
+  csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+mountOptions: []
+---
+# CephFilesystem for shared ReadWriteMany workloads
+apiVersion: ceph.rook.io/v1
+kind: CephFilesystem
+metadata:
+  name: myfs
+  namespace: rook-ceph
+spec:
+  metadataPool:
+    replicated:
+      size: 1
+      requireSafeReplicaSize: false
+  dataPools:
+    - name: data0
+      replicated:
+        size: 1
+        requireSafeReplicaSize: false
+  preserveFilesystemOnDelete: true
+  metadataServer:
+    activeCount: 1
+    activeStandby: false
+---
+# StorageClass backed by the myfs CephFilesystem
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: rook-cephfs
+  labels:
+    kubernetes.io/minikube-addons: rook-ceph
+provisioner: rook-ceph.cephfs.csi.ceph.com
+parameters:
+  clusterID: rook-ceph
+  fsName: myfs
+  pool: myfs-data0
+  csi.storage.k8s.io/provisioner-secret-name: rook-csi-cephfs-provisioner
+  csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
+  csi.storage.k8s.io/controller-expand-secret-name: rook-csi-cephfs-provisioner
+  csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+  csi.storage.k8s.io/node-stage-secret-name: rook-csi-cephfs-node
+  csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+mountOptions: []
+---
+# Explicit NodePort service to expose the dashboard seamlessly on VM drivers
+apiVersion: v1
+kind: Service
+metadata:
+  name: rook-ceph-mgr-dashboard-ext
+  namespace: rook-ceph
+  labels:
+    app: rook-ceph-mgr
+    kubernetes.io/minikube-addons: rook-ceph
+spec:
+  ports:
+  - name: http-dashboard
+    port: 7000
+    protocol: TCP
+    targetPort: 7000
+  selector:
+    app: rook-ceph-mgr
+    mgr_role: active
+    rook_cluster: rook-ceph
+  type: NodePort
