@@ -121,3 +121,26 @@ where:
 4.  Run `sudo systemctl restart libvirtd` or `sudo systemctl restart libvirt` (depending on your OS/distro) to restart the libvirt daemon.
 
 Hopefully, by now you have libvirt network operational, and you will be successfully running minikube again.
+
+### Troubleshooting DHCP for KVM virtual bridges
+
+If you get a `StartHost` failure due to the minikube VM unable to obtain an IP, it is possible that your firewall is blocking the DHCP traffic for the KVM virtual bridges (see [#3566](https://github.com/kubernetes/minikube/issues/3566)).
+
+#### nftables (netfilter)
+
+To ensure that the VM can reach the host's `dnsmasq` for DHCP exchange, add the following rule for KVM's virtual bridges to the input chain. The bridge names can vary — use `ip link show` or `sudo virsh net-dumpxml <network>` to confirm yours. Common defaults are `virbr0` for the default libvirt network and `virbr1` for minikube:
+
+```nft
+chain input {
+    iifname { "virbr0", "virbr1" } udp dport 67 accept comment "allow DHCP from VMs"
+}
+```
+
+If you also need VMs to have internet access through the bridge, add forward chain rules to allow traffic in both directions:
+
+```nft
+chain forward {
+    iifname { "virbr0", "virbr1" } accept comment "allow KVM VM forwarding out"
+    oifname { "virbr0", "virbr1" } accept comment "allow traffic back to VMs"
+}
+```
