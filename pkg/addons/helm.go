@@ -15,8 +15,6 @@ limitations under the License.
 */
 
 // Package addons provides helpers to install and verify Helm-based addons in minikube.
-// Because we install Helm in the guest VM / container at /usr/bin/helm (which is on the
-// default system PATH), there is no need to modify the PATH when executing helm commands.
 package addons
 
 import (
@@ -75,18 +73,42 @@ func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable
 	return uninstalllHelmChart(ctx, chart)
 }
 
-func InstallHelm(_ *assets.Addon, runner command.Runner) error {
-	_, err := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
-	if err != nil {
-		script := `
+// InstallHelmVersion downloads and installs a specific version of Helm to the target directory inside the guest VM/container.
+// If version is "latest" or empty, it installs the latest stable version of Helm.
+func InstallHelmVersion(runner command.Runner, version string, installDir string) error {
+	if version == "" {
+		version = "latest"
+	}
+	if installDir == "" {
+		installDir = "/usr/bin"
+	}
+
+	var env string
+	if version != "latest" {
+		env = fmt.Sprintf("HELM_INSTALL_DIR=%s DESIRED_VERSION=%s", installDir, version)
+	} else {
+		env = fmt.Sprintf("HELM_INSTALL_DIR=%s", installDir)
+	}
+
+	script := fmt.Sprintf(`
 			curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 			chmod 700 get_helm.sh
-			HELM_INSTALL_DIR=/usr/bin ./get_helm.sh
-		`
-		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-o", "errexit", "-c", script))
-		if err != nil {
-			return fmt.Errorf("downloading and installing helm: %w", err)
-		}
+			%s ./get_helm.sh
+		`, env)
+
+	_, err := runner.RunCmd(exec.Command("sudo", "bash", "-o", "errexit", "-c", script))
+	if err != nil {
+		return fmt.Errorf("downloading and installing helm version %s to %s: %w", version, installDir, err)
 	}
-	return err
+	return nil
+}
+
+// InstallHelm checks if helm is installed at /usr/bin/helm.
+// Use /usr/bin/helm which is always in the PATH, unlike /usr/local/bin.
+func InstallHelm(_ *assets.Addon, runner command.Runner, version string) error {
+	_, err := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
+	if err != nil {
+		return InstallHelmVersion(runner, version, "/usr/bin")
+	}
+	return nil
 }
