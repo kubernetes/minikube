@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package addons provides helpers to install and verify Helm-based addons in minikube.
 package addons
 
 import (
@@ -72,27 +73,32 @@ func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable
 	return uninstalllHelmChart(ctx, chart)
 }
 
-func helmInstallBinary(_ *assets.Addon, runner command.Runner) error {
-	_, err := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
-	if err != nil {
-		_, err = runner.RunCmd(exec.Command("test", "-d", "/usr/local/bin"))
-		if err != nil {
-			_, err = runner.RunCmd(exec.Command("sudo", "mkdir", "-p", "/usr/local/bin"))
-			if err != nil {
-				return fmt.Errorf("creating /usr/local/bin: %w", err)
-			}
-		}
+// HelmOptions contains options for installing Helm.
+type HelmOptions struct {
+	Version string
+}
 
-		installCmd := "curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh"
-		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd))
-		if err != nil {
-			return fmt.Errorf("downloading helm: %w", err)
-		}
-		// we copy the binary from /usr/local/bin to /usr/bin because /usr/local/bin is not in PATH in both iso and kicbase
-		_, err = runner.RunCmd(exec.Command("sudo", "mv", "/usr/local/bin/helm", "/usr/bin/helm"))
-		if err != nil {
-			return fmt.Errorf("installing helm: %w", err)
-		}
+// InstallHelm installs Helm inside the guest VM/container at /usr/bin/helm.
+// Use /usr/bin/helm which is always in the PATH, unlike /usr/local/bin.
+func InstallHelm(_ *assets.Addon, runner command.Runner, opts HelmOptions) error {
+	var script string
+	if opts.Version != "" {
+		script = fmt.Sprintf(`
+			curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+			chmod 700 get_helm.sh
+			HELM_INSTALL_DIR=/usr/bin ./get_helm.sh --version %s
+		`, opts.Version)
+	} else {
+		script = `
+			curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+			chmod 700 get_helm.sh
+			HELM_INSTALL_DIR=/usr/bin ./get_helm.sh
+		`
 	}
-	return err
+
+	_, err := runner.RunCmd(exec.Command("sudo", "bash", "-o", "errexit", "-c", script))
+	if err != nil {
+		return fmt.Errorf("installing helm: %w", err)
+	}
+	return nil
 }
