@@ -21,6 +21,7 @@ import (
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -47,6 +48,10 @@ type options struct {
 	Branch     string
 	TimeoutMul float64
 	DBPath     string
+	Apply      string
+	ApplyDir   string
+	Write      bool
+	PRBody     string
 }
 
 type stepStats struct {
@@ -66,16 +71,44 @@ type runInfo struct {
 	CreatedAt time.Time
 }
 
+var errWorkflowNotFound = errors.New("workflow not found")
+
 func main() {
 	opts := parseOptions()
+
+	if opts.ApplyDir == "" && opts.Apply != "" {
+		if opts.Workflow == "" {
+			name, err := workflowNameFromFile(opts.Apply)
+			if err != nil {
+				log.Fatalf("Deriving workflow name: %v", err)
+			}
+			opts.Workflow = name
+		}
+	}
 
 	ctx := context.Background()
 	client := ghClient()
 	db := openDB(opts.DBPath)
 	defer db.Close()
 
-	updateDB(ctx, client, db, opts)
+	if opts.ApplyDir != "" {
+		if err := runApplyDir(ctx, client, db, opts); err != nil {
+			log.Fatalf("Batch apply: %v", err)
+		}
+		return
+	}
+
+	if err := updateDB(ctx, client, db, opts); err != nil {
+		log.Fatalf("Updating cache: %v", err)
+	}
 	stats := computeStats(db, opts)
+
+	if opts.Apply != "" {
+		if _, err := applyToFile(opts.Apply, stats, opts.Write); err != nil {
+			log.Fatalf("Applying to %s: %v", opts.Apply, err)
+		}
+		return
+	}
 	printStats(stats, opts.Output)
 }
 
@@ -93,6 +126,10 @@ func parseOptions() options {
 	flag.StringVar(&opts.Branch, "branch", "", "Filter runs by branch name")
 	flag.Float64Var(&opts.TimeoutMul, "timeout-multiplier", 3, "Multiplier applied to p95 for suggested timeout")
 	flag.StringVar(&opts.DBPath, "db", "", "Path to SQLite database for cached data")
+	flag.StringVar(&opts.Apply, "apply", "", "Path to a workflow YAML file to compare against the computed stats")
+	flag.StringVar(&opts.ApplyDir, "apply-dir", "", "Directory of workflow YAML files to batch-process (each file's own name: is used to fetch its stats)")
+	flag.BoolVar(&opts.Write, "write", false, "With -apply/-apply-dir, write timeout-minutes changes to the file(s) (default: print a dry-run report only)")
+	flag.StringVar(&opts.PRBody, "pr-body", "", "With -apply-dir, write a generated PR body summarizing the batch run to this path")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Analyze GitHub Actions workflow step durations.
@@ -117,6 +154,17 @@ Usage:
   workflow-stats -workflow "Smoke Test" -o csv
   workflow-stats -workflow "Smoke Test" -o json
 
+  # Compare one workflow file's timeout-minutes against computed stats
+  # (dry-run report only, nothing is written; -workflow is optional,
+  # it's read from the file's own name: if not given):
+  workflow-stats -since 30 -apply ../../.github/workflows/lint.yml
+
+  # Same, but actually write the changes:
+  workflow-stats -since 30 -apply ../../.github/workflows/lint.yml -write
+
+  # Batch-process every workflow file in a directory, writing a PR body:
+  workflow-stats -since 30 -apply-dir ../../.github/workflows -write -pr-body /tmp/pr-body.md
+
 Flags:
 `)
 		flag.PrintDefaults()
@@ -134,7 +182,7 @@ Flags:
 		opts.DBPath = defaultDBPath(repo)
 	}
 
-	if opts.Workflow == "" {
+	if opts.Workflow == "" && opts.Apply == "" && opts.ApplyDir == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -144,7 +192,7 @@ Flags:
 
 // ── Fetch and cache ──
 
-func updateDB(ctx context.Context, client *github.Client, db *sql.DB, opts options) {
+func updateDB(ctx context.Context, client *github.Client, db *sql.DB, opts options) error {
 	fetchSince := latestRunDate(db, opts.Workflow)
 	requestedSince := time.Now().UTC().AddDate(0, 0, -opts.Since)
 	if fetchSince.Before(requestedSince) {
@@ -153,7 +201,10 @@ func updateDB(ctx context.Context, client *github.Client, db *sql.DB, opts optio
 
 	fmt.Fprintf(os.Stderr, "Fetching runs since %s ...", fetchSince.Format("2006-01-02"))
 	t := time.Now()
-	wfID := findWorkflowID(ctx, client, opts.Owner, opts.Repo, opts.Workflow)
+	wfID, err := findWorkflowID(ctx, client, opts.Owner, opts.Repo, opts.Workflow)
+	if err != nil {
+		return err
+	}
 	runs := fetchRuns(ctx, client, opts.Owner, opts.Repo, wfID, opts.Branch, fetchSince)
 	fmt.Fprintf(os.Stderr, " %d runs (%.1fs)\n", len(runs), time.Since(t).Seconds())
 
@@ -177,6 +228,7 @@ func updateDB(ctx context.Context, client *github.Client, db *sql.DB, opts optio
 		}
 		fmt.Fprintf(os.Stderr, " (%.1fs)\n", time.Since(t).Seconds())
 	}
+	return nil
 }
 
 // ── Compute stats ──
@@ -217,16 +269,16 @@ func ghClient() *github.Client {
 	return github.NewClient(nil)
 }
 
-func findWorkflowID(ctx context.Context, client *github.Client, owner, repo, name string) int64 {
+func findWorkflowID(ctx context.Context, client *github.Client, owner, repo, name string) (int64, error) {
 	opts := &github.ListOptions{PerPage: 100}
 	for {
 		wfs, resp, err := client.Actions.ListWorkflows(ctx, owner, repo, opts)
 		if err != nil {
-			log.Fatalf("Listing workflows: %v", err)
+			return 0, fmt.Errorf("listing workflows: %w", err)
 		}
 		for _, wf := range wfs.Workflows {
 			if wf.GetName() == name {
-				return wf.GetID()
+				return wf.GetID(), nil
 			}
 		}
 		if resp.NextPage == 0 {
@@ -234,8 +286,7 @@ func findWorkflowID(ctx context.Context, client *github.Client, owner, repo, nam
 		}
 		opts.Page = resp.NextPage
 	}
-	log.Fatalf("Workflow %q not found", name)
-	return 0
+	return 0, fmt.Errorf("%w: %s", errWorkflowNotFound, name)
 }
 
 func fetchRuns(ctx context.Context, client *github.Client, owner, repo string, wfID int64, branch string, since time.Time) []runInfo {
