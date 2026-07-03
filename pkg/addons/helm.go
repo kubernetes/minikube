@@ -21,7 +21,10 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
+	"strings"
 
+	"golang.org/x/mod/semver"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -72,27 +75,42 @@ func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable
 	return uninstalllHelmChart(ctx, chart)
 }
 
-func helmInstallBinary(_ *assets.Addon, runner command.Runner) error {
-	_, err := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
-	if err != nil {
-		_, err = runner.RunCmd(exec.Command("test", "-d", "/usr/local/bin"))
-		if err != nil {
-			_, err = runner.RunCmd(exec.Command("sudo", "mkdir", "-p", "/usr/local/bin"))
-			if err != nil {
-				return fmt.Errorf("creating /usr/local/bin: %w", err)
-			}
-		}
+// HelmOptions contains options for installing Helm.
+type HelmOptions struct {
+	Version string
+}
 
-		installCmd := "curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh"
-		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd))
-		if err != nil {
-			return fmt.Errorf("downloading helm: %w", err)
-		}
-		// we copy the binary from /usr/local/bin to /usr/bin because /usr/local/bin is not in PATH in both iso and kicbase
-		_, err = runner.RunCmd(exec.Command("sudo", "mv", "/usr/local/bin/helm", "/usr/bin/helm"))
-		if err != nil {
-			return fmt.Errorf("installing helm: %w", err)
-		}
+// HelmVersion returns the installed helm version string (e.g. "v3.12.0") or ""
+// if helm is not installed at /usr/bin/helm.
+func HelmVersion(runner command.Runner) string {
+	rr, err := runner.RunCmd(exec.Command("/usr/bin/helm", "version", "--template", "{{.Version}}"))
+	if err != nil {
+		return ""
 	}
-	return err
+	return strings.TrimSpace(rr.Stdout.String())
+}
+
+// InstallHelm installs Helm inside the guest VM/container at /usr/bin/helm.
+// Use /usr/bin/helm which is always in the PATH, unlike /usr/local/bin.
+func InstallHelm(runner command.Runner, opts HelmOptions) error {
+	script := `
+		curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+		chmod 700 get_helm.sh
+		HELM_INSTALL_DIR=/usr/bin ./get_helm.sh`
+
+	if opts.Version != "" {
+		if !semver.IsValid(opts.Version) {
+			return fmt.Errorf("invalid helm version %q: must be a valid semver (e.g. v3.12.0)", opts.Version)
+		}
+		klog.Infof("Installing helm version %s", opts.Version)
+		script += " --version " + opts.Version
+	} else {
+		klog.Info("Installing helm latest version")
+	}
+
+	_, err := runner.RunCmd(exec.Command("sudo", "bash", "-o", "errexit", "-c", script))
+	if err != nil {
+		return fmt.Errorf("installing helm: %w", err)
+	}
+	return nil
 }
