@@ -124,6 +124,9 @@ func validateHAStartCluster(ctx context.Context, t *testing.T, profile string) {
 
 // validateHADeployApp deploys an app to ha (multi-control plane) cluster and ensures all nodes can serve traffic.
 func validateHADeployApp(ctx context.Context, t *testing.T, profile string) {
+	if DockerDriver() {
+		t.Skip("skipping: flaky on Docker driver: https://github.com/kubernetes/minikube/issues/23140")
+	}
 	// Create a deployment for app
 	_, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "apply", "-f", "./testdata/ha/ha-pod-dns-test.yaml"))
 	if err != nil {
@@ -195,6 +198,9 @@ func validateHADeployApp(ctx context.Context, t *testing.T, profile string) {
 
 // validateHAPingHostFromPods uses app previously deployed by validateDeployAppToHACluster to verify its pods, located on different nodes, can resolve "host.minikube.internal".
 func validateHAPingHostFromPods(ctx context.Context, t *testing.T, profile string) {
+	if DockerDriver() {
+		t.Skip("skipping: flaky on Docker driver: https://github.com/kubernetes/minikube/issues/23144")
+	}
 	// get Pod names
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))
 	if err != nil {

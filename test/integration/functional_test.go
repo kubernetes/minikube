@@ -757,6 +757,9 @@ func validateAuditAfterStart(_ context.Context, t *testing.T, profile string) {
 // validateSoftStart validates that after minikube already started, a `minikube start` should not change the configs.
 func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23153")
+	}
 
 	start := time.Now()
 	// docs: The test `validateStartWithProxy` should have start minikube, make sure the configured node port is `8441`
@@ -867,6 +870,9 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 // validateExtraConfig verifies minikube with --extra-config works as expected
 func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23153")
+	}
 
 	start := time.Now()
 	// docs: The tests before this already created a profile
@@ -916,6 +922,9 @@ func imageID(image string) string {
 // NOTE: It expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23142")
+	}
 
 	// The ComponentStatus API is deprecated in v1.19, so do the next closest thing.
 	found := map[string]bool{
@@ -1896,6 +1905,7 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
+	t.Skip("skipping: flaky, ECR rate limits cause ImagePullBackOff: https://github.com/kubernetes/minikube/issues/23264")
 	defer PostMortemLogs(t, profile)
 
 	// docs: Run `kubectl replace --force -f testdata/mysql/yaml`
