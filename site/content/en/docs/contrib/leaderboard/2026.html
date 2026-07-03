@@ -87,7 +87,7 @@ weight: -99992026
 </head>
 <body>
     <h1>kubernetes/minikube</h1>
-    <div class="subtitle">2026-01-01 &mdash; 2026-03-31</div>
+    <div class="subtitle">2026-01-01 &mdash; 2026-06-30</div>
 
     
         <h2>Reviewers</h2>
@@ -103,13 +103,14 @@ weight: -99992026
                 function drawreviewCounts() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: '# of Merged PRs reviewed', type: 'number'}, { role: 'annotation' }],
-                    ["Copilot", 28, "28"],
-                    ["medyagh", 18, "18"],
-                    ["nirs", 5, "5"],
+                    ["Copilot", 36, "36"],
+                    ["nirs", 25, "25"],
+                    ["medyagh", 21, "21"],
                     ["mloskot", 3, "3"],
-                    ["wt", 1, "1"],
-                    ["OdedViner", 1, "1"],
                     ["afbjorklund", 1, "1"],
+                    ["OdedViner", 1, "1"],
+                    ["obnoxxx", 1, "1"],
+                    ["wt", 1, "1"],
                     
                     ]);
 
@@ -142,12 +143,13 @@ weight: -99992026
                 function drawreviewWords() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: '# of words written in merged PRs', type: 'number'}, { role: 'annotation' }],
-                    ["Copilot", 5106, "5106"],
+                    ["Copilot", 6415, "6415"],
+                    ["nirs", 5916, "5916"],
                     ["wt", 554, "554"],
-                    ["nirs", 491, "491"],
-                    ["medyagh", 448, "448"],
+                    ["medyagh", 525, "525"],
                     ["mloskot", 169, "169"],
                     ["OdedViner", 149, "149"],
+                    ["obnoxxx", 11, "11"],
                     ["afbjorklund", 8, "8"],
                     
                     ]);
@@ -181,13 +183,14 @@ weight: -99992026
                 function drawreviewComments() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: '# of Review Comments in merged PRs', type: 'number'}, { role: 'annotation' }],
-                    ["Copilot", 92, "92"],
-                    ["medyagh", 16, "16"],
-                    ["nirs", 12, "12"],
+                    ["Copilot", 123, "123"],
+                    ["nirs", 97, "97"],
+                    ["medyagh", 18, "18"],
                     ["mloskot", 4, "4"],
+                    ["obnoxxx", 1, "1"],
+                    ["afbjorklund", 0, "0"],
                     ["wt", 0, "0"],
                     ["OdedViner", 0, "0"],
-                    ["afbjorklund", 0, "0"],
                     
                     ]);
 
@@ -224,21 +227,21 @@ weight: -99992026
                 function drawprCounts() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: '# of Pull Requests Merged', type: 'number'}, { role: 'annotation' }],
-                    ["medyagh", 47, "47"],
-                    ["afbjorklund", 14, "14"],
+                    ["medyagh", 67, "67"],
+                    ["nirs", 16, "16"],
+                    ["afbjorklund", 15, "15"],
                     ["bobsira", 11, "11"],
                     ["mloskot", 4, "4"],
-                    ["ComradeProgrammer", 2, "2"],
+                    ["carterpewpew", 3, "3"],
                     ["jeffmaury", 2, "2"],
-                    ["Abhigyan-Shekhar", 1, "1"],
-                    ["self-sasi", 1, "1"],
-                    ["thc1006", 1, "1"],
+                    ["baohuy1303", 2, "2"],
+                    ["Wilson-Duncan", 2, "2"],
+                    ["ComradeProgrammer", 2, "2"],
+                    ["thc1006", 2, "2"],
+                    ["rafaelmfried", 2, "2"],
                     ["sumeshpremraj", 1, "1"],
                     ["developowl", 1, "1"],
-                    ["XiaWuSharve", 1, "1"],
-                    ["rachelrice", 1, "1"],
-                    ["nirs", 1, "1"],
-                    ["nixpanic", 1, "1"],
+                    ["toddliebenschutz-jones", 1, "1"],
                     
                     ]);
 
@@ -271,21 +274,21 @@ weight: -99992026
                 function drawprDeltas() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: 'Lines of code (delta)', type: 'number'}, { role: 'annotation' }],
-                    ["afbjorklund", 16041, "16041"],
-                    ["medyagh", 7318, "7318"],
+                    ["afbjorklund", 16045, "16045"],
+                    ["medyagh", 13380, "13380"],
+                    ["nirs", 2535, "2535"],
+                    ["noamcohen97", 545, "545"],
                     ["ComradeProgrammer", 527, "527"],
-                    ["nirs", 478, "478"],
                     ["developowl", 449, "449"],
+                    ["baohuy1303", 325, "325"],
+                    ["monkey-mas", 163, "163"],
                     ["bobsira", 152, "152"],
                     ["adilwiser", 150, "150"],
-                    ["thc1006", 19, "19"],
-                    ["mloskot", 18, "18"],
-                    ["nixpanic", 16, "16"],
-                    ["Abhigyan-Shekhar", 8, "8"],
-                    ["Nepomuk5665", 4, "4"],
-                    ["sumeshpremraj", 2, "2"],
-                    ["self-sasi", 2, "2"],
-                    ["XiaWuSharve", 2, "2"],
+                    ["daixihegu", 122, "122"],
+                    ["rafaelmfried", 88, "88"],
+                    ["carterpewpew", 63, "63"],
+                    ["caltechustc", 54, "54"],
+                    ["tanikush", 34, "34"],
                     
                     ]);
 
@@ -318,21 +321,21 @@ weight: -99992026
                 function drawprSize() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: 'Average PR size (added+changed)', type: 'number'}, { role: 'annotation' }],
-                    ["afbjorklund", 1109, "1109"],
+                    ["afbjorklund", 1035, "1035"],
+                    ["noamcohen97", 530, "530"],
                     ["developowl", 440, "440"],
-                    ["nirs", 416, "416"],
                     ["ComradeProgrammer", 212, "212"],
+                    ["baohuy1303", 161, "161"],
                     ["adilwiser", 144, "144"],
-                    ["medyagh", 106, "106"],
-                    ["thc1006", 19, "19"],
-                    ["nixpanic", 14, "14"],
-                    ["bobsira", 10, "10"],
-                    ["Abhigyan-Shekhar", 6, "6"],
-                    ["Nepomuk5665", 4, "4"],
-                    ["mloskot", 3, "3"],
-                    ["rachelrice", 1, "1"],
-                    ["sumeshpremraj", 1, "1"],
-                    ["self-sasi", 1, "1"],
+                    ["monkey-mas", 135, "135"],
+                    ["medyagh", 131, "131"],
+                    ["nirs", 114, "114"],
+                    ["abedegno", 34, "34"],
+                    ["daixihegu", 34, "34"],
+                    ["tanikush", 32, "32"],
+                    ["rafaelmfried", 28, "28"],
+                    ["caltechustc", 27, "27"],
+                    ["carterpewpew", 18, "18"],
                     
                     ]);
 
@@ -369,21 +372,21 @@ weight: -99992026
                 function drawcomments() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: '# of comments', type: 'number'}, { role: 'annotation' }],
-                    ["afbjorklund", 31, "31"],
-                    ["nirs", 13, "13"],
-                    ["bhavyaBeliever", 11, "11"],
-                    ["medyagh", 7, "7"],
+                    ["nirs", 65, "65"],
+                    ["afbjorklund", 54, "54"],
+                    ["bhavyaBeliever", 12, "12"],
+                    ["medyagh", 8, "8"],
+                    ["rafaelmfried", 7, "7"],
                     ["mloskot", 5, "5"],
+                    ["Victorthedev", 5, "5"],
                     ["twdamhore", 4, "4"],
                     ["sleonov", 4, "4"],
                     ["divysinghvi", 4, "4"],
                     ["self-sasi", 3, "3"],
-                    ["tmoschou", 3, "3"],
                     ["saschpe", 3, "3"],
-                    ["chhavx1618", 2, "2"],
-                    ["SaurabhD18", 2, "2"],
-                    ["Test-Script", 2, "2"],
-                    ["fruitbox12", 2, "2"],
+                    ["sh011", 3, "3"],
+                    ["tmoschou", 3, "3"],
+                    ["SzymonIwaniuk", 3, "3"],
                     
                     ]);
 
@@ -416,21 +419,21 @@ weight: -99992026
                 function drawcommentWords() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: '# of words (excludes authored)', type: 'number'}, { role: 'annotation' }],
-                    ["afbjorklund", 1688, "1688"],
-                    ["nirs", 1497, "1497"],
+                    ["nirs", 7659, "7659"],
+                    ["afbjorklund", 3427, "3427"],
+                    ["rafaelmfried", 1504, "1504"],
                     ["trinitronx", 1126, "1126"],
+                    ["OlegGitH", 760, "760"],
                     ["mloskot", 703, "703"],
-                    ["bhavyaBeliever", 559, "559"],
+                    ["bhavyaBeliever", 613, "613"],
+                    ["Victorthedev", 381, "381"],
                     ["divysinghvi", 331, "331"],
+                    ["sh011", 314, "314"],
                     ["saschpe", 250, "250"],
                     ["wt", 214, "214"],
                     ["scotarkoselabs", 214, "214"],
                     ["fruitbox12", 211, "211"],
                     ["sleonov", 207, "207"],
-                    ["tmoschou", 205, "205"],
-                    ["medyagh", 197, "197"],
-                    ["JamesArk", 134, "134"],
-                    ["zombiecalypse", 119, "119"],
                     
                     ]);
 
@@ -463,7 +466,9 @@ weight: -99992026
                 function drawissueCloser() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: '# of issues closed (excludes authored)', type: 'number'}, { role: 'annotation' }],
-                    ["medyagh", 11, "11"],
+                    ["medyagh", 17, "17"],
+                    ["nirs", 10, "10"],
+                    ["kubernetes-prow[bot]", 9, "9"],
                     ["afbjorklund", 1, "1"],
                     
                     ]);
