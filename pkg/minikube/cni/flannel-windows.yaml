@@ -1,0 +1,169 @@
+# Copyright 2026 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Windows flannel DaemonSet for minikube mixed-OS clusters.
+# Uses a HostProcess container so no Windows base-image OS-version matching
+# is required — the pod runs directly on the host.
+#
+# Image source: https://hub.docker.com/r/syck0/flannel/tags
+# syck0/flannel:v0.21.5-hostprocess is the last version confirmed to ship
+# flannel.exe CNI binaries compatible with Windows Server 2025. Newer syck0
+# tags (v0.26.x) and the official ghcr.io/flannel-io/flannel image both
+# produce "not compatible with the version of Windows" errors on WS2025.
+# Bump only after verifying binary compatibility with the WS2025 VHD.
+#
+# Mounts the Linux kube-flannel-cfg ConfigMap (created by the Linux flannel
+# CNI apply) so that Windows flannel uses the same network configuration.
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kube-flannel-windows-cfg
+  namespace: kube-flannel
+  labels:
+    tier: node
+    app: flannel
+data:
+  cni-conf-containerd.json: |
+    {
+      "name": "flannel.4096",
+      "cniVersion": "0.3.0",
+      "type": "flannel",
+      "capabilities": {
+        "portMappings": true,
+        "dns": true
+      },
+      "delegate": {
+        "type": "sdnoverlay",
+        "AdditionalArgs": [
+          {
+            "Name": "EndpointPolicy",
+            "Value": {
+              "Type": "OutBoundNAT",
+              "Settings" : {
+                "Exceptions": []
+              }
+            }
+          },
+          {
+            "Name": "EndpointPolicy",
+            "Value": {
+              "Type": "SDNROUTE",
+              "Settings": {
+                "DestinationPrefix": "",
+                "NeedEncap": true
+              }
+            }
+          },
+          {
+            "Name":"EndpointPolicy",
+            "Value":{
+              "Type":"ProviderAddress",
+                "Settings":{
+                    "ProviderAddress":""
+              }
+            }
+          }
+        ]
+      }
+    }
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-flannel-ds-windows-amd64
+  labels:
+    tier: node
+    app: flannel
+  namespace: kube-flannel
+spec:
+  selector:
+    matchLabels:
+      app: flannel
+  template:
+    metadata:
+      labels:
+        tier: node
+        app: flannel
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - windows
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+      securityContext:
+        windowsOptions:
+          hostProcess: true
+          runAsUserName: "NT AUTHORITY\\system"
+      hostNetwork: true
+      serviceAccountName: flannel
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+        # Mark the pod as a critical add-on for rescheduling.
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+      containers:
+      - name: kube-flannel
+        image: syck0/flannel:v0.21.5-hostprocess
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: flannel-cfg
+          mountPath: /mounts/kube-flannel/
+        - name: flannel-windows-cfg
+          mountPath: /mounts/kube-flannel-windows/
+        env:
+        - name: CNI_BIN_PATH
+          value: C:\\opt\\cni\\bin
+        - name: CNI_CONFIG_PATH
+          value: C:\\etc\\cni\\net.d
+        - name: SERVICE_SUBNET
+          value: 10.96.0.0/12
+          # As of now with the currently used flannel version (last checked with v0.21.5) we need to overwrite KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT
+          # in order to be able to reach the kubernetes api server. Under windows it's currently not possible to reach it over the service created by kubernetes
+          # For more context and details check the corresponding PR: https://github.com/kubernetes-sigs/sig-windows-tools/pull/314
+          # Especially the comments in this review: https://github.com/kubernetes-sigs/sig-windows-tools/pull/314#discussion_r1238815189
+          # There is also a follow up issue on the flannel side: https://github.com/flannel-io/flannel/issues/1772
+          # Once this issue is solved we should be able to remove the custom host and port to the kubernetes api server
+        - name: KUBERNETES_SERVICE_HOST
+          value: control-plane.minikube.internal # KUBERNETES_SERVICE_HOST_VALUE
+        - name: KUBERNETES_SERVICE_PORT
+          value: "8443" # replace with your "KUBERNETES_SERVICE_PORT_VALUE"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      volumes:
+      - name: flannel-cfg
+        configMap:
+          name: kube-flannel-cfg
+      - name: flannel-windows-cfg
+        configMap:
+          name: kube-flannel-windows-cfg

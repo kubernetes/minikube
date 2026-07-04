@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: linux-test
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: linux-test
+  template:
+    metadata:
+      labels:
+        app: linux-test
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      containers:
+        - name: busybox
+          image: busybox:stable
+          command: ["sh", "-c", "while true; do sleep 3600; done"]
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "10Mi"
+            limits:
+              cpu: "50m"
+              memory: "50Mi"

@@ -60,6 +60,7 @@ type Host struct {
 	HostOptions   *Options
 	Name          string
 	RawDriver     []byte `json:"-"`
+	Guest         Guest
 }
 
 type Options struct {
@@ -70,6 +71,15 @@ type Options struct {
 	SwarmOptions  *swarm.Options
 	AuthOptions   *auth.Options
 }
+
+type Guest struct {
+	Name    string
+	Version string
+	URL     string
+}
+
+// IsWindows reports whether the guest is a Windows VM.
+func (g Guest) IsWindows() bool { return g.Name == "windows" }
 
 type Metadata struct {
 	ConfigVersion int
