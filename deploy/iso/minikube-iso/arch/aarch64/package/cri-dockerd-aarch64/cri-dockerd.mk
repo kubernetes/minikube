@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CRI_DOCKERD_AARCH64_VERSION = 0.4.3
+CRI_DOCKERD_AARCH64_VERSION = 0.4.4
 CRI_DOCKERD_AARCH64_SITE = https://github.com/Mirantis/cri-dockerd/releases/download/v$(CRI_DOCKERD_AARCH64_VERSION)
 CRI_DOCKERD_AARCH64_SOURCE = cri-dockerd-$(CRI_DOCKERD_AARCH64_VERSION).arm64.tgz
 CRI_DOCKERD_AARCH64_STRIP_COMPONENTS = 1

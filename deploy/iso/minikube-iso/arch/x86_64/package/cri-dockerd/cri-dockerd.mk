@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CRI_DOCKERD_VERSION = 0.4.3
+CRI_DOCKERD_VERSION = 0.4.4
 CRI_DOCKERD_SITE = https://github.com/Mirantis/cri-dockerd/releases/download/v$(CRI_DOCKERD_VERSION)
 CRI_DOCKERD_SOURCE = cri-dockerd-$(CRI_DOCKERD_VERSION).amd64.tgz
 CRI_DOCKERD_STRIP_COMPONENTS = 1
