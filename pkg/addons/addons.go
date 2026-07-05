@@ -452,15 +452,16 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 	}
 
 	if addon.HelmChart != nil {
-		err := helmInstallBinary(addon, runner)
-		if err != nil {
-			return err
+		if HelmVersion(runner) == "" {
+			if err := InstallHelm(runner, HelmOptions{}); err != nil {
+				return err
+			}
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 		cmd := helmUninstallOrInstall(ctx, addon.HelmChart, enable)
-		_, err = runner.RunCmd(cmd)
+		_, err := runner.RunCmd(cmd)
 		return err
 	}
 
