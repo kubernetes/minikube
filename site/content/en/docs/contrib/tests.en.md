@@ -531,6 +531,10 @@ verifies a soft restart on a ha (multi-control plane) cluster works.
 #### validateHAAddSecondaryNode
 uses the minikube node add command to add a secondary control-plane node to an existing ha (multi-control plane) cluster.
 
+## TestHelmInstall
+integration test verifies helm installation, upgrade, and no-change behavior inside a live guest VM.
+We test this flow because installing the latest helm allows self-healing and updating the cluster when Helm is missing, outdated, or broken.
+
 ## TestImageBuild
 makes sure the 'minikube image build' command works fine
 
