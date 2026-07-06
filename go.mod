@@ -42,7 +42,7 @@ require (
 	github.com/moby/patternmatcher v0.6.0
 	github.com/moby/term v0.5.2
 	github.com/olekukonko/tablewriter v1.1.4
-	github.com/opencontainers/cgroups v0.0.6
+	github.com/opencontainers/cgroups v0.0.7
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/otiai10/copy v1.14.1
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
