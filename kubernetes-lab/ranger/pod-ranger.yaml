@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-ranger
+spec:
+  containers:
+    - name: ranger
+      image: ubuntu-ranger:1.0
+      imagePullPolicy: Never
+      command:
+        - sleep
+        - infinity

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: pod-btop
+
+spec:
+  containers:
+  - name: btop
+    image: ubuntu-btop:1.0
+    imagePullPolicy: Never
+    command:
+      - sleep
+      - infinity

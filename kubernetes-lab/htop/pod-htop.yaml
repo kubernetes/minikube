@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: pod-htop
+
+spec:
+  containers:
+  - name: htop
+    image: ubuntu-htop:1.0
+    imagePullPolicy: Never
+    command:
+      - sleep
+      - infinity
