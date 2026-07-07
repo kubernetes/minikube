@@ -64,6 +64,8 @@ unprivileged users.
 minikube start --driver vfkit --network vmnet-shared
 ```
 
+{{% vmnet-pinning driver="vfkit" network="vmnet-shared" %}}
+
 {{% /tab %}}
 {{% tab builtin %}}
 ### Usage
