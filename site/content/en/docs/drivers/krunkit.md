@@ -77,6 +77,27 @@ users or other groups.
 minikube start --driver krunkit
 ```
 
+### Pinning the vmnet network
+
+By default the vmnet framework allocates a network automatically. To pin a
+specific subnet, set all three of `--vmnet-start-address`,
+`--vmnet-end-address`, and `--vmnet-subnet-mask` together (they mirror
+vmnet-helper's own options). The start address is the gateway and the first
+DHCP address; the end address is the last DHCP address; addresses in the subnet
+outside `[start+1, end]` are available for static assignment. All three must be
+[RFC 1918](https://tools.ietf.org/html/rfc1918) private IPv4 addresses in the
+same subnet:
+
+```shell
+minikube start --driver krunkit \
+  --vmnet-start-address 192.168.200.1 \
+  --vmnet-end-address 192.168.200.127 \
+  --vmnet-subnet-mask 255.255.255.0
+```
+
+The same values can be set with `minikube config set vmnet-start-address`,
+`vmnet-end-address`, and `vmnet-subnet-mask`.
+
 ### Vmnet offloading
 
 The `--vmnet-offloading` flag enables vmnet checksum and TSO offloading,

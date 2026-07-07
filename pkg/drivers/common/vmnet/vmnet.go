@@ -68,6 +68,14 @@ type Helper struct {
 	// Offloading is required for krunkit, does not work with vfkit.
 	Offloading bool
 
+	// StartAddress/EndAddress/SubnetMask pin the vmnet network by passing
+	// --start-address/--end-address/--subnet-mask to vmnet-helper. Empty means
+	// vmnet-helper picks the network (current behavior). Only used by the vfkit
+	// (vmnet-shared) and krunkit drivers.
+	StartAddress string
+	EndAddress   string
+	SubnetMask   string
+
 	// Set when vmnet interface is started.
 	macAddress string
 
@@ -163,10 +171,24 @@ func ValidateHelper(options *run.CommandOptions) error {
 	return nil
 }
 
+// Validate the pinned network options together: the all-or-none gate and the
+// cross-field same-subnet / network / broadcast / ordering checks. The vfkit
+// and krunkit drivers call it from Start(), so every path that starts a VM —
+// today's commands and any future one — validates at the point of use, and no
+// command needs its own vmnet validation call. Per-value checks happen earlier,
+// at flag parsing and `config set`.
+func (h *Helper) Validate() error {
+	return validateSemantics(h.StartAddress, h.EndAddress, h.SubnetMask)
+}
+
 // Start the vmnet-helper child process, creating the vmnet interface for the
 // machine. The helper will create a unix datagram socket at the specified path.
 // The client (e.g. vfkit) will connect to this socket.
 func (h *Helper) Start(socketPath string) error {
+	if err := h.Validate(); err != nil {
+		return err
+	}
+
 	helper, err := getHelperInfo()
 	if err != nil {
 		return err
@@ -189,6 +211,13 @@ func (h *Helper) Start(socketPath string) error {
 
 	if h.InterfaceID != "" {
 		args = append(args, "--interface-id", h.InterfaceID)
+	}
+
+	// Pin the vmnet network when configured. Guarded on StartAddress so an
+	// all-empty config produces byte-identical argv to today (vmnet framework
+	// allocates the network). The three are validated together before start.
+	if h.StartAddress != "" {
+		args = append(args, "--start-address", h.StartAddress, "--end-address", h.EndAddress, "--subnet-mask", h.SubnetMask)
 	}
 
 	if h.Offloading {
