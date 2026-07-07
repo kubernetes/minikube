@@ -124,10 +124,10 @@ func TestISOImage(t *testing.T) {
 		btfFile := "/sys/kernel/btf/vmlinux"
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("test -f %s && echo 'OK' || echo 'NOT FOUND'", btfFile)))
 		if err != nil {
-			t.Errorf("failed to verify existence of %q file: args %q: %v", btfFile, rr.Command(), err)
+			t.Fatalf("failed to verify existence of %q file: args %q: %v", btfFile, rr.Command(), err)
 		}
 
-		if !strings.Contains(rr.Stdout.String(), "OK") {
+		if strings.TrimSpace(rr.Stdout.String()) != "OK" {
 			t.Errorf("expected file %q to exist, but it does not. BTF types are required for CO-RE eBPF programs; set CONFIG_DEBUG_INFO_BTF in kernel configuration.", btfFile)
 		}
 	})
