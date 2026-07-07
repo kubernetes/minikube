@@ -22,6 +22,9 @@ Configurable fields:
  * cpus
  * disk-size
  * host-only-cidr
+ * vmnet-start-address
+ * vmnet-end-address
+ * vmnet-subnet-mask
  * memory
  * log_dir
  * kubernetes-version
