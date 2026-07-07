@@ -100,6 +100,30 @@ func TestValidCIDR(t *testing.T) {
 	runValidations(t, tests, "cidr", IsValidCIDR)
 }
 
+func TestIsValidVmnetAddress(t *testing.T) {
+	// Smoke test only: the wrapper forwards to vmnet.IsValidVmnetAddress, whose
+	// full valid/invalid table lives in the vmnet package. One valid + one
+	// invalid case confirms the forwarding is wired up.
+	var tests = []validationTest{
+		{value: "192.168.1.1", shouldErr: false}, // RFC 1918
+		{value: "8.8.8.8", shouldErr: true},      // public, not RFC 1918
+	}
+
+	runValidations(t, tests, "vmnet-start-address", IsValidVmnetAddress)
+}
+
+func TestIsValidVmnetSubnetMask(t *testing.T) {
+	// Smoke test only: the wrapper forwards to vmnet.IsValidVmnetSubnetMask,
+	// whose full valid/invalid table lives in the vmnet package. One valid +
+	// one invalid case confirms the forwarding is wired up.
+	var tests = []validationTest{
+		{value: "255.255.255.0", shouldErr: false}, // valid /24
+		{value: "255.255.255.1", shouldErr: true},  // non-contiguous
+	}
+
+	runValidations(t, tests, "vmnet-subnet-mask", IsValidVmnetSubnetMask)
+}
+
 func TestValidRuntime(t *testing.T) {
 	var tests = []validationTest{
 		{

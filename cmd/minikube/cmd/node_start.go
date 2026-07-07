@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
+	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -46,6 +47,14 @@ var nodeStartCmd = &cobra.Command{
 
 		api, cc := mustload.Partial(ClusterFlagValue(), options)
 		name := args[0]
+
+		// Validate vmnet options right after loading the config (INV-C): any value
+		// handed to the pkg/minikube layer must already be valid. A persisted partial
+		// config (an interrupted `config set` or a hand-edited config) is caught here
+		// before it reaches node.Provision->configure() (R7).
+		if err := vmnet.ValidateOptions(cc.VmnetStartAddress, cc.VmnetEndAddress, cc.VmnetSubnetMask); err != nil {
+			exit.Message(reason.Usage, "invalid vmnet options: {{.err}}", out.V{"err": err})
+		}
 
 		n, _, err := node.Retrieve(*cc, name)
 		if err != nil {

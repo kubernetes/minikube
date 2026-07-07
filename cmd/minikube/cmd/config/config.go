@@ -91,6 +91,21 @@ var settings = []Setting{
 		validations: []setFn{IsValidCIDR},
 	},
 	{
+		name:        "vmnet-start-address",
+		set:         SetString,
+		validations: []setFn{IsValidVmnetAddress},
+	},
+	{
+		name:        "vmnet-end-address",
+		set:         SetString,
+		validations: []setFn{IsValidVmnetAddress},
+	},
+	{
+		name:        "vmnet-subnet-mask",
+		set:         SetString,
+		validations: []setFn{IsValidVmnetSubnetMask},
+	},
+	{
 		name:        "memory",
 		set:         SetString,
 		validations: []setFn{IsValidMemory},

@@ -68,6 +68,14 @@ type Helper struct {
 	// Offloading is required for krunkit, does not work with vfkit.
 	Offloading bool
 
+	// StartAddress/EndAddress/SubnetMask pin the vmnet network by passing
+	// --start-address/--end-address/--subnet-mask to vmnet-helper. Empty means
+	// vmnet-helper picks the network (current behavior). Only used by the vfkit
+	// (vmnet-shared) and krunkit drivers.
+	StartAddress string
+	EndAddress   string
+	SubnetMask   string
+
 	// Set when vmnet interface is started.
 	macAddress string
 
@@ -189,6 +197,13 @@ func (h *Helper) Start(socketPath string) error {
 
 	if h.InterfaceID != "" {
 		args = append(args, "--interface-id", h.InterfaceID)
+	}
+
+	// Pin the vmnet network when configured. Guarded on StartAddress so an
+	// all-empty config produces byte-identical argv to today (vmnet framework
+	// allocates the network). The three are validated together before start.
+	if h.StartAddress != "" {
+		args = append(args, "--start-address", h.StartAddress, "--end-address", h.EndAddress, "--subnet-mask", h.SubnetMask)
 	}
 
 	if h.Offloading {
