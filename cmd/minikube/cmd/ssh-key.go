@@ -34,7 +34,7 @@ import (
 var sshKeyCmd = &cobra.Command{
 	Use:   "ssh-key",
 	Short: "Retrieve the ssh identity key path of the specified node",
-	Long:  "Retrieve the ssh identity key path of the specified node, and writes it to STDOUT.",
+	Long:  "Retrieve the ssh identity key path of the specified node, and writes it to STDOUT. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/ssh-key",
 	Run: func(_ *cobra.Command, _ []string) {
 		options := flags.CommandOptions()
 		_, cc := mustload.Partial(ClusterFlagValue(), options)

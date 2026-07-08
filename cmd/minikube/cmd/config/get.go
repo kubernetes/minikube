@@ -28,7 +28,7 @@ import (
 var configGetCmd = &cobra.Command{
 	Use:   "get PROPERTY_NAME",
 	Short: "Gets the value of PROPERTY_NAME from the minikube config file",
-	Long:  "Returns the value of PROPERTY_NAME from the minikube config file.  Can be overwritten at runtime by flags or environmental variables.",
+	Long:  "Returns the value of PROPERTY_NAME from the minikube config file. Can be overwritten at runtime by flags or environmental variables. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/config/#minikube-config-get",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			cmd.SilenceErrors = true

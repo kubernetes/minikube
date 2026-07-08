@@ -37,7 +37,7 @@ var addonImagesOutput string
 var addonsImagesCmd = &cobra.Command{
 	Use:     "images ADDON_NAME",
 	Short:   "List image names the addon w/ADDON_NAME used. For a list of available addons use: minikube addons list",
-	Long:    "List image names the addon w/ADDON_NAME used. For a list of available addons use: minikube addons list",
+	Long:    "List image names the addon w/ADDON_NAME used. For a list of available addons use: minikube addons list. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/addons/#minikube-addons-images",
 	Example: "minikube addons images ingress",
 	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 1 {

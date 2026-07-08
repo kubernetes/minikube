@@ -40,7 +40,7 @@ const allFlag = "all"
 var cacheCmd = &cobra.Command{
 	Use:   "cache",
 	Short: "Manage cache for images",
-	Long:  "Add an image into minikube as a local cache, or delete, reload the cached images",
+	Long:  "Add an image into minikube as a local cache, or delete, reload the cached images. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/cache",
 }
 
 // addCacheCmd represents the cache add command

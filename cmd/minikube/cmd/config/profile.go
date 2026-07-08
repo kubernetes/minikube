@@ -33,7 +33,7 @@ import (
 var ProfileCmd = &cobra.Command{
 	Use:   "profile [MINIKUBE_PROFILE_NAME].  You can return to the default minikube profile by running `minikube profile default`",
 	Short: "Get or list the current profiles (clusters)",
-	Long:  "profile sets the current minikube profile, or gets the current profile if no arguments are provided.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`",
+	Long:  "profile sets the current minikube profile, or gets the current profile if no arguments are provided. This is used to run and manage multiple minikube instances.  Return to the default minikube profile by running `minikube profile default`. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/profile",
 	Run: func(_ *cobra.Command, args []string) {
 		if len(args) == 0 {
 			profile := ClusterFlagValue()

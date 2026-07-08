@@ -26,7 +26,7 @@ import (
 var AddonsCmd = &cobra.Command{
 	Use:   "addons SUBCOMMAND [flags]",
 	Short: "Enable or disable a minikube addon",
-	Long:  `addons modifies minikube addons files using subcommands like "minikube addons enable dashboard"`,
+	Long:  `addons modifies minikube addons files using subcommands like "minikube addons enable dashboard". For a detailed example see https://minikube.sigs.k8s.io/docs/commands/addons`,
 	Run: func(cmd *cobra.Command, _ []string) {
 		if err := cmd.Help(); err != nil {
 			klog.Errorf("help: %v", err)

@@ -119,7 +119,7 @@ func init() {
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Starts a local Kubernetes cluster",
-	Long:  "Starts a local Kubernetes cluster",
+	Long:  "Starts a local Kubernetes cluster. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/start",
 	Run:   runStart,
 }
 

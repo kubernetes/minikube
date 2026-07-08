@@ -39,7 +39,7 @@ type CacheListTemplate struct {
 var listCacheCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all available images from the local cache.",
-	Long:  "List all available images from the local cache.",
+	Long:  "List all available images from the local cache. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/cache/#minikube-cache-list",
 	Run: func(_ *cobra.Command, _ []string) {
 		images, err := cmdConfig.ListConfigMap(cacheImageConfigKey)
 		if err != nil {

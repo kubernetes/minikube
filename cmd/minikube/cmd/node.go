@@ -26,7 +26,7 @@ import (
 var nodeCmd = &cobra.Command{
 	Use:   "node",
 	Short: "Add, remove, or list additional nodes",
-	Long:  "Operations on nodes",
+	Long:  "Operations on nodes. For a detailed example see https://minikube.sigs.k8s.io/docs/commands/node",
 	Run: func(_ *cobra.Command, _ []string) {
 		exit.Message(reason.Usage, "Usage: minikube node [add|start|stop|delete|list]")
 	},
