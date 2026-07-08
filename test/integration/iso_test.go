@@ -124,10 +124,10 @@ func TestISOImage(t *testing.T) {
 		btfFile := "/sys/kernel/btf/vmlinux"
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("test -f %s && echo 'OK' || echo 'NOT FOUND'", btfFile)))
 		if err != nil {
-			t.Errorf("failed to verify existence of %q file: args %q: %v", btfFile, rr.Command(), err)
+			t.Fatalf("failed to verify existence of %q file: args %q: %v", btfFile, rr.Command(), err)
 		}
 
-		if !strings.Contains(rr.Stdout.String(), "OK") {
+		if strings.TrimSpace(rr.Stdout.String()) != "OK" {
 			t.Errorf("expected file %q to exist, but it does not. BTF types are required for CO-RE eBPF programs; set CONFIG_DEBUG_INFO_BTF in kernel configuration.", btfFile)
 		}
 	})
@@ -137,6 +137,18 @@ func TestISOImage(t *testing.T) {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("modinfo %s", kmod)))
 		if err != nil {
 			t.Errorf("failed to get info for kernel module %s: args %q: %v", kmod, rr.Command(), err)
+		}
+	})
+
+	t.Run("procIOAccounting", func(t *testing.T) {
+		// Ensure per-task IO accounting is available (https://github.com/kubernetes/minikube/issues/22737)
+		ioFile := "/proc/1/io"
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("test -f %s && echo 'OK' || echo 'NOT FOUND'", ioFile)))
+		if err != nil {
+			t.Fatalf("failed to verify existence of %q file: args %q: %v", ioFile, rr.Command(), err)
+		}
+		if strings.TrimSpace(rr.Stdout.String()) != "OK" {
+			t.Errorf("expected file %q to exist, but it does not. Per-task IO accounting requires CONFIG_TASK_IO_ACCOUNTING (with CONFIG_TASK_XACCT and CONFIG_TASKSTATS) in kernel configuration.", ioFile)
 		}
 	})
 }
