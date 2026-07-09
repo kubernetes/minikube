@@ -459,7 +459,7 @@ func (d *Driver) Start() error {
 		// connections can fail to reach the guest on Windows + WHPX.
 		netdevArg := fmt.Sprintf("user,id=net0,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName())
 		log.Infof("QEMU netdev: %s", netdevArg)
-		log.Infof("To test SSH manually while VM is running: ssh -p %d -i %s docker@localhost", d.SSHPort, d.sshKeyPath())
+		log.Infof("SSH is available on localhost:%d while the VM is running", d.SSHPort)
 		startCmd = append(startCmd,
 			"-device", "virtio-net-pci,netdev=net0",
 			"-netdev", netdevArg,
