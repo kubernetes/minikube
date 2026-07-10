@@ -45,9 +45,10 @@ func setVmwareCmd(cmd string) string {
 	)
 	for _, p := range []string{`SOFTWARE\WOW6432Node\VMware, Inc.`, `SOFTWARE\VMware, Inc.`} {
 		windowsInstallDir, err = getVmwareInstallDirWithProductRegistryKey(p)
-		if err == nil {
-			return filepath.Join(windowsInstallDir, cmd)
+		if err != nil {
+			continue
 		}
+		return filepath.Join(windowsInstallDir, cmd)
 	}
 
 	// panic in order to  allow to debug this issue more easily in the future
