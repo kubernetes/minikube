@@ -17,7 +17,6 @@ limitations under the License.
 package vmware
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -51,13 +50,8 @@ func setVmwareCmd(cmd string) string {
 		}
 	}
 
-	if err != nil {
-		return fmt.Sprintf("<%v>", err)
-	}
-
-	// maker this more easily debuggable instead of an
-	// empty string in case it is changed at any point in the future
-	return "<vmware install directory not found in registry>"
+	// panic in order to  allow to debug this issue more easily in the future
+	panic(err)
 }
 
 // productRegistryKey is the registry entrypoint for the product
