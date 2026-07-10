@@ -39,32 +39,54 @@ func SetUmask() {
 
 func setVmwareCmd(cmd string) string {
 	cmd = cmd + ".exe"
-	DefaultVMWareWSProductionRegistryKey := `SOFTWARE\WOW6432Node\VMware, Inc.`
-	DefaultVMwareCorePathKey := "Core"
-	k, err := registry.OpenKey(registry.LOCAL_MACHINE, DefaultVMWareWSProductionRegistryKey, registry.QUERY_VALUE)
-	if err != nil {
-		return ""
-	}
-	defer k.Close()
-	production, _, err := k.GetStringValue(DefaultVMwareCorePathKey)
-	if err != nil {
-		return ""
+
+	var (
+		windowsInstallDir string
+		err               error
+	)
+	for _, p := range []string{`SOFTWARE\WOW6432Node\VMware, Inc.`, `SOFTWARE\VMware, Inc.`} {
+		windowsInstallDir, err = getVmwareInstallDirWithProductRegistryKey(p)
+		if err == nil {
+			return filepath.Join(windowsInstallDir, cmd)
+		}
 	}
 
-	//Get the VMware Product Install Path
-	DefaultVMwareWSRegistryKey := fmt.Sprintf(`SOFTWARE\WOW6432Node\VMware, Inc.\%s`, production)
-	DefaultVMwareWSInstallPathKey := "InstallPath"
-
-	key, err := registry.OpenKey(registry.LOCAL_MACHINE, DefaultVMwareWSRegistryKey, registry.QUERY_VALUE)
 	if err != nil {
-		return ""
+		return fmt.Sprintf("<%v>", err)
 	}
-	defer key.Close()
 
-	value, _, err := key.GetStringValue(DefaultVMwareWSInstallPathKey)
+	// maker this more easily debuggable instead of an
+	// empty string in case it is changed at any point in the future
+	return "<vmware install directory not found in registry>"
+}
+
+// productRegistryKey is the registry entrypoint for the product
+func getVmwareInstallDirWithProductRegistryKey(productRegistryKey string) (installDir string, err error) {
+
+	rootPathKey, err := registry.OpenKey(registry.LOCAL_MACHINE, productRegistryKey, registry.QUERY_VALUE)
 	if err != nil {
-		return ""
+		return "", err
 	}
-	windowsInstallDir := value
-	return filepath.Join(windowsInstallDir, cmd)
+	defer rootPathKey.Close()
+
+	const DefaultVMwareCorePathKey = "Core"
+	production, _, err := rootPathKey.GetStringValue(DefaultVMwareCorePathKey)
+	if err != nil {
+		return "", err
+	}
+
+	DefaultVMwareWSRegistryKey := productRegistryKey + `\` + production
+	prodKey, err := registry.OpenKey(registry.LOCAL_MACHINE, DefaultVMwareWSRegistryKey, registry.QUERY_VALUE)
+	if err != nil {
+		return "", err
+	}
+	defer prodKey.Close()
+
+	const DefaultVMwareWSInstallPathKey = "InstallPath"
+	windowsInstallDir, _, err := prodKey.GetStringValue(DefaultVMwareWSInstallPathKey)
+	if err != nil {
+		return "", err
+	}
+
+	return windowsInstallDir, nil
 }
