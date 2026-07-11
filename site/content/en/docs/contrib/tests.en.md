@@ -102,12 +102,6 @@ makes sure the MINIKUBE_FORCE_SYSTEMD environment variable works just as well as
 ## TestDockerEnvContainerd
 makes sure that minikube docker-env command works when the runtime is containerd
 
-## TestHyperKitDriverInstallOrUpdate
-makes sure our docker-machine-driver-hyperkit binary can be installed properly
-
-## TestHyperkitDriverSkipUpgrade
-makes sure our docker-machine-driver-hyperkit binary can be installed properly
-
 ## TestErrorSpam
 asserts that there are no unexpected errors displayed in minikube command outputs.
 

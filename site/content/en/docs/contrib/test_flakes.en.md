@@ -19,7 +19,6 @@ description: >
 |Linux|virtualbox|docker|[VirtualBox_Linux](https://gopogh-server-tts3vkcpgq-uc.a.run.app/?env=VirtualBox_Linux)|
 |Linux|none|docker|[none_Linux](https://gopogh-server-tts3vkcpgq-uc.a.run.app/?env=none_Linux)|
 |macOS|docker|docker|[Docker_macOS](https://gopogh-server-tts3vkcpgq-uc.a.run.app/?env=Docker_macOS)|
-|macOS|hyperkit|docker|[Hyperkit_macOS](https://gopogh-server-tts3vkcpgq-uc.a.run.app/?env=Hyperkit_macOS)|
 |macOS|qemu2|docker|[QEMU_macOS](https://gopogh-server-tts3vkcpgq-uc.a.run.app/?env=QEMU_macOS)|
 |Windows|docker|docker|[Docker_Windows](https://gopogh-server-tts3vkcpgq-uc.a.run.app/?env=Docker_Windows)|
 |Windows|hyperv|docker|[Hyper-V_Windows](https://gopogh-server-tts3vkcpgq-uc.a.run.app/?env=Hyper-V_Windows)|

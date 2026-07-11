@@ -15,7 +15,6 @@ body:
       label: Anexe o arquivo de log
       description: |
         Dica: Execute `minikube logs --file=log.txt` e depois arraste e solte o arquivo `log.txt` no navegador.
-        **AVISO:** Se você estiver usando o driver HyperKit, verifique seus logs e remova quaisquer variáveis de ambiente que possam conter informações sensíveis (ex.: tokens de acesso ou segredos).
         Todas as variáveis de ambiente serão removidas automaticamente a partir da versão `1.26.0` do minikube, mas em versões anteriores será necessário removê-las manualmente.
     validations:
       required: true
@@ -41,7 +40,6 @@ body:
         - N/A
         - Docker
         - Podman
-        - HyperKit
         - Hyper-V
         - KVM2
         - VirtualBox

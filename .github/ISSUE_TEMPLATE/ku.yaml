@@ -15,7 +15,6 @@ body:
       label: Pelê logê bikeve
       description: |
         Rêwîtiya bikar: Run `minikube logs --file=log.txt` û paşê pelê `log.txt` ji browser ve drag & drop bikin.
-        **HİZAR:** Heke hûn driverê HyperKit têkiliyê dikin, ji kerema xwe logên xwe kontrol bikin û her guhertoyekî env ku dikare agahiyên sezayî (mînak: token-an an şîfre) heye, jê bidin.
         Hemû guhertoyên env ji minikube `1.26.0` ve bi awayê otomatik hate rakirin, lê di guhertoyên berê de divê bi destan jêbirin.
     validations:
       required: true
@@ -41,7 +40,6 @@ body:
         - N/A
         - Docker
         - Podman
-        - HyperKit
         - Hyper-V
         - KVM2
         - VirtualBox
