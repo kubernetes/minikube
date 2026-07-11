@@ -28,7 +28,6 @@ import (
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 // tunnel represents the basic API for a tunnel: periodically the state of the tunnel
@@ -149,13 +148,6 @@ func setupRoute(t *tunnel, h *host.Host) {
 			return
 		}
 
-		if h.DriverName == driver.HyperKit {
-			// the virtio-net interface acts up with ip tunnels :(
-			setupBridge(t)
-			if t.status.RouteError != nil {
-				return
-			}
-		}
 	}
 
 	// error scenarios

@@ -57,9 +57,6 @@ const (
 func TestMain(m *testing.M) {
 	flag.Parse()
 	setMaxParallelism()
-	if NeedsAuxDriver() {
-		*startArgs += " --auto-update-drivers=false"
-	}
 	start := time.Now()
 	code := m.Run()
 	fmt.Printf("Tests completed in %s (result code %d)\n", time.Since(start), code)
@@ -183,14 +180,6 @@ func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
 }
 
-func HyperkitDriver() bool {
-	return matchDriverFlag("hyperkit")
-}
-
-// NeedsAuxDriver Returns true if the driver needs an auxiliary driver (kvm, hyperkit,..)
-func NeedsAuxDriver() bool {
-	return HyperkitDriver()
-}
 
 // VMDriver checks if the driver is a VM
 func VMDriver() bool {
