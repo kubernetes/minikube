@@ -21,10 +21,11 @@ package integration
 import (
 	"context"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
-	"golang.org/x/mod/semver"
+	"github.com/blang/semver/v4"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -39,7 +40,7 @@ import (
 // See https://github.com/kubernetes/minikube/issues/23323
 // Bumped occasionally (not on every release) to catch the CDN serving something
 // wildly stale or broken, without needing to track the exact current latest.
-const minExpectedHelmVersion = "v3.20.0"
+var minExpectedHelmVersion = semver.Version{Major: 3, Minor: 20}
 
 // TestHelmInstall integration test verifies helm installation, upgrade, and no-change behavior inside a live guest VM.
 // We test this flow because installing the latest helm allows self-healing and updating the cluster when Helm is missing, outdated, or broken.
@@ -106,9 +107,13 @@ func TestHelmInstall(t *testing.T) {
 		}
 
 		version := addons.HelmVersion(runner)
-		t.Logf("installed helm version: %s", version)
-		if semver.Compare(version, minExpectedHelmVersion) < 0 {
-			t.Fatalf("installed helm version %q is older than minimum expected %q", version, minExpectedHelmVersion)
+		t.Logf("installed helm version: %q", version)
+		parsed, err := semver.Parse(strings.TrimPrefix(version, "v"))
+		if err != nil {
+			t.Fatalf("failed to parse helm version: %q: %v", version, err)
+		}
+		if parsed.LT(minExpectedHelmVersion) {
+			t.Fatalf("installed helm version %q is older than minimum expected %q", parsed, minExpectedHelmVersion)
 		}
 	})
 
@@ -117,7 +122,7 @@ func TestHelmInstall(t *testing.T) {
 	// calling InstallHelm with HelmOptions{} (defaults to latest) will correctly upgrade it to the latest version.
 	t.Run("Upgrade", func(t *testing.T) {
 		// Install minExpectedHelmVersion directly to /usr/bin/helm
-		err := addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion})
+		err := addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion.String()})
 		if err != nil {
 			t.Fatalf("failed to install helm %s: %v", minExpectedHelmVersion, err)
 		}
@@ -125,7 +130,11 @@ func TestHelmInstall(t *testing.T) {
 		// Verify the pinned helm version was installed and is executable
 		versionOld := addons.HelmVersion(runner)
 		t.Logf("installed helm version: %s (expected %s)", versionOld, minExpectedHelmVersion)
-		if versionOld != minExpectedHelmVersion {
+		parsedOld, err := semver.Parse(strings.TrimPrefix(versionOld, "v"))
+		if err != nil {
+			t.Fatalf("failed to parse helm version: %q: %v", versionOld, err)
+		}
+		if parsedOld.NE(minExpectedHelmVersion) {
 			t.Fatalf("helm version mismatch: expected %q, got %q", minExpectedHelmVersion, versionOld)
 		}
 
@@ -138,11 +147,12 @@ func TestHelmInstall(t *testing.T) {
 		// Verify that a newer version of helm has been installed in /usr/bin/helm
 		versionNew := addons.HelmVersion(runner)
 		t.Logf("upgraded helm version: %s (from %s)", versionNew, versionOld)
-		if versionNew == versionOld {
-			t.Fatalf("helm version was not upgraded: still %q", versionNew)
+		parsedNew, err := semver.Parse(strings.TrimPrefix(versionNew, "v"))
+		if err != nil {
+			t.Fatalf("failed to parse helm version: %q: %v", versionNew, err)
 		}
-		if semver.Compare(versionNew, minExpectedHelmVersion) < 0 {
-			t.Fatalf("upgraded helm version %q is older than minimum expected %q", versionNew, minExpectedHelmVersion)
+		if parsedNew.LTE(minExpectedHelmVersion) {
+			t.Fatalf("installed version %q not newer than older version %q", parsedNew, minExpectedHelmVersion)
 		}
 	})
 
@@ -151,7 +161,7 @@ func TestHelmInstall(t *testing.T) {
 	// running InstallHelm again is a no-op and does not modify or reinstall it.
 	t.Run("NoChange", func(t *testing.T) {
 		// Run InstallHelm to ensure the pinned helm version is present
-		err := addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion})
+		err := addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion.String()})
 		if err != nil {
 			t.Fatalf("InstallHelm failed: %v", err)
 		}
@@ -164,7 +174,7 @@ func TestHelmInstall(t *testing.T) {
 		}
 
 		// Run InstallHelm again with the same pinned version
-		err = addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion})
+		err = addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion.String()})
 		if err != nil {
 			t.Fatalf("InstallHelm second call failed: %v", err)
 		}

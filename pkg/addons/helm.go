@@ -23,7 +23,7 @@ import (
 	"path"
 	"strings"
 
-	"golang.org/x/mod/semver"
+	"github.com/blang/semver/v4"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -99,11 +99,13 @@ func InstallHelm(runner command.Runner, opts HelmOptions) error {
 		HELM_INSTALL_DIR=/usr/bin ./get_helm.sh`
 
 	if opts.Version != "" {
-		if !semver.IsValid(opts.Version) {
-			return fmt.Errorf("invalid helm version %q: must be a valid semver (e.g. v3.12.0)", opts.Version)
+		// semver.Parse does not support "v" prefix.
+		parsed, err := semver.Parse(strings.TrimPrefix(opts.Version, "v"))
+		if err != nil {
+			return fmt.Errorf("invalid helm version %q: %w", opts.Version, err)
 		}
 		klog.Infof("Installing helm version %s", opts.Version)
-		script += " --version " + opts.Version
+		script += " --version v" + parsed.String()
 	} else {
 		klog.Info("Installing helm latest version")
 	}
