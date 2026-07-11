@@ -773,7 +773,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.YakdAssets, "yakd/yakd-dp.yaml.tmpl", vmpath.GuestAddonsDir, "yakd-dp.yaml", "0640"),
 	}, false, "yakd", "3rd party (marcnuri.com)", "manusa", "https://minikube.sigs.k8s.io/docs/handbook/addons/yakd-kubernetes-dashboard/",
 		map[string]string{
-			"Yakd": "manusa/yakd:0.0.8@sha256:10da9161cfb2e89d5fbd24ad79d7bf0edd08acc3d825fccedf83789a301a9c9e",
+			"Yakd": "manusa/yakd:0.0.9@sha256:8de49dcce135409b0b9ffea73e0822420eef5bfba5bc14128396647db8c8ad93",
 		},
 		map[string]string{
 			"Yakd": "ghcr.io",
