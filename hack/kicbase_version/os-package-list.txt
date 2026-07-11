@@ -16,7 +16,7 @@ ii  ca-certificates                 20230311+deb12u1               all          
 ii  catatonit                       0.1.7-1+b2                     amd64        init process for containers
 ii  conmon                          2.1.6+ds1-1                    amd64        OCI container runtime monitor
 ii  conntrack                       1:1.4.7-1+b2                   amd64        Program to modify the conntrack tables
-ii  containerd.io                   2.2.5-1~debian.12~bookworm     amd64        An open and reliable container runtime
+ii  containerd.io                   2.2.6-1~debian.12~bookworm     amd64        An open and reliable container runtime
 ii  containernetworking-plugins     1.1.1+ds1-3+b5                 amd64        standard networking plugins - binaries
 ii  coreutils                       9.1-1                          amd64        GNU core utilities
 ii  cri-o                           1.35.5-1.1                     amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
@@ -102,10 +102,10 @@ ii  libffi8:amd64                   3.4.4-1                        amd64        
 ii  libfido2-1:amd64                1.12.0-2+b1                    amd64        library for generating and verifying FIDO 2.0 objects
 ii  libfstrm0:amd64                 0.6.1-1                        amd64        Frame Streams (fstrm) library
 ii  libgcc-s1:amd64                 12.2.0-14+deb12u1              amd64        GCC support library
-ii  libgcrypt20:amd64               1.10.1-3                       amd64        LGPL Crypto library - runtime library
+ii  libgcrypt20:amd64               1.10.1-3+deb12u1               amd64        LGPL Crypto library - runtime library
 ii  libglib2.0-0:amd64              2.74.6-2+deb12u9               amd64        GLib library of C routines
 ii  libgmp10:amd64                  2:6.2.1+dfsg1-1.1              amd64        Multiprecision arithmetic library
-ii  libgnutls30:amd64               3.7.9-2+deb12u6                amd64        GNU TLS library - main runtime library
+ii  libgnutls30:amd64               3.7.9-2+deb12u7                amd64        GNU TLS library - main runtime library
 ii  libgpg-error0:amd64             1.46-1                         amd64        GnuPG development runtime library
 ii  libgpgme11:amd64                1.18.0-3+b1                    amd64        GPGME - GnuPG Made Easy (library)
 ii  libgssapi-krb5-2:amd64          1.20.1-2+deb12u5               amd64        MIT Kerberos runtime libraries - krb5 GSS-API Mechanism
