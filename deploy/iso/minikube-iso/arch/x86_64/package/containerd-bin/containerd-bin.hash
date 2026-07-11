@@ -4,3 +4,4 @@ sha256 f5d8e90ecb6c1c7e33ecddf8cc268a93b9e5b54e0e850320d765511d76624f41 containe
 sha256 4cb83e7100a5e73fcb626207d0b5bcfd1294e26aeddfe075dcfb38f375c5f887 containerd-2.3.0-linux-amd64.tar.gz
 sha256 628448bd973610c656c1cbea8e88b32fafd85b23cc1aa4a3372eb7198478c054 containerd-2.3.1-linux-amd64.tar.gz
 sha256 75625e6f6595bb95f3fb9c8123a60534af4a8d9b52d7617065967bcefe71a17a containerd-2.3.2-linux-amd64.tar.gz
+sha256 ebf6e710056312628eaf6fb4a1c32f0a4ae5f812568321be4029389d66fc7c7c containerd-2.3.3-linux-amd64.tar.gz
