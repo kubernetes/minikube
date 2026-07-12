@@ -34,17 +34,18 @@ import (
 	"k8s.io/minikube/pkg/minikube/run"
 )
 
-// minExpectedHelmVersion is the minimum helm version we expect to be installed.
-// We cannot check for the exact latest version because during Helm release rollouts,
-// CDN propagation delays can cause our version query and the get_helm.sh install script
-// to see different versions, leading to flaky test failures.
+// minExpectedHelmVersion is the minimum helm version we expect to be
+// installed. We check ">= minimum" rather than "== latest" because CDN
+// propagation delays during Helm releases can make the install script and
+// our version query see different versions, causing flaky failures.
 // See https://github.com/kubernetes/minikube/issues/23323
-// Bumped occasionally (not on every release) to catch the CDN serving something
-// wildly stale or broken, without needing to track the exact current latest.
+//
+// Bump this occasionally to catch the CDN serving something stale or
+// broken. It doesn't need to track every Helm release.
 var minExpectedHelmVersion = semver.Version{Major: 3, Minor: 20}
 
-// TestHelmInstall integration test verifies helm installation, upgrade, and no-change behavior inside a live guest VM.
-// We test this flow because installing the latest helm allows self-healing and updating the cluster when Helm is missing, outdated, or broken.
+// TestHelmInstall verifies that InstallHelm can install, upgrade, and
+// re-install helm inside a live node.
 func TestHelmInstall(t *testing.T) {
 	MaybeParallel(t)
 
@@ -62,18 +63,17 @@ func TestHelmInstall(t *testing.T) {
 
 	runner := runnerForProfile(t, profile)
 
-	// Check that the guest has outbound internet access by probing the Helm download endpoint.
-	// On Prow CI with docker driver, the guest container may not have outbound connectivity.
+	// Skip if the node has no internet — helm install downloads from
+	// get.helm.sh which requires outbound connectivity.
 	t.Log("checking network connectivity")
 	_, err = runner.RunCmd(exec.Command("curl", "-fsSL", "--max-time", "10", "-o", "/dev/null", "https://get.helm.sh/helm3-latest-version"))
 	if err != nil {
 		t.Skip("skipping: guest VM/container has no outbound internet access (this is required to download helm): https://github.com/kubernetes/minikube/issues/23275")
 	}
 
-	// 1. Install test
-	// The minikube ISO and kicbase images already come with Helm pre-installed.
-	// We delete the Helm binary here to simulate a broken cluster (e.g. if a user manually deleted or corrupted it).
-	// This test ensures that installing the latest helm allows self-healing and recovering when Helm is missing or broken.
+	// Verify that InstallHelm installs helm when it is not installed. This
+	// happens when enabling the first helm-based addon. Since /usr/bin is not
+	// persisted, this happens again after restarting a stopped cluster.
 	t.Run("Install", func(t *testing.T) {
 		t.Log("removing helm to simulate missing binary")
 		_, err := runner.RunCmd(exec.Command("sudo", "rm", "-f", "/usr/bin/helm"))
@@ -104,9 +104,8 @@ func TestHelmInstall(t *testing.T) {
 		}
 	})
 
-	// 2. Upgrade test
-	// This test ensures that if minExpectedHelmVersion is installed at /usr/bin/helm,
-	// calling InstallHelm with HelmOptions{} (defaults to latest) will correctly upgrade it to the latest version.
+	// Verify that InstallHelm upgrades an older helm to the latest
+	// version. This functionality is not used yet by minikube.
 	t.Run("Upgrade", func(t *testing.T) {
 		t.Logf("installing helm %s", minExpectedHelmVersion)
 		err := addons.InstallHelm(runner, addons.HelmOptions{Version: &minExpectedHelmVersion})
@@ -141,9 +140,8 @@ func TestHelmInstall(t *testing.T) {
 		}
 	})
 
-	// 3. No Change test
-	// This test verifies that if Helm is already installed in /usr/bin/helm,
-	// running InstallHelm again is a no-op and does not modify or reinstall it.
+	// Verify that InstallHelm with a pinned version is idempotent — running
+	// it twice does not modify the binary. This is not used yet by minikube.
 	t.Run("NoChange", func(t *testing.T) {
 		t.Logf("installing helm %s", minExpectedHelmVersion)
 		err := addons.InstallHelm(runner, addons.HelmOptions{Version: &minExpectedHelmVersion})
