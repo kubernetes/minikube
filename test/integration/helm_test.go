@@ -53,6 +53,7 @@ func TestHelmInstall(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	t.Cleanup(func() { CleanupWithLogs(t, profile, cancel) })
 
+	t.Logf("starting minikube profile %s", profile)
 	startArgs := append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr"}, StartArgs()...)
 	_, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
@@ -63,6 +64,7 @@ func TestHelmInstall(t *testing.T) {
 
 	// Check that the guest has outbound internet access by probing the Helm download endpoint.
 	// On Prow CI with docker driver, the guest container may not have outbound connectivity.
+	t.Log("checking network connectivity")
 	_, err = runner.RunCmd(exec.Command("curl", "-fsSL", "--max-time", "10", "-o", "/dev/null", "https://get.helm.sh/helm3-latest-version"))
 	if err != nil {
 		t.Skip("skipping: guest VM/container has no outbound internet access (this is required to download helm): https://github.com/kubernetes/minikube/issues/23275")
@@ -73,11 +75,13 @@ func TestHelmInstall(t *testing.T) {
 	// We delete the Helm binary here to simulate a broken cluster (e.g. if a user manually deleted or corrupted it).
 	// This test ensures that installing the latest helm allows self-healing and recovering when Helm is missing or broken.
 	t.Run("Install", func(t *testing.T) {
+		t.Log("removing helm to simulate missing binary")
 		_, err := runner.RunCmd(exec.Command("sudo", "rm", "-f", "/usr/bin/helm"))
 		if err != nil {
-			t.Fatalf("failed to delete helm inside guest: %v", err)
+			t.Fatalf("failed to remove helm: %v", err)
 		}
 
+		t.Log("installing helm latest version")
 		err = addons.InstallHelm(runner, addons.HelmOptions{})
 		if err != nil {
 			t.Fatalf("InstallHelm failed: %v", err)
@@ -98,13 +102,13 @@ func TestHelmInstall(t *testing.T) {
 	// This test ensures that if minExpectedHelmVersion is installed at /usr/bin/helm,
 	// calling InstallHelm with HelmOptions{} (defaults to latest) will correctly upgrade it to the latest version.
 	t.Run("Upgrade", func(t *testing.T) {
-		// Install minExpectedHelmVersion directly to /usr/bin/helm
+		t.Logf("installing helm %s", minExpectedHelmVersion)
 		err := addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion.String()})
 		if err != nil {
 			t.Fatalf("failed to install helm %s: %v", minExpectedHelmVersion, err)
 		}
 
-		// Verify the pinned helm version was installed and is executable
+		t.Log("checking installed helm version")
 		versionOld := addons.HelmVersion(runner)
 		t.Logf("installed helm version: %s (expected %s)", versionOld, minExpectedHelmVersion)
 		parsedOld, err := semver.Parse(strings.TrimPrefix(versionOld, "v"))
@@ -115,13 +119,13 @@ func TestHelmInstall(t *testing.T) {
 			t.Fatalf("helm version mismatch: expected %q, got %q", minExpectedHelmVersion, versionOld)
 		}
 
-		// Run InstallHelm, which should download and install the latest helm into /usr/bin/helm
+		t.Log("upgrading helm to latest version")
 		err = addons.InstallHelm(runner, addons.HelmOptions{})
 		if err != nil {
-			t.Fatalf("InstallHelm failed: %v", err)
+			t.Fatalf("failed to upgrade helm: %v", err)
 		}
 
-		// Verify that a newer version of helm has been installed in /usr/bin/helm
+		t.Log("checking upgraded helm version")
 		versionNew := addons.HelmVersion(runner)
 		t.Logf("upgraded helm version: %s (from %s)", versionNew, versionOld)
 		parsedNew, err := semver.Parse(strings.TrimPrefix(versionNew, "v"))
@@ -137,26 +141,26 @@ func TestHelmInstall(t *testing.T) {
 	// This test verifies that if Helm is already installed in /usr/bin/helm,
 	// running InstallHelm again is a no-op and does not modify or reinstall it.
 	t.Run("NoChange", func(t *testing.T) {
-		// Run InstallHelm to ensure the pinned helm version is present
+		t.Logf("installing helm %s", minExpectedHelmVersion)
 		err := addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion.String()})
 		if err != nil {
-			t.Fatalf("InstallHelm failed: %v", err)
+			t.Fatalf("failed to install helm %s: %v", minExpectedHelmVersion, err)
 		}
 
-		// Retrieve current helm version details
+		t.Log("checking first helm version")
 		firstVersion := addons.HelmVersion(runner)
 		t.Logf("first helm version: %s", firstVersion)
 		if firstVersion == "" {
 			t.Fatalf("helm not found at /usr/bin/helm")
 		}
 
-		// Run InstallHelm again with the same pinned version
+		t.Logf("installing helm %s again", minExpectedHelmVersion)
 		err = addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion.String()})
 		if err != nil {
-			t.Fatalf("InstallHelm second call failed: %v", err)
+			t.Fatalf("failed to reinstall helm: %v", err)
 		}
 
-		// Retrieve helm version details again and compare
+		t.Log("checking second helm version")
 		secondVersion := addons.HelmVersion(runner)
 		t.Logf("second helm version: %s", secondVersion)
 		if secondVersion == "" {
