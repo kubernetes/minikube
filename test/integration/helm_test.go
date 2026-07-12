@@ -27,6 +27,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
@@ -58,31 +59,7 @@ func TestHelmInstall(t *testing.T) {
 		t.Fatalf("failed to start minikube: %v", err)
 	}
 
-	cc, err := config.Load(profile)
-	if err != nil {
-		t.Fatalf("failed to load config: %v", err)
-	}
-
-	api, err := machine.NewAPIClient(&run.CommandOptions{NonInteractive: true})
-	if err != nil {
-		t.Fatalf("failed to create api client: %v", err)
-	}
-	t.Cleanup(func() { api.Close() })
-
-	cp, err := config.ControlPlane(*cc)
-	if err != nil {
-		t.Fatalf("failed to get control plane node: %v", err)
-	}
-
-	host, err := machine.LoadHost(api, config.MachineName(*cc, cp))
-	if err != nil {
-		t.Fatalf("failed to load host: %v", err)
-	}
-
-	runner, err := machine.CommandRunner(host)
-	if err != nil {
-		t.Fatalf("failed to get command runner: %v", err)
-	}
+	runner := runnerForProfile(t, profile)
 
 	// Check that the guest has outbound internet access by probing the Helm download endpoint.
 	// On Prow CI with docker driver, the guest container may not have outbound connectivity.
@@ -189,4 +166,37 @@ func TestHelmInstall(t *testing.T) {
 			t.Fatalf("helm version changed after second InstallHelm call: first %q, second %q", firstVersion, secondVersion)
 		}
 	})
+}
+
+// runnerForProfile returns a command runner for the control plane node of the given profile.
+func runnerForProfile(t *testing.T, profile string) command.Runner {
+	t.Helper()
+
+	cc, err := config.Load(profile)
+	if err != nil {
+		t.Fatalf("failed to load config for %s: %v", profile, err)
+	}
+
+	api, err := machine.NewAPIClient(&run.CommandOptions{NonInteractive: true})
+	if err != nil {
+		t.Fatalf("failed to create api client: %v", err)
+	}
+	t.Cleanup(func() { api.Close() })
+
+	cp, err := config.ControlPlane(*cc)
+	if err != nil {
+		t.Fatalf("failed to get control plane node for %s: %v", profile, err)
+	}
+
+	host, err := machine.LoadHost(api, config.MachineName(*cc, cp))
+	if err != nil {
+		t.Fatalf("failed to load host for %s: %v", profile, err)
+	}
+
+	runner, err := machine.CommandRunner(host)
+	if err != nil {
+		t.Fatalf("failed to get command runner for %s: %v", profile, err)
+	}
+
+	return runner
 }
