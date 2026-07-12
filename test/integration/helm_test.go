@@ -50,7 +50,7 @@ func TestHelmInstall(t *testing.T) {
 	profile := UniqueProfileName("helm")
 	// TODO: update the timeout based on data from recent runs (3*p95 once data is available)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
-	defer CleanupWithLogs(t, profile, cancel)
+	t.Cleanup(func() { CleanupWithLogs(t, profile, cancel) })
 
 	startArgs := append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr"}, StartArgs()...)
 	_, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
@@ -67,7 +67,7 @@ func TestHelmInstall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create api client: %v", err)
 	}
-	defer api.Close()
+	t.Cleanup(func() { api.Close() })
 
 	cp, err := config.ControlPlane(*cc)
 	if err != nil {
