@@ -21,7 +21,7 @@ ii  containernetworking-plugins     1.1.1+ds1-3+b5                 amd64        
 ii  coreutils                       9.1-1                          amd64        GNU core utilities
 ii  cri-o                           1.35.5-1.1                     amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
 ii  crun                            1.8.1-1+deb12u1                amd64        lightweight OCI runtime for running containers
-ii  curl                            7.88.1-10+deb12u14             amd64        command line tool for transferring data with URL syntax
+ii  curl                            7.88.1-10+deb12u15             amd64        command line tool for transferring data with URL syntax
 ii  dash                            0.5.12-2                       amd64        POSIX-compliant shell
 ii  dbus                            1.14.10-1~deb12u1              amd64        simple interprocess messaging system (system message bus)
 ii  dbus-bin                        1.14.10-1~deb12u1              amd64        simple interprocess messaging system (command line utilities)
@@ -87,7 +87,7 @@ ii  libcbor0.8:amd64                0.8.0-2+b1                     amd64        
 ii  libcom-err2:amd64               1.47.0-2+b2                    amd64        common error description library
 ii  libcrypt1:amd64                 1:4.4.33-2                     amd64        libcrypt shared library
 ii  libcryptsetup12:amd64           2:2.6.1-4~deb12u2              amd64        disk encryption support - shared library
-ii  libcurl4:amd64                  7.88.1-10+deb12u14             amd64        easy-to-use client-side URL transfer library (OpenSSL flavour)
+ii  libcurl4:amd64                  7.88.1-10+deb12u15             amd64        easy-to-use client-side URL transfer library (OpenSSL flavour)
 ii  libdb5.3:amd64                  5.3.28+dfsg2-1                 amd64        Berkeley v5.3 Database Libraries [runtime]
 ii  libdbus-1-3:amd64               1.14.10-1~deb12u1              amd64        simple interprocess messaging system (library)
 ii  libdebconfclient0:amd64         0.270                          amd64        Debian Configuration Management System (C-implementation library)
@@ -154,8 +154,8 @@ ii  libproc2-0:amd64                2:4.0.2-3                      amd64        
 ii  libprotobuf-c1:amd64            1.4.1-1+b1                     amd64        Protocol Buffers C shared library (protobuf-c)
 ii  libpsl5:amd64                   0.21.2-1                       amd64        Library for Public Suffix List (shared libraries)
 ii  libpython3-stdlib:amd64         3.11.2-1+b1                    amd64        interactive high-level object-oriented language (default python3 version)
-ii  libpython3.11-minimal:amd64     3.11.2-6+deb12u7               amd64        Minimal subset of the Python language (version 3.11)
-ii  libpython3.11-stdlib:amd64      3.11.2-6+deb12u7               amd64        Interactive high-level object-oriented language (standard library, version 3.11)
+ii  libpython3.11-minimal:amd64     3.11.2-6+deb12u8               amd64        Minimal subset of the Python language (version 3.11)
+ii  libpython3.11-stdlib:amd64      3.11.2-6+deb12u8               amd64        Interactive high-level object-oriented language (standard library, version 3.11)
 ii  libreadline8:amd64              8.2-1.3                        amd64        GNU readline and history libraries, run-time libraries
 ii  librtmp1:amd64                  2.4+20151223.gitfa8646d.1-2+b2 amd64        toolkit for RTMP streams (shared library)
 ii  libsasl2-2:amd64                2.1.28+dfsg-10                 amd64        Cyrus SASL - authentication abstraction library
@@ -183,7 +183,7 @@ ii  libunistring2:amd64             1.0-2                          amd64        
 ii  libuuid1:amd64                  2.38.1-5+deb12u3               amd64        Universally Unique ID library
 ii  libuv1:amd64                    1.44.2-1+deb12u1               amd64        asynchronous event notification library - runtime library
 ii  libwrap0:amd64                  7.6.q-32                       amd64        Wietse Venema's TCP wrappers library
-ii  libxml2:amd64                   2.9.14+dfsg-1.3~deb12u5        amd64        GNOME XML library
+ii  libxml2:amd64                   2.9.14+dfsg-1.3~deb12u6        amd64        GNOME XML library
 ii  libxtables12:amd64              1.8.9-2                        amd64        netfilter xtables library
 ii  libxxhash0:amd64                0.8.1-1                        amd64        shared library for xxhash
 ii  libyajl2:amd64                  2.1.0-3+deb12u2                amd64        Yet Another JSON Library
@@ -214,11 +214,11 @@ ii  podman                          4.3.1+ds1-8+deb12u1+b3         amd64        
 ii  procps                          2:4.0.2-3                      amd64        /proc file system utilities
 ii  python3                         3.11.2-1+b1                    amd64        interactive high-level object-oriented language (default python3 version)
 ii  python3-minimal                 3.11.2-1+b1                    amd64        minimal subset of the Python language (default python3 version)
-ii  python3.11                      3.11.2-6+deb12u7               amd64        Interactive high-level object-oriented language (version 3.11)
-ii  python3.11-minimal              3.11.2-6+deb12u7               amd64        Minimal subset of the Python language (version 3.11)
+ii  python3.11                      3.11.2-6+deb12u8               amd64        Interactive high-level object-oriented language (version 3.11)
+ii  python3.11-minimal              3.11.2-6+deb12u8               amd64        Minimal subset of the Python language (version 3.11)
 ii  readline-common                 8.2-1.3                        all          GNU readline and history libraries, common files
 ii  rpcbind                         1.2.6-6+b1                     amd64        converts RPC program numbers into universal addresses
-ii  rsync                           3.2.7-1+deb12u5                amd64        fast, versatile, remote (and local) file-copying tool
+ii  rsync                           3.2.7-1+deb12u6                amd64        fast, versatile, remote (and local) file-copying tool
 ii  runit-helper                    2.15.2                         all          dh-runit implementation detail
 ii  sed                             4.9-1+deb12u1                  amd64        GNU stream editor for filtering/transforming text
 ii  sensible-utils                  0.0.17+nmu1                    all          Utilities for sensible alternative selection
