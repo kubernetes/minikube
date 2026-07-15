@@ -15,7 +15,6 @@ body:
       label: فایل گزارش را پیوست کنید
       description: |
         نکته: دستور `minikube logs --file=log.txt` را اجرا کرده و سپس فایل `log.txt` را در مرورگر بکشید و رها کنید.
-        از نسخه `1.26.0` به بعد در minikube، تمام متغیرهای محیطی به‌طور خودکار حذف می‌شوند، اما در نسخه‌های قبلی باید به صورت دستی حذف شوند.
     validations:
       required: true
   - type: dropdown
