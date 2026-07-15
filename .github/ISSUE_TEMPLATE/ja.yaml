@@ -15,7 +15,6 @@ body:
       label: ログファイルを添付
       description: |
         ヒント: `minikube logs --file=log.txt` を実行し、ブラウザに `log.txt` ファイルをドラッグ＆ドロップしてください。
-        minikube バージョン `1.26.0` 以降では、すべての環境変数が自動的に削除されますが、それ以前のバージョンでは手動で削除する必要があります。
     validations:
       required: true
   - type: dropdown

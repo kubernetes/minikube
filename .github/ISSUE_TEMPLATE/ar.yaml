@@ -15,7 +15,6 @@ body:
       label: أرفق ملف السجلات
       description: |
         نصيحة: شغّل الأمر `minikube logs --file=log.txt` ثم قم بسحب وإفلات ملف `log.txt` في المتصفح.
-        تتم إزالة جميع المتغيرات البيئية تلقائيًا بدءًا من الإصدار `1.26.0` من minikube، ولكن في الإصدارات السابقة يجب إزالتها يدويًا.
     validations:
       required: true
   - type: dropdown

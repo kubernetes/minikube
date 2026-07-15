@@ -15,7 +15,6 @@ body:
       label: Allegare il file di log
       description: |
         Suggerimento: Esegui `minikube logs --file=log.txt` e poi trascina il file `log.txt` nel browser.
-        Tutte le variabili d'ambiente saranno rimosse automaticamente a partire da minikube `1.26.0`, ma nelle versioni precedenti devono essere rimosse manualmente.
     validations:
       required: true
   - type: dropdown
