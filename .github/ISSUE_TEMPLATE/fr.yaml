@@ -15,7 +15,6 @@ body:
       label: Joindre le fichier de journal
       description: |
         Astuce : exécutez `minikube logs --file=log.txt`, puis faites glisser et déposez le fichier `log.txt` dans le navigateur.
-        Toutes les variables d’environnement seront automatiquement supprimées à partir de la version `1.26.0` de minikube, mais pour les versions antérieures, elles doivent être supprimées manuellement.
     validations:
       required: true
   - type: dropdown

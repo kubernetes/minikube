@@ -169,7 +169,6 @@ func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
 }
 
-
 // VMDriver checks if the driver is a VM
 func VMDriver() bool {
 	return !KicDriver() && !NoneDriver()

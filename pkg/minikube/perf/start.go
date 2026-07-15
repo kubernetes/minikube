@@ -36,7 +36,7 @@ const (
 func CompareMinikubeStart(ctx context.Context, binaries []*Binary) error {
 	drivers := []string{"kvm2", "docker"}
 	if runtime.GOOS == "darwin" {
-		drivers = []string{"hyperkit", "docker"}
+		drivers = []string{"vfkit", "docker"}
 	}
 	runtimes := []string{"docker", "containerd"}
 	for _, d := range drivers {

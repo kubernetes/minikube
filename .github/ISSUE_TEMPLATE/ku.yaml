@@ -15,7 +15,6 @@ body:
       label: Pelê logê bikeve
       description: |
         Rêwîtiya bikar: Run `minikube logs --file=log.txt` û paşê pelê `log.txt` ji browser ve drag & drop bikin.
-        Hemû guhertoyên env ji minikube `1.26.0` ve bi awayê otomatik hate rakirin, lê di guhertoyên berê de divê bi destan jêbirin.
     validations:
       required: true
   - type: dropdown

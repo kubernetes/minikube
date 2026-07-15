@@ -15,7 +15,6 @@ body:
       label: 附上日志文件
       description: |
         提示：运行 `minikube logs --file=log.txt`，然后将 `log.txt` 文件拖放到浏览器中。
-        从 minikube `1.26.0` 版本开始，所有环境变量将自动清除，但在之前的版本中需要手动删除。
     validations:
       required: true
   - type: dropdown
