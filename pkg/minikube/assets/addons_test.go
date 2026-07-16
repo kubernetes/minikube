@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -41,6 +42,14 @@ func mapsEqual(a, b map[string]string) bool {
 		}
 	}
 	return true
+}
+
+func TestAddonDescriptions(t *testing.T) {
+	for name, addon := range Addons {
+		if strings.TrimSpace(addon.Description) == "" {
+			t.Errorf("addon %q has an empty description", name)
+		}
+	}
 }
 
 func TestParseMapString(t *testing.T) {
