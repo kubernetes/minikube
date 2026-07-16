@@ -1,0 +1,29 @@
+# workflow comment
+name: CI
+on: # trigger comment
+  pull_request:
+jobs:
+  # build job comment
+  build:
+    steps:
+      # checkout comment
+      - name: Checkout # name comment
+        uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+      - run: |
+          make build
+          make test
+      - name: Test
+        timeout-minutes: 10 # timeout comment
+        run: make test
+      - name: Already tuned
+        timeout-minutes: 3
+        run: echo tuned
+      - name: Missing stats
+        run: echo skipped
+  docs:
+    steps:
+      - name: Docs
+        run: make docs
+  empty:
+    runs-on: ubuntu-latest
