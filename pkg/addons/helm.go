@@ -123,7 +123,7 @@ func InstallHelm(runner command.Runner, opts HelmOptions) error {
 
 	_, err := runner.RunCmd(exec.Command("sudo", "bash", "-o", "errexit", "-c", script))
 	if err != nil {
-		return fmt.Errorf("installing helm: %w", err)
+		return fmt.Errorf("failed to install helm: %w", err)
 	}
 	return nil
 }
