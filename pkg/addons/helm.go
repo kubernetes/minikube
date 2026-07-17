@@ -81,7 +81,7 @@ func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable
 
 // HelmOptions contains options for installing Helm.
 type HelmOptions struct {
-	Version string
+	Version *semver.Version
 }
 
 // HelmVersion returns the installed helm version at /usr/bin/helm. Returns an
@@ -114,14 +114,9 @@ func InstallHelm(runner command.Runner, opts HelmOptions) error {
 		chmod 700 get_helm.sh
 		HELM_INSTALL_DIR=/usr/bin ./get_helm.sh`
 
-	if opts.Version != "" {
-		// semver.Parse does not support "v" prefix.
-		parsed, err := semver.Parse(strings.TrimPrefix(opts.Version, "v"))
-		if err != nil {
-			return fmt.Errorf("invalid helm version %q: %w", opts.Version, err)
-		}
+	if opts.Version != nil {
 		klog.Infof("Installing helm version %s", opts.Version)
-		script += " --version v" + parsed.String()
+		script += " --version v" + opts.Version.String()
 	} else {
 		klog.Info("Installing helm latest version")
 	}

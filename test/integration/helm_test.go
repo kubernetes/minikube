@@ -22,7 +22,6 @@ import (
 	"context"
 	"errors"
 	"os/exec"
-	"strings"
 	"testing"
 	"time"
 
@@ -92,7 +91,7 @@ func TestHelmInstall(t *testing.T) {
 		t.Log("installing helm latest version")
 		err = addons.InstallHelm(runner, addons.HelmOptions{})
 		if err != nil {
-			t.Fatalf("InstallHelm failed: %v", err)
+			t.Fatal(err)
 		}
 
 		version, err := addons.HelmVersion(runner)
@@ -110,9 +109,9 @@ func TestHelmInstall(t *testing.T) {
 	// calling InstallHelm with HelmOptions{} (defaults to latest) will correctly upgrade it to the latest version.
 	t.Run("Upgrade", func(t *testing.T) {
 		t.Logf("installing helm %s", minExpectedHelmVersion)
-		err := addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion.String()})
+		err := addons.InstallHelm(runner, addons.HelmOptions{Version: &minExpectedHelmVersion})
 		if err != nil {
-			t.Fatalf("failed to install helm %s: %v", minExpectedHelmVersion, err)
+			t.Fatal(err)
 		}
 
 		t.Log("checking installed helm version")
@@ -128,7 +127,7 @@ func TestHelmInstall(t *testing.T) {
 		t.Log("upgrading helm to latest version")
 		err = addons.InstallHelm(runner, addons.HelmOptions{})
 		if err != nil {
-			t.Fatalf("failed to upgrade helm: %v", err)
+			t.Fatal(err)
 		}
 
 		t.Log("checking upgraded helm version")
@@ -147,9 +146,9 @@ func TestHelmInstall(t *testing.T) {
 	// running InstallHelm again is a no-op and does not modify or reinstall it.
 	t.Run("NoChange", func(t *testing.T) {
 		t.Logf("installing helm %s", minExpectedHelmVersion)
-		err := addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion.String()})
+		err := addons.InstallHelm(runner, addons.HelmOptions{Version: &minExpectedHelmVersion})
 		if err != nil {
-			t.Fatalf("failed to install helm %s: %v", minExpectedHelmVersion, err)
+			t.Fatal(err)
 		}
 
 		t.Log("checking first helm version")
@@ -160,9 +159,9 @@ func TestHelmInstall(t *testing.T) {
 		t.Logf("first helm version: %s", firstVersion)
 
 		t.Logf("installing helm %s again", minExpectedHelmVersion)
-		err = addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion.String()})
+		err = addons.InstallHelm(runner, addons.HelmOptions{Version: &minExpectedHelmVersion})
 		if err != nil {
-			t.Fatalf("failed to reinstall helm: %v", err)
+			t.Fatal(err)
 		}
 
 		t.Log("checking second helm version")
