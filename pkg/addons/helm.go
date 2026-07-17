@@ -18,6 +18,7 @@ package addons
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"path"
@@ -29,6 +30,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
+
+// ErrHelmNotInstalled indicates that /usr/bin/helm does not exist on the node.
+var ErrHelmNotInstalled = errors.New("helm is not installed")
 
 // runs a helm install within the minikube vm or container based on the contents of chart *assets.HelmChart
 func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
@@ -80,14 +84,26 @@ type HelmOptions struct {
 	Version string
 }
 
-// HelmVersion returns the installed helm version string (e.g. "v3.12.0") or ""
-// if helm is not installed at /usr/bin/helm.
-func HelmVersion(runner command.Runner) string {
+// HelmVersion returns the installed helm version at /usr/bin/helm. Returns an
+// error if helm is not installed, fails to run, or returns an invalid version
+// string.
+func HelmVersion(runner command.Runner) (semver.Version, error) {
 	rr, err := runner.RunCmd(exec.Command("/usr/bin/helm", "version", "--template", "{{.Version}}"))
 	if err != nil {
-		return ""
+		if rr.ExitCode == command.NotFound {
+			// Expected when starting a new or stopped cluster since /usr/bin/
+			// is not persisted.
+			stderr := strings.TrimSpace(rr.Stderr.String())
+			return semver.Version{}, fmt.Errorf("%w: %s", ErrHelmNotInstalled, stderr)
+		}
+		return semver.Version{}, fmt.Errorf("failed to run helm version: %w", err)
 	}
-	return strings.TrimSpace(rr.Stdout.String())
+	raw := strings.TrimPrefix(strings.TrimSpace(rr.Stdout.String()), "v")
+	v, err := semver.Parse(raw)
+	if err != nil {
+		return semver.Version{}, fmt.Errorf("failed to parse helm version %q: %w", raw, err)
+	}
+	return v, nil
 }
 
 // InstallHelm installs Helm inside the guest VM/container at /usr/bin/helm.

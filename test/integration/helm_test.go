@@ -87,14 +87,13 @@ func TestHelmInstall(t *testing.T) {
 			t.Fatalf("InstallHelm failed: %v", err)
 		}
 
-		version := addons.HelmVersion(runner)
-		t.Logf("installed helm version: %q", version)
-		parsed, err := semver.Parse(strings.TrimPrefix(version, "v"))
+		version, err := addons.HelmVersion(runner)
 		if err != nil {
-			t.Fatalf("failed to parse helm version: %q: %v", version, err)
+			t.Fatal(err)
 		}
-		if parsed.LT(minExpectedHelmVersion) {
-			t.Fatalf("installed helm version %q is older than minimum expected %q", parsed, minExpectedHelmVersion)
+		t.Logf("installed helm version: %s", version)
+		if version.LT(minExpectedHelmVersion) {
+			t.Fatalf("installed helm version %q is older than minimum expected %q", version, minExpectedHelmVersion)
 		}
 	})
 
@@ -109,13 +108,12 @@ func TestHelmInstall(t *testing.T) {
 		}
 
 		t.Log("checking installed helm version")
-		versionOld := addons.HelmVersion(runner)
-		t.Logf("installed helm version: %s (expected %s)", versionOld, minExpectedHelmVersion)
-		parsedOld, err := semver.Parse(strings.TrimPrefix(versionOld, "v"))
+		versionOld, err := addons.HelmVersion(runner)
 		if err != nil {
-			t.Fatalf("failed to parse helm version: %q: %v", versionOld, err)
+			t.Fatal(err)
 		}
-		if parsedOld.NE(minExpectedHelmVersion) {
+		t.Logf("installed helm version: %s", versionOld)
+		if versionOld.NE(minExpectedHelmVersion) {
 			t.Fatalf("helm version mismatch: expected %q, got %q", minExpectedHelmVersion, versionOld)
 		}
 
@@ -126,14 +124,13 @@ func TestHelmInstall(t *testing.T) {
 		}
 
 		t.Log("checking upgraded helm version")
-		versionNew := addons.HelmVersion(runner)
-		t.Logf("upgraded helm version: %s (from %s)", versionNew, versionOld)
-		parsedNew, err := semver.Parse(strings.TrimPrefix(versionNew, "v"))
+		versionNew, err := addons.HelmVersion(runner)
 		if err != nil {
-			t.Fatalf("failed to parse helm version: %q: %v", versionNew, err)
+			t.Fatal(err)
 		}
-		if parsedNew.LTE(minExpectedHelmVersion) {
-			t.Fatalf("installed version %q not newer than older version %q", parsedNew, minExpectedHelmVersion)
+		t.Logf("upgraded helm version: %s (from %s)", versionNew, versionOld)
+		if versionNew.LTE(minExpectedHelmVersion) {
+			t.Fatalf("upgraded version %q not newer than older version %q", versionNew, minExpectedHelmVersion)
 		}
 	})
 
@@ -148,11 +145,11 @@ func TestHelmInstall(t *testing.T) {
 		}
 
 		t.Log("checking first helm version")
-		firstVersion := addons.HelmVersion(runner)
-		t.Logf("first helm version: %s", firstVersion)
-		if firstVersion == "" {
-			t.Fatalf("helm not found at /usr/bin/helm")
+		firstVersion, err := addons.HelmVersion(runner)
+		if err != nil {
+			t.Fatal(err)
 		}
+		t.Logf("first helm version: %s", firstVersion)
 
 		t.Logf("installing helm %s again", minExpectedHelmVersion)
 		err = addons.InstallHelm(runner, addons.HelmOptions{Version: minExpectedHelmVersion.String()})
@@ -161,13 +158,13 @@ func TestHelmInstall(t *testing.T) {
 		}
 
 		t.Log("checking second helm version")
-		secondVersion := addons.HelmVersion(runner)
-		t.Logf("second helm version: %s", secondVersion)
-		if secondVersion == "" {
-			t.Fatalf("helm not found at /usr/bin/helm")
+		secondVersion, err := addons.HelmVersion(runner)
+		if err != nil {
+			t.Fatal(err)
 		}
-		if firstVersion != secondVersion {
-			t.Fatalf("helm version changed after second InstallHelm call: first %q, second %q", firstVersion, secondVersion)
+		t.Logf("second helm version: %s", secondVersion)
+		if firstVersion.NE(secondVersion) {
+			t.Fatalf("helm version changed: first %q, second %q", firstVersion, secondVersion)
 		}
 	})
 }
