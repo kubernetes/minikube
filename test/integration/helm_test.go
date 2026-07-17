@@ -20,6 +20,7 @@ package integration
 
 import (
 	"context"
+	"errors"
 	"os/exec"
 	"strings"
 	"testing"
@@ -80,6 +81,13 @@ func TestHelmInstall(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to remove helm: %v", err)
 		}
+
+		t.Log("checking helm version with missing binary")
+		_, err = addons.HelmVersion(runner)
+		if !errors.Is(err, addons.ErrHelmNotInstalled) {
+			t.Fatalf("expected ErrHelmNotInstalled, got: %v", err)
+		}
+		t.Logf("helm version error: %v", err)
 
 		t.Log("installing helm latest version")
 		err = addons.InstallHelm(runner, addons.HelmOptions{})
