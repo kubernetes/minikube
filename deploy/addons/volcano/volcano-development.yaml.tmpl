@@ -271,7 +271,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: jobs.batch.volcano.sh
 spec:
   group: batch.volcano.sh
@@ -334,7 +334,6 @@ spec:
                     type: integer
                   highestTierName:
                     maxLength: 253
-                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                     type: string
                   mode:
                     default: hard
@@ -443,7 +442,6 @@ spec:
                               type: integer
                             highestTierName:
                               maxLength: 253
-                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                               type: string
                             mode:
                               default: hard
@@ -4121,6 +4119,10 @@ spec:
                                                   type: integer
                                                 signerName:
                                                   type: string
+                                                userAnnotations:
+                                                  additionalProperties:
+                                                    type: string
+                                                  type: object
                                               required:
                                               - keyType
                                               - signerName
@@ -4315,6 +4317,18 @@ spec:
                               x-kubernetes-list-map-keys:
                               - name
                               x-kubernetes-list-type: map
+                            workloadRef:
+                              properties:
+                                name:
+                                  type: string
+                                podGroup:
+                                  type: string
+                                podGroupReplicaKey:
+                                  type: string
+                              required:
+                              - name
+                              - podGroup
+                              type: object
                           required:
                           - containers
                           type: object
@@ -4537,7 +4551,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: cronjobs.batch.volcano.sh
 spec:
   group: batch.volcano.sh
@@ -4618,7 +4632,6 @@ spec:
                             type: integer
                           highestTierName:
                             maxLength: 253
-                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                             type: string
                           mode:
                             default: hard
@@ -4727,7 +4740,6 @@ spec:
                                       type: integer
                                     highestTierName:
                                       maxLength: 253
-                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                       type: string
                                     mode:
                                       default: hard
@@ -8405,6 +8417,10 @@ spec:
                                                           type: integer
                                                         signerName:
                                                           type: string
+                                                        userAnnotations:
+                                                          additionalProperties:
+                                                            type: string
+                                                          type: object
                                                       required:
                                                       - keyType
                                                       - signerName
@@ -8599,6 +8615,18 @@ spec:
                                       x-kubernetes-list-map-keys:
                                       - name
                                       x-kubernetes-list-type: map
+                                    workloadRef:
+                                      properties:
+                                        name:
+                                          type: string
+                                        podGroup:
+                                          type: string
+                                        podGroupReplicaKey:
+                                          type: string
+                                      required:
+                                      - name
+                                      - podGroup
+                                      type: object
                                   required:
                                   - containers
                                   type: object
@@ -8782,7 +8810,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: commands.bus.volcano.sh
 spec:
   group: bus.volcano.sh
@@ -8886,6 +8914,15 @@ metadata:
   namespace: volcano-system
 data:
   volcano-controller.conf: |
+---
+# Source: volcano/templates/controllers.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: volcano-sharding-configmap
+  namespace: volcano-system
+data:
+  sharding.yaml: |
 ---
 # Source: volcano/templates/controllers.yaml
 kind: ClusterRole
@@ -9046,6 +9083,8 @@ spec:
             - --worker-threads=3
             - --worker-threads-for-gc=5
             - --worker-threads-for-podgroup=5
+            - --sharding-configmap=volcano-sharding-configmap
+            - --sharding-configmap-namespace=volcano-system
             - -v=4
             - 2>&1
           imagePullPolicy: Always
@@ -9177,6 +9216,9 @@ rules:
     resources: ["resourceclaims/status"]
     verbs: ["update"]
   - apiGroups: ["resource.k8s.io"]
+    resources: ["resourceclaims/binding"]
+    verbs: ["update", "patch"]
+  - apiGroups: ["resource.k8s.io"]
     resources: ["deviceclasses","resourceslices"]
     verbs: ["get", "list", "watch", "create"]
   - apiGroups: [ "resource.k8s.io" ]
@@ -9295,7 +9337,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: podgroups.scheduling.volcano.sh
 spec:
   group: scheduling.volcano.sh
@@ -9610,7 +9652,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: queues.scheduling.volcano.sh
 spec:
   group: scheduling.volcano.sh
@@ -9854,7 +9896,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: numatopologies.nodeinfo.volcano.sh
 spec:
   group: nodeinfo.volcano.sh
@@ -9946,7 +9988,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: hypernodes.topology.volcano.sh
 spec:
   group: topology.volcano.sh
@@ -10189,7 +10231,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: nodeshards.shard.volcano.sh
 spec:
   group: shard.volcano.sh
@@ -10281,7 +10323,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: colocationconfigurations.config.volcano.sh
 spec:
   group: config.volcano.sh
@@ -10740,7 +10782,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: jobtemplates.flow.volcano.sh
 spec:
   group: flow.volcano.sh
@@ -10785,7 +10827,6 @@ spec:
                     type: integer
                   highestTierName:
                     maxLength: 253
-                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                     type: string
                   mode:
                     default: hard
@@ -10894,7 +10935,6 @@ spec:
                               type: integer
                             highestTierName:
                               maxLength: 253
-                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                               type: string
                             mode:
                               default: hard
@@ -14572,6 +14612,10 @@ spec:
                                                   type: integer
                                                 signerName:
                                                   type: string
+                                                userAnnotations:
+                                                  additionalProperties:
+                                                    type: string
+                                                  type: object
                                               required:
                                               - keyType
                                               - signerName
@@ -14766,6 +14810,18 @@ spec:
                               x-kubernetes-list-map-keys:
                               - name
                               x-kubernetes-list-type: map
+                            workloadRef:
+                              properties:
+                                name:
+                                  type: string
+                                podGroup:
+                                  type: string
+                                podGroupReplicaKey:
+                                  type: string
+                              required:
+                              - name
+                              - podGroup
+                              type: object
                           required:
                           - containers
                           type: object
@@ -14905,7 +14961,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: jobflows.flow.volcano.sh
 spec:
   group: flow.volcano.sh
@@ -15026,7 +15082,6 @@ spec:
                                   type: integer
                                 highestTierName:
                                   maxLength: 253
-                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                   type: string
                                 mode:
                                   default: hard
@@ -15135,7 +15190,6 @@ spec:
                                             type: integer
                                           highestTierName:
                                             maxLength: 253
-                                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                             type: string
                                           mode:
                                             default: hard
@@ -18813,6 +18867,10 @@ spec:
                                                                 type: integer
                                                               signerName:
                                                                 type: string
+                                                              userAnnotations:
+                                                                additionalProperties:
+                                                                  type: string
+                                                                type: object
                                                             required:
                                                             - keyType
                                                             - signerName
@@ -19007,6 +19065,18 @@ spec:
                                             x-kubernetes-list-map-keys:
                                             - name
                                             x-kubernetes-list-type: map
+                                          workloadRef:
+                                            properties:
+                                              name:
+                                                type: string
+                                              podGroup:
+                                                type: string
+                                              podGroupReplicaKey:
+                                                type: string
+                                            required:
+                                            - name
+                                            - podGroup
+                                            type: object
                                         required:
                                         - containers
                                         type: object
