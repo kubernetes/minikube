@@ -45,7 +45,7 @@ if ! which socat &>/dev/null; then
 fi
 
 # cri-dockerd is required for Kubernetes v1.24+ with none driver
-CRI_DOCKERD_VERSION="0.4.3"
+CRI_DOCKERD_VERSION="0.4.6"
 if [[ $(cri-dockerd --version 2>&1) != *"$CRI_DOCKERD_VERSION"* ]]; then
   echo "WARNING: expected version of cri-dockerd is not installed. will try to install."
   sudo systemctl stop cri-docker.socket || true
