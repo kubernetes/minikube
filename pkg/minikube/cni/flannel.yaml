@@ -133,7 +133,7 @@ spec:
       serviceAccountName: flannel
       initContainers:
       - name: install-cni-plugin
-        image: ghcr.io/flannel-io/flannel-cni-plugin:v1.9.1-flannel1
+        image: ghcr.io/flannel-io/flannel-cni-plugin:v1.9.1-flannel2
         command:
         - cp
         args:
@@ -144,11 +144,10 @@ spec:
         - name: cni-plugin
           mountPath: /opt/cni/bin
       - name: install-cni
-        image: ghcr.io/flannel-io/flannel:v0.28.5
+        image: ghcr.io/flannel-io/flannel:v0.28.7
         command:
-        - cp
+        - /opt/bin/install-conf
         args:
-        - -f
         - /etc/kube-flannel/cni-conf.json
         - /etc/cni/net.d/10-flannel.conflist
         volumeMounts:
@@ -158,7 +157,7 @@ spec:
           mountPath: /etc/kube-flannel/
       containers:
       - name: kube-flannel
-        image: ghcr.io/flannel-io/flannel:v0.28.5
+        image: ghcr.io/flannel-io/flannel:v0.28.7
         command:
         - /opt/bin/flanneld
         args:
