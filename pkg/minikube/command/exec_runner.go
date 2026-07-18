@@ -76,9 +76,7 @@ func (e *execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	err := cmd.Run()
 	elapsed := time.Since(start)
 
-	if exitError, ok := err.(*exec.ExitError); ok {
-		rr.ExitCode = exitError.ExitCode()
-	}
+	rr.ExitCode = e.exitCode(err)
 	// Decrease log spam
 	if elapsed > (1 * time.Second) {
 		klog.Infof("Completed: %s: (%s)", rr.Command(), elapsed)
@@ -122,13 +120,11 @@ func (*execRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 }
 
 // WaitCmd implements the Command Runner interface to wait until a started exec.Cmd object finishes
-func (*execRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
+func (e *execRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 	rr := sc.rr
 
 	err := sc.cmd.Wait()
-	if exitError, ok := err.(*exec.ExitError); ok {
-		rr.ExitCode = exitError.ExitCode()
-	}
+	rr.ExitCode = e.exitCode(err)
 
 	if err == nil {
 		return rr, nil
@@ -218,4 +214,22 @@ func (e *execRunner) Remove(f assets.CopyableFile) error {
 
 func (e *execRunner) ReadableFile(_ string) (assets.ReadableFile, error) {
 	return nil, errors.New("execRunner does not support ReadableFile - you could be the first to add it")
+}
+
+// exitCode extracts the exit code from an exec error, handling the following
+// cases:
+// - *exec.ExitError: the process ran and exited with a non-zero code.
+// - os.ErrNotExist: absolute path does not exist (kernel ENOENT).
+// - exec.ErrNotFound: PATH lookup found no matching executable.
+// The last two both mean "binary not found" but Go returns different
+// errors depending on whether the path is absolute or relative.
+// Returns 0 for other errors (e.g. permission denied).
+func (*execRunner) exitCode(err error) int {
+	if exitError, ok := err.(*exec.ExitError); ok {
+		return exitError.ExitCode()
+	}
+	if errors.Is(err, os.ErrNotExist) || errors.Is(err, exec.ErrNotFound) {
+		return NotFound
+	}
+	return 0
 }

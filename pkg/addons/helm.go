@@ -18,6 +18,7 @@ package addons
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"path"
@@ -29,6 +30,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
+
+// ErrHelmNotInstalled indicates that /usr/bin/helm does not exist on the node.
+var ErrHelmNotInstalled = errors.New("helm is not installed")
 
 // runs a helm install within the minikube vm or container based on the contents of chart *assets.HelmChart
 func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
@@ -77,17 +81,29 @@ func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable
 
 // HelmOptions contains options for installing Helm.
 type HelmOptions struct {
-	Version string
+	Version *semver.Version
 }
 
-// HelmVersion returns the installed helm version string (e.g. "v3.12.0") or ""
-// if helm is not installed at /usr/bin/helm.
-func HelmVersion(runner command.Runner) string {
+// HelmVersion returns the installed helm version at /usr/bin/helm. Returns an
+// error if helm is not installed, fails to run, or returns an invalid version
+// string.
+func HelmVersion(runner command.Runner) (semver.Version, error) {
 	rr, err := runner.RunCmd(exec.Command("/usr/bin/helm", "version", "--template", "{{.Version}}"))
 	if err != nil {
-		return ""
+		if rr.ExitCode == command.NotFound {
+			// Expected when starting a new or stopped cluster since /usr/bin/
+			// is not persisted.
+			stderr := strings.TrimSpace(rr.Stderr.String())
+			return semver.Version{}, fmt.Errorf("%w: %s", ErrHelmNotInstalled, stderr)
+		}
+		return semver.Version{}, fmt.Errorf("failed to run helm version: %w", err)
 	}
-	return strings.TrimSpace(rr.Stdout.String())
+	raw := strings.TrimPrefix(strings.TrimSpace(rr.Stdout.String()), "v")
+	v, err := semver.Parse(raw)
+	if err != nil {
+		return semver.Version{}, fmt.Errorf("failed to parse helm version %q: %w", raw, err)
+	}
+	return v, nil
 }
 
 // InstallHelm installs Helm inside the guest VM/container at /usr/bin/helm.
@@ -98,21 +114,16 @@ func InstallHelm(runner command.Runner, opts HelmOptions) error {
 		chmod 700 get_helm.sh
 		HELM_INSTALL_DIR=/usr/bin ./get_helm.sh`
 
-	if opts.Version != "" {
-		// semver.Parse does not support "v" prefix.
-		parsed, err := semver.Parse(strings.TrimPrefix(opts.Version, "v"))
-		if err != nil {
-			return fmt.Errorf("invalid helm version %q: %w", opts.Version, err)
-		}
+	if opts.Version != nil {
 		klog.Infof("Installing helm version %s", opts.Version)
-		script += " --version v" + parsed.String()
+		script += " --version v" + opts.Version.String()
 	} else {
 		klog.Info("Installing helm latest version")
 	}
 
 	_, err := runner.RunCmd(exec.Command("sudo", "bash", "-o", "errexit", "-c", script))
 	if err != nil {
-		return fmt.Errorf("installing helm: %w", err)
+		return fmt.Errorf("failed to install helm: %w", err)
 	}
 	return nil
 }
