@@ -154,16 +154,6 @@ func (s *SSHRunner) Remove(f assets.CopyableFile) error {
 	return sess.Run(fmt.Sprintf("sudo rm %s", dst))
 }
 
-// sshExitCode extracts the exit code from an SSH error.
-// For non-exit errors (e.g. network failures), returns 0 to match
-// ExecRunner and KICRunner behavior.
-func sshExitCode(err error) int {
-	if exitError, ok := err.(*ssh.ExitError); ok {
-		return exitError.ExitStatus()
-	}
-	return 0
-}
-
 // teeSSH runs an SSH command, streaming stdout, stderr to logs
 func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	outPipe, err := s.StdoutPipe()
@@ -233,7 +223,7 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	err = teeSSH(sess, shellquote.Join(cmd.Args...), outb, errb)
 	elapsed := time.Since(start)
 
-	rr.ExitCode = sshExitCode(err)
+	rr.ExitCode = s.exitCode(err)
 
 	// Decrease log spam
 	if elapsed > (1 * time.Second) {
@@ -324,7 +314,7 @@ func (s *SSHRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 	rr := sc.rr
 
 	err := s.s.Wait()
-	rr.ExitCode = sshExitCode(err)
+	rr.ExitCode = s.exitCode(err)
 
 	sc.wg.Wait()
 
@@ -549,4 +539,14 @@ func (s *SSHRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error)
 		modTime:     modTime,
 		sess:        sess,
 	}, nil
+}
+
+// exitCode extracts the exit code from an SSH error.
+// For non-exit errors (e.g. network failures), returns 0 to match
+// ExecRunner and KICRunner behavior.
+func (*SSHRunner) exitCode(err error) int {
+	if exitError, ok := err.(*ssh.ExitError); ok {
+		return exitError.ExitStatus()
+	}
+	return 0
 }
