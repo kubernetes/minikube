@@ -110,7 +110,7 @@ func HelmVersion(runner command.Runner) (semver.Version, error) {
 // Use /usr/bin/helm which is always in the PATH, unlike /usr/local/bin.
 func InstallHelm(runner command.Runner, opts HelmOptions) error {
 	script := `
-		curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+		curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
 		chmod 700 get_helm.sh
 		HELM_INSTALL_DIR=/usr/bin ./get_helm.sh`
 
