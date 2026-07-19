@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
+	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -49,6 +50,14 @@ var nodeAddCmd = &cobra.Command{
 
 		co := mustload.Healthy(ClusterFlagValue(), options)
 		cc := co.Config
+
+		// Validate vmnet options right after loading the config (INV-C): any value
+		// handed to the pkg/minikube layer must already be valid. A persisted partial
+		// config (an interrupted `config set` or a hand-edited config) is caught here
+		// before it reaches node.Add->configure() (R7).
+		if err := vmnet.ValidateOptions(cc.VmnetStartAddress, cc.VmnetEndAddress, cc.VmnetSubnetMask); err != nil {
+			exit.Message(reason.Usage, "invalid vmnet options: {{.err}}", out.V{"err": err})
+		}
 
 		if driver.BareMetal(cc.Driver) {
 			out.FailureT("none driver does not support multi-node clusters")
