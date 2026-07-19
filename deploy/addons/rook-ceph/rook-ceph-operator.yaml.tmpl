@@ -1,0 +1,2023 @@
+# Copyright 2024 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Rook-Ceph Operator for minikube (based on rook/rook v1.16.7 common.yaml and operator.yaml)
+####################################################################################################
+# Create the common resources that are necessary to start the operator and the ceph cluster.
+# These resources *must* be created before the operator.yaml and cluster.yaml or their variants.
+# The samples all assume that a single operator will manage a single cluster crd in the same
+# "rook-ceph" namespace.
+####################################################################################################
+
+# Namespace where the operator and other rook resources are created
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rook-ceph # namespace:cluster
+  labels:
+    kubernetes.io/minikube-addons: rook-ceph
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cephfs-csi-nodeplugin
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    verbs: ["create"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cephfs-external-provisioner-runner
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csinodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "update", "delete", "patch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments/status"]
+    verbs: ["patch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims/status"]
+    verbs: ["patch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshots"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotcontents"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotcontents/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: ["groupsnapshot.storage.k8s.io"]
+    resources: ["volumegroupsnapshotclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["groupsnapshot.storage.k8s.io"]
+    resources: ["volumegroupsnapshotcontents"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["groupsnapshot.storage.k8s.io"]
+    resources: ["volumegroupsnapshotcontents/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    verbs: ["create"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: objectstorage-provisioner-role
+  labels:
+    app.kubernetes.io/part-of: container-object-storage-interface
+    app.kubernetes.io/component: driver-ceph
+    app.kubernetes.io/name: cosi-driver-ceph
+rules:
+  - apiGroups: ["objectstorage.k8s.io"]
+    resources: ["buckets", "bucketaccesses", "bucketclaims", "bucketaccessclasses", "buckets/status", "bucketaccesses/status", "bucketclaims/status", "bucketaccessclasses/status"]
+    verbs: ["get", "list", "watch", "update", "create", "delete"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "watch", "list", "delete", "update", "create"]
+  - apiGroups: [""]
+    resources: ["secrets", "events"]
+    verbs: ["get", "delete", "update", "create"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rbd-csi-nodeplugin
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rbd-external-provisioner-runner
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "update", "delete", "patch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments/status"]
+    verbs: ["patch"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csinodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims/status"]
+    verbs: ["patch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshots"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotcontents"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotcontents/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: ["groupsnapshot.storage.k8s.io"]
+    resources: ["volumegroupsnapshotclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["groupsnapshot.storage.k8s.io"]
+    resources: ["volumegroupsnapshotcontents"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["groupsnapshot.storage.k8s.io"]
+    resources: ["volumegroupsnapshotcontents/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+---
+# The cluster role for managing all the cluster-specific resources in a namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rook-ceph-cluster-mgmt
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+rules:
+  - apiGroups:
+      - ""
+      - apps
+      - extensions
+    resources:
+      - secrets
+      - pods
+      - pods/log
+      - services
+      - configmaps
+      - deployments
+      - daemonsets
+    verbs:
+      - get
+      - list
+      - watch
+      - patch
+      - create
+      - update
+      - delete
+---
+# The cluster role for managing the Rook CRDs
+apiVersion: rbac.authorization.k8s.io/v1
+# Rook watches for its CRDs in all namespaces, so this should be a cluster-scoped role unless the
+# operator config `ROOK_CURRENT_NAMESPACE_ONLY=true`.
+kind: ClusterRole
+metadata:
+  name: rook-ceph-global
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      # Pod access is needed for fencing
+      - pods
+      # Node access is needed for determining nodes where mons should run
+      - nodes
+      - nodes/proxy
+      # Rook watches secrets which it uses to configure access to external resources.
+      # e.g., external Ceph cluster or object store
+      - secrets
+      # Rook watches for changes to the rook-operator-config configmap
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      # Rook creates events for its custom resources
+      - events
+      # Rook creates PVs and PVCs for OSDs managed by the Rook provisioner
+      - persistentvolumes
+      - persistentvolumeclaims
+      # Rook creates endpoints for mgr and object store access
+      - endpoints
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+      - patch
+      - create
+      - update
+      - delete
+  - apiGroups:
+      - storage.k8s.io
+    resources:
+      - storageclasses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+      - cronjobs
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+      - deletecollection
+  # The Rook operator must be able to watch all ceph.rook.io resources to reconcile them.
+  - apiGroups: ["ceph.rook.io"]
+    resources:
+      - cephclients
+      - cephclusters
+      - cephblockpools
+      - cephfilesystems
+      - cephnfses
+      - cephobjectstores
+      - cephobjectstoreusers
+      - cephobjectrealms
+      - cephobjectzonegroups
+      - cephobjectzones
+      - cephbuckettopics
+      - cephbucketnotifications
+      - cephrbdmirrors
+      - cephfilesystemmirrors
+      - cephfilesystemsubvolumegroups
+      - cephblockpoolradosnamespaces
+      - cephcosidrivers
+    verbs:
+      - get
+      - list
+      - watch
+      # Ideally the update permission is not required, but Rook needs it to add finalizers to resources.
+      - update
+  # Rook must have update access to status subresources for its custom resources.
+  - apiGroups: ["ceph.rook.io"]
+    resources:
+      - cephclients/status
+      - cephclusters/status
+      - cephblockpools/status
+      - cephfilesystems/status
+      - cephnfses/status
+      - cephobjectstores/status
+      - cephobjectstoreusers/status
+      - cephobjectrealms/status
+      - cephobjectzonegroups/status
+      - cephobjectzones/status
+      - cephbuckettopics/status
+      - cephbucketnotifications/status
+      - cephrbdmirrors/status
+      - cephfilesystemmirrors/status
+      - cephfilesystemsubvolumegroups/status
+      - cephblockpoolradosnamespaces/status
+    verbs: ["update"]
+  # The "*/finalizers" permission may need to be strictly given for K8s clusters where
+  # OwnerReferencesPermissionEnforcement is enabled so that Rook can set blockOwnerDeletion on
+  # resources owned by Rook CRs (e.g., a Secret owned by an OSD Deployment). See more:
+  # https://kubernetes.io/docs/reference/access-authn-authz/_print/#ownerreferencespermissionenforcement
+  - apiGroups: ["ceph.rook.io"]
+    resources:
+      - cephclients/finalizers
+      - cephclusters/finalizers
+      - cephblockpools/finalizers
+      - cephfilesystems/finalizers
+      - cephnfses/finalizers
+      - cephobjectstores/finalizers
+      - cephobjectstoreusers/finalizers
+      - cephobjectrealms/finalizers
+      - cephobjectzonegroups/finalizers
+      - cephobjectzones/finalizers
+      - cephbuckettopics/finalizers
+      - cephbucketnotifications/finalizers
+      - cephrbdmirrors/finalizers
+      - cephfilesystemmirrors/finalizers
+      - cephfilesystemsubvolumegroups/finalizers
+      - cephblockpoolradosnamespaces/finalizers
+    verbs: ["update"]
+  - apiGroups:
+      - policy
+      - apps
+      - extensions
+    resources:
+      # This is for the clusterdisruption controller
+      - poddisruptionbudgets
+      # This is for both clusterdisruption and nodedrain controllers
+      - deployments
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+      - deletecollection
+  - apiGroups:
+      - apps
+    resources:
+      # This is to add osd deployment owner ref on key rotation
+      # cron jobs.
+      - deployments/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - healthchecking.openshift.io
+    resources:
+      - machinedisruptionbudgets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+  - apiGroups:
+      - machine.openshift.io
+    resources:
+      - machines
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+  - apiGroups:
+      - storage.k8s.io
+    resources:
+      - csidrivers
+    verbs:
+      - create
+      - delete
+      - get
+      - update
+  - apiGroups:
+      - k8s.cni.cncf.io
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - get
+---
+# Aspects of ceph-mgr that require cluster-wide access
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-mgr-cluster
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - nodes
+      - nodes/proxy
+      - persistentvolumes
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - list
+      - get
+      - watch
+  - apiGroups:
+      - storage.k8s.io
+    resources:
+      - storageclasses
+    verbs:
+      - get
+      - list
+      - watch
+---
+# Aspects of ceph-mgr that require access to the system namespace
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-mgr-system
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+---
+# Used for provisioning ObjectBuckets (OBs) in response to ObjectBucketClaims (OBCs).
+# Note: Rook runs a copy of the lib-bucket-provisioner's OBC controller.
+# OBCs can be created in any Kubernetes namespace, so this must be a cluster-scoped role.
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-object-bucket
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+rules:
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps"]
+    verbs:
+      # OBC controller creates secrets and configmaps containing information for users about how to
+      # connect to object buckets. It deletes them when an OBC is deleted.
+      - get
+      - create
+      - update
+      - delete
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs:
+      # OBC controller gets parameters from the OBC's storageclass
+      # Rook gets additional parameters from the OBC's storageclass
+      - get
+  - apiGroups: ["objectbucket.io"]
+    resources: ["objectbucketclaims"]
+    verbs:
+      # OBC controller needs to list/watch OBCs and get latest version of a reconciled OBC
+      - list
+      - watch
+      - get
+      # Ideally, update should not be needed, but the OBC controller updates the OBC with bucket
+      # information outside of the status subresource
+      - update
+      # OBC controller does not delete OBCs; users do this
+  - apiGroups: ["objectbucket.io"]
+    resources: ["objectbuckets"]
+    verbs:
+      # OBC controller needs to list/watch OBs and get latest version of a reconciled OB
+      - list
+      - watch
+      - get
+      # OBC controller creates an OB when an OBC's bucket has been provisioned by Ceph, updates them
+      # when an OBC is updated, and deletes them when the OBC is de-provisioned.
+      - create
+      - update
+      - delete
+  - apiGroups: ["objectbucket.io"]
+    resources: ["objectbucketclaims/status", "objectbuckets/status"]
+    verbs:
+      # OBC controller updates OBC and OB statuses
+      - update
+  - apiGroups: ["objectbucket.io"]
+    # This does not strictly allow the OBC/OB controllers to update finalizers. That is handled by
+    # the direct "update" permissions above. Instead, this allows Rook's controller to create
+    # resources which are owned by OBs/OBCs and where blockOwnerDeletion is set.
+    resources: ["objectbucketclaims/finalizers", "objectbuckets/finalizers"]
+    verbs:
+      - update
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-osd
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+      - list
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-system
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+rules:
+  # Most resources are represented by a string representation of their name, such as "pods", just as it appears in the URL for the relevant API endpoint.
+  # However, some Kubernetes APIs involve a "subresource", such as the logs for a pod. [...]
+  # To represent this in an RBAC role, use a slash to delimit the resource and subresource.
+  # https://kubernetes.io/docs/reference/access-authn-authz/rbac/#referring-to-resources
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  - apiGroups: ["csiaddons.openshift.io"]
+    resources: ["networkfences"]
+    verbs: ["create", "get", "update", "delete", "watch", "list", "deletecollection"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get"]
+  - apiGroups: ["csi.ceph.io"]
+    resources: ["cephconnections"]
+    verbs: ["create", "delete", "get", "list", "update", "watch"]
+  - apiGroups: ["csi.ceph.io"]
+    resources: ["clientprofiles"]
+    verbs: ["create", "delete", "get", "list", "update", "watch"]
+  - apiGroups: ["csi.ceph.io"]
+    resources: ["operatorconfigs"]
+    verbs: ["create", "delete", "get", "list", "update", "watch"]
+  - apiGroups: ["csi.ceph.io"]
+    resources: ["drivers"]
+    verbs: ["create", "delete", "get", "list", "update", "watch"]
+---
+# This is required by operator-sdk to map the cluster/clusterrolebindings with SA
+# otherwise operator-sdk will create a individual file for these.
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cephfs-csi-nodeplugin-role
+subjects:
+  - kind: ServiceAccount
+    name: rook-csi-cephfs-plugin-sa
+    namespace: rook-ceph # namespace:operator
+roleRef:
+  kind: ClusterRole
+  name: cephfs-csi-nodeplugin
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cephfs-csi-provisioner-role
+subjects:
+  - kind: ServiceAccount
+    name: rook-csi-cephfs-provisioner-sa
+    namespace: rook-ceph # namespace:operator
+roleRef:
+  kind: ClusterRole
+  name: cephfs-external-provisioner-runner
+  apiGroup: rbac.authorization.k8s.io
+---
+# RBAC for ceph cosi driver service account
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: objectstorage-provisioner-role-binding
+  labels:
+    app.kubernetes.io/part-of: container-object-storage-interface
+    app.kubernetes.io/component: driver-ceph
+    app.kubernetes.io/name: cosi-driver-ceph
+subjects:
+  - kind: ServiceAccount
+    name: objectstorage-provisioner
+    namespace: rook-ceph # namespace:operator
+roleRef:
+  kind: ClusterRole
+  name: objectstorage-provisioner-role
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rbd-csi-nodeplugin
+subjects:
+  - kind: ServiceAccount
+    name: rook-csi-rbd-plugin-sa
+    namespace: rook-ceph # namespace:operator
+roleRef:
+  kind: ClusterRole
+  name: rbd-csi-nodeplugin
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rbd-csi-provisioner-role
+subjects:
+  - kind: ServiceAccount
+    name: rook-csi-rbd-provisioner-sa
+    namespace: rook-ceph # namespace:operator
+roleRef:
+  kind: ClusterRole
+  name: rbd-external-provisioner-runner
+  apiGroup: rbac.authorization.k8s.io
+---
+# Grant the rook system daemons cluster-wide access to manage the Rook CRDs, PVCs, and storage classes
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-global
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rook-ceph-global
+subjects:
+  - kind: ServiceAccount
+    name: rook-ceph-system
+    namespace: rook-ceph # namespace:operator
+---
+# Allow the ceph mgr to access cluster-wide resources necessary for the mgr modules
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-mgr-cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rook-ceph-mgr-cluster
+subjects:
+  - kind: ServiceAccount
+    name: rook-ceph-mgr
+    namespace: rook-ceph # namespace:cluster
+---
+kind: ClusterRoleBinding
+# Give Rook-Ceph Operator permissions to provision ObjectBuckets in response to ObjectBucketClaims.
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-object-bucket
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rook-ceph-object-bucket
+subjects:
+  - kind: ServiceAccount
+    name: rook-ceph-system
+    namespace: rook-ceph # namespace:operator
+---
+# Allow the ceph osd to access cluster-wide resources necessary for determining their topology location
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-osd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rook-ceph-osd
+subjects:
+  - kind: ServiceAccount
+    name: rook-ceph-osd
+    namespace: rook-ceph # namespace:cluster
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-system
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rook-ceph-system
+subjects:
+  - kind: ServiceAccount
+    name: rook-ceph-system
+    namespace: rook-ceph # namespace:operator
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cephfs-external-provisioner-cfg
+  namespace: rook-ceph # namespace:operator
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "watch", "list", "delete", "update", "create"]
+  - apiGroups: ["csiaddons.openshift.io"]
+    resources: ["csiaddonsnodes"]
+    verbs: ["get", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/finalizers", "daemonsets/finalizers"]
+    verbs: ["update"]
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rbd-csi-nodeplugin
+  namespace: rook-ceph # namespace:operator
+rules:
+  - apiGroups: ["csiaddons.openshift.io"]
+    resources: ["csiaddonsnodes"]
+    verbs: ["get", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/finalizers", "daemonsets/finalizers"]
+    verbs: ["update"]
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rbd-external-provisioner-cfg
+  namespace: rook-ceph # namespace:operator
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "watch", "list", "delete", "update", "create"]
+  - apiGroups: ["csiaddons.openshift.io"]
+    resources: ["csiaddonsnodes"]
+    verbs: ["get", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/finalizers", "daemonsets/finalizers"]
+    verbs: ["update"]
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-cmd-reporter
+  namespace: rook-ceph # namespace:cluster
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+---
+# Aspects of ceph-mgr that operate within the cluster's namespace
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-mgr
+  namespace: rook-ceph # namespace:cluster
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - services
+      - pods/log
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+  - apiGroups:
+      - ceph.rook.io
+    resources:
+      - cephclients
+      - cephclusters
+      - cephblockpools
+      - cephfilesystems
+      - cephnfses
+      - cephobjectstores
+      - cephobjectstoreusers
+      - cephobjectrealms
+      - cephobjectzonegroups
+      - cephobjectzones
+      - cephbuckettopics
+      - cephbucketnotifications
+      - cephrbdmirrors
+      - cephfilesystemmirrors
+      - cephfilesystemsubvolumegroups
+      - cephblockpoolradosnamespaces
+      - cephcosidrivers
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+      - patch
+  - apiGroups:
+      - apps
+    resources:
+      - deployments/scale
+      - deployments
+    verbs:
+      - patch
+      - delete
+  - apiGroups:
+      - ''
+    resources:
+      - persistentvolumeclaims
+    verbs:
+      - delete
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-osd
+  namespace: rook-ceph # namespace:cluster
+rules:
+  # this is needed for rook's "key-management" CLI to fetch the vault token from the secret when
+  # validating the connection details and for key rotation operations.
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "update"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: ["ceph.rook.io"]
+    resources: ["cephclusters", "cephclusters/finalizers"]
+    verbs: ["get", "list", "create", "update", "delete"]
+---
+# Aspects of ceph osd purge job that require access to the cluster namespace
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-purge-osd
+  namespace: rook-ceph # namespace:cluster
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "update", "delete", "list"]
+---
+# Allow the operator to manage resources in its own namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rook-ceph-system
+  namespace: rook-ceph # namespace:operator
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - configmaps
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+      - patch
+      - create
+      - update
+      - delete
+  - apiGroups:
+      - apps
+      - extensions
+    resources:
+      - daemonsets
+      - statefulsets
+      - deployments
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+      - deletecollection
+  - apiGroups:
+      - batch
+    resources:
+      - cronjobs
+    verbs:
+      - delete
+  - apiGroups:
+      - cert-manager.io
+    resources:
+      - certificates
+      - issuers
+    verbs:
+      - get
+      - create
+      - delete
+  - apiGroups:
+      - multicluster.x-k8s.io
+    resources:
+      - serviceexports
+    verbs:
+      - get
+      - create
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cephfs-csi-provisioner-role-cfg
+  namespace: rook-ceph # namespace:operator
+subjects:
+  - kind: ServiceAccount
+    name: rook-csi-cephfs-provisioner-sa
+    namespace: rook-ceph # namespace:operator
+roleRef:
+  kind: Role
+  name: cephfs-external-provisioner-cfg
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rbd-csi-nodeplugin-role-cfg
+  namespace: rook-ceph # namespace:operator
+subjects:
+  - kind: ServiceAccount
+    name: rook-csi-rbd-plugin-sa
+    namespace: rook-ceph # namespace:operator
+roleRef:
+  kind: Role
+  name: rbd-csi-nodeplugin
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rbd-csi-provisioner-role-cfg
+  namespace: rook-ceph # namespace:operator
+subjects:
+  - kind: ServiceAccount
+    name: rook-csi-rbd-provisioner-sa
+    namespace: rook-ceph # namespace:operator
+roleRef:
+  kind: Role
+  name: rbd-external-provisioner-cfg
+  apiGroup: rbac.authorization.k8s.io
+---
+# Allow the operator to create resources in this cluster's namespace
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-cluster-mgmt
+  namespace: rook-ceph # namespace:cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rook-ceph-cluster-mgmt
+subjects:
+  - kind: ServiceAccount
+    name: rook-ceph-system
+    namespace: rook-ceph # namespace:operator
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-cmd-reporter
+  namespace: rook-ceph # namespace:cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rook-ceph-cmd-reporter
+subjects:
+  - kind: ServiceAccount
+    name: rook-ceph-cmd-reporter
+    namespace: rook-ceph # namespace:cluster
+---
+# Allow the ceph mgr to access resources scoped to the CephCluster namespace necessary for mgr modules
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-mgr
+  namespace: rook-ceph # namespace:cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rook-ceph-mgr
+subjects:
+  - kind: ServiceAccount
+    name: rook-ceph-mgr
+    namespace: rook-ceph # namespace:cluster
+---
+# Allow the ceph mgr to access resources in the Rook operator namespace necessary for mgr modules
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-mgr-system
+  namespace: rook-ceph # namespace:operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rook-ceph-mgr-system
+subjects:
+  - kind: ServiceAccount
+    name: rook-ceph-mgr
+    namespace: rook-ceph # namespace:cluster
+---
+# Allow the osd pods in this namespace to work with configmaps
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-osd
+  namespace: rook-ceph # namespace:cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rook-ceph-osd
+subjects:
+  - kind: ServiceAccount
+    name: rook-ceph-osd
+    namespace: rook-ceph # namespace:cluster
+---
+# Allow the osd purge job to run in this namespace
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-purge-osd
+  namespace: rook-ceph # namespace:cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rook-ceph-purge-osd
+subjects:
+  - kind: ServiceAccount
+    name: rook-ceph-purge-osd
+    namespace: rook-ceph # namespace:cluster
+---
+# Grant the operator, agent, and discovery agents access to resources in the rook-ceph-system namespace
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rook-ceph-system
+  namespace: rook-ceph # namespace:operator
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rook-ceph-system
+subjects:
+  - kind: ServiceAccount
+    name: rook-ceph-system
+    namespace: rook-ceph # namespace:operator
+---
+# Service account for Ceph COSI driver
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: objectstorage-provisioner
+  namespace: rook-ceph # namespace:operator
+  labels:
+    app.kubernetes.io/part-of: container-object-storage-interface
+    app.kubernetes.io/component: driver-ceph
+    app.kubernetes.io/name: cosi-driver-ceph
+# imagePullSecrets:
+#   - name: my-registry-secret
+---
+# Service account for the job that reports the Ceph version in an image
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-ceph-cmd-reporter
+  namespace: rook-ceph # namespace:cluster
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+# imagePullSecrets:
+#   - name: my-registry-secret
+---
+# Service account for other components
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-ceph-default
+  namespace: rook-ceph # namespace:cluster
+  labels:
+    operator: rook
+    storage-backend: ceph
+# imagePullSecrets:
+#   - name: my-registry-secret
+---
+# Service account for Ceph mgrs
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-ceph-mgr
+  namespace: rook-ceph # namespace:cluster
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+# imagePullSecrets:
+#   - name: my-registry-secret
+---
+# Service account for Ceph OSDs
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-ceph-osd
+  namespace: rook-ceph # namespace:cluster
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+# imagePullSecrets:
+#   - name: my-registry-secret
+---
+# Service account for job that purges OSDs from a Rook-Ceph cluster
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-ceph-purge-osd
+  namespace: rook-ceph # namespace:cluster
+# imagePullSecrets:
+#   - name: my-registry-secret
+---
+# Service account for RGW server
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-ceph-rgw
+  namespace: rook-ceph # namespace:cluster
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+# imagePullSecrets:
+#   - name: my-registry-secret
+---
+# Service account for the Rook-Ceph operator
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-ceph-system
+  namespace: rook-ceph # namespace:operator
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/part-of: rook-ceph-operator
+# imagePullSecrets:
+#   - name: my-registry-secret
+---
+# Service account for the CephFS CSI driver
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-csi-cephfs-plugin-sa
+  namespace: rook-ceph # namespace:operator
+# imagePullSecrets:
+#   - name: my-registry-secret
+---
+# Service account for the CephFS CSI provisioner
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-csi-cephfs-provisioner-sa
+  namespace: rook-ceph # namespace:operator
+# imagePullSecrets:
+#   - name: my-registry-secret
+---
+# Service account for the RBD CSI driver
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-csi-rbd-plugin-sa
+  namespace: rook-ceph # namespace:operator
+# imagePullSecrets:
+#   - name: my-registry-secret
+---
+# Service account for the RBD CSI provisioner
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-csi-rbd-provisioner-sa
+  namespace: rook-ceph # namespace:operator
+# imagePullSecrets:
+#   - name: my-registry-secret
+
+---
+
+#################################################################################################################
+# The deployment for the rook operator
+# Contains the common settings for most Kubernetes deployments.
+# For example, to create the rook-ceph cluster:
+#   kubectl create -f crds.yaml -f common.yaml -f operator.yaml
+#   kubectl create -f cluster.yaml
+#
+# Also see other operator sample files for variations of operator.yaml:
+# - operator-openshift.yaml: Common settings for running in OpenShift
+###############################################################################################################
+
+# Rook Ceph Operator Config ConfigMap
+# Use this ConfigMap to override Rook-Ceph Operator configurations.
+# NOTE! Precedence will be given to this config if the same Env Var config also exists in the
+#       Operator Deployment.
+# To move a configuration(s) from the Operator Deployment to this ConfigMap, add the config
+# here. It is recommended to then remove it from the Deployment to eliminate any future confusion.
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: rook-ceph-operator-config
+  # should be in the namespace of the operator
+  namespace: rook-ceph # namespace:operator
+data:
+  # The logging level for the operator: ERROR | WARNING | INFO | DEBUG
+  ROOK_LOG_LEVEL: "INFO"
+
+  # The address for the operator's controller-runtime metrics. 0 is disabled. :8080 serves metrics on port 8080.
+  ROOK_OPERATOR_METRICS_BIND_ADDRESS: "0"
+
+  # Allow using loop devices for osds in test clusters.
+  ROOK_CEPH_ALLOW_LOOP_DEVICES: "true"
+
+  # Enable CSI Operator
+  ROOK_USE_CSI_OPERATOR: "false"
+  # Enable the CSI driver.
+  # To run the non-default version of the CSI driver, see the override-able image properties in operator.yaml
+  ROOK_CSI_ENABLE_CEPHFS: "true"
+  # Enable the default version of the CSI RBD driver. To start another version of the CSI driver, see image properties below.
+  ROOK_CSI_ENABLE_RBD: "true"
+  # Enable the CSI NFS driver. To start another version of the CSI driver, see image properties below.
+  ROOK_CSI_ENABLE_NFS: "false"
+  # Disable the CSI driver.
+  ROOK_CSI_DISABLE_DRIVER: "false"
+
+  # Set to true to enable Ceph CSI pvc encryption support.
+  CSI_ENABLE_ENCRYPTION: "false"
+
+  # Set to true to enable host networking for CSI CephFS and RBD nodeplugins. This may be necessary
+  # in some network configurations where the SDN does not provide access to an external cluster or
+  # there is significant drop in read/write performance.
+  # CSI_ENABLE_HOST_NETWORK: "true"
+
+  # Set to true to enable adding volume metadata on the CephFS subvolume and RBD images.
+  # Not all users might be interested in getting volume/snapshot details as metadata on CephFS subvolume and RBD images.
+  # Hence enable metadata is false by default.
+  # CSI_ENABLE_METADATA: "true"
+
+  # cluster name identifier to set as metadata on the CephFS subvolume and RBD images. This will be useful in cases
+  # like for example, when two container orchestrator clusters (Kubernetes/OCP) are using a single ceph cluster.
+  # CSI_CLUSTER_NAME: "my-prod-cluster"
+
+  # Set logging level for cephCSI containers maintained by the cephCSI.
+  # Supported values from 0 to 5. 0 for general useful logs, 5 for trace level verbosity.
+  # CSI_LOG_LEVEL: "0"
+
+  # Set logging level for Kubernetes-csi sidecar containers.
+  # Supported values from 0 to 5. 0 for general useful logs (the default), 5 for trace level verbosity.
+  # CSI_SIDECAR_LOG_LEVEL: "0"
+
+  # csi driver name prefix for cephfs, rbd and nfs. if not specified, default
+  # will be the namespace name where rook-ceph operator is deployed.
+  # search for `# csi-provisioner-name` in the storageclass and
+  # volumesnashotclass and update the name accordingly.
+  # CSI_DRIVER_NAME_PREFIX: "rook-ceph"
+
+  # Set replicas for csi provisioner deployment.
+  CSI_PROVISIONER_REPLICAS: "1"
+
+  # OMAP generator will generate the omap mapping between the PV name and the RBD image.
+  # CSI_ENABLE_OMAP_GENERATOR need to be enabled when we are using rbd mirroring feature.
+  # By default OMAP generator sidecar is deployed with CSI provisioner pod, to disable
+  # it set it to false.
+  # CSI_ENABLE_OMAP_GENERATOR: "false"
+
+  # set to false to disable deployment of snapshotter container in CephFS provisioner pod.
+  CSI_ENABLE_CEPHFS_SNAPSHOTTER: "true"
+
+  # set to false to disable deployment of snapshotter container in NFS provisioner pod.
+  CSI_ENABLE_NFS_SNAPSHOTTER: "true"
+
+  # set to false to disable deployment of snapshotter container in RBD provisioner pod.
+  CSI_ENABLE_RBD_SNAPSHOTTER: "true"
+
+  # set to false to disable volume group snapshot feature. This feature is
+  # enabled by default as long as the necessary CRDs are available in the cluster.
+  CSI_ENABLE_VOLUME_GROUP_SNAPSHOT: "true"
+  # Enable cephfs kernel driver instead of ceph-fuse.
+  # If you disable the kernel client, your application may be disrupted during upgrade.
+  # See the upgrade guide: https://rook.io/docs/rook/latest/ceph-upgrade.html
+  # NOTE! cephfs quota is not supported in kernel version < 4.17
+  CSI_FORCE_CEPHFS_KERNEL_CLIENT: "true"
+
+  # (Optional) policy for modifying a volume's ownership or permissions when the RBD PVC is being mounted.
+  # supported values are documented at https://kubernetes-csi.github.io/docs/support-fsgroup.html
+  CSI_RBD_FSGROUPPOLICY: "File"
+
+  # (Optional) policy for modifying a volume's ownership or permissions when the CephFS PVC is being mounted.
+  # supported values are documented at https://kubernetes-csi.github.io/docs/support-fsgroup.html
+  CSI_CEPHFS_FSGROUPPOLICY: "File"
+
+  # (Optional) policy for modifying a volume's ownership or permissions when the NFS PVC is being mounted.
+  # supported values are documented at https://kubernetes-csi.github.io/docs/support-fsgroup.html
+  CSI_NFS_FSGROUPPOLICY: "File"
+
+  # (Optional) control the host mount of /etc/selinux for csi plugin pods.
+  CSI_PLUGIN_ENABLE_SELINUX_HOST_MOUNT: "false"
+
+  # The default version of CSI supported by Rook will be started. To change the version
+  # of the CSI driver to something other than what is officially supported, change
+  # these images to the desired release of the CSI driver.
+  # ROOK_CSI_CEPH_IMAGE: "quay.io/cephcsi/cephcsi:v3.13.1"
+  # ROOK_CSI_REGISTRAR_IMAGE: "registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.13.0"
+  # ROOK_CSI_RESIZER_IMAGE: "registry.k8s.io/sig-storage/csi-resizer:v1.13.1"
+  # ROOK_CSI_PROVISIONER_IMAGE: "registry.k8s.io/sig-storage/csi-provisioner:v5.1.0"
+  # ROOK_CSI_SNAPSHOTTER_IMAGE: "registry.k8s.io/sig-storage/csi-snapshotter:v8.2.0"
+  # ROOK_CSI_ATTACHER_IMAGE: "registry.k8s.io/sig-storage/csi-attacher:v4.8.0"
+
+  # To indicate the image pull policy to be applied to all the containers in the csi driver pods.
+  # ROOK_CSI_IMAGE_PULL_POLICY: "IfNotPresent"
+
+  # (Optional) set user created priorityclassName for csi plugin pods.
+  CSI_PLUGIN_PRIORITY_CLASSNAME: "system-node-critical"
+
+  # (Optional) set user created priorityclassName for csi provisioner pods.
+  CSI_PROVISIONER_PRIORITY_CLASSNAME: "system-cluster-critical"
+
+  # CSI CephFS plugin daemonset update strategy, supported values are OnDelete and RollingUpdate.
+  # Default value is RollingUpdate.
+  # CSI_CEPHFS_PLUGIN_UPDATE_STRATEGY: "OnDelete"
+  # A maxUnavailable parameter of CSI cephFS plugin daemonset update strategy.
+  # Default value is 1.
+  # CSI_CEPHFS_PLUGIN_UPDATE_STRATEGY_MAX_UNAVAILABLE: "1"
+  # CSI RBD plugin daemonset update strategy, supported values are OnDelete and RollingUpdate.
+  # Default value is RollingUpdate.
+  # CSI_RBD_PLUGIN_UPDATE_STRATEGY: "OnDelete"
+  # A maxUnavailable parameter of CSI RBD plugin daemonset update strategy.
+  # Default value is 1.
+  # CSI_RBD_PLUGIN_UPDATE_STRATEGY_MAX_UNAVAILABLE: "1"
+
+  # CSI NFS plugin daemonset update strategy, supported values are OnDelete and RollingUpdate.
+  # Default value is RollingUpdate.
+  # CSI_NFS_PLUGIN_UPDATE_STRATEGY: "OnDelete"
+
+  # kubelet directory path, if kubelet configured to use other than /var/lib/kubelet path.
+  # ROOK_CSI_KUBELET_DIR_PATH: "/var/lib/kubelet"
+
+  # Labels to add to the CSI CephFS Deployments and DaemonSets Pods.
+  # ROOK_CSI_CEPHFS_POD_LABELS: "key1=value1,key2=value2"
+  # Labels to add to the CSI RBD Deployments and DaemonSets Pods.
+  # ROOK_CSI_RBD_POD_LABELS: "key1=value1,key2=value2"
+  # Labels to add to the CSI NFS Deployments and DaemonSets Pods.
+  # ROOK_CSI_NFS_POD_LABELS: "key1=value1,key2=value2"
+
+  # (Optional) CephCSI CephFS plugin Volumes
+  # CSI_CEPHFS_PLUGIN_VOLUME: |
+  #  - name: lib-modules
+  #    hostPath:
+  #      path: /run/current-system/kernel-modules/lib/modules/
+  #  - name: host-nix
+  #    hostPath:
+  #      path: /nix
+
+  # (Optional) CephCSI CephFS plugin Volume mounts
+  # CSI_CEPHFS_PLUGIN_VOLUME_MOUNT: |
+  #  - name: host-nix
+  #    mountPath: /nix
+  #    readOnly: true
+
+  # (Optional) CephCSI RBD plugin Volumes
+  # CSI_RBD_PLUGIN_VOLUME: |
+  #  - name: lib-modules
+  #    hostPath:
+  #      path: /run/current-system/kernel-modules/lib/modules/
+  #  - name: host-nix
+  #    hostPath:
+  #      path: /nix
+
+  # (Optional) CephCSI RBD plugin Volume mounts
+  # CSI_RBD_PLUGIN_VOLUME_MOUNT: |
+  #  - name: host-nix
+  #    mountPath: /nix
+  #    readOnly: true
+
+  # (Optional) CephCSI provisioner NodeAffinity (applied to both CephFS and RBD provisioner).
+  # CSI_PROVISIONER_NODE_AFFINITY: "role=storage-node; storage=rook, ceph"
+  # (Optional) CephCSI provisioner tolerations list(applied to both CephFS and RBD provisioner).
+  # Put here list of taints you want to tolerate in YAML format.
+  # CSI provisioner would be best to start on the same nodes as other ceph daemons.
+  # CSI_PROVISIONER_TOLERATIONS: |
+  #   - effect: NoSchedule
+  #     key: node-role.kubernetes.io/control-plane
+  #     operator: Exists
+  #   - effect: NoExecute
+  #     key: node-role.kubernetes.io/etcd
+  #     operator: Exists
+  # (Optional) CephCSI plugin NodeAffinity (applied to both CephFS and RBD plugin).
+  # CSI_PLUGIN_NODE_AFFINITY: "role=storage-node; storage=rook, ceph"
+  # (Optional) CephCSI plugin tolerations list(applied to both CephFS and RBD plugin).
+  # Put here list of taints you want to tolerate in YAML format.
+  # CSI plugins need to be started on all the nodes where the clients need to mount the storage.
+  # CSI_PLUGIN_TOLERATIONS: |
+  #   - effect: NoSchedule
+  #     key: node-role.kubernetes.io/control-plane
+  #     operator: Exists
+  #   - effect: NoExecute
+  #     key: node-role.kubernetes.io/etcd
+  #     operator: Exists
+
+  # (Optional) CephCSI RBD provisioner NodeAffinity (if specified, overrides CSI_PROVISIONER_NODE_AFFINITY).
+  # CSI_RBD_PROVISIONER_NODE_AFFINITY: "role=rbd-node"
+  # (Optional) CephCSI RBD provisioner tolerations list(if specified, overrides CSI_PROVISIONER_TOLERATIONS).
+  # Put here list of taints you want to tolerate in YAML format.
+  # CSI provisioner would be best to start on the same nodes as other ceph daemons.
+  # CSI_RBD_PROVISIONER_TOLERATIONS: |
+  #   - key: node.rook.io/rbd
+  #     operator: Exists
+  # (Optional) CephCSI RBD plugin NodeAffinity (if specified, overrides CSI_PLUGIN_NODE_AFFINITY).
+  # CSI_RBD_PLUGIN_NODE_AFFINITY: "role=rbd-node"
+  # (Optional) CephCSI RBD plugin tolerations list(if specified, overrides CSI_PLUGIN_TOLERATIONS).
+  # Put here list of taints you want to tolerate in YAML format.
+  # CSI plugins need to be started on all the nodes where the clients need to mount the storage.
+  # CSI_RBD_PLUGIN_TOLERATIONS: |
+  #   - key: node.rook.io/rbd
+  #     operator: Exists
+
+  # (Optional) CephCSI CephFS provisioner NodeAffinity (if specified, overrides CSI_PROVISIONER_NODE_AFFINITY).
+  # CSI_CEPHFS_PROVISIONER_NODE_AFFINITY: "role=cephfs-node"
+  # (Optional) CephCSI CephFS provisioner tolerations list(if specified, overrides CSI_PROVISIONER_TOLERATIONS).
+  # Put here list of taints you want to tolerate in YAML format.
+  # CSI provisioner would be best to start on the same nodes as other ceph daemons.
+  # CSI_CEPHFS_PROVISIONER_TOLERATIONS: |
+  #   - key: node.rook.io/cephfs
+  #     operator: Exists
+  # (Optional) CephCSI CephFS plugin NodeAffinity (if specified, overrides CSI_PLUGIN_NODE_AFFINITY).
+  # CSI_CEPHFS_PLUGIN_NODE_AFFINITY: "role=cephfs-node"
+  # NOTE: Support for defining NodeAffinity for operators other than "In" and "Exists" requires the user to input a
+  # valid v1.NodeAffinity JSON or YAML string. For example, the following is valid YAML v1.NodeAffinity:
+  # CSI_CEPHFS_PLUGIN_NODE_AFFINITY: |
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #     nodeSelectorTerms:
+  #       - matchExpressions:
+  #         - key: myKey
+  #           operator: DoesNotExist
+  # (Optional) CephCSI CephFS plugin tolerations list(if specified, overrides CSI_PLUGIN_TOLERATIONS).
+  # Put here list of taints you want to tolerate in YAML format.
+  # CSI plugins need to be started on all the nodes where the clients need to mount the storage.
+  # CSI_CEPHFS_PLUGIN_TOLERATIONS: |
+  #   - key: node.rook.io/cephfs
+  #     operator: Exists
+
+  # (Optional) CephCSI NFS provisioner NodeAffinity (overrides CSI_PROVISIONER_NODE_AFFINITY).
+  # CSI_NFS_PROVISIONER_NODE_AFFINITY: "role=nfs-node"
+  # (Optional) CephCSI NFS provisioner tolerations list (overrides CSI_PROVISIONER_TOLERATIONS).
+  # Put here list of taints you want to tolerate in YAML format.
+  # CSI provisioner would be best to start on the same nodes as other ceph daemons.
+  # CSI_NFS_PROVISIONER_TOLERATIONS: |
+  #   - key: node.rook.io/nfs
+  #     operator: Exists
+  # (Optional) CephCSI NFS plugin NodeAffinity (overrides CSI_PLUGIN_NODE_AFFINITY).
+  # CSI_NFS_PLUGIN_NODE_AFFINITY: "role=nfs-node"
+  # (Optional) CephCSI NFS plugin tolerations list (overrides CSI_PLUGIN_TOLERATIONS).
+  # Put here list of taints you want to tolerate in YAML format.
+  # CSI plugins need to be started on all the nodes where the clients need to mount the storage.
+  # CSI_NFS_PLUGIN_TOLERATIONS: |
+  #   - key: node.rook.io/nfs
+  #     operator: Exists
+
+  # (Optional) CEPH CSI RBD provisioner resource requirement list, Put here list of resource
+  # requests and limits you want to apply for provisioner pod
+  #CSI_RBD_PROVISIONER_RESOURCE: |
+  #  - name : csi-provisioner
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 100m
+  #      limits:
+  #        memory: 256Mi
+  #  - name : csi-resizer
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 100m
+  #      limits:
+  #        memory: 256Mi
+  #  - name : csi-attacher
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 100m
+  #      limits:
+  #        memory: 256Mi
+  #  - name : csi-snapshotter
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 100m
+  #      limits:
+  #        memory: 256Mi
+  #  - name : csi-rbdplugin
+  #    resource:
+  #      requests:
+  #        memory: 512Mi
+  #        cpu: 250m
+  #      limits:
+  #        memory: 1Gi
+  #  - name : csi-omap-generator
+  #    resource:
+  #      requests:
+  #        memory: 512Mi
+  #        cpu: 250m
+  #      limits:
+  #        memory: 1Gi
+  #  - name : liveness-prometheus
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 50m
+  #      limits:
+  #        memory: 256Mi
+  # (Optional) CEPH CSI RBD plugin resource requirement list, Put here list of resource
+  # requests and limits you want to apply for plugin pod
+  #CSI_RBD_PLUGIN_RESOURCE: |
+  #  - name : driver-registrar
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 50m
+  #      limits:
+  #        memory: 256Mi
+  #  - name : csi-rbdplugin
+  #    resource:
+  #      requests:
+  #        memory: 512Mi
+  #        cpu: 250m
+  #      limits:
+  #        memory: 1Gi
+  #  - name : liveness-prometheus
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 50m
+  #      limits:
+  #        memory: 256Mi
+  # (Optional) CEPH CSI CephFS provisioner resource requirement list, Put here list of resource
+  # requests and limits you want to apply for provisioner pod
+  #CSI_CEPHFS_PROVISIONER_RESOURCE: |
+  #  - name : csi-provisioner
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 100m
+  #      limits:
+  #        memory: 256Mi
+  #  - name : csi-resizer
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 100m
+  #      limits:
+  #        memory: 256Mi
+  #  - name : csi-attacher
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 100m
+  #      limits:
+  #        memory: 256Mi
+  #  - name : csi-snapshotter
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 100m
+  #      limits:
+  #        memory: 256Mi
+  #  - name : csi-cephfsplugin
+  #    resource:
+  #      requests:
+  #        memory: 512Mi
+  #        cpu: 250m
+  #      limits:
+  #        memory: 1Gi
+  #  - name : liveness-prometheus
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 50m
+  #      limits:
+  #        memory: 256Mi
+  # (Optional) CEPH CSI CephFS plugin resource requirement list, Put here list of resource
+  # requests and limits you want to apply for plugin pod
+  #CSI_CEPHFS_PLUGIN_RESOURCE: |
+  #  - name : driver-registrar
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 50m
+  #      limits:
+  #        memory: 256Mi
+  #  - name : csi-cephfsplugin
+  #    resource:
+  #      requests:
+  #        memory: 512Mi
+  #        cpu: 250m
+  #      limits:
+  #        memory: 1Gi
+  #  - name : liveness-prometheus
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 50m
+  #      limits:
+  #        memory: 256Mi
+
+  # (Optional) CEPH CSI NFS provisioner resource requirement list, Put here list of resource
+  # requests and limits you want to apply for provisioner pod
+  # CSI_NFS_PROVISIONER_RESOURCE: |
+  #  - name : csi-provisioner
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 100m
+  #      limits:
+  #        memory: 256Mi
+  #  - name : csi-nfsplugin
+  #    resource:
+  #      requests:
+  #        memory: 512Mi
+  #        cpu: 250m
+  #      limits:
+  #        memory: 1Gi
+  #  - name : csi-attacher
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 100m
+  #      limits:
+  #        memory: 256Mi
+  # (Optional) CEPH CSI NFS plugin resource requirement list, Put here list of resource
+  # requests and limits you want to apply for plugin pod
+  # CSI_NFS_PLUGIN_RESOURCE: |
+  #  - name : driver-registrar
+  #    resource:
+  #      requests:
+  #        memory: 128Mi
+  #        cpu: 50m
+  #      limits:
+  #        memory: 256Mi
+  #  - name : csi-nfsplugin
+  #    resource:
+  #      requests:
+  #        memory: 512Mi
+  #        cpu: 250m
+  #      limits:
+  #        memory: 1Gi
+
+  # Configure CSI CephFS liveness metrics port
+  # Set to true to enable Ceph CSI liveness container.
+  CSI_ENABLE_LIVENESS: "false"
+  # CSI_CEPHFS_LIVENESS_METRICS_PORT: "9081"
+  # Configure CSI RBD liveness metrics port
+  # CSI_RBD_LIVENESS_METRICS_PORT: "9080"
+
+  # We can override the ports for each individual component that uses the CSIADDONS sidecar
+  # This is useful if we're running in hostNetwork, where ports may conflict on the same host
+  # CSIADDONS_PORT: "9070"
+  # CSIADDONS_RBD_PROVISIONER_PORT: "9070"
+  # CSIADDONS_CEPHFS_PROVISIONER_PORT: "9070"
+
+  # Set CephFS Kernel mount options to use https://docs.ceph.com/en/latest/man/8/mount.ceph/#options
+  # Set to "ms_mode=secure" when connections.encrypted is enabled in CephCluster CR
+  # CSI_CEPHFS_KERNEL_MOUNT_OPTIONS: "ms_mode=secure"
+
+  # (Optional) Duration in seconds that non-leader candidates will wait to force acquire leadership. Default to 137 seconds.
+  # CSI_LEADER_ELECTION_LEASE_DURATION: "137s"
+
+  # (Optional) Deadline in seconds that the acting leader will retry refreshing leadership before giving up. Defaults to 107 seconds.
+  # CSI_LEADER_ELECTION_RENEW_DEADLINE: "107s"
+
+  # (Optional) Retry Period in seconds the LeaderElector clients should wait between tries of actions. Defaults to 26 seconds.
+  # CSI_LEADER_ELECTION_RETRY_PERIOD: "26s"
+
+  # Whether the OBC provisioner should watch on the ceph cluster namespace or not, if not default provisioner value is set
+  ROOK_OBC_WATCH_OPERATOR_NAMESPACE: "true"
+
+  # Custom prefix value for the OBC provisioner instead of ceph cluster namespace, do not set on existing cluster
+  # ROOK_OBC_PROVISIONER_NAME_PREFIX: "custom-prefix"
+
+  # Whether to start the discovery daemon to watch for raw storage devices on nodes in the cluster.
+  # This daemon does not need to run if you are only going to create your OSDs based on StorageClassDeviceSets with PVCs.
+  ROOK_ENABLE_DISCOVERY_DAEMON: "false"
+  # The timeout value (in seconds) of Ceph commands. It should be >= 1. If this variable is not set or is an invalid value, it's default to 15.
+  ROOK_CEPH_COMMANDS_TIMEOUT_SECONDS: "15"
+  # Enable the csi addons sidecar.
+  CSI_ENABLE_CSIADDONS: "false"
+  # Enable watch for faster recovery from rbd rwo node loss
+  ROOK_WATCH_FOR_NODE_FAILURE: "true"
+  # ROOK_CSIADDONS_IMAGE: "quay.io/csiaddons/k8s-sidecar:v0.11.0"
+  # The CSI GRPC timeout value (in seconds). It should be >= 120. If this variable is not set or is an invalid value, it's default to 150.
+  CSI_GRPC_TIMEOUT_SECONDS: "150"
+
+  # Enable topology based provisioning.
+  CSI_ENABLE_TOPOLOGY: "false"
+  # Domain labels define which node labels to use as domains
+  # for CSI nodeplugins to advertise their domains
+  # NOTE: the value here serves as an example and needs to be
+  # updated with node labels that define domains of interest
+  # CSI_TOPOLOGY_DOMAIN_LABELS: "kubernetes.io/hostname,topology.kubernetes.io/zone,topology.rook.io/rack"
+
+  # Whether to skip any attach operation altogether for CephCSI PVCs.
+  # See more details [here](https://kubernetes-csi.github.io/docs/skip-attach.html#skip-attach-with-csi-driver-object).
+  # If set to false it skips the volume attachments and makes the creation of pods using the CephCSI PVC fast.
+  # **WARNING** It's highly discouraged to use this for RWO volumes. for RBD PVC it can cause data corruption,
+  # csi-addons operations like Reclaimspace and PVC Keyrotation will also not be supported if set to false
+  # since we'll have no VolumeAttachments to determine which node the PVC is mounted on.
+  # Refer to this [issue](https://github.com/kubernetes/kubernetes/issues/103305) for more details.
+  CSI_CEPHFS_ATTACH_REQUIRED: "true"
+  CSI_RBD_ATTACH_REQUIRED: "true"
+  CSI_NFS_ATTACH_REQUIRED: "true"
+  # Rook Discover toleration. Will tolerate all taints with all keys.
+  # (Optional) Rook Discover tolerations list. Put here list of taints you want to tolerate in YAML format.
+  # DISCOVER_TOLERATIONS: |
+  #   - effect: NoSchedule
+  #     key: node-role.kubernetes.io/control-plane
+  #     operator: Exists
+  #   - effect: NoExecute
+  #     key: node-role.kubernetes.io/etcd
+  #     operator: Exists
+  # (Optional) Rook Discover priority class name to set on the pod(s)
+  # DISCOVER_PRIORITY_CLASS_NAME: "<PriorityClassName>"
+  # (Optional) Discover Agent NodeAffinity.
+  # DISCOVER_AGENT_NODE_AFFINITY: |
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #     nodeSelectorTerms:
+  #       - matchExpressions:
+  #         - key: myKey
+  #           operator: DoesNotExist
+  # (Optional) Discover Agent Pod Labels.
+  # DISCOVER_AGENT_POD_LABELS: "key1=value1,key2=value2"
+  # Disable automatic orchestration when new devices are discovered
+  ROOK_DISABLE_DEVICE_HOTPLUG: "false"
+  # The duration between discovering devices in the rook-discover daemonset.
+  ROOK_DISCOVER_DEVICES_INTERVAL: "60m"
+  # DISCOVER_DAEMON_RESOURCES: |
+  #   - name: DISCOVER_DAEMON_RESOURCES
+  #     resources:
+  #       limits:
+  #         memory: 512Mi
+  #       requests:
+  #         cpu: 100m
+  #         memory: 128Mi
+
+  # (Optional) Burst to use while communicating with the kubernetes apiserver.
+  # CSI_KUBE_API_BURST: "10"
+
+  # (Optional) QPS to use while communicating with the kubernetes apiserver.
+  # CSI_KUBE_API_QPS: "5.0"
+
+  # Whether to create all Rook pods to run on the host network, for example in environments where a CNI is not enabled
+  ROOK_ENFORCE_HOST_NETWORK: "false"
+
+  # RevisionHistoryLimit value for all deployments created by rook.
+  # ROOK_REVISION_HISTORY_LIMIT: "3"
+
+  #  Custom label to identify node hostname. If not set `kubernetes.io/hostname` will be used
+  ROOK_CUSTOM_HOSTNAME_LABEL: ""
+---
+# OLM: BEGIN OPERATOR DEPLOYMENT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rook-ceph-operator
+  namespace: rook-ceph # namespace:operator
+  labels:
+    operator: rook
+    storage-backend: ceph
+    app.kubernetes.io/name: rook-ceph
+    app.kubernetes.io/instance: rook-ceph
+    app.kubernetes.io/component: rook-ceph-operator
+    app.kubernetes.io/part-of: rook-ceph-operator
+spec:
+  selector:
+    matchLabels:
+      app: rook-ceph-operator
+  strategy:
+    type: Recreate
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: rook-ceph-operator
+    spec:
+      tolerations:
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 5
+      serviceAccountName: rook-ceph-system
+      containers:
+        - name: rook-ceph-operator
+          image: {{.CustomRegistries.RookOperator | default .ImageRepository | default .Registries.RookOperator}}{{.Images.RookOperator}}
+          args: ["ceph", "operator"]
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 2016
+            runAsGroup: 2016
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - mountPath: /var/lib/rook
+              name: rook-config
+            - mountPath: /etc/ceph
+              name: default-config-dir
+          env:
+            # If the operator should only watch for cluster CRDs in the same namespace, set this to "true".
+            # If this is not set to true, the operator will watch for cluster CRDs in all namespaces.
+            - name: ROOK_CURRENT_NAMESPACE_ONLY
+              value: "false"
+
+            # Whether to start pods as privileged that mount a host path, which includes the Ceph mon, osd pods and csi provisioners(if logrotation is on).
+            # Set this to true if SELinux is enabled (e.g. OpenShift) to workaround the anyuid issues.
+            # For more details see https://github.com/rook/rook/issues/1314#issuecomment-355799641
+            - name: ROOK_HOSTPATH_REQUIRES_PRIVILEGED
+              value: "false"
+            # Provide customised regex as the values using comma. For eg. regex for rbd based volume, value will be like "(?i)rbd[0-9]+".
+            # In case of more than one regex, use comma to separate between them.
+            # Default regex will be "(?i)dm-[0-9]+,(?i)rbd[0-9]+,(?i)nbd[0-9]+"
+            # Add regex expression after putting a comma to blacklist a disk
+            # If value is empty, the default regex will be used.
+            - name: DISCOVER_DAEMON_UDEV_BLACKLIST
+              value: "(?i)dm-[0-9]+,(?i)rbd[0-9]+,(?i)nbd[0-9]+"
+
+            # Time to wait until the node controller will move Rook pods to other
+            # nodes after detecting an unreachable node.
+            # Pods affected by this setting are:
+            # mgr, rbd, mds, rgw, nfs, PVC based mons and osds, and ceph toolbox
+            # The value used in this variable replaces the default value of 300 secs
+            # added automatically by k8s as Toleration for
+            # <node.kubernetes.io/unreachable>
+            # The total amount of time to reschedule Rook pods in healthy nodes
+            # before detecting a <not ready node> condition will be the sum of:
+            #  --> node-monitor-grace-period: 40 seconds (k8s kube-controller-manager flag)
+            #  --> ROOK_UNREACHABLE_NODE_TOLERATION_SECONDS: 5 seconds
+            - name: ROOK_UNREACHABLE_NODE_TOLERATION_SECONDS
+              value: "5"
+
+            # The name of the node to pass with the downward API
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            # The pod name to pass with the downward API
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            # The pod namespace to pass with the downward API
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          # Recommended resource requests and limits, if desired
+          #resources:
+          #  limits:
+          #    memory: 512Mi
+          #  requests:
+          #    cpu: 200m
+          #    memory: 128Mi
+
+          #  Uncomment it to run lib bucket provisioner in multithreaded mode
+          #- name: LIB_BUCKET_PROVISIONER_THREADS
+          #  value: "5"
+
+      # Uncomment these two settings to run the operator on the host network
+      # hostNetwork: true
+      # dnsPolicy: ClusterFirstWithHostNet
+      volumes:
+        - name: rook-config
+          emptyDir: {}
+        - name: default-config-dir
+          emptyDir: {}
+# OLM: END OPERATOR DEPLOYMENT

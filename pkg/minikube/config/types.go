@@ -110,6 +110,8 @@ type ClusterConfig struct {
 	SSHAgentPID             int
 	GPUs                    string
 	AutoPauseInterval       time.Duration // Specifies interval of time to wait before checking if cluster should be paused
+	RookCephOSDSize         string        // OSD image size for rook-ceph addon (e.g., "6Gi", "10Gi")
+	RookCephOSDDevice       string        // Loop device used by the rook-ceph addon
 	Rosetta                 bool          // Only used by vfkit driver
 	VmnetOffloading         bool          // Only used by krunkit driver
 	DNSServers              []netip.Addr  // Static DNS servers for the VM (VM drivers only)
