@@ -189,6 +189,52 @@ func retrieveDaemon(ref name.Reference) (v1.Image, error) {
 	return img, err
 }
 
+// streamImageFromDaemon saves a local Docker daemon image directly to dst by piping docker save output to disk, avoiding buffering the entire image in RAM.
+// Returns an error if the daemon is unavailable or the image does not exist locally.
+func streamImageFromDaemon(ref name.Reference, dst string) error {
+	cl, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+	cl.NegotiateAPIVersion(ctx)
+
+	// Confirm the image exists before creating temp files.
+	if _, _, err := cl.ImageInspectWithRaw(ctx, ref.Name()); err != nil {
+		return err
+	}
+
+	rc, err := cl.ImageSave(ctx, []string{ref.Name()})
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+
+	tmp, err := os.CreateTemp(filepath.Dir(dst), filepath.Base(dst)+".*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	defer func() {
+		if _, statErr := os.Stat(tmpName); statErr == nil {
+			os.Remove(tmpName)
+		}
+	}()
+
+	if _, err = io.Copy(tmp, rc); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err = tmp.Close(); err != nil {
+		return err
+	}
+	if err = os.Rename(tmpName, dst); err != nil {
+		return err
+	}
+	klog.Infof("streamed %s from daemon to %s", ref.Name(), dst)
+	return nil
+}
+
 func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
 	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(p))
 	if err == nil {
