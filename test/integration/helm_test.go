@@ -42,7 +42,7 @@ import (
 //
 // Bump this occasionally to catch the CDN serving something stale or
 // broken. It doesn't need to track every Helm release.
-var minExpectedHelmVersion = semver.Version{Major: 3, Minor: 20}
+var minExpectedHelmVersion = semver.Version{Major: 4, Minor: 2, Patch: 1}
 
 // TestHelmInstall verifies that InstallHelm can install, upgrade, and
 // re-install helm inside a live node.
@@ -66,7 +66,7 @@ func TestHelmInstall(t *testing.T) {
 	// Skip if the node has no internet — helm install downloads from
 	// get.helm.sh which requires outbound connectivity.
 	t.Log("checking network connectivity")
-	_, err = runner.RunCmd(exec.Command("curl", "-fsSL", "--max-time", "10", "-o", "/dev/null", "https://get.helm.sh/helm3-latest-version"))
+	_, err = runner.RunCmd(exec.Command("curl", "-fsSL", "--max-time", "10", "-o", "/dev/null", "https://get.helm.sh/helm4-latest-version"))
 	if err != nil {
 		t.Skip("skipping: guest VM/container has no outbound internet access (this is required to download helm): https://github.com/kubernetes/minikube/issues/23275")
 	}
