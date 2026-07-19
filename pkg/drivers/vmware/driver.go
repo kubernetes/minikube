@@ -36,8 +36,8 @@ import (
 
 	"errors"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/ssh"
 	"k8s.io/minikube/pkg/libmachine/state"
@@ -188,12 +188,12 @@ func (d *Driver) Create() error {
 		}
 	}
 
-	log.Infof("Creating SSH key...")
+	diagnostics.Infof("Creating SSH key...")
 	if err := ssh.GenerateSSHKey(d.GetSSHKeyPath()); err != nil {
 		return err
 	}
 
-	log.Infof("Creating VM...")
+	diagnostics.Infof("Creating VM...")
 	if err := os.MkdirAll(d.ResolveStorePath("."), 0755); err != nil {
 		return err
 	}
@@ -230,7 +230,7 @@ func (d *Driver) Create() error {
 func (d *Driver) generateDiskImage() error {
 	diskImg := d.vmdkPath()
 
-	log.Infof("Creating %d MB hard disk image at %s...", d.DiskSize, diskImg)
+	diagnostics.Infof("Creating %d MB hard disk image at %s...", d.DiskSize, diskImg)
 
 	magicString := "boot2docker, please format-me"
 
@@ -323,26 +323,26 @@ func (d *Driver) Start() error {
 	var ip string
 	var err error
 
-	log.Infof("Starting %s...", d.MachineName)
+	diagnostics.Infof("Starting %s...", d.MachineName)
 	_, _, err = vmrun("start", d.vmxPath(), "nogui")
 	if err != nil {
 		return err
 	}
 
-	log.Infof("Waiting for VM to come online...")
+	diagnostics.Infof("Waiting for VM to come online...")
 	for i := 1; i <= 60; i++ {
 		ip, err = d.GetIP()
 		if err != nil {
-			log.Debugf("Not there yet %d/%d, error: %s", i, 60, err)
+			diagnostics.Debugf("Not there yet %d/%d, error: %s", i, 60, err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
 
 		if ip != "" {
-			log.Debugf("Got an ip: %s", ip)
+			diagnostics.Debugf("Got an ip: %s", ip)
 			conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", ip, 22), 2*time.Second)
 			if err != nil {
-				log.Debugf("SSH Daemon not responding yet: %s", err)
+				diagnostics.Debugf("SSH Daemon not responding yet: %s", err)
 				time.Sleep(2 * time.Second)
 				continue
 			}
@@ -387,7 +387,7 @@ func (d *Driver) Remove() error {
 			return errors.New("error stopping VM before deletion")
 		}
 	}
-	log.Infof("Deleting %s...", d.MachineName)
+	diagnostics.Infof("Deleting %s...", d.MachineName)
 	if _, _, err := vmrun("deleteVM", d.vmxPath(), "nogui"); err != nil {
 		return err
 	}
@@ -435,7 +435,7 @@ func (d *Driver) getMacAddressFromVmx() (string, error) {
 		return "", fmt.Errorf("couldn't find MAC address in VMX file %s", d.vmxPath())
 	}
 
-	log.Debugf("MAC address in VMX: %s", macaddr)
+	diagnostics.Debugf("MAC address in VMX: %s", macaddr)
 
 	return macaddr, nil
 }
@@ -457,7 +457,7 @@ func (d *Driver) getIPfromVmnetConfiguration(macaddr string) (string, error) {
 	// DHCP lease table for NAT vmnet interface
 	confFiles, _ := filepath.Glob(DhcpConfigFiles())
 	for _, conffile := range confFiles {
-		log.Debugf("Trying to find IP address in configuration file: %s", conffile)
+		diagnostics.Debugf("Trying to find IP address in configuration file: %s", conffile)
 		if ipaddr, err := d.getIPfromVmnetConfigurationFile(conffile, macaddr); err == nil {
 			return ipaddr, nil
 		}
@@ -543,7 +543,7 @@ func (d *Driver) getIPfromVmnetConfigurationFile(conffile, macaddr string) (stri
 		}
 	}
 
-	log.Debugf("Following IPs found %s", m)
+	diagnostics.Debugf("Following IPs found %s", m)
 
 	// map is filled to now lets check if we have a MAC associated to an IP
 	currentip, ok := m[strings.ToLower(macaddr)]
@@ -552,7 +552,7 @@ func (d *Driver) getIPfromVmnetConfigurationFile(conffile, macaddr string) (stri
 		return "", fmt.Errorf("IP not found for MAC %s in vmnet configuration", macaddr)
 	}
 
-	log.Debugf("IP found in vmnet configuration file: %s", currentip)
+	diagnostics.Debugf("IP found in vmnet configuration file: %s", currentip)
 
 	return currentip, nil
 
@@ -563,7 +563,7 @@ func (d *Driver) getIPfromDHCPLease(macaddr string) (string, error) {
 	// DHCP lease table for NAT vmnet interface
 	leasesFiles, _ := filepath.Glob(DhcpLeaseFiles())
 	for _, dhcpfile := range leasesFiles {
-		log.Debugf("Trying to find IP address in leases file: %s", dhcpfile)
+		diagnostics.Debugf("Trying to find IP address in leases file: %s", dhcpfile)
 		if ipaddr, err := d.getIPfromDHCPLeaseFile(dhcpfile, macaddr); err == nil {
 			return ipaddr, nil
 		}
@@ -619,7 +619,7 @@ func (d *Driver) getIPfromDHCPLeaseFile(dhcpfile, macaddr string) (string, error
 		return "", fmt.Errorf("IP not found for MAC %s in DHCP leases", macaddr)
 	}
 
-	log.Debugf("IP found in DHCP lease table: %s", currentip)
+	diagnostics.Debugf("IP found in DHCP lease table: %s", currentip)
 
 	return currentip, nil
 }

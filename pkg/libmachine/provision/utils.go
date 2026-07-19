@@ -29,8 +29,8 @@ import (
 
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/cert"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/provision/serviceaction"
 )
@@ -89,7 +89,7 @@ func ConfigureAuth(p Provisioner) error {
 		return err
 	}
 
-	log.Info("Copying certs to the local machine directory...")
+	diagnostics.Info("Copying certs to the local machine directory...")
 
 	if err := mcnutils.CopyFile(authOptions.CaCertPath, filepath.Join(authOptions.StorePath, "ca.pem")); err != nil {
 		return fmt.Errorf("Copying ca.pem to machine dir failed: %s", err)
@@ -106,7 +106,7 @@ func ConfigureAuth(p Provisioner) error {
 	// The Host IP is always added to the certificate's SANs list
 	hosts := authOptions.ServerCertSANs
 	hosts = append(hosts, ip, "localhost", "127.0.0.1")
-	log.Debugf("generating server cert: %s ca-key=%s private-key=%s org=%s san=%s",
+	diagnostics.Debugf("generating server cert: %s ca-key=%s private-key=%s org=%s san=%s",
 		authOptions.ServerCertPath,
 		authOptions.CaCertPath,
 		authOptions.CaPrivateKeyPath,
@@ -154,7 +154,7 @@ func ConfigureAuth(p Provisioner) error {
 		return err
 	}
 
-	log.Info("Copying certs to the remote machine...")
+	diagnostics.Info("Copying certs to the remote machine...")
 
 	// printf will choke if we don't pass a format string because of the
 	// dashes, so that's the reason for the '%%s'
@@ -196,7 +196,7 @@ func ConfigureAuth(p Provisioner) error {
 		return err
 	}
 
-	log.Info("Setting Docker configuration on the remote daemon...")
+	diagnostics.Info("Setting Docker configuration on the remote daemon...")
 
 	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(dkrcfg.EngineOptionsPath), dkrcfg.EngineOptions, dkrcfg.EngineOptionsPath)); err != nil {
 		return err
@@ -218,7 +218,7 @@ func matchNetstatOut(reDaemonListening, netstatOut string) bool {
 	for line := range strings.SplitSeq(netstatOut, "\n") {
 		match, err := regexp.MatchString(reDaemonListening, line)
 		if err != nil {
-			log.Warnf("Regex warning: %s", err)
+			diagnostics.Warnf("Regex warning: %s", err)
 		}
 		if match && line != "" {
 			return true
@@ -236,7 +236,7 @@ func decideStorageDriver(p Provisioner, defaultDriver, suppliedDriver string) (s
 
 	defer func() {
 		if bestSuitedDriver != "" {
-			log.Debugf("No storagedriver specified, using %s\n", bestSuitedDriver)
+			diagnostics.Debugf("No storagedriver specified, using %s\n", bestSuitedDriver)
 		}
 	}()
 
@@ -274,7 +274,7 @@ func checkDaemonUp(p Provisioner, dockerPort int) func() bool {
 		// HACK: Check netstat's output to see if anyone's listening on the Docker API port.
 		netstatOut, err := p.SSHCommand("if ! type netstat 1>/dev/null; then ss -tln; else netstat -tln; fi")
 		if err != nil {
-			log.Warnf("Error running SSH command: %s", err)
+			diagnostics.Warnf("Error running SSH command: %s", err)
 			return false
 		}
 

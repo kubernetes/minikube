@@ -21,9 +21,9 @@ import (
 
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/cert"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcndockerclient"
 	"k8s.io/minikube/pkg/libmachine/mcnerror"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
@@ -133,38 +133,38 @@ func (h *Host) WaitForDocker() error {
 }
 
 func (h *Host) Start() error {
-	log.Infof("Starting %q...", h.Name)
+	diagnostics.Infof("Starting %q...", h.Name)
 	if err := h.runActionForState(h.Driver.Start, state.Running); err != nil {
 		return err
 	}
 
-	log.Infof("Machine %q was started.", h.Name)
+	diagnostics.Infof("Machine %q was started.", h.Name)
 
 	return h.WaitForDocker()
 }
 
 func (h *Host) Stop() error {
-	log.Infof("Stopping %q...", h.Name)
+	diagnostics.Infof("Stopping %q...", h.Name)
 	if err := h.runActionForState(h.Driver.Stop, state.Stopped); err != nil {
 		return err
 	}
 
-	log.Infof("Machine %q was stopped.", h.Name)
+	diagnostics.Infof("Machine %q was stopped.", h.Name)
 	return nil
 }
 
 func (h *Host) Kill() error {
-	log.Infof("Killing %q...", h.Name)
+	diagnostics.Infof("Killing %q...", h.Name)
 	if err := h.runActionForState(h.Driver.Kill, state.Stopped); err != nil {
 		return err
 	}
 
-	log.Infof("Machine %q was killed.", h.Name)
+	diagnostics.Infof("Machine %q was killed.", h.Name)
 	return nil
 }
 
 func (h *Host) Restart() error {
-	log.Infof("Restarting %q...", h.Name)
+	diagnostics.Infof("Restarting %q...", h.Name)
 	if drivers.MachineInState(h.Driver, state.Stopped)() {
 		if err := h.Start(); err != nil {
 			return err
@@ -206,7 +206,7 @@ func (h *Host) Upgrade() error {
 	}
 
 	if machineState != state.Running {
-		log.Info("Starting machine so machine can be upgraded...")
+		diagnostics.Info("Starting machine so machine can be upgraded...")
 		if err := h.Start(); err != nil {
 			return err
 		}
@@ -250,12 +250,12 @@ func (h *Host) Upgrade() error {
 		return h.Provision()
 	}
 
-	log.Info("Upgrading docker...")
+	diagnostics.Info("Upgrading docker...")
 	if err := provisioner.Package("docker", pkgaction.Upgrade); err != nil {
 		return err
 	}
 
-	log.Info("Restarting docker...")
+	diagnostics.Info("Restarting docker...")
 	return provisioner.Service("docker", serviceaction.Restart)
 }
 
@@ -285,7 +285,7 @@ func (h *Host) ConfigureAuth() error {
 }
 
 func (h *Host) ConfigureAllAuth() error {
-	log.Info("Regenerating local certificates")
+	diagnostics.Info("Regenerating local certificates")
 	if err := cert.BootstrapCertificates(h.AuthOptions()); err != nil {
 		return err
 	}

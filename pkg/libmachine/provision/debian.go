@@ -20,9 +20,9 @@ import (
 	"fmt"
 
 	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/provision/pkgaction"
 	"k8s.io/minikube/pkg/libmachine/provision/serviceaction"
@@ -77,17 +77,17 @@ func (provisioner *DebianProvisioner) Package(name string, action pkgaction.Pack
 
 	command := fmt.Sprintf("DEBIAN_FRONTEND=noninteractive sudo -E apt-get %s -y  %s", packageAction, name)
 
-	log.Debugf("package: action=%s name=%s", action.String(), name)
+	diagnostics.Debugf("package: action=%s name=%s", action.String(), name)
 
 	return waitForLock(provisioner, command)
 }
 
 func (provisioner *DebianProvisioner) dockerDaemonResponding() bool {
-	log.Debug("checking docker daemon")
+	diagnostics.Debug("checking docker daemon")
 
 	if out, err := provisioner.SSHCommand("sudo docker version"); err != nil {
-		log.Warnf("Error getting SSH command to check if the daemon is up: %s", err)
-		log.Debugf("'sudo docker version' output:\n%s", out)
+		diagnostics.Warnf("Error getting SSH command to check if the daemon is up: %s", err)
+		diagnostics.Debugf("'sudo docker version' output:\n%s", out)
 		return false
 	}
 
@@ -108,47 +108,47 @@ func (provisioner *DebianProvisioner) Provision(swarmOptions swarm.Options, auth
 	provisioner.EngineOptions.StorageDriver = storageDriver
 
 	// HACK: since debian does not come with sudo by default we install
-	log.Debug("installing sudo")
+	diagnostics.Debug("installing sudo")
 	if _, err := provisioner.SSHCommand("if ! type sudo; then apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y sudo; fi"); err != nil {
 		return err
 	}
 
-	log.Debug("setting hostname")
+	diagnostics.Debug("setting hostname")
 	if err := provisioner.SetHostname(provisioner.Driver.GetMachineName()); err != nil {
 		return err
 	}
 
-	log.Debug("installing base packages")
+	diagnostics.Debug("installing base packages")
 	for _, pkg := range provisioner.Packages {
 		if err := provisioner.Package(pkg, pkgaction.Install); err != nil {
 			return err
 		}
 	}
 
-	log.Debug("installing docker")
+	diagnostics.Debug("installing docker")
 	if err := installDockerGeneric(provisioner, engineOptions.InstallURL); err != nil {
 		return err
 	}
 
-	log.Debug("waiting for docker daemon")
+	diagnostics.Debug("waiting for docker daemon")
 	if err := mcnutils.WaitFor(provisioner.dockerDaemonResponding); err != nil {
 		return err
 	}
 
 	provisioner.AuthOptions = setRemoteAuthOptions(provisioner)
 
-	log.Debug("configuring auth")
+	diagnostics.Debug("configuring auth")
 	if err := ConfigureAuth(provisioner); err != nil {
 		return err
 	}
 
-	log.Debug("configuring swarm")
+	diagnostics.Debug("configuring swarm")
 	if err := configureSwarm(provisioner, swarmOptions, provisioner.AuthOptions); err != nil {
 		return err
 	}
 
 	// enable in systemd
-	log.Debug("enabling docker in systemd")
+	diagnostics.Debug("enabling docker in systemd")
 	err = provisioner.Service("docker", serviceaction.Enable)
 	return err
 }
