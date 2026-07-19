@@ -357,14 +357,6 @@ retryable_fix_cgroup() {
     exit 31
 }
 
-fix_machine_id() {
-  # Deletes the machine-id embedded in the node image and generates a new one.
-  # This is necessary because both kubelet and other components like weave net
-  # use machine-id internally to distinguish nodes.
-  echo 'INFO: clearing and regenerating /etc/machine-id' >&2
-  rm -f /etc/machine-id
-  systemd-machine-id-setup
-}
 
 fix_product_name() {
   # this is a small fix to hide the underlying hardware and fix issue #426
@@ -545,7 +537,6 @@ configure_containerd
 configure_proxy
 fix_mount
 retryable_fix_cgroup
-fix_machine_id
 fix_product_name
 fix_product_uuid
 select_iptables
