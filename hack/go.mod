@@ -17,6 +17,7 @@ require (
 	golang.org/x/mod v0.38.0
 	golang.org/x/oauth2 v0.36.0
 	gonum.org/v1/plot v0.16.0
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/minikube v1.36.0
 )
@@ -223,7 +224,6 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.36.2 // indirect
 	k8s.io/apimachinery v0.36.2 // indirect
 	k8s.io/cli-runtime v0.36.2 // indirect
