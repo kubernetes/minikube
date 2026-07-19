@@ -188,8 +188,8 @@ func containerNetworkInspect(ociBin string, name string) (netInfo, error) {
 type networkInspect struct {
 	Name         string
 	Driver       string
-	Subnet       string
-	Gateway      string
+	Subnets      []string
+	Gateways     []string
 	MTU          int
 	ContainerIPs []string
 }
@@ -197,9 +197,11 @@ type networkInspect struct {
 var dockerInspectGetter = func(name string) (*RunResult, error) {
 	// hack -- 'support ancient versions of docker again (template parsing issue) #10362' and resolve 'Template parsing error: template: :1: unexpected "=" in operand' / 'exit status 64'
 	// note: docker v18.09.7 and older use go v1.10.8 and older, whereas support for '=' operator in go templates came in go v1.11
-	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnet": "{{range .IPAM.Config}}{{.Subnet}}{{end}}","Gateway": "{{range .IPAM.Config}}{{.Gateway}}{{end}}","MTU": {{if (index .Options "com.docker.network.driver.mtu")}}{{(index .Options "com.docker.network.driver.mtu")}}{{else}}0{{end}}, "ContainerIPs": [{{range $k,$v := .Containers }}"{{$v.IPv4Address}}",{{end}}]}`)
+	// Subnets/Gateways are emitted as JSON arrays so that dual-stack networks (IPv4+IPv6) don't
+	// produce a concatenated invalid CIDR like "192.168.97.0/24fd07:b51a:cc66::/64". See #21435.
+	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnets": [{{range .IPAM.Config}}"{{.Subnet}}",{{end}}],"Gateways": [{{range .IPAM.Config}}"{{.Gateway}}",{{end}}],"MTU": {{if (index .Options "com.docker.network.driver.mtu")}}{{(index .Options "com.docker.network.driver.mtu")}}{{else}}0{{end}}, "ContainerIPs": [{{range $k,$v := .Containers }}"{{$v.IPv4Address}}",{{end}}]}`)
 	rr, err := runCmd(cmd)
-	// remove extra ',' after the last element in the ContainerIPs slice
+	// remove extra ',' after the last element in array slices (Subnets, Gateways, ContainerIPs)
 	rr.Stdout = *bytes.NewBuffer(bytes.ReplaceAll(rr.Stdout.Bytes(), []byte(",]"), []byte("]")))
 	return rr, err
 }
@@ -218,17 +220,34 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 		return info, err
 	}
 
-	// results looks like {"Name": "bridge","Driver": "bridge","Subnet": "172.17.0.0/16","Gateway": "172.17.0.1","MTU": 1500, "ContainerIPs": ["172.17.0.3/16", "172.17.0.2/16"]}
+	// results looks like {"Name": "bridge","Driver": "bridge","Subnets": ["172.17.0.0/16"],"Gateways": ["172.17.0.1"],"MTU": 1500, "ContainerIPs": ["172.17.0.3/16", "172.17.0.2/16"]}
 	if err := json.Unmarshal(rr.Stdout.Bytes(), &vals); err != nil {
 		return info, fmt.Errorf("error parsing network inspect output: %q", rr.Stdout.String())
 	}
 
-	info.gateway = net.ParseIP(vals.Gateway)
 	info.mtu = vals.MTU
 
-	_, info.subnet, err = net.ParseCIDR(vals.Subnet)
-	if err != nil {
-		return info, fmt.Errorf("parse subnet for %s: %w", name, err)
+	// Select the first IPv4 gateway (IPv6 addresses contain ':')
+	for _, g := range vals.Gateways {
+		if g != "" && !strings.Contains(g, ":") {
+			info.gateway = net.ParseIP(g)
+			break
+		}
+	}
+
+	// Select the first IPv4 subnet (IPv6 CIDRs contain ':')
+	for _, s := range vals.Subnets {
+		if s != "" && !strings.Contains(s, ":") {
+			_, info.subnet, err = net.ParseCIDR(s)
+			if err != nil {
+				return info, fmt.Errorf("parse subnet for %s: %w", name, err)
+			}
+			break
+		}
+	}
+
+	if info.subnet == nil {
+		return info, fmt.Errorf("no IPv4 subnet found for %s", name)
 	}
 
 	return info, nil
