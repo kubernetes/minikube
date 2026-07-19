@@ -55,7 +55,6 @@ must be owned by root and may not be modifiable by unprivileged users.
 
 ### Grant permission to run vmnet-helper manually (if said no to script above)
 
-
 The vment-helper process must run as root to create a vmnet interface.
 To allow users in the `staff` group to run the vmnet helper without a
 password, you can install the default sudoers rule:
@@ -68,8 +67,6 @@ sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-he
 
 You can change the sudoers configuration to allow access to specific
 users or other groups.
-
-
 
 ### Usage
 

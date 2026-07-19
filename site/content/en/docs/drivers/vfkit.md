@@ -52,11 +52,11 @@ sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-he
 You can change the sudoers configuration to allow access to specific
 users or other groups.
 
-
-**IMPORTANT**: The vmnet-helper executable and the directory where it is
-installed must be owned by root and may not be modifiable by
+{{% alert title="Note" color="primary" %}}
+The vmnet-helper executable and the directory where it is installed
+must be owned by root and may not be modifiable by
 unprivileged users.
-
+{{% /alert %}}
 
 ### Usage
 
@@ -66,6 +66,7 @@ minikube start --driver vfkit --network vmnet-shared
 
 {{% /tab %}}
 {{% tab builtin %}}
+
 ### Usage
 
 ```shell
