@@ -1170,6 +1170,13 @@ func suggestMemoryAllocation(sysLimit, containerLimit, nodes int) int {
 	return suggested
 }
 
+func memoryRequirements(drvName string) (minimum, recommended int) {
+	if driver.IsVM(drvName) && !driver.IsSSH(drvName) {
+		return minVMUsableMem, minVMRecommendedMem
+	}
+	return minUsableMem, minRecommendedMem
+}
+
 // validateRequestedMemorySize validates the memory size matches the minimum recommended
 func validateRequestedMemorySize(req int, drvName string) {
 	// TODO: Fix MB vs MiB confusion
@@ -1177,21 +1184,22 @@ func validateRequestedMemorySize(req int, drvName string) {
 	if err != nil {
 		klog.Warningf("Unable to query memory limits: %v", err)
 	}
+	minimumMemory, recommendedMemory := memoryRequirements(drvName)
 
 	// Detect if their system doesn't have enough memory to work with.
-	if driver.IsKIC(drvName) && containerLimit < minUsableMem {
+	if driver.IsKIC(drvName) && containerLimit < minimumMemory {
 		if driver.IsDockerDesktop(drvName) {
 			if runtime.GOOS == "darwin" {
-				exitIfNotForced(reason.RsrcInsufficientDarwinDockerMemory, "Docker Desktop only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
+				exitIfNotForced(reason.RsrcInsufficientDarwinDockerMemory, "Docker Desktop only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "req": minimumMemory, "recommend": "2.25 GB"})
 			} else {
-				exitIfNotForced(reason.RsrcInsufficientWindowsDockerMemory, "Docker Desktop only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
+				exitIfNotForced(reason.RsrcInsufficientWindowsDockerMemory, "Docker Desktop only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "req": minimumMemory, "recommend": "2.25 GB"})
 			}
 		}
-		exitIfNotForced(reason.RsrcInsufficientContainerMemory, "{{.driver}} only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "driver": drvName, "req": minUsableMem})
+		exitIfNotForced(reason.RsrcInsufficientContainerMemory, "{{.driver}} only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "driver": drvName, "req": minimumMemory})
 	}
 
-	if sysLimit < minUsableMem {
-		exitIfNotForced(reason.RsrcInsufficientSysMemory, "System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": sysLimit, "req": minUsableMem})
+	if sysLimit < minimumMemory {
+		exitIfNotForced(reason.RsrcInsufficientSysMemory, "System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": sysLimit, "req": minimumMemory})
 	}
 
 	// if --memory=no-limit, ignore remaining checks
@@ -1199,18 +1207,18 @@ func validateRequestedMemorySize(req int, drvName string) {
 		return
 	}
 
-	if req < minUsableMem {
-		exitIfNotForced(reason.RsrcInsufficientReqMemory, "Requested memory allocation {{.requested}}MiB is less than the usable minimum of {{.minimum_memory}}MB", out.V{"requested": req, "minimum_memory": minUsableMem})
+	if req < minimumMemory {
+		exitIfNotForced(reason.RsrcInsufficientReqMemory, "Requested memory allocation {{.requested}}MiB is less than the usable minimum of {{.minimum_memory}}MB", out.V{"requested": req, "minimum_memory": minimumMemory})
 	}
-	if req < minRecommendedMem {
+	if req < recommendedMemory {
 		if driver.IsDockerDesktop(drvName) {
 			if runtime.GOOS == "darwin" {
-				out.WarnReason(reason.RsrcInsufficientDarwinDockerMemory, "Docker Desktop only has {{.size}}MiB available, you may encounter application deployment failures.", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
+				out.WarnReason(reason.RsrcInsufficientDarwinDockerMemory, "Docker Desktop only has {{.size}}MiB available, you may encounter application deployment failures.", out.V{"size": containerLimit, "req": minimumMemory, "recommend": "2.25 GB"})
 			} else {
-				out.WarnReason(reason.RsrcInsufficientWindowsDockerMemory, "Docker Desktop only has {{.size}}MiB available, you may encounter application deployment failures.", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
+				out.WarnReason(reason.RsrcInsufficientWindowsDockerMemory, "Docker Desktop only has {{.size}}MiB available, you may encounter application deployment failures.", out.V{"size": containerLimit, "req": minimumMemory, "recommend": "2.25 GB"})
 			}
 		} else {
-			out.WarnReason(reason.RsrcInsufficientReqMemory, "Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommend}}MB. Deployments may fail.", out.V{"requested": req, "recommend": minRecommendedMem})
+			out.WarnReason(reason.RsrcInsufficientReqMemory, "Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommend}}MB. Deployments may fail.", out.V{"requested": req, "recommend": recommendedMemory})
 		}
 	}
 
