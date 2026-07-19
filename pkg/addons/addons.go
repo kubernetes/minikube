@@ -157,6 +157,13 @@ kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} |
 
 	minikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard
 `, out.V{"profileArg": tipProfileArg})
+	case "traefik":
+		out.Styled(style.Tip, `To open the Traefik dashboard:
+
+	minikube{{.profileArg}} addons open traefik
+
+    For more information see https://minikube.sigs.k8s.io/docs/handbook/addons/traefik
+`, out.V{"profileArg": tipProfileArg})
 	}
 }
 

@@ -793,6 +793,34 @@ var Addons = map[string]*Addon{
 		map[string]string{
 			"Kubetail": "docker.io",
 		}, nil),
+	"traefik": NewAddon([]*BinAsset{}, false, "traefik", "3rd party (Traefik Labs)", "traefik", "https://doc.traefik.io/traefik/", nil, nil,
+		// Traefik docs:
+		// - https://doc.traefik.io/traefik/setup/kubernetes/
+		// - https://github.com/traefik/traefik-helm-chart/blob/master/traefik/VALUES.md
+		&HelmChart{
+			Name: "traefik",
+			Repo: "oci://ghcr.io/traefik/helm/traefik",
+			// TODO: Use traefik namespace (requires support in addons infra)
+			Namespace: "kube-system",
+			Values: []string{
+				// Enable the API and dashboard on the traefik entrypoint
+				// (port 8080, HTTP) without TLS or authentication.
+				"api.insecure=true",
+				// Traefik replaces the deprecated ingress-nginx addon as the
+				// default IngressClass. Only one should be enabled at a time.
+				"ingressClass.isDefaultClass=true",
+				// Bind HTTP and HTTPS to the node's network interface via
+				// hostPort, matching the ingress-nginx addon pattern.
+				"ports.web.hostPort=80",
+				"ports.websecure.hostPort=443",
+				// Expose the dashboard entrypoint (8080) on the service so
+				// "minikube addons open traefik" can discover it.
+				"ports.traefik.expose.default=true",
+				// Label the service for discovery by "minikube addons open".
+				`service.labels.kubernetes\.io/minikube-addons-endpoint=traefik`,
+			},
+		},
+	),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
