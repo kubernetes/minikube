@@ -59,8 +59,6 @@ const (
 	memory                  = "memory"
 	cpus                    = "cpus"
 	humanReadableDiskSize   = "disk-size"
-	nfsSharesRoot           = "nfs-shares-root"
-	nfsShare                = "nfs-share"
 	kubernetesVersion       = "kubernetes-version"
 	noKubernetes            = "no-kubernetes"
 	hostOnlyCIDR            = "host-only-cidr"
@@ -100,9 +98,6 @@ const (
 	mountUID                = "mount-uid"
 	disableDriverMounts     = "disable-driver-mounts"
 	cacheImages             = "cache-images"
-	uuid                    = "uuid"
-	vpnkitSock              = "hyperkit-vpnkit-sock"
-	vsockPorts              = "hyperkit-vsock-ports"
 	embedCerts              = "embed-certs"
 	noVTXCheck              = "no-vtx-check"
 	dnsProxy                = "dns-proxy"
@@ -116,7 +111,6 @@ const (
 	minRecommendedMem       = 1900 // Warn at no lower than existing configurations
 	minimumCPUS             = 2
 	minimumDiskSize         = 2000
-	autoUpdate              = "auto-update-drivers"
 	hostOnlyNicType         = "host-only-nic-type"
 	natNicType              = "nat-nic-type"
 	ha                      = "ha"
@@ -199,7 +193,6 @@ func initMinikubeFlags() {
 	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitList, fmt.Sprintf("comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to %q, available options: %q . other acceptable values are 'all' or 'none', 'true' and 'false'", strings.Join(kverify.DefaultWaitList, ","), strings.Join(kverify.AllComponentsList, ",")))
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes or host to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
-	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 	startCmd.Flags().Bool(ha, false, "Create Highly Available Multi-Control Plane Cluster with a minimum of three control-plane nodes that will also be marked for work.")
 	startCmd.Flags().IntP(nodes, "n", 1, "The total number of nodes to spin up. Defaults to 1.")
@@ -210,7 +203,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(network, "", "network to run minikube with. Used by docker/podman, qemu, kvm, and vfkit drivers. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().String(trace, "", "Send trace events. Options include: [gcp]")
-	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, qemu2, vfkit, and krunkit drivers)")
+	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for kvm2, qemu2, vfkit, and krunkit drivers)")
 	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
 	startCmd.Flags().String(binaryMirror, "", "Location to fetch kubectl, kubelet, & kubeadm binaries from.")
 	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.")
@@ -274,13 +267,6 @@ func initDriverFlags() {
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox driver only)")
 	startCmd.Flags().String(hostOnlyNicType, "virtio", "NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)")
 	startCmd.Flags().String(natNicType, "virtio", "NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)")
-
-	// hyperkit
-	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (hyperkit driver only)")
-	startCmd.Flags().String(uuid, "", "Provide VM UUID to restore MAC address (hyperkit driver only)")
-	startCmd.Flags().String(vpnkitSock, "", "Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock (hyperkit driver only)")
-	startCmd.Flags().StringSlice(nfsShare, []string{}, "Local folders to share with Guest via NFS mounts (hyperkit driver only)")
-	startCmd.Flags().String(nfsSharesRoot, "/nfsshares", "Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only)")
 
 	// hyperv
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (hyperv driver only)")
@@ -686,10 +672,6 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		DiskSize:                getDiskSize(),
 		Driver:                  drvName,
 		ListenAddress:           viper.GetString(listenAddress),
-		HyperkitVpnKitSock:      viper.GetString(vpnkitSock),
-		HyperkitVSockPorts:      viper.GetStringSlice(vsockPorts),
-		NFSShare:                viper.GetStringSlice(nfsShare),
-		NFSSharesRoot:           viper.GetString(nfsSharesRoot),
 		DockerEnv:               config.DockerEnv,
 		DockerOpt:               config.DockerOpt,
 		InsecureRegistry:        insecureRegistry,
@@ -705,7 +687,6 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		KVMNUMACount:            viper.GetInt(kvmNUMACount),
 		APIServerPort:           viper.GetInt(apiServerPort),
 		DisableDriverMounts:     viper.GetBool(disableDriverMounts),
-		UUID:                    viper.GetString(uuid),
 		NoVTXCheck:              viper.GetBool(noVTXCheck),
 		DNSProxy:                viper.GetBool(dnsProxy),
 		HostDNSResolver:         viper.GetBool(hostDNSResolver),
@@ -940,10 +921,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.MinikubeISO, isoURL)
 	updateStringFromFlag(cmd, &cc.KicBaseImage, kicBaseImage)
 	updateStringFromFlag(cmd, &cc.Network, network)
-	updateStringFromFlag(cmd, &cc.HyperkitVpnKitSock, vpnkitSock)
-	updateStringSliceFromFlag(cmd, &cc.HyperkitVSockPorts, vsockPorts)
-	updateStringSliceFromFlag(cmd, &cc.NFSShare, nfsShare)
-	updateStringFromFlag(cmd, &cc.NFSSharesRoot, nfsSharesRoot)
 	updateStringFromFlag(cmd, &cc.HostOnlyCIDR, hostOnlyCIDR)
 	updateStringFromFlag(cmd, &cc.HypervVirtualSwitch, hypervVirtualSwitch)
 	updateBoolFromFlag(cmd, &cc.HypervUseExternalSwitch, hypervUseExternalSwitch)
@@ -953,7 +930,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateBoolFromFlag(cmd, &cc.KVMGPU, kvmGPU)
 	updateBoolFromFlag(cmd, &cc.KVMHidden, kvmHidden)
 	updateBoolFromFlag(cmd, &cc.DisableDriverMounts, disableDriverMounts)
-	updateStringFromFlag(cmd, &cc.UUID, uuid)
 	updateBoolFromFlag(cmd, &cc.NoVTXCheck, noVTXCheck)
 	updateBoolFromFlag(cmd, &cc.DNSProxy, dnsProxy)
 	updateBoolFromFlag(cmd, &cc.HostDNSResolver, hostDNSResolver)
@@ -1124,7 +1100,7 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 }
 
 func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
-	supportedDrivers := []string{driver.HyperKit, driver.KVM2, driver.QEMU2, driver.VFKit, driver.Krunkit}
+	supportedDrivers := []string{driver.KVM2, driver.QEMU2, driver.VFKit, driver.Krunkit}
 
 	if cmd.Flags().Changed(extraDisks) {
 		if !slices.Contains(supportedDrivers, driverName) {
