@@ -1,0 +1,69 @@
+name: "auto-tune-workflow-timeouts"
+on:
+  workflow_dispatch:
+  schedule:
+    # every Sunday at around 3 am pacific/10 am UTC
+    - cron: "0 10 * * 0"
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: '1.26.2'
+permissions:
+  contents: read
+
+jobs:
+  auto-tune-timeouts:
+    if: github.repository == 'kubernetes/minikube'
+    runs-on: ubuntu-22.04
+    # Bootstrap ceiling until this workflow has enough history to tune itself.
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        with:
+          go-version: ${{env.GO_VERSION}}
+          cache: true
+      - name: Restore workflow-stats cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/workflow-stats/kubernetes/minikube
+          key: workflow-stats-${{ runner.os }}-${{ github.repository }}-${{ github.run_id }}
+          restore-keys: |
+            workflow-stats-${{ runner.os }}-${{ github.repository }}-
+      - name: Auto-tune workflow timeouts
+        env:
+          GITHUB_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT }}
+        run: |
+          cd hack
+          go run ./workflow-stats -since 30 -apply-dir ../.github/workflows -write -pr-body "$RUNNER_TEMP/pr-body.md"
+      - name: Publish summary
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/pr-body.md" ]; then
+            cat "$RUNNER_TEMP/pr-body.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No summary generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Detect workflow changes
+        id: gitchanges
+        run: |
+          # Multiline output format is required for git status output.
+          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
+          git status --porcelain .github/workflows >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+      - name: Create PR
+        if: ${{ steps.gitchanges.outputs.changes != '' }}
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
+        with:
+          token: ${{ secrets.MINIKUBE_BOT_PAT }}
+          commit-message: "ci: auto-tune workflow step timeouts"
+          committer: minikube-bot <minikube-bot@google.com>
+          author: minikube-bot <minikube-bot@google.com>
+          branch: auto_tune_workflow_timeouts
+          branch-suffix: short-commit-hash
+          push-to-fork: minikube-bot/minikube
+          base: master
+          delete-branch: true
+          title: "ci: auto-tune workflow step timeouts"
+          body-path: ${{ runner.temp }}/pr-body.md
+          add-paths: |
+            .github/workflows/*.yml
