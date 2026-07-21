@@ -43,7 +43,6 @@ import (
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -90,6 +89,14 @@ type Starter struct {
 	Cfg            *config.ClusterConfig
 	Node           *config.Node
 	ExistingAddons map[string]bool
+}
+
+// role returns the node role string for logging and error messages.
+func (s *Starter) role() string {
+	if s.Node.ControlPlane {
+		return "control-plane"
+	}
+	return "worker"
 }
 
 // Start spins up a guest and starts the Kubernetes node.
@@ -311,50 +318,25 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 		klog.Infof("duration metric: took %s to joinCluster", time.Since(start))
 	}()
 
-	role := "worker"
-	if starter.Node.ControlPlane {
-		role = "control-plane"
-	}
-
 	// avoid "error execution phase kubelet-start: a Node with name "<name>" and status "Ready" already exists in the cluster.
 	// You must delete the existing Node or change the name of this new joining Node"
 	if starter.PreExists {
-		klog.Infof("removing existing %s node %q before attempting to rejoin cluster: %+v", role, starter.Node.Name, starter.Node)
+		klog.Infof("removing existing %s node %q before attempting to rejoin cluster: %+v", starter.role(), starter.Node.Name, starter.Node)
 		if _, err := teardown(*starter.Cfg, starter.Node.Name, options); err != nil {
-			klog.Errorf("error removing existing %s node %q before rejoining cluster, will continue anyway: %v", role, starter.Node.Name, err)
+			klog.Errorf("error removing existing %s node %q before rejoining cluster, will continue anyway: %v", starter.role(), starter.Node.Name, err)
 		}
-		klog.Infof("successfully removed existing %s node %q from cluster: %+v", role, starter.Node.Name, starter.Node)
+		klog.Infof("successfully removed existing %s node %q from cluster: %+v", starter.role(), starter.Node.Name, starter.Node)
 	}
 
-	joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
-	if err != nil {
-		return fmt.Errorf("error generating join token: %w", err)
+	p := &linuxProvisioner{starter: starter, controlplane: cpBs, worker: bs}
+
+	if err := p.Join(); err != nil {
+		return err
+	}
+	if err := p.LabelAndUntaint(); err != nil {
+		return err
 	}
 
-	join := func() error {
-		klog.Infof("trying to join %s node %q to cluster: %+v", role, starter.Node.Name, starter.Node)
-		if err := bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
-			klog.Errorf("%s node failed to join cluster, will retry: %v", role, err)
-
-			// reset node to revert any changes made by previous kubeadm init/join
-			klog.Infof("resetting %s node %q before attempting to rejoin cluster...", role, starter.Node.Name)
-			if _, err := starter.Runner.RunCmd(exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("%s reset --force", bsutil.KubeadmCmdWithPath(starter.Cfg.KubernetesConfig.KubernetesVersion)))); err != nil {
-				klog.Infof("kubeadm reset failed, continuing anyway: %v", err)
-			} else {
-				klog.Infof("successfully reset %s node %q", role, starter.Node.Name)
-			}
-
-			return err
-		}
-		return nil
-	}
-	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
-		return fmt.Errorf("error joining %s node %q to cluster: %w", role, starter.Node.Name, err)
-	}
-
-	if err := cpBs.LabelAndUntaintNode(*starter.Cfg, *starter.Node); err != nil {
-		return fmt.Errorf("error applying %s node %q label: %w", role, starter.Node.Name, err)
-	}
 	return nil
 }
 
