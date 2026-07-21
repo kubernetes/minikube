@@ -99,7 +99,7 @@ func formatAddonDescription(description, documentationURL string) string {
 	if documentationURL == "" {
 		return description
 	}
-	return fmt.Sprintf("%s\n%s", description, documentationURL)
+	return description
 }
 
 func addonDescription(addon *assets.Addon) string {

@@ -105,8 +105,11 @@ func TestAddonsList(t *testing.T) {
 			if !strings.Contains(s, "Web interface for managing Kubernetes resources") {
 				t.Errorf("expected output to contain dashboard description: %q", s)
 			}
-			if !tt.printDocs && strings.Count(s, "https://minikube.sigs.k8s.io/docs/handbook/dashboard/") != 1 {
-				t.Errorf("expected dashboard docs URL to appear exactly once: %q", s)
+			if !tt.printDocs && strings.Contains(s, "https://minikube.sigs.k8s.io/docs/handbook/dashboard/") {
+				t.Errorf("expected dashboard docs URL to not appear in description-only output: %q", s)
+			}
+			if tt.printDocs && strings.Count(s, "https://minikube.sigs.k8s.io/docs/handbook/dashboard/") != 1 {
+				t.Errorf("expected dashboard docs URL to appear exactly once in docs column: %q", s)
 			}
 			if !strings.Contains(s, "Runs a local container image registry") {
 				t.Errorf("expected output to contain registry description without docs URL: %q", s)
@@ -134,8 +137,8 @@ func TestAddonsList(t *testing.T) {
 		if !strings.Contains(s, "Web interface for managing Kubernetes resources") {
 			t.Errorf("expected output to contain dashboard description: %q", s)
 		}
-		if strings.Count(s, "https://minikube.sigs.k8s.io/docs/handbook/dashboard/") != 1 {
-			t.Errorf("expected dashboard docs URL to appear exactly once: %q", s)
+		if strings.Contains(s, "https://minikube.sigs.k8s.io/docs/handbook/dashboard/") {
+			t.Errorf("expected dashboard docs URL to not appear in description-only output: %q", s)
 		}
 		if strings.Contains(s, "3rd party (Ambassador)") {
 			t.Errorf("expected output to not contain maintainer metadata in description column: %q", s)
@@ -180,7 +183,7 @@ func TestAddonDescription(t *testing.T) {
 	}{
 		{
 			name: "ambassador",
-			want: "API gateway and ingress controller\nhttps://minikube.sigs.k8s.io/docs/handbook/addons/ambassador/",
+			want: "API gateway and ingress controller",
 		},
 		{
 			name: "auto-pause",
@@ -203,8 +206,8 @@ func TestAddonDescription(t *testing.T) {
 			if strings.Contains(got, "  ") {
 				t.Errorf("expected description to not contain double spaces: %q", got)
 			}
-			if addon.Docs != "" && strings.Count(got, addon.Docs) != 1 {
-				t.Errorf("expected docs URL to be appended exactly once: %q", got)
+			if addon.Docs != "" && strings.Contains(got, addon.Docs) {
+				t.Errorf("expected docs URL to not be appended: %q", got)
 			}
 			if addon.Description != originalDescription {
 				t.Errorf("expected stored description to remain %q, got %q", originalDescription, addon.Description)
@@ -227,7 +230,7 @@ func TestFormatAddonDescription(t *testing.T) {
 			name:             "with URL",
 			description:      "API gateway and ingress controller",
 			documentationURL: "https://minikube.sigs.k8s.io/docs/handbook/addons/ambassador/",
-			want:             "API gateway and ingress controller\nhttps://minikube.sigs.k8s.io/docs/handbook/addons/ambassador/",
+			want:             "API gateway and ingress controller",
 		},
 		{
 			name:             "without URL",
@@ -239,7 +242,7 @@ func TestFormatAddonDescription(t *testing.T) {
 			name:             "trims inputs",
 			description:      " API gateway and ingress controller ",
 			documentationURL: " https://minikube.sigs.k8s.io/docs/handbook/addons/ambassador/ ",
-			want:             "API gateway and ingress controller\nhttps://minikube.sigs.k8s.io/docs/handbook/addons/ambassador/",
+			want:             "API gateway and ingress controller",
 		},
 	}
 
@@ -258,8 +261,8 @@ func TestFormatAddonDescription(t *testing.T) {
 			if tt.documentationURL == "" && strings.Contains(got, "\n") {
 				t.Errorf("expected empty docs URL to not add an extra line: %q", got)
 			}
-			if tt.documentationURL != "" && strings.Count(got, strings.TrimSpace(tt.documentationURL)) != 1 {
-				t.Errorf("expected docs URL to appear exactly once: %q", got)
+			if tt.documentationURL != "" && strings.Contains(got, strings.TrimSpace(tt.documentationURL)) {
+				t.Errorf("expected docs URL to not appear in description: %q", got)
 			}
 		})
 	}

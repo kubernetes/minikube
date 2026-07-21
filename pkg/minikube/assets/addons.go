@@ -1038,7 +1038,13 @@ var Addons = map[string]*Addon{
 		map[string]string{
 			"Kubetail": "docker.io",
 		}, nil),
-	"traefik": NewAddon([]*BinAsset{}, false, "traefik", "3rd party (Traefik Labs)", "traefik", "https://doc.traefik.io/traefik/", nil, nil,
+	"traefik": NewAddon([]*BinAsset{}, false, AddonMetadata{
+		Name:               "traefik",
+		Description:        "Adds the Traefik ingress controller",
+		Maintainer:         "3rd party (Traefik Labs)",
+		VerifiedMaintainer: "traefik",
+		Docs:               "https://doc.traefik.io/traefik/",
+	}, nil, nil,
 		// Traefik docs:
 		// - https://doc.traefik.io/traefik/setup/kubernetes/
 		// - https://github.com/traefik/traefik-helm-chart/blob/master/traefik/VALUES.md
