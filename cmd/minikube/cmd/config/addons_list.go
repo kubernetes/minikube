@@ -92,6 +92,20 @@ var stringFromStatus = func(addonStatus bool) string {
 	return "disabled"
 }
 
+func formatAddonDescription(description, documentationURL string) string {
+	description = strings.TrimSpace(description)
+	documentationURL = strings.TrimSpace(documentationURL)
+
+	if documentationURL == "" {
+		return description
+	}
+	return description
+}
+
+func addonDescription(addon *assets.Addon) string {
+	return formatAddonDescription(addon.Description, addon.Docs)
+}
+
 var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	addonNames := slices.Sorted(maps.Keys(assets.Addons))
 	table := tablewriter.NewWriter(os.Stdout)
@@ -103,9 +117,9 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	// Create table header
 	var tHeader []string
 	if cc == nil {
-		tHeader = []string{"Addon Name", "Maintainer"}
+		tHeader = []string{"Addon Name", "Description"}
 	} else {
-		tHeader = []string{"Addon Name", "Profile", "Status", "Maintainer"}
+		tHeader = []string{"Addon Name", "Profile", "Status", "Description"}
 	}
 	if printDocs {
 		tHeader = append(tHeader, "Docs")
@@ -115,10 +129,6 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	// Create table data
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
-		maintainer := addonBundle.Maintainer
-		if maintainer == "" {
-			maintainer = "3rd party (unknown)"
-		}
 		docs := addonBundle.Docs
 		if docs == "" {
 			docs = "n/a"
@@ -132,9 +142,9 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 		// Prepare row data
 		var row []string
 		if cc == nil {
-			row = []string{addonName, maintainer}
+			row = []string{addonName, addonDescription(addonBundle)}
 		} else {
-			row = []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer}
+			row = []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), addonDescription(addonBundle)}
 		}
 
 		if printDocs {
