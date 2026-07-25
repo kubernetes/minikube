@@ -129,15 +129,20 @@ func saveToTarFile(iname, rawDest string, overwrite bool) error {
 		return fmt.Errorf("nil reference for %s: %w", iname, err)
 	}
 
-	// Stream directly from the local daemon to disk, avoiding loading the full image into RAM. Falls through to the normal retrieval path if the image is not present in the daemon.
+	// Stream directly from the local daemon to disk, avoiding loading the full image into RAM. Falls through to the remote path only when the image is not found in the daemon.
 	if useDaemon {
-		if err := streamImageFromDaemon(ref, dst); err == nil {
+		streamErr := streamImageFromDaemon(ref, dst)
+		if streamErr == nil {
 			return nil
-		} else {
-			klog.Infof("failed to stream image %q from daemon: %v", ref, err)
-			if !useRemote {
-				return errCacheImageDoesntExist
-			}
+		}
+		klog.Infof("failed to stream image %q from daemon: %v", ref, streamErr)
+		if !errors.Is(streamErr, errNotInDaemon) {
+			// Real I/O failure after the image was confirmed present — surface it rather than
+			// pretending the image doesn't exist.
+			return streamErr
+		}
+		if !useRemote {
+			return errCacheImageDoesntExist
 		}
 	}
 

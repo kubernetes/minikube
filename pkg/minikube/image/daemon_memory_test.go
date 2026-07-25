@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The Kubernetes Authors All rights reserved.
+Copyright 2026 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,12 +19,23 @@ package image
 import (
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 )
+
+// requireDockerImage skips the test if the named image is not present in the local daemon.
+// This handles all Docker configurations (regular, rootless, remote via $DOCKER_HOST) because
+// it delegates to the docker CLI which reads $DOCKER_HOST and other env vars.
+func requireDockerImage(t *testing.T, img string) {
+	t.Helper()
+	if err := exec.Command("docker", "inspect", "--type=image", img).Run(); err != nil {
+		t.Skipf("image %s not in local daemon (run: docker pull %s)", img, img)
+	}
+}
 
 // TestSaveToTarFileMemory measures peak heap usage when saving a daemon image to cache.
 // Before the fix, this allocates roughly the full image size in RAM (buffered daemon read).
@@ -34,11 +45,7 @@ import (
 //
 //	docker pull redis:7
 func TestSaveToTarFileMemory(t *testing.T) {
-	if _, err := os.Stat("/var/run/docker.sock"); err != nil {
-		if _, err2 := os.Stat(os.ExpandEnv("$HOME/.docker/run/docker.sock")); err2 != nil {
-			t.Skip("Docker daemon not available")
-		}
-	}
+	requireDockerImage(t, "redis:7")
 
 	UseDaemon(true)
 	UseRemote(false)
@@ -76,7 +83,7 @@ func TestSaveToTarFileMemory(t *testing.T) {
 	// After the fix the heap allocation should be a small fraction of the image size.
 	// Before the fix it will be >= image size (the entire image is buffered in []byte).
 	if heapAllocMB >= fileSizeMB*0.5 {
-		t.Errorf("EXCESSIVE MEMORY: allocated %.1f MB for a %.1f MB image — full image is being buffered in RAM (bug #17945)", heapAllocMB, fileSizeMB)
+		t.Errorf("EXCESSIVE MEMORY: allocated %.1f MB for a %.1f MB image — full image is being buffered in RAM (issues #17785/#17945)", heapAllocMB, fileSizeMB)
 	}
 }
 
@@ -88,11 +95,7 @@ func TestSaveToTarFileMemory(t *testing.T) {
 //
 // Requires Docker daemon with redis:7 pulled locally.
 func TestStreamedTarIsValidDockerFormat(t *testing.T) {
-	if _, err := os.Stat("/var/run/docker.sock"); err != nil {
-		if _, err2 := os.Stat(os.ExpandEnv("$HOME/.docker/run/docker.sock")); err2 != nil {
-			t.Skip("Docker daemon not available")
-		}
-	}
+	requireDockerImage(t, "redis:7")
 
 	UseDaemon(true)
 	UseRemote(false)
@@ -124,10 +127,8 @@ func TestStreamedTarIsValidDockerFormat(t *testing.T) {
 }
 
 func BenchmarkSaveToTarFile_Daemon(b *testing.B) {
-	if _, err := os.Stat("/var/run/docker.sock"); err != nil {
-		if _, err2 := os.Stat(os.ExpandEnv("$HOME/.docker/run/docker.sock")); err2 != nil {
-			b.Skip("Docker daemon not available")
-		}
+	if err := exec.Command("docker", "inspect", "--type=image", "redis:7").Run(); err != nil {
+		b.Skipf("image redis:7 not in local daemon (run: docker pull redis:7)")
 	}
 
 	UseDaemon(true)
