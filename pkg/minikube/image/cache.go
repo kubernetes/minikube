@@ -135,6 +135,9 @@ func saveToTarFile(iname, rawDest string, overwrite bool) error {
 		if streamErr == nil {
 			return nil
 		}
+		// errNotInDaemon means the image is simply not local; fall through to the remote path.
+		// Any other error means the image was confirmed present but streaming failed (e.g. a
+		// disk full or rename error), so surface it rather than silently retrying via the remote registry.
 		klog.Infof("failed to stream image %q from daemon: %v", ref, streamErr)
 		if !errors.Is(streamErr, errNotInDaemon) {
 			// Real I/O failure after the image was confirmed present — surface it rather than
