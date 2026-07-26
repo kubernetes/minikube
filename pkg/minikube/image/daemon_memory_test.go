@@ -83,7 +83,7 @@ func TestSaveToTarFileMemory(t *testing.T) {
 	// After the fix the heap allocation should be a small fraction of the image size.
 	// Before the fix it will be >= image size (the entire image is buffered in []byte).
 	if heapAllocMB >= fileSizeMB*0.5 {
-		t.Errorf("EXCESSIVE MEMORY: allocated %.1f MB for a %.1f MB image — full image is being buffered in RAM (issue #17785)", heapAllocMB, fileSizeMB)
+		t.Errorf("EXCESSIVE MEMORY: allocated %.1f MB for a %.1f MB image — full image is being buffered in RAM (https://github.com/kubernetes/minikube/issues/17785)", heapAllocMB, fileSizeMB)
 	}
 }
 
