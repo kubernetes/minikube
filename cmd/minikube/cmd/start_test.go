@@ -679,6 +679,32 @@ func TestValidatePorts(t *testing.T) {
 	}
 }
 
+func TestMinimumRequiredCPUs(t *testing.T) {
+	tests := []struct {
+		description  string
+		noKubernetes bool
+		want         int
+	}{
+		{
+			description: "kubernetes requires two cpus",
+			want:        minimumCPUS,
+		},
+		{
+			description:  "no-kubernetes allows one cpu",
+			noKubernetes: true,
+			want:         1,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			if got := minimumRequiredCPUs(tc.noKubernetes); got != tc.want {
+				t.Errorf("minimumRequiredCPUs(%t) = %d, want %d", tc.noKubernetes, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestValidateSubnet(t *testing.T) {
 	type subnetTest struct {
 		subnet   string

@@ -1258,8 +1258,10 @@ func validateCPUCount(drvName string) {
 		availableCPUs = ci
 	}
 
+	minRequiredCPUs := minimumRequiredCPUs(viper.GetBool(noKubernetes))
+
 	switch {
-	case availableCPUs < 2:
+	case availableCPUs < minRequiredCPUs:
 		switch {
 		case drvName == oci.Docker && runtime.GOOS == "darwin":
 			exitIfNotForced(reason.RsrcInsufficientDarwinDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
@@ -1275,8 +1277,8 @@ func validateCPUCount(drvName string) {
 		return
 	}
 
-	if cpuCount < minimumCPUS {
-		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
+	if cpuCount < minRequiredCPUs {
+		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minRequiredCPUs})
 	}
 
 	if availableCPUs < cpuCount {
@@ -1293,6 +1295,13 @@ func validateCPUCount(drvName string) {
 
 		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": availableCPUs})
 	}
+}
+
+func minimumRequiredCPUs(noKubernetes bool) int {
+	if noKubernetes {
+		return 1
+	}
+	return minimumCPUS
 }
 
 // validateFlags validates the supplied flags against known bad combinations
