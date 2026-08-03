@@ -79,7 +79,7 @@ func init() {
 }
 
 var iconFromStatus = func(addonStatus bool) string {
-	if addonStatus {
+	if addonStatus && out.IsStyleEnabled() {
 		return "✅"
 	}
 	return "   " // because emoji indentation is different
