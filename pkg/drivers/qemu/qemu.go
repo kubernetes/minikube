@@ -49,6 +49,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/run"
+	"k8s.io/minikube/pkg/minikube/runtimedir"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util/retry"
@@ -438,8 +439,12 @@ func (d *Driver) Start() error {
 		startCmd = append(startCmd,
 			"-cdrom", isoPath)
 	}
+	monitorPath, err := d.monitorPath()
+	if err != nil {
+		return err
+	}
 	startCmd = append(startCmd,
-		"-qmp", fmt.Sprintf("unix:%s,server,nowait", d.monitorPath()),
+		"-qmp", fmt.Sprintf("unix:%s,server,nowait", monitorPath),
 		"-pidfile", d.pidfilePath(),
 	)
 
@@ -608,6 +613,9 @@ func (d *Driver) Remove() error {
 			return fmt.Errorf("quit: %w", err)
 		}
 	}
+	if err := runtimedir.RemoveSocketDir(d.GetMachineName()); err != nil {
+		log.Debugf("Failed to remove socket dir: %v", err)
+	}
 	return nil
 }
 
@@ -662,9 +670,8 @@ func (d *Driver) diskPath() string {
 	return filepath.Join(machineDir, "disk.qcow2")
 }
 
-func (d *Driver) monitorPath() string {
-	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
-	return filepath.Join(machineDir, "monitor")
+func (d *Driver) monitorPath() (string, error) {
+	return d.ResolveSocketPath("monitor")
 }
 
 func (d *Driver) pidfilePath() string {
@@ -763,7 +770,11 @@ func (d *Driver) generateUserdataDisk(userdataFile string) (string, error) {
 
 func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	// connect to monitor
-	conn, err := net.Dial("unix", d.monitorPath())
+	monitorPath, err := d.monitorPath()
+	if err != nil {
+		return nil, err
+	}
+	conn, err := net.Dial("unix", monitorPath)
 	if err != nil {
 		return nil, fmt.Errorf("connect: %w", err)
 	}
