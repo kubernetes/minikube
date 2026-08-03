@@ -31,7 +31,7 @@ import (
 	"errors"
 
 	"k8s.io/minikube/pkg/libmachine/auth"
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 )
 
 var defaultGenerator = NewX509CertGenerator()
@@ -269,19 +269,19 @@ func (xcg *X509CertGenerator) ReadTLSConfig(addr string, authOptions *auth.Optio
 	clientCertPath := authOptions.ClientCertPath
 	clientKeyPath := authOptions.ClientKeyPath
 
-	log.Debugf("Reading CA certificate from %s", caCertPath)
+	diagnostics.Debugf("Reading CA certificate from %s", caCertPath)
 	caCert, err := os.ReadFile(caCertPath)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debugf("Reading client certificate from %s", clientCertPath)
+	diagnostics.Debugf("Reading client certificate from %s", clientCertPath)
 	clientCert, err := os.ReadFile(clientCertPath)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debugf("Reading client key from %s", clientKeyPath)
+	diagnostics.Debugf("Reading client key from %s", clientKeyPath)
 	clientKey, err := os.ReadFile(clientKeyPath)
 	if err != nil {
 		return nil, err
@@ -310,19 +310,19 @@ func (xcg *X509CertGenerator) ValidateCertificate(addr string, authOptions *auth
 }
 
 func CheckCertificateDate(certPath string) (bool, error) {
-	log.Debugf("Reading certificate data from %s", certPath)
+	diagnostics.Debugf("Reading certificate data from %s", certPath)
 	certBytes, err := os.ReadFile(certPath)
 	if err != nil {
 		return false, err
 	}
 
-	log.Debug("Decoding PEM data...")
+	diagnostics.Debug("Decoding PEM data...")
 	pemBlock, _ := pem.Decode(certBytes)
 	if pemBlock == nil {
 		return false, errors.New("Failed to decode PEM data")
 	}
 
-	log.Debug("Parsing certificate...")
+	diagnostics.Debug("Parsing certificate...")
 	cert, err := x509.ParseCertificate(pemBlock.Bytes)
 	if err != nil {
 		return false, err

@@ -22,7 +22,7 @@ import (
 	"os"
 
 	"k8s.io/minikube/pkg/libmachine/auth"
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 )
 
@@ -30,7 +30,7 @@ func createCACert(authOptions *auth.Options, caOrg string, bits int) error {
 	caCertPath := authOptions.CaCertPath
 	caPrivateKeyPath := authOptions.CaPrivateKeyPath
 
-	log.Infof("Creating CA: %s", caCertPath)
+	diagnostics.Infof("Creating CA: %s", caCertPath)
 
 	// check if the key path exists; if so, error
 	if _, err := os.Stat(caPrivateKeyPath); err == nil {
@@ -51,7 +51,7 @@ func createCert(authOptions *auth.Options, org string, bits int) error {
 	clientCertPath := authOptions.ClientCertPath
 	clientKeyPath := authOptions.ClientKeyPath
 
-	log.Infof("Creating client certificate: %s", clientCertPath)
+	diagnostics.Infof("Creating client certificate: %s", clientCertPath)
 
 	if _, err := os.Stat(certDir); err != nil {
 		if os.IsNotExist(err) {
@@ -122,7 +122,7 @@ func BootstrapCertificates(authOptions *auth.Options) error {
 			return err
 		}
 		if !current {
-			log.Info("CA certificate is outdated and needs to be regenerated")
+			diagnostics.Info("CA certificate is outdated and needs to be regenerated")
 			_ = os.Remove(caPrivateKeyPath)
 			if err := createCACert(authOptions, caOrg, bits); err != nil {
 				return err
@@ -140,7 +140,7 @@ func BootstrapCertificates(authOptions *auth.Options) error {
 			return err
 		}
 		if !current {
-			log.Info("Client certificate is outdated and needs to be regenerated")
+			diagnostics.Info("Client certificate is outdated and needs to be regenerated")
 			_ = os.Remove(clientKeyPath)
 			if err := createCert(authOptions, org, bits); err != nil {
 				return err

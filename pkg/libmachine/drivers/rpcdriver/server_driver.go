@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"runtime/debug"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnflag"
 	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/libmachine/version"
@@ -58,8 +58,8 @@ type RPCFlags struct { //nolint:revive
 func (r RPCFlags) Get(key string) interface{} {
 	val, ok := r.Values[key]
 	if !ok {
-		log.Warnf("Trying to access option %s which does not exist", key)
-		log.Warn("THIS ***WILL*** CAUSE UNEXPECTED BEHAVIOR")
+		diagnostics.Warnf("Trying to access option %s which does not exist", key)
+		diagnostics.Warn("THIS ***WILL*** CAUSE UNEXPECTED BEHAVIOR")
 	}
 	return val
 }
@@ -67,7 +67,7 @@ func (r RPCFlags) Get(key string) interface{} {
 func (r RPCFlags) String(key string) string {
 	val, ok := r.Get(key).(string)
 	if !ok {
-		log.Warnf("Type assertion did not go smoothly to string for key %s", key)
+		diagnostics.Warnf("Type assertion did not go smoothly to string for key %s", key)
 	}
 	return val
 }
@@ -75,7 +75,7 @@ func (r RPCFlags) String(key string) string {
 func (r RPCFlags) StringSlice(key string) []string {
 	val, ok := r.Get(key).([]string)
 	if !ok {
-		log.Warnf("Type assertion did not go smoothly to string slice for key %s", key)
+		diagnostics.Warnf("Type assertion did not go smoothly to string slice for key %s", key)
 	}
 	return val
 }
@@ -83,7 +83,7 @@ func (r RPCFlags) StringSlice(key string) []string {
 func (r RPCFlags) Int(key string) int {
 	val, ok := r.Get(key).(int)
 	if !ok {
-		log.Warnf("Type assertion did not go smoothly to int for key %s", key)
+		diagnostics.Warnf("Type assertion did not go smoothly to int for key %s", key)
 	}
 	return val
 }
@@ -91,7 +91,7 @@ func (r RPCFlags) Int(key string) int {
 func (r RPCFlags) Bool(key string) bool {
 	val, ok := r.Get(key).(bool)
 	if !ok {
-		log.Warnf("Type assertion did not go smoothly to bool for key %s", key)
+		diagnostics.Warnf("Type assertion did not go smoothly to bool for key %s", key)
 	}
 	return val
 }

@@ -22,7 +22,7 @@ import (
 	"os"
 	"os/exec"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 )
 
@@ -43,14 +43,14 @@ type defaultDiskCreator struct{}
 
 // Make a boot2docker VM disk image.
 func (c *defaultDiskCreator) Create(size int, publicSSHKeyPath, diskPath string) error {
-	log.Debugf("Creating %d MB hard disk image...", size)
+	diagnostics.Debugf("Creating %d MB hard disk image...", size)
 
 	tarBuf, err := mcnutils.MakeDiskImage(publicSSHKeyPath)
 	if err != nil {
 		return err
 	}
 
-	log.Debug("Calling inner createDiskImage")
+	diagnostics.Debug("Calling inner createDiskImage")
 
 	return createDiskImage(diskPath, size, tarBuf)
 }
@@ -64,7 +64,7 @@ func createDiskImage(dest string, size int, r io.Reader) error {
 	cmd := exec.Command(vboxManageCmd, "convertfromraw", "stdin", dest,
 		fmt.Sprintf("%d", sizeBytes), "--format", "VMDK")
 
-	log.Debug(cmd)
+	diagnostics.Debug(cmd)
 
 	if os.Getenv("MACHINE_DEBUG") != "" {
 		cmd.Stdout = os.Stdout
@@ -76,20 +76,20 @@ func createDiskImage(dest string, size int, r io.Reader) error {
 		return err
 	}
 
-	log.Debug("Starting command")
+	diagnostics.Debug("Starting command")
 
 	if err := cmd.Start(); err != nil {
 		return err
 	}
 
-	log.Debug("Copying to stdin")
+	diagnostics.Debug("Copying to stdin")
 
 	n, err := io.Copy(stdin, r)
 	if err != nil {
 		return err
 	}
 
-	log.Debug("Filling zeroes")
+	diagnostics.Debug("Filling zeroes")
 
 	// The total number of bytes written to stdin must match sizeBytes, or
 	// VBoxManage.exe on Windows will fail. Fill remaining with zeros.
@@ -99,14 +99,14 @@ func createDiskImage(dest string, size int, r io.Reader) error {
 		}
 	}
 
-	log.Debug("Closing STDIN")
+	diagnostics.Debug("Closing STDIN")
 
 	// cmd won't exit until the stdin is closed.
 	if err := stdin.Close(); err != nil {
 		return err
 	}
 
-	log.Debug("Waiting on cmd")
+	diagnostics.Debug("Waiting on cmd")
 
 	return cmd.Wait()
 }
