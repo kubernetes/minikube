@@ -48,9 +48,9 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     name: ${{ matrix.name }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         timeout-minutes: 1
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         timeout-minutes: 2
         with:
           go-version: ${{env.GO_VERSION}}
@@ -149,10 +149,10 @@ jobs:
       - id: info-block
         uses: medyagh/info-block@f5c042624acf8ce21bed4b0de77962e0a56ad88e # v1
         timeout-minutes: 1
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
 
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         timeout-minutes: 2
         with:
           go-version: ${{env.GO_VERSION}}
