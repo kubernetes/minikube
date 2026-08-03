@@ -1235,7 +1235,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 }
 
 // validateCPUCount validates the cpu count matches the minimum recommended & not exceeding the available cpu count
-func validateCPUCount(drvName string) {
+func validateCPUCount(cmd *cobra.Command, drvName string) {
 	var availableCPUs int
 
 	cpuCount := getCPUCount(drvName)
@@ -1258,15 +1258,17 @@ func validateCPUCount(drvName string) {
 		availableCPUs = ci
 	}
 
-	switch {
-	case availableCPUs < 2:
+	if !viper.GetBool(noKubernetes) {
 		switch {
-		case drvName == oci.Docker && runtime.GOOS == "darwin":
-			exitIfNotForced(reason.RsrcInsufficientDarwinDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
-		case drvName == oci.Docker && runtime.GOOS == "windows":
-			exitIfNotForced(reason.RsrcInsufficientWindowsDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
-		default:
-			exitIfNotForced(reason.RsrcInsufficientCores, "{{.driver_name}} has less than 2 CPUs available, but Kubernetes requires at least 2 to be available", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
+		case availableCPUs < 2:
+			switch {
+			case drvName == oci.Docker && runtime.GOOS == "darwin":
+				exitIfNotForced(reason.RsrcInsufficientDarwinDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
+			case drvName == oci.Docker && runtime.GOOS == "windows":
+				exitIfNotForced(reason.RsrcInsufficientWindowsDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
+			default:
+				exitIfNotForced(reason.RsrcInsufficientCores, "{{.driver_name}} has less than 2 CPUs available, but Kubernetes requires at least 2 to be available", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
+			}
 		}
 	}
 
@@ -1275,23 +1277,24 @@ func validateCPUCount(drvName string) {
 		return
 	}
 
-	if cpuCount < minimumCPUS {
+	if cpuCount < minimumCPUS && !viper.GetBool(noKubernetes) {
 		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
 
 	if availableCPUs < cpuCount {
-		if driver.IsDockerDesktop(drvName) {
-			out.Styled(style.Empty, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": drvName})
-			if runtime.GOOS == "darwin" {
-				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-mac/#resources`)
+		if !viper.GetBool(noKubernetes) || cmd.Flags().Changed(cpus) {
+			if driver.IsDockerDesktop(drvName) {
+				out.Styled(style.Empty, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": drvName})
+				if runtime.GOOS == "darwin" {
+					out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-mac/#resources`)
+				}
+				if runtime.GOOS == "windows" {
+					out.String("\n\t")
+					out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-windows/#resources`)
+				}
 			}
-			if runtime.GOOS == "windows" {
-				out.String("\n\t")
-				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-windows/#resources`)
-			}
+			exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": availableCPUs})
 		}
-
-		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": availableCPUs})
 	}
 }
 
@@ -1310,7 +1313,7 @@ func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 		}
 	}
 
-	validateCPUCount(drvName)
+	validateCPUCount(cmd, drvName)
 
 	if drvName == driver.None && viper.GetBool(noKubernetes) {
 		exit.Message(reason.Usage, "Cannot use the option --no-kubernetes on the {{.name}} driver", out.V{"name": drvName})
@@ -1708,7 +1711,6 @@ func validateInsecureRegistry() {
 				hostnameOrIP = addr
 			}
 			if !hostRe.MatchString(hostnameOrIP) && net.ParseIP(hostnameOrIP) == nil {
-				//		fmt.Printf("This is not hostname or ip %s", hostnameOrIP)
 				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formats are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
 			}
 			if port != "" {
