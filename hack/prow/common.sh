@@ -88,7 +88,7 @@ function install_dependencies() {
 		sudo chown -R $(whoami) $HOME/Library/Caches/go-build
 	fi
 	# do NOT change manually - only using make update-golang-version
-	GOLANG_VERSION_TO_INSTALL=1.26.4
+	GOLANG_VERSION_TO_INSTALL=1.26.5
 	# install golang if not present
 	hack/prow/installer/check_install_golang.sh /usr/local $GOLANG_VERSION_TO_INSTALL || true
 	# install gotestsum if not present
