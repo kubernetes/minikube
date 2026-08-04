@@ -22,7 +22,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -119,6 +122,18 @@ func TestISOImage(t *testing.T) {
 		}
 	})
 
+	t.Run("HelmVersion", func(t *testing.T) {
+		expectedVersion := helmPackageVersion(t)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "helm version --template '{{.Version}}'"))
+		if err != nil {
+			t.Fatalf("failed to run helm version. args %q: %v", rr.Command(), err)
+		}
+
+		if actual := strings.TrimSpace(rr.Stdout.String()); actual != expectedVersion {
+			t.Errorf("helm version mismatch: expected %q, got %q", expectedVersion, actual)
+		}
+	})
+
 	t.Run("eBPFSupport", func(t *testing.T) {
 		// Ensure that BTF type information is available (https://github.com/kubernetes/minikube/issues/21788)
 		btfFile := "/sys/kernel/btf/vmlinux"
@@ -151,4 +166,33 @@ func TestISOImage(t *testing.T) {
 			t.Errorf("expected file %q to exist, but it does not. Per-task IO accounting requires CONFIG_TASK_IO_ACCOUNTING (with CONFIG_TASK_XACCT and CONFIG_TASKSTATS) in kernel configuration.", ioFile)
 		}
 	})
+}
+
+func helmPackageVersion(t *testing.T) string {
+	t.Helper()
+
+	_, testFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("failed to locate iso_test.go")
+	}
+	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(testFile), "..", ".."))
+
+	packageFile := filepath.Join(repoRoot, "deploy/iso/minikube-iso/arch/x86_64/package/helm-bin/helm-bin.mk")
+	versionName := "HELM_BIN_VERSION"
+	if runtime.GOARCH == "arm64" {
+		packageFile = filepath.Join(repoRoot, "deploy/iso/minikube-iso/arch/aarch64/package/helm-bin-aarch64/helm-bin.mk")
+		versionName = "HELM_BIN_AARCH64_VERSION"
+	}
+
+	data, err := os.ReadFile(packageFile)
+	if err != nil {
+		t.Fatalf("failed to read %s: %v", packageFile, err)
+	}
+
+	re := regexp.MustCompile(fmt.Sprintf(`(?m)^%s = (v[0-9]+\.[0-9]+\.[0-9]+)$`, versionName))
+	match := re.FindStringSubmatch(string(data))
+	if match == nil {
+		t.Fatalf("failed to find %s in %s", versionName, packageFile)
+	}
+	return match[1]
 }
