@@ -227,6 +227,9 @@ div.td-content {
 
 div.code-toolbar > .toolbar {
     top: -.3em !important;
+    button {
+          background: rgba(255, 255, 255, 0.8)!important;
+    }
 }
 
 .option-button {
