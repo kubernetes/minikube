@@ -211,20 +211,12 @@ func SetAndSave(profile string, name string, value string, options *run.CommandO
 	return config.Write(profile, cc)
 }
 
-// Runs all the validation or callback functions and collects errors
+// Runs all the validation or callback functions and returns the first error encountered, failing fast
 func invoke(cc *config.ClusterConfig, name string, value string, fns []setFn, options *run.CommandOptions) error {
-	var errs []error
 	for _, fn := range fns {
-		err := fn(cc, name, value, options)
-		if err != nil {
-			if errors.Is(err, ErrSkipThisAddon) {
-				return ErrSkipThisAddon
-			}
-			errs = append(errs, err)
+		if err := fn(cc, name, value, options); err != nil {
+			return err
 		}
-	}
-	if len(errs) > 0 {
-		return fmt.Errorf("%v", errs)
 	}
 	return nil
 }
