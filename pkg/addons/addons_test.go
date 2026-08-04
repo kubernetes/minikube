@@ -17,6 +17,7 @@ limitations under the License.
 package addons
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -171,5 +172,28 @@ func TestStartWithAllAddonsDisabled(t *testing.T) {
 		if assets.Addons[name].IsEnabled(cc) {
 			t.Errorf("expected %s to be disabled", name)
 		}
+	}
+}
+
+func TestInvokeFailFast(t *testing.T) {
+	secondCalled := false
+	expectedErr := fmt.Errorf("first callback failed")
+
+	firstFn := func(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
+		return expectedErr
+	}
+	secondFn := func(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
+		secondCalled = true
+		return nil
+	}
+
+	fns := []setFn{firstFn, secondFn}
+	err := invoke(nil, "test", "true", fns, nil)
+
+	if err != expectedErr {
+		t.Errorf("expected error %v, got %v", expectedErr, err)
+	}
+	if secondCalled {
+		t.Errorf("expected second callback NOT to be called after first callback failed")
 	}
 }
