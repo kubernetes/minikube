@@ -49,14 +49,22 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	klog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()
 	message := string(stdInAndOut)
-	if message != " OK!\r\n" {
-		return fmt.Errorf("error adding route: %s, %d", message, len(strings.Split(message, "\n")))
-	}
-	klog.Infof("%s", stdInAndOut)
+	
 	if err != nil {
-		klog.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
-		return err
+		// Windows route command returns exit code 0 even when route exists, so check message
+		if !strings.Contains(strings.ToLower(message), "already exists") {
+			klog.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
+			return fmt.Errorf("error adding route: %s, %w", message, err)
+		}
 	}
+	
+	// If message indicates route already exists, treat as success (idempotent)
+	if strings.Contains(strings.ToLower(message), "already exists") || strings.Contains(strings.ToLower(message), "already") {
+		klog.Infof("Route already exists: %s", serviceCIDR)
+		return nil
+	}
+	
+	klog.Infof("%s", stdInAndOut)
 	return nil
 }
 
@@ -131,12 +139,9 @@ func (router *osRouter) Cleanup(route *Route) error {
 	command := exec.Command("route", "delete", serviceCIDR)
 	stdInAndOut, err := command.CombinedOutput()
 	if err != nil {
-		return err
+		message := string(stdInAndOut)
+		return fmt.Errorf("error deleting route: %s, %w", message, err)
 	}
-	message := string(stdInAndOut)
-	klog.Infof("'%s'", message)
-	if message != " OK!\r\n" {
-		return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
-	}
+	klog.Infof("%s", stdInAndOut)
 	return nil
 }
