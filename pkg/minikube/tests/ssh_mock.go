@@ -23,6 +23,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"net"
 	"sync/atomic"
@@ -37,6 +38,10 @@ type CommandResult struct {
 	Stdout   string
 	Stderr   string
 	ExitCode int
+
+	// EchoStdin makes the command copy anything it receives on stdin to stdout,
+	// so tests can assert that input reached the remote side.
+	EchoStdin bool
 }
 
 // SSHServer is a test SSH server returning preconfigured responses.
@@ -202,6 +207,13 @@ func (s *SSHServer) doExec(channel ssh.Channel, req *ssh.Request) {
 		result = CommandResult{
 			Stderr:   fmt.Sprintf("%s: command not found", cmd.Command),
 			ExitCode: 127,
+		}
+	}
+
+	if result.EchoStdin {
+		if _, err := io.Copy(channel, channel); err != nil {
+			s.t.Errorf("Failed to echo stdin: %v", err)
+			return
 		}
 	}
 
