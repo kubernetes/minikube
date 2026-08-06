@@ -1,0 +1,12 @@
+# workflow comment
+name: CI
+jobs:
+  build:
+    steps:
+      # step comment
+      - name: Test # name comment
+        # before run comment
+        run: make test # run comment
+        # after run comment
+      - name: Build
+        run: make build
