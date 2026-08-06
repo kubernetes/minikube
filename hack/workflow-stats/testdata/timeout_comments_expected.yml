@@ -1,0 +1,11 @@
+# workflow comment
+name: CI
+jobs:
+  build:
+    steps:
+      # step comment
+      - name: Test # name comment
+        # before timeout comment
+        timeout-minutes: 15 # timeout comment
+        # after timeout comment
+        run: make test
