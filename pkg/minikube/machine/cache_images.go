@@ -658,6 +658,13 @@ func RemoveImages(images []string, profile *config.Profile, options *run.Command
 
 	klog.Infof("succeeded removing from: %s", strings.Join(succeeded, " "))
 	klog.Infof("failed removing from: %s", strings.Join(failed, " "))
+
+	// Every node is attempted before reporting, so a partial failure still removes
+	// what it can. Returning the error is what gives the command a non-zero exit,
+	// without which scripts and CI cannot tell a failed removal from a successful one.
+	if len(failed) > 0 {
+		return fmt.Errorf("failed to remove images from: %s", strings.Join(failed, " "))
+	}
 	return nil
 }
 
