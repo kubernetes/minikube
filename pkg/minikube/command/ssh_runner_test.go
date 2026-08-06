@@ -122,3 +122,84 @@ func TestSSHRunner(t *testing.T) {
 		}
 	})
 }
+
+// TestSSHRunnerStdin verifies that data on cmd.Stdin reaches the remote command,
+// which is what lets callers pipe an image straight into "docker load" instead of
+// staging a temporary copy on the host.
+func TestSSHRunnerStdin(t *testing.T) {
+	commands := map[string]tests.CommandResult{
+		"echo-stdin":      {EchoStdin: true},
+		"echo-stdin-fail": {EchoStdin: true, ExitCode: 1},
+	}
+
+	s, err := tests.NewSSHServer(t, commands)
+	if err != nil {
+		t.Fatalf("NewSSHServer: %v", err)
+	}
+	if err := s.Start(); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer s.Stop()
+
+	client, err := s.Dial()
+	if err != nil {
+		t.Fatalf("Dial: %v", err)
+	}
+	defer client.Close()
+
+	runner := &SSHRunner{c: client}
+
+	t.Run("streams stdin to the remote command", func(t *testing.T) {
+		cmd := exec.Command("echo-stdin")
+		cmd.Stdin = strings.NewReader("piped payload")
+
+		rr, err := runner.RunCmd(cmd)
+		if err != nil {
+			t.Fatalf("RunCmd: %v", err)
+		}
+		if rr.Stdout.String() != "piped payload" {
+			t.Errorf("Stdout = %q, want %q", rr.Stdout.String(), "piped payload")
+		}
+	})
+
+	t.Run("large input is streamed whole", func(t *testing.T) {
+		// Bigger than a single SSH channel window, so a partial write would show up here.
+		want := strings.Repeat("abcdefgh", 128*1024) // 1 MiB
+		cmd := exec.Command("echo-stdin")
+		cmd.Stdin = strings.NewReader(want)
+
+		rr, err := runner.RunCmd(cmd)
+		if err != nil {
+			t.Fatalf("RunCmd: %v", err)
+		}
+		if got := rr.Stdout.String(); got != want {
+			t.Errorf("Stdout length = %d, want %d", len(got), len(want))
+		}
+	})
+
+	t.Run("command failure still reports the exit code", func(t *testing.T) {
+		cmd := exec.Command("echo-stdin-fail")
+		cmd.Stdin = strings.NewReader("payload")
+
+		rr, err := runner.RunCmd(cmd)
+		if err == nil {
+			t.Errorf("err = nil, want error")
+		}
+		if rr == nil {
+			t.Fatalf("RunResult = nil, want a result carrying the exit code")
+		}
+		if rr.ExitCode != 1 {
+			t.Errorf("ExitCode = %d, want 1", rr.ExitCode)
+		}
+	})
+
+	t.Run("nil stdin still works", func(t *testing.T) {
+		rr, err := runner.RunCmd(exec.Command("echo-stdin"))
+		if err != nil {
+			t.Fatalf("RunCmd: %v", err)
+		}
+		if rr.Stdout.String() != "" {
+			t.Errorf("Stdout = %q, want empty", rr.Stdout.String())
+		}
+	})
+}
