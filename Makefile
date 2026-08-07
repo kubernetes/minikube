@@ -133,6 +133,11 @@ MINIKUBE_TEST_FILES := ./cmd/... ./pkg/...
 # npm install -g markdownlint-cli
 MARKDOWNLINT ?= markdownlint
 
+# pip install codespell
+CODESPELL ?= codespell
+# brew install typos-cli
+TYPOS ?= typos
+
 
 MINIKUBE_MARKDOWN_FILES := README.md CONTRIBUTING.md CHANGELOG.md
 
@@ -483,6 +488,16 @@ golint: ## Run golint
 .PHONY: gocyclo
 gocyclo: ## Run gocyclo (calculates cyclomatic complexities)
 	@gocyclo -over 15 `find $(SOURCE_DIRS) -type f -name "*.go"`
+
+.PHONY: spellcheck
+spellcheck: ## Check for spelling errors
+	@codespell_exit=0; \
+	$(CODESPELL) --skip '*.yaml,*.tmpl,*.json,*.html,*.patch,go.sum,./third_party' || codespell_exit=$$?; \
+	typos_exit=0; \
+	$(TYPOS) --exclude '*.yaml' --exclude '*.tmpl' --exclude '*.json' --exclude '*.html' --exclude '*.patch' --exclude 'go.sum' --exclude 'third_party/**' || typos_exit=$$?; \
+	if [ "$$codespell_exit" -ne 0 ] || [ "$$typos_exit" -ne 0 ]; then \
+		exit 1; \
+	fi
 
 out/linters/golangci-lint-$(GOLINT_VERSION):
 	mkdir -p out/linters
