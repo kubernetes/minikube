@@ -116,7 +116,7 @@ func (s *Systemd) Restart(svc string) error {
 }
 
 // run systemctl reset-failed for a service
-// some services declare a realitive small restart-limit in their .service configuration
+// some services declare a relative small restart-limit in their .service configuration
 // so we reset reset-failed counter to override the limit
 func (s *Systemd) ResetFailed(svc string) error {
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "reset-failed", svc))

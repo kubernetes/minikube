@@ -74,7 +74,7 @@ func TestDarwinRouteIdempotentIntegrationTest(t *testing.T) {
 	cleanRoute(t, cfg)
 }
 
-func TestDarwinRouteCleanupIdempontentIntegrationTest(t *testing.T) {
+func TestDarwinRouteCleanupIdempotentIntegrationTest(t *testing.T) {
 
 	cfg := &Route{
 		Gateway: net.IPv4(192, 168, 1, 1),

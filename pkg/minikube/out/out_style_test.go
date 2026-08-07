@@ -92,7 +92,7 @@ func TestApplyStyle(t *testing.T) {
 	}
 }
 
-func TestApplyTemplateFormating(t *testing.T) {
+func TestApplyTemplateFormatting(t *testing.T) {
 	tests := []struct {
 		expected    string
 		description string
