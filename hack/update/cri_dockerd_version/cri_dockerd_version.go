@@ -86,6 +86,10 @@ func main() {
 	version := strings.TrimPrefix(stable.Tag, "v")
 	data := Data{Version: version, FullCommit: stable.Commit}
 
+	
+	if err := update.UpdateVersionJSON("cri-dockerd", version); err != nil {
+		klog.Fatalf("unable to update versions.json: %v", err)
+	}
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
 	}

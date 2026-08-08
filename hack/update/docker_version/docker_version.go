@@ -61,6 +61,10 @@ func main() {
 
 	data := Data{Version: strings.TrimPrefix(stable.Tag, "v")}
 
+	
+	if err := update.UpdateVersionJSON("docker", strings.TrimPrefix(stable.Tag, "v")); err != nil {
+		klog.Fatalf("unable to update versions.json: %v", err)
+	}
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
 	}
