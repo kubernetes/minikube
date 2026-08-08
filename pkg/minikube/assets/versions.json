@@ -41,6 +41,7 @@
   "portainer": "2.27.7",
   "registry": "3.1.1",
   "runc": "v1.5.1",
+  "traefik": "41.1.1",
   "volcano": "v1.14.2",
   "yakd": "0.0.9"
 }

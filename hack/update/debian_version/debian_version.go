@@ -83,6 +83,10 @@ func main() {
 	}
 	data := Data{LatestVersion: fmt.Sprintf("debian:%s", tag)}
 
+	
+	if err := update.UpdateVersionJSON("debian", tag); err != nil {
+		klog.Fatalf("unable to update versions.json: %v", err)
+	}
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
 	}
