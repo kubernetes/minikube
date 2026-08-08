@@ -162,9 +162,8 @@ spec:
         # "failed to create server failed to create folder for pinning bpf maps: mkdir /sys/fs/bpf/gadget: permission denied"
         # (For reference, see: https://github.com/inspektor-gadget/inspektor-gadget/runs/3966318270?check_suite_focus=true#step:20:221)
         container.apparmor.security.beta.kubernetes.io/gadget: "unconfined"
-        # keep aligned with values in pkg/operators/prometheus/prometheus.go
         prometheus.io/scrape: "true"
-        prometheus.io/port: "2223"
+        prometheus.io/port: "2224"
         prometheus.io/path: "/metrics"
     spec:
       serviceAccount: gadget
@@ -284,6 +283,15 @@ spec:
                 # Needed to attach qdiscs and filters to network interfaces. See createClsActQdisc()
                 # and addTCFilter() in pkg/gadgets/internal/tcnetworktracer/tc.go
                 - NET_ADMIN
+
+                # Needed by the OTel eBPF profiler (ustack symbolization) to read
+                # the ELF files of profiled processes via /proc/$pid/map_files/*.
+                # These opens go through a ptrace-mode fs-creds check against the
+                # target process, so without this capability the profiler cannot
+                # read libraries of processes running as a different (non-root)
+                # user (e.g. Ray workers running as uid 1000), which leaves their
+                # stack deltas unloaded and breaks symbolization.
+                - DAC_READ_SEARCH
           volumeMounts:
             - mountPath: /host/bin
               name: bin
