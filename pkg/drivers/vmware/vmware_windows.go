@@ -51,8 +51,7 @@ func setVmwareCmd(cmd string) string {
 		return filepath.Join(windowsInstallDir, cmd)
 	}
 
-	// panic in order to  allow to debug this issue more easily in the future
-	panic(err)
+	return ""
 }
 
 // productRegistryKey is the registry entrypoint for the product
