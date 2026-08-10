@@ -41,14 +41,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: qemu-docker-macos-15-x86
+          - name: qemu-docker-macos-26-x86
             driver: qemu
-            os: macos-15-intel
+            os: macos-26-intel
             start_flags: --network socket_vmnet --force
             sudo: "sudo"
-          - name: vfkit-docker-macos-15-x86
+          - name: vfkit-docker-macos-26-x86
             driver: vfkit
-            os: macos-15-intel
+            os: macos-26-intel
             start_flags: --network vmnet-shared --force
             sudo: "sudo"
           - name: docker-docker-ubuntu-24.04-x86
@@ -95,11 +95,12 @@ jobs:
         if: contains(matrix.os, 'macos')
         run: brew install tree
       - name: Install vfkit and vmnet-helper (macos)
-        timeout-minutes: 1
+        timeout-minutes: 3
         if: matrix.driver == 'vfkit'
         run: |
-          brew install vfkit
-          curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
+          brew tap nirs/vmnet-helper
+          brew trust nirs/vmnet-helper
+          brew install vfkit vmnet-helper
       - name: Install qemu and socket_vmnet (macos)
         timeout-minutes: 6
         if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
