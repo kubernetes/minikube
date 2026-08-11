@@ -1271,6 +1271,7 @@ func getDHCPAddressRange(dhcpAddr net.IP, network *net.IPNet) (lowerIP net.IP, u
 }
 
 func parseAndValidateCIDR(hostOnlyCIDR string) (net.IP, *net.IPNet, error) {
+	hostOnlyCIDR = strings.Trim(hostOnlyCIDR, "\"'")
 	ip, network, err := net.ParseCIDR(hostOnlyCIDR)
 	if err != nil {
 		return nil, nil, err

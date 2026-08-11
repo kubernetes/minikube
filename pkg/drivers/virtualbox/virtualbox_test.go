@@ -274,6 +274,29 @@ func TestParseValidCIDR(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestParseQuotedCIDR(t *testing.T) {
+	expectedIP, expectedNetwork, err := parseAndValidateCIDR("192.168.99.1/24")
+	assert.NoError(t, err)
+
+	tests := []struct {
+		name string
+		cidr string
+	}{
+		{name: "single quotes", cidr: "'192.168.99.1/24'"},
+		{name: "double quotes", cidr: `"192.168.99.1/24"`},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ip, network, err := parseAndValidateCIDR(tc.cidr)
+
+			assert.Equal(t, expectedIP, ip)
+			assert.Equal(t, expectedNetwork, network)
+			assert.NoError(t, err)
+		})
+	}
+}
+
 func TestInvalidCIDR(t *testing.T) {
 	ip, network, err := parseAndValidateCIDR("192.168.100.1")
 
