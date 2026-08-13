@@ -151,6 +151,6 @@ Once the application is running try doing `curl localhost:8080` to see the `Hell
 
 You can also update [skaffold.yaml](./skaffold.yaml) and [app.yaml](.k8s/app.yaml), to use `test.org`, `test.com` or `example.org` as container registry urls, and see all the container image names resolves to internal registry, resulting in successful build and deployment.
 
-> **NOTE**:
->
-> You can also update [skaffold.yaml](./skaffold.yaml) and [app. yaml](.k8s/app.yaml), to use `test.org`, `test.com` or > `example.org` as container registry urls, and see all the > container image names resolves to internal registry, resulting in successful build and deployment.
+{{% alert title="Note" color="primary" %}}
+You can also update [skaffold.yaml](./skaffold.yaml) and [app.yaml](.k8s/app.yaml), to use `test.org`, `test.com` or `example.org` as container registry urls, and see all the container image names resolves to internal registry, resulting in successful build and deployment.
+{{% /alert %}}
