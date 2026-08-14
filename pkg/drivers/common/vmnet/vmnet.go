@@ -69,6 +69,14 @@ type Helper struct {
 	// Offloading is required for krunkit, does not work with vfkit.
 	Offloading bool
 
+	// Subnet configuration. When set, vmnet-helper uses a custom subnet
+	// instead of letting vmnet select the next available network (defaults to
+	// 192.168.64.0/24 in shared mode). All three must be set together or all
+	// omitted. See https://github.com/nirs/vmnet-helper/blob/main/docs/integration.md
+	StartAddress string
+	EndAddress   string
+	SubnetMask   string
+
 	// Set when vmnet interface is started.
 	macAddress string
 
@@ -194,6 +202,16 @@ func (h *Helper) Start(socketPath string) error {
 
 	if h.Offloading {
 		args = append(args, "--enable-tso", "--enable-checksum-offload")
+	}
+
+	if h.StartAddress != "" {
+		args = append(args, "--start-address", h.StartAddress)
+	}
+	if h.EndAddress != "" {
+		args = append(args, "--end-address", h.EndAddress)
+	}
+	if h.SubnetMask != "" {
+		args = append(args, "--subnet-mask", h.SubnetMask)
 	}
 
 	cmd := exec.Command(executable, args...)
