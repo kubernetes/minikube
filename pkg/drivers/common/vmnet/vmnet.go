@@ -35,6 +35,7 @@ import (
 	"golang.org/x/sys/unix"
 	"gopkg.in/yaml.v2"
 
+	"k8s.io/minikube/pkg/drivers/common/privileges"
 	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -200,6 +201,12 @@ func (h *Helper) Start(socketPath string) error {
 	// Create vmnet-helper in a new process group so it is not harmed when
 	// terminating the minikube process group.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	// When running under sudo, start vmnet-helper as the real user rather than
+	// relying on its internal privilege drop.
+	if cred := privileges.Credential(); cred != nil {
+		cmd.SysProcAttr.Credential = cred
+	}
 
 	logfile, err := h.openLogfile()
 	if err != nil {
