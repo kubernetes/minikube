@@ -42,11 +42,21 @@ type HelmChart struct {
 	ValueFiles []string
 }
 
+// AddonMetadata contains user-facing and maintainer metadata for an addon.
+type AddonMetadata struct {
+	Name               string
+	Description        string
+	Maintainer         string
+	VerifiedMaintainer string
+	Docs               string
+}
+
 // Addon is a named list of assets, that can be enabled
 type Addon struct {
 	Assets             []*BinAsset
 	enabled            bool
 	addonName          string
+	Description        string
 	Maintainer         string
 	VerifiedMaintainer string
 	Docs               string
@@ -65,14 +75,15 @@ type NetworkInfo struct {
 }
 
 // NewAddon creates a new Addon
-func NewAddon(assets []*BinAsset, enabled bool, addonName, maintainer, verifiedMaintainer, docs string, images, registries map[string]string, helmChart *HelmChart) *Addon {
+func NewAddon(assets []*BinAsset, enabled bool, metadata AddonMetadata, images, registries map[string]string, helmChart *HelmChart) *Addon {
 	return &Addon{
 		Assets:             assets,
 		enabled:            enabled,
-		addonName:          addonName,
-		Maintainer:         maintainer,
-		VerifiedMaintainer: verifiedMaintainer,
-		Docs:               docs,
+		addonName:          metadata.Name,
+		Description:        metadata.Description,
+		Maintainer:         metadata.Maintainer,
+		VerifiedMaintainer: metadata.VerifiedMaintainer,
+		Docs:               metadata.Docs,
 		Images:             images,
 		Registries:         registries,
 		HelmChart:          helmChart,
@@ -146,7 +157,13 @@ var Addons = map[string]*Addon{
 			"0640"),
 
 		// GuestPersistentDir
-	}, false, "auto-pause", "minikube", "", "", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "auto-pause",
+		Description:        "Pauses idle Kubernetes workloads automatically",
+		Maintainer:         "minikube",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, map[string]string{
 		"AutoPauseHook": "k8s-minikube/auto-pause-hook:v0.0.5@sha256:d613ed2c891882b602b5aca668e92d4606a1b3832d96750ab25804de15929522",
 	}, map[string]string{
 		"AutoPauseHook": "gcr.io",
@@ -163,7 +180,13 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-sa.yaml", vmpath.GuestAddonsDir, "dashboard-sa.yaml", "0640"),
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-secret.yaml", vmpath.GuestAddonsDir, "dashboard-secret.yaml", "0640"),
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-svc.yaml", vmpath.GuestAddonsDir, "dashboard-svc.yaml", "0640"),
-	}, false, "dashboard", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/dashboard/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "dashboard",
+		Description:        "Web interface for managing Kubernetes resources",
+		Maintainer:         "Kubernetes",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/dashboard/",
+	}, map[string]string{
 		"Dashboard":      "kubernetesui/dashboard:v2.7.0@sha256:2e500d29e9d5f4a086b908eb8dfe7ecac57d2ab09d65b24f588b1d449841ef93",
 		"MetricsScraper": "kubernetesui/metrics-scraper:v1.0.8@sha256:76049887f07a0476dc93efc2d3569b9529bf982b22d29f356092ce206e98765c",
 	}, map[string]string{
@@ -176,21 +199,39 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"storageclass.yaml",
 			"0640"),
-	}, true, "default-storageclass", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/", nil, nil, nil),
+	}, true, AddonMetadata{
+		Name:               "default-storageclass",
+		Description:        "Configures the default Kubernetes StorageClass",
+		Maintainer:         "Kubernetes",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/",
+	}, nil, nil, nil),
 	"pod-security-policy": NewAddon([]*BinAsset{
 		MustBinAsset(addons.PodSecurityPolicyAssets,
 			"pod-security-policy/pod-security-policy.yaml",
 			vmpath.GuestAddonsDir,
 			"pod-security-policy.yaml",
 			"0640"),
-	}, false, "pod-security-policy", "3rd party (unknown)", "", "", nil, nil, nil),
+	}, false, AddonMetadata{
+		Name:               "pod-security-policy",
+		Description:        "Adds legacy PodSecurityPolicy resources",
+		Maintainer:         "3rd party (unknown)",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, nil, nil, nil),
 	"storage-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.StorageProvisionerAssets,
 			"storage-provisioner/storage-provisioner.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"storage-provisioner.yaml",
 			"0640"),
-	}, true, "storage-provisioner", "minikube", "", "", map[string]string{
+	}, true, AddonMetadata{
+		Name:               "storage-provisioner",
+		Description:        "Dynamically provisions local persistent volumes",
+		Maintainer:         "minikube",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, map[string]string{
 		"StorageProvisioner": fmt.Sprintf("k8s-minikube/storage-provisioner:%s", version.GetStorageProvisionerVersion()),
 	}, map[string]string{
 		"StorageProvisioner": "gcr.io",
@@ -201,7 +242,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"storage-provisioner-rancher.yaml",
 			"0640"),
-	}, false, "storage-provisioner-rancher", "3rd party (Rancher)", "", "", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "storage-provisioner-rancher",
+		Description:        "Provisions local volumes using Rancher Local Path",
+		Maintainer:         "3rd party (Rancher)",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, map[string]string{
 		"LocalPathProvisioner": "rancher/local-path-provisioner:v0.0.22@sha256:e34c88ae0affb1cdefbb874140d6339d4a27ec4ee420ae8199cd839997b05246",
 		"Helper":               "busybox:stable@sha256:3fbc632167424a6d997e74f52b878d7cc478225cffac6bc977eedfe51c7f4e79",
 	}, map[string]string{
@@ -239,7 +286,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"kibana-svc.yaml",
 			"0640"),
-	}, false, "efk", "3rd party (Elastic)", "", "", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "efk",
+		Description:        "Elasticsearch, Fluentd, and Kibana logging stack",
+		Maintainer:         "3rd party (Elastic)",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, map[string]string{
 		"Elasticsearch":        "elasticsearch:v5.6.2@sha256:7e95b32a7a2aad0c0db5c881e4a1ce8b7e53236144ae9d9cfb5fbe5608af4ab2",
 		"FluentdElasticsearch": "fluentd-elasticsearch:v2.0.2@sha256:d0480bbf2d0de2344036fa3f7034cf7b4b98025a89c71d7f1f1845ac0e7d5a97",
 		"Alpine":               "alpine:3.6@sha256:66790a2b79e1ea3e1dabac43990c54aca5d1ddf268d9a5a0285e4167c8b24475",
@@ -256,7 +309,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ingress-deploy.yaml",
 			"0640"),
-	}, false, "ingress", "Kubernetes", "", "https://github.com/kubernetes/ingress-nginx", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "ingress",
+		Description:        "Adds the NGINX Ingress Controller",
+		Maintainer:         "Kubernetes",
+		VerifiedMaintainer: "",
+		Docs:               "https://github.com/kubernetes/ingress-nginx",
+	}, map[string]string{
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L445
 		"IngressController": "ingress-nginx/controller:v1.15.1@sha256:594ceea76b01c592858f803f9ff4d2cb40542cae2060410b2c95f75907d659e1",
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L552
@@ -274,7 +333,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"istio-operator.yaml",
 			"0640"),
-	}, false, "istio-provisioner", "3rd party (Istio)", "", "https://istio.io/latest/docs/setup/platform-setup/minikube/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "istio-provisioner",
+		Description:        "Installs the Istio operator and prerequisites",
+		Maintainer:         "3rd party (Istio)",
+		VerifiedMaintainer: "",
+		Docs:               "https://istio.io/latest/docs/setup/platform-setup/minikube/",
+	}, map[string]string{
 		"IstioOperator": "istio/operator:1.23.3@sha256:fcdc8f506f6b19b8265e6c8c28fa3d1c2f5b9069ad8ea6e1d8b353b233ec3079",
 	}, map[string]string{
 		"IstioOperator": "docker.io",
@@ -285,10 +350,22 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"istio-default-profile.yaml",
 			"0640"),
-	}, false, "istio", "3rd party (Istio)", "", "https://istio.io/latest/docs/setup/platform-setup/minikube/", nil, nil, nil),
+	}, false, AddonMetadata{
+		Name:               "istio",
+		Description:        "Installs the Istio service mesh",
+		Maintainer:         "3rd party (Istio)",
+		VerifiedMaintainer: "",
+		Docs:               "https://istio.io/latest/docs/setup/platform-setup/minikube/",
+	}, nil, nil, nil),
 	"inspektor-gadget": NewAddon([]*BinAsset{
 		MustBinAsset(addons.InspektorGadgetAssets, "inspektor-gadget/ig-deployment.yaml.tmpl", vmpath.GuestAddonsDir, "ig-deployment.yaml", "0640"),
-	}, false, "inspektor-gadget", "3rd party (inspektor-gadget.io)", "https://github.com/orgs/inspektor-gadget/people", "https://minikube.sigs.k8s.io/docs/handbook/addons/inspektor-gadget/",
+	}, false, AddonMetadata{
+		Name:               "inspektor-gadget",
+		Description:        "Observes and debugs Kubernetes workloads",
+		Maintainer:         "3rd party (inspektor-gadget.io)",
+		VerifiedMaintainer: "https://github.com/orgs/inspektor-gadget/people",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/inspektor-gadget/",
+	},
 		map[string]string{
 			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.54.0@sha256:f909665fdf8e8a3bad54c6ffd6dc04919bc0604c54b3e4bd34c77ef55dada5ab",
 		}, map[string]string{
@@ -300,7 +377,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"kong-ingress-controller.yaml",
 			"0640"),
-	}, false, "kong", "3rd party (Kong HQ)", "@gAmUssA", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "kong",
+		Description:        "Adds Kong API gateway and ingress",
+		Maintainer:         "3rd party (Kong HQ)",
+		VerifiedMaintainer: "@gAmUssA",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/",
+	}, map[string]string{
 		"Kong":        "kong:3.9.1@sha256:a2b2ec9964bba34065943e8be1d56791a4a06b7b0c10222f05564b372ca87840",
 		"KongIngress": "kong/kubernetes-ingress-controller:3.5.10@sha256:1f68c096f181c492b6d12203db265d25f7e821fae6c5122ca79ba9a8366c8a47",
 	}, map[string]string{
@@ -313,7 +396,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"pod.yaml",
 			"0640"),
-	}, false, "kubevirt", "3rd party (KubeVirt)", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/kubevirt/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "kubevirt",
+		Description:        "Runs virtual machines on Kubernetes",
+		Maintainer:         "3rd party (KubeVirt)",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/kubevirt/",
+	}, map[string]string{
 		"Kubectl": "bitnami/kubectl:latest",
 	}, map[string]string{
 		"Kubectl": "docker.io",
@@ -339,7 +428,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"metrics-server-service.yaml",
 			"0640"),
-	}, false, "metrics-server", "Kubernetes", "", "", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "metrics-server",
+		Description:        "Collects CPU and memory resource metrics",
+		Maintainer:         "Kubernetes",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, map[string]string{
 		"MetricsServer": "metrics-server/metrics-server:v0.9.0@sha256:d9862115e7c7881280d3d75ca26bda8ffc0fc213315979575bf23ce9826205c0",
 	}, map[string]string{
 		"MetricsServer": "registry.k8s.io",
@@ -355,7 +450,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"olm.yaml",
 			"0640"),
-	}, false, "olm", "3rd party (Operator Framework)", "", "", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "olm",
+		Description:        "Manages Kubernetes operators and their lifecycle",
+		Maintainer:         "3rd party (Operator Framework)",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, map[string]string{
 		"OLM": "operator-framework/olm@sha256:e74b2ac57963c7f3ba19122a8c31c9f2a0deb3c0c5cac9e5323ccffd0ca198ed",
 		// operator-framework/community-operators was deprecated: https://github.com/operator-framework/community-operators#repository-is-obsolete; switching to OperatorHub.io instead
 		"UpstreamCommunityOperators": "operatorhubio/catalog@sha256:e08a1cd21fe72dd1be92be738b4bf1515298206dac5479c17a4b3ed119e30bd4",
@@ -379,7 +480,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"registry-proxy.yaml",
 			"0640"),
-	}, false, "registry", "minikube", "", "", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "registry",
+		Description:        "Runs a local container image registry",
+		Maintainer:         "minikube",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, map[string]string{
 		"KubeRegistryProxy": "minikube/kube-registry-proxy:v0.0.11@sha256:e321acf067df0a78fba3ff97748c10029ca2c413c5b7207e4ca000c62fcdac93",
 		"Registry":          "registry:3.1.1@sha256:85347ed2ecde64161c7a4788a4d7d3dcc9d6f86f7be95834022e3c6a423a945a",
 	}, map[string]string{
@@ -392,7 +499,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"registry-creds-rc.yaml",
 			"0640"),
-	}, false, "registry-creds", "3rd party (UPMC Enterprises)", "", "https://minikube.sigs.k8s.io/docs/handbook/registry/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "registry-creds",
+		Description:        "Supplies private registry credentials to workloads",
+		Maintainer:         "3rd party (UPMC Enterprises)",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/registry/",
+	}, map[string]string{
 		"RegistryCreds": "upmcenterprises/registry-creds:1.10@sha256:93a633d4f2b76a1c66bf19c664dbddc56093a543de6d54320f19f585ccd7d605",
 	}, map[string]string{
 		"RegistryCreds": "docker.io",
@@ -423,7 +536,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"patch-coredns-job.yaml",
 			"0640"),
-	}, false, "registry-aliases", "3rd party (unknown)", "", "", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "registry-aliases",
+		Description:        "Adds aliases for the local image registry",
+		Maintainer:         "3rd party (unknown)",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, map[string]string{
 		"CoreDNSPatcher": "rhdevelopers/core-dns-patcher@sha256:9220ff32f690c3d889a52afb59ca6fcbbdbd99e5370550cc6fd249adea8ed0a9",
 		"Alpine":         "alpine:3.11@sha256:0bd0e9e03a022c3b0226667621da84fc9bf562a9056130424b5bfbd8bcb0397f",
 		"Pause":          "google_containers/pause:3.1@sha256:f78411e19d84a252e53bff71a4407a5686c46983a2c2eeed83929b888179acea",
@@ -438,7 +557,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"freshpod-rc.yaml",
 			"0640"),
-	}, false, "freshpod", "Google", "", "https://github.com/GoogleCloudPlatform/freshpod", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "freshpod",
+		Description:        "Restarts pods when referenced images change",
+		Maintainer:         "Google",
+		VerifiedMaintainer: "",
+		Docs:               "https://github.com/GoogleCloudPlatform/freshpod",
+	}, map[string]string{
 		"FreshPod": "google-samples/freshpod:v0.0.1@sha256:b9efde5b509da3fd2959519c4147b653d0c5cefe8a00314e2888e35ecbcb46f9",
 	}, map[string]string{
 		"FreshPod": "gcr.io",
@@ -449,7 +574,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"nvidia-driver-installer.yaml",
 			"0640"),
-	}, false, "nvidia-driver-installer", "3rd party (NVIDIA)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "nvidia-driver-installer",
+		Description:        "Installs NVIDIA GPU drivers in minikube",
+		Maintainer:         "3rd party (NVIDIA)",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/",
+	}, map[string]string{
 		"NvidiaDriverInstaller": "minikube-nvidia-driver-installer:e2d9b43228decf5d6f7dce3f0a85d390f138fa01",
 		"Pause":                 "pause:2.0@sha256:9ce5316f9752b8347484ab0f6778573af15524124d52b93230b9a0dcc987e73e",
 	}, map[string]string{
@@ -462,7 +593,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"nvidia-gpu-device-plugin.yaml",
 			"0640"),
-	}, false, "nvidia-gpu-device-plugin", "3rd party (NVIDIA)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "nvidia-gpu-device-plugin",
+		Description:        "Adds NVIDIA GPU device plugin support",
+		Maintainer:         "3rd party (NVIDIA)",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/",
+	}, map[string]string{
 		"NvidiaDevicePlugin": "nvidia-gpu-device-plugin@sha256:4b036e8844920336fa48f36edeb7d4398f426d6a934ba022848deed2edbf09aa",
 	}, map[string]string{
 		"NvidiaDevicePlugin": "registry.k8s.io",
@@ -473,7 +610,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"amd-gpu-device-plugin.yaml",
 			"0640"),
-	}, false, "amd-gpu-device-plugin", "3rd party (AMD)", "", "https://minikube.sigs.k8s.io/docs/tutorials/amd/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "amd-gpu-device-plugin",
+		Description:        "Exposes AMD GPUs to Kubernetes workloads",
+		Maintainer:         "3rd party (AMD)",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/tutorials/amd/",
+	}, map[string]string{
 		"AmdDevicePlugin": "rocm/k8s-device-plugin:1.25.2.8@sha256:f3835498cf2274e0a07c32b38c166c05a876f8eb776d756cc06805e599a3ba5f",
 	}, map[string]string{
 		"AmdDevicePlugin": "docker.io",
@@ -489,7 +632,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"logviewer-rbac.yaml",
 			"0640"),
-	}, false, "logviewer", "3rd party (unknown)", "", "", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "logviewer",
+		Description:        "Provides a web interface for container logs",
+		Maintainer:         "3rd party (unknown)",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, map[string]string{
 		"LogViewer": "ivans3/minikube-log-viewer:latest@sha256:75854f45305cc47d17b04c6c588fa60777391761f951e3a34161ddf1f1b06405",
 	}, map[string]string{
 		"LogViewer": "docker.io",
@@ -505,7 +654,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"gvisor-runtimeclass.yaml",
 			"0640"),
-	}, false, "gvisor", "minikube", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gvisor/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "gvisor",
+		Description:        "Adds the gVisor sandboxed container runtime",
+		Maintainer:         "minikube",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/gvisor/",
+	}, map[string]string{
 		"GvisorAddon": "minikube/gvisor:v0.0.4@sha256:0f389d92114b6342bcdb971fc8e89e9d60683d49aa5e31b89d744ec420196fd9",
 	}, map[string]string{
 		"GvisorAddon": "registry.k8s.io",
@@ -516,7 +671,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ingress-dns-pod.yaml",
 			"0640"),
-	}, false, "ingress-dns", "minikube", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/ingress-dns/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "ingress-dns",
+		Description:        "Resolves ingress hostnames inside minikube",
+		Maintainer:         "minikube",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/ingress-dns/",
+	}, map[string]string{
 		"IngressDNS": "kicbase/minikube-ingress-dns:0.0.4@sha256:d7c3fd25a0ea8fa62d4096eda202b3fc69d994b01ed6ab431def629f16ba1a89",
 	}, map[string]string{
 		"IngressDNS": "docker.io",
@@ -532,7 +693,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"metallb-config.yaml",
 			"0640"),
-	}, false, "metallb", "3rd party (MetalLB)", "", "", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "metallb",
+		Description:        "Provides LoadBalancer services for local clusters",
+		Maintainer:         "3rd party (MetalLB)",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, map[string]string{
 		"Speaker":    "metallb/speaker:v0.9.6@sha256:7a400205b4986acd3d2ff32c29929682b8ff8d830837aff74f787c757176fa9f",
 		"Controller": "metallb/controller:v0.9.6@sha256:6932cf255dd7f06f550c7f106b9a206be95f847ab8cb77aafac7acd27def0b00",
 	}, map[string]string{
@@ -555,7 +722,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ambassadorinstallation.yaml",
 			"0640"),
-	}, false, "ambassador", "3rd party (Ambassador)", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/ambassador/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "ambassador",
+		Description:        "API gateway and ingress controller",
+		Maintainer:         "3rd party (Ambassador)",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/ambassador/",
+	}, map[string]string{
 		"AmbassadorOperator": "datawire/ambassador-operator:v1.2.3@sha256:492f33e0828a371aa23331d75c11c251b21499e31287f026269e3f6ec6da34ed",
 	}, map[string]string{
 		"AmbassadorOperator": "quay.io",
@@ -576,7 +749,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"gcp-auth-webhook.yaml",
 			"0640"),
-	}, false, "gcp-auth", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "gcp-auth",
+		Description:        "Adds Google Cloud authentication webhook support",
+		Maintainer:         "Google",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/",
+	}, map[string]string{
 		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v1.6.9@sha256:01038e7de14b78d702d2849c3aad72fd25903c4765af63cf16aa3398f5d5f2dd",
 		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.1.3@sha256:94f0c448171b974aab7b4a96d00feb5799b1d69827a738a4f8b4b30c17fb74e7",
 	}, map[string]string{
@@ -589,7 +768,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"volcano-deployment.yaml",
 			"0640"),
-	}, false, "volcano", "third-party (volcano)", "hwdef", "", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "volcano",
+		Description:        "Adds batch and high-performance workload scheduling",
+		Maintainer:         "third-party (volcano)",
+		VerifiedMaintainer: "hwdef",
+		Docs:               "",
+	}, map[string]string{
 		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.14.2@sha256:efdefa4a8068960a5b4ac7f631ac75fe5d28e575b9008df5dcb0c94ebaa4dc66",
 		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.14.2@sha256:90f12443e6597820be8b934ab0598558835bcd07b8b1cc98e8e6ea2add70437d",
 		"vc_scheduler":          "volcanosh/vc-scheduler:v1.14.2@sha256:7ac36345224c4e0f7ab8188c5234439bc58784c77066c3c3e2539bb8804fd788",
@@ -631,7 +816,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"volume-snapshot-controller-deployment.yaml",
 			"0640"),
-	}, false, "volumesnapshots", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/tutorials/volume_snapshots_and_csi/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "volumesnapshots",
+		Description:        "Adds CSI volume snapshot support",
+		Maintainer:         "Kubernetes",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/tutorials/volume_snapshots_and_csi/",
+	}, map[string]string{
 		"SnapshotController": "sig-storage/snapshot-controller:v6.1.0@sha256:823c75d0c45d1427f6d850070956d9ca657140a7bbf828381541d1d808475280",
 	}, map[string]string{
 		"SnapshotController": "registry.k8s.io",
@@ -692,7 +883,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-storageclass.yaml",
 			"0640"),
-	}, false, "csi-hostpath-driver", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/tutorials/volume_snapshots_and_csi/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "csi-hostpath-driver",
+		Description:        "CSI host-path storage driver for testing",
+		Maintainer:         "Kubernetes",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/tutorials/volume_snapshots_and_csi/",
+	}, map[string]string{
 		"Attacher":              "sig-storage/csi-attacher:v4.0.0@sha256:9a685020911e2725ad019dbce6e4a5ab93d51e3d4557f115e64343345e05781b",
 		"HostMonitorController": "sig-storage/csi-external-health-monitor-controller:v0.7.0@sha256:80b9ba94aa2afe24553d69bd165a6a51552d1582d68618ec00d3b804a7d9193c",
 		"NodeDriverRegistrar":   "sig-storage/csi-node-driver-registrar:v2.6.0@sha256:f1c25991bac2fbb7f5fcf91ed9438df31e30edee6bed5a780464238aa09ad24c",
@@ -717,7 +914,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"portainer.yaml",
 			"0640"),
-	}, false, "portainer", "3rd party (Portainer.io)", "", "", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "portainer",
+		Description:        "Provides a web interface for container management",
+		Maintainer:         "3rd party (Portainer.io)",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, map[string]string{
 		"Portainer": "portainer/portainer-ce:2.27.7@sha256:1b4759b6fd66cec0a6c02c780529d67e8dd0788a4fbd5b541f172daffdf991b9",
 	}, map[string]string{
 		"Portainer": "docker.io",
@@ -728,7 +931,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"fpga-operator.yaml",
 			"0640"),
-	}, false, "inaccel", "3rd party (InAccel [info@inaccel.com])", "", "", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "inaccel",
+		Description:        "Adds FPGA workload acceleration support",
+		Maintainer:         "3rd party (InAccel [info@inaccel.com])",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, map[string]string{
 		"Helm3": "alpine/helm:3.9.0@sha256:9f4bf4d24241f983910550b1fe8688571cd684046500abe58cef14308f9cb19e",
 	}, map[string]string{
 		"Helm3": "docker.io",
@@ -739,7 +948,13 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-deployment.yaml.tmpl", vmpath.GuestAddonsDir, "headlamp-deployment.yaml", "0640"),
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-serviceaccount.yaml", vmpath.GuestAddonsDir, "headlamp-serviceaccount.yaml", "0640"),
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "headlamp-clusterrolebinding.yaml", "0640"),
-	}, false, "headlamp", "3rd party (kinvolk.io)", "yolossn", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
+	}, false, AddonMetadata{
+		Name:               "headlamp",
+		Description:        "Web interface for managing Kubernetes clusters",
+		Maintainer:         "3rd party (kinvolk.io)",
+		VerifiedMaintainer: "yolossn",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
+	},
 		map[string]string{
 			"Headlamp": "headlamp-k8s/headlamp:v0.43.0@sha256:5d03caa26df7a715079405df2949907160518750b9b62b6bf4de8d1a6142c541",
 		},
@@ -748,18 +963,36 @@ var Addons = map[string]*Addon{
 		}, nil),
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml.tmpl", vmpath.GuestAddonsDir, "deployment.yaml", "0640"),
-	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
+	}, false, AddonMetadata{
+		Name:               "cloud-spanner",
+		Description:        "Runs the Cloud Spanner emulator locally",
+		Maintainer:         "Google",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/",
+	}, map[string]string{
 		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.55@sha256:ad54472fe7b161b9214f7f816f304b649a4779e348229c375ac067f5ed5a6422",
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
 	}, nil),
 	"kubeflow": NewAddon([]*BinAsset{
 		MustBinAsset(addons.Kubeflow, "kubeflow/kubeflow.yaml", vmpath.GuestAddonsDir, "kubeflow.yaml", "0640"),
-	}, false, "kubeflow", "3rd party", "", "", nil, nil, nil,
+	}, false, AddonMetadata{
+		Name:               "kubeflow",
+		Description:        "Adds machine learning workflows on Kubernetes",
+		Maintainer:         "3rd party",
+		VerifiedMaintainer: "",
+		Docs:               "",
+	}, nil, nil, nil,
 	),
 	"nvidia-device-plugin": NewAddon([]*BinAsset{
 		MustBinAsset(addons.NvidiaDevicePlugin, "nvidia-device-plugin/nvidia-device-plugin.yaml.tmpl", vmpath.GuestAddonsDir, "nvidia-device-plugin.yaml", "0640"),
-	}, false, "nvidia-device-plugin", "3rd party (NVIDIA)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/",
+	}, false, AddonMetadata{
+		Name:               "nvidia-device-plugin",
+		Description:        "Exposes NVIDIA GPUs to Kubernetes workloads",
+		Maintainer:         "3rd party (NVIDIA)",
+		VerifiedMaintainer: "",
+		Docs:               "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/",
+	},
 		map[string]string{
 			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.19.3@sha256:25cc340fe6fd53c101e16fc452f503e7a92c219c64a80ed5381784b522dbbf77",
 		}, map[string]string{
@@ -771,7 +1004,13 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.YakdAssets, "yakd/yakd-crb.yaml", vmpath.GuestAddonsDir, "yakd-crb.yaml", "0640"),
 		MustBinAsset(addons.YakdAssets, "yakd/yakd-svc.yaml", vmpath.GuestAddonsDir, "yakd-svc.yaml", "0640"),
 		MustBinAsset(addons.YakdAssets, "yakd/yakd-dp.yaml.tmpl", vmpath.GuestAddonsDir, "yakd-dp.yaml", "0640"),
-	}, false, "yakd", "3rd party (marcnuri.com)", "manusa", "https://minikube.sigs.k8s.io/docs/handbook/addons/yakd-kubernetes-dashboard/",
+	}, false, AddonMetadata{
+		Name:               "yakd",
+		Description:        "Provides a lightweight Kubernetes dashboard",
+		Maintainer:         "3rd party (marcnuri.com)",
+		VerifiedMaintainer: "manusa",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/yakd-kubernetes-dashboard/",
+	},
 		map[string]string{
 			"Yakd": "manusa/yakd:0.0.9@sha256:8de49dcce135409b0b9ffea73e0822420eef5bfba5bc14128396647db8c8ad93",
 		},
@@ -784,7 +1023,13 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-cluster-api.yaml.tmpl", vmpath.GuestAddonsDir, "kubetail-cluster-api.yaml", "0640"),
 		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-cluster-agent.yaml.tmpl", vmpath.GuestAddonsDir, "kubetail-cluster-agent.yaml", "0640"),
 		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-cli.yaml", vmpath.GuestAddonsDir, "kubetail-cli.yaml", "0640"),
-	}, false, "kubetail", "3rd party (kubetail.com)", "amorey", "https://minikube.sigs.k8s.io/docs/handbook/addons/kubetail/",
+	}, false, AddonMetadata{
+		Name:               "kubetail",
+		Description:        "Provides a web dashboard for Kubernetes logs",
+		Maintainer:         "3rd party (kubetail.com)",
+		VerifiedMaintainer: "amorey",
+		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/kubetail/",
+	},
 		map[string]string{
 			"KubetailDashboard":    "kubetail/kubetail-dashboard:0.6.3@sha256:0350addb95c0b135422cf766ef7ed31dd110b1fb87aa74a600fc10508c782cfa",
 			"KubetailClusterAPI":   "kubetail/kubetail-cluster-api:0.4.2@sha256:67ebae5543164147d21045bff3f77607914b9408d82526866a90c664814b7316",
@@ -793,7 +1038,13 @@ var Addons = map[string]*Addon{
 		map[string]string{
 			"Kubetail": "docker.io",
 		}, nil),
-	"traefik": NewAddon([]*BinAsset{}, false, "traefik", "3rd party (Traefik Labs)", "traefik", "https://doc.traefik.io/traefik/", nil, nil,
+	"traefik": NewAddon([]*BinAsset{}, false, AddonMetadata{
+		Name:               "traefik",
+		Description:        "Adds the Traefik ingress controller",
+		Maintainer:         "3rd party (Traefik Labs)",
+		VerifiedMaintainer: "traefik",
+		Docs:               "https://doc.traefik.io/traefik/",
+	}, nil, nil,
 		// Traefik docs:
 		// - https://doc.traefik.io/traefik/setup/kubernetes/
 		// - https://github.com/traefik/traefik-helm-chart/blob/master/traefik/VALUES.md
