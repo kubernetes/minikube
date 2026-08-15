@@ -69,6 +69,10 @@ func main() {
 
 	data := Data{Version: stable.Tag, MMVersion: mmVersion, Commit: stable.Commit}
 
+	
+	if err := update.UpdateVersionJSON("cri-o", stable.Tag); err != nil {
+		klog.Fatalf("unable to update versions.json: %v", err)
+	}
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
 	}

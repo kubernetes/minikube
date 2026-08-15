@@ -28,7 +28,7 @@ import (
 var schema = map[string]update.Item{
 	"pkg/minikube/assets/addons.go": {
 		Replace: map[string]string{
-			`"registry:.*`: `"registry:{{.Version}}@{{.SHA}}",`,
+			`"registry:%s@sha256:[a-f0-9]+`: `"registry:%s@sha256:{{.SHA}}`,
 		},
 	},
 }
@@ -54,6 +54,10 @@ func main() {
 
 	data := Data{Version: tag, SHA: sha}
 
+	
+	if err := update.UpdateVersionJSON("registry", tag); err != nil {
+		klog.Fatalf("unable to update versions.json: %v", err)
+	}
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
 	}
