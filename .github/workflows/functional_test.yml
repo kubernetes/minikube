@@ -191,7 +191,7 @@ jobs:
         if: matrix.driver == 'none' && matrix.cruntime == 'docker'
         timeout-minutes: 1
         run: |
-          CRI_DOCKERD_VERSION="v0.4.3"
+          CRI_DOCKERD_VERSION="v0.4.6"
           ARCH="${{ matrix.arch }}"
           VERSION="${CRI_DOCKERD_VERSION#v}"
           curl -L "https://github.com/Mirantis/cri-dockerd/releases/download/${CRI_DOCKERD_VERSION}/cri-dockerd-${VERSION}.${ARCH}.tgz" -o /tmp/cri-dockerd.tgz
