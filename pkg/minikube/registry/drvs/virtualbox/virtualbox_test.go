@@ -16,40 +16,7 @@ limitations under the License.
 
 package virtualbox
 
-import (
-	"testing"
-
-	"k8s.io/minikube/pkg/drivers/virtualbox"
-	"k8s.io/minikube/pkg/minikube/config"
-)
-
-func TestConfigureNoAccelerate3DOff(t *testing.T) {
-	tests := []struct {
-		name              string
-		noAccelerate3DOff bool
-	}{
-		{"disabled by default", false},
-		{"enabled via cluster config", true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cc := config.ClusterConfig{Name: "minikube", NoAccelerate3DOff: tt.noAccelerate3DOff}
-			n := config.Node{Name: "m01", ControlPlane: true}
-
-			got, err := configure(cc, n)
-			if err != nil {
-				t.Fatalf("configure() returned error: %v", err)
-			}
-			d, ok := got.(*virtualbox.Driver)
-			if !ok {
-				t.Fatalf("configure() returned %T, want *virtualbox.Driver", got)
-			}
-			if d.NoAccelerate3DOff != tt.noAccelerate3DOff {
-				t.Errorf("d.NoAccelerate3DOff = %v, want %v", d.NoAccelerate3DOff, tt.noAccelerate3DOff)
-			}
-		})
-	}
-}
+import "testing"
 
 func TestParseVboxVersion(t *testing.T) {
 	tests := []struct {

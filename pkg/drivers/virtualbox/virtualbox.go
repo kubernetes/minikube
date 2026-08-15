@@ -66,6 +66,13 @@ var (
 	ErrNetworkAddrCollision     = errors.New("host-only cidr conflicts with the network address of a host interface")
 )
 
+// accelerate3DUnsupportedErr matches the VBoxManage error returned when the host's graphics
+// controller rejects --accelerate3d off outright, e.g.:
+//
+//	VBoxManage: error: The graphics controller does not support the given feature
+//	VBoxManage: error: Details: code VBOX_E_NOT_SUPPORTED (0x80bb0009), component GraphicsAdapterWrap, interface IGraphicsAdapter, callee nsISupports
+var accelerate3DUnsupportedErr = regexp.MustCompile(`(?s)VBOX_E_NOT_SUPPORTED.*GraphicsAdapter`)
+
 type Driver struct {
 	*drivers.BaseDriver
 	VBoxManager
@@ -432,7 +439,17 @@ func (d *Driver) CreateVM() error {
 	}
 
 	if err := d.vbm(d.buildModifyVMFlags(cpus, hostDNSResolver, dnsProxy, hostLoopbackReachable)...); err != nil {
-		return err
+		if d.NoAccelerate3DOff || !accelerate3DUnsupportedErr.MatchString(err.Error()) {
+			return err
+		}
+		// Some VirtualBox/GPU combinations (e.g. VirtualBox 7.1.x with certain AMD/Intel
+		// GPUs) reject --accelerate3d off outright with VBOX_E_NOT_SUPPORTED. Retry once
+		// without it rather than leaving the VM uncreatable.
+		log.Warnf("VBoxManage rejected --accelerate3d off on this host (%v); retrying without it", err)
+		d.NoAccelerate3DOff = true
+		if err := d.vbm(d.buildModifyVMFlags(cpus, hostDNSResolver, dnsProxy, hostLoopbackReachable)...); err != nil {
+			return err
+		}
 	}
 
 	if err := d.vbm("modifyvm", d.MachineName,

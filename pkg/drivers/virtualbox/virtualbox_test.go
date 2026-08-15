@@ -650,6 +650,50 @@ func TestCreateVMWithoutAccelerate3D(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestCreateVMRetriesWithoutAccelerate3DOnUnsupportedError(t *testing.T) {
+	shareName, shareDir := getShareDriveAndName()
+
+	var modifyVMcommandWith, modifyVMcommandWithout string
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		modifyVMcommandWith = "vbm modifyvm default --chipset armv8virtual --firmware efi64 --graphicscontroller qemuramfb --firmware-logo-fade-in off --firmware-logo-fade-out off --firmware-logo-display-time 0 --firmware-boot-menu disabled --ostype Linux_arm64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtc-use-utc on --natdnshostresolver1 off --natdnsproxy1 on --cpu-hotplug off --accelerate-3d off --boot1 dvd"
+		modifyVMcommandWithout = "vbm modifyvm default --chipset armv8virtual --firmware efi64 --graphicscontroller qemuramfb --firmware-logo-fade-in off --firmware-logo-fade-out off --firmware-logo-display-time 0 --firmware-boot-menu disabled --ostype Linux_arm64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtc-use-utc on --natdnshostresolver1 off --natdnsproxy1 on --cpu-hotplug off --boot1 dvd"
+	} else {
+		modifyVMcommandWith = "vbm modifyvm default --firmware bios --bioslogofadein off --bioslogofadeout off --bioslogodisplaytime 0 --biosbootmenu disabled --ostype Linux26_64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtcuseutc on --natdnshostresolver1 off --natdnsproxy1 on --cpuhotplug off --pae on --hpet on --hwvirtex on --nestedpaging on --largepages on --vtxvpid on --accelerate3d off --boot1 dvd"
+		modifyVMcommandWithout = "vbm modifyvm default --firmware bios --bioslogofadein off --bioslogofadeout off --bioslogodisplaytime 0 --biosbootmenu disabled --ostype Linux26_64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtcuseutc on --natdnshostresolver1 off --natdnsproxy1 on --cpuhotplug off --pae on --hpet on --hwvirtex on --nestedpaging on --largepages on --vtxvpid on --boot1 dvd"
+		if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
+			modifyVMcommandWith += " --longmode on"
+			modifyVMcommandWithout += " --longmode on"
+		}
+	}
+
+	unsupportedErr := errors.New("VBoxManage modifyvm ... failed:\n" +
+		"VBoxManage: error: The graphics controller does not support the given feature\n" +
+		"VBoxManage: error: Details: code VBOX_E_NOT_SUPPORTED (0x80bb0009), component GraphicsAdapterWrap, interface IGraphicsAdapter, callee nsISupports")
+
+	driver := NewDriver("default", "path")
+	mockCalls(t, driver, []Call{
+		{"CopyIsoToMachineDir path default http://b2d.org", "", nil},
+		{"Generate path/machines/default/id_rsa", "", nil},
+		{"Create 20000 path/machines/default/id_rsa.pub path/machines/default/disk.vmdk", "", nil},
+		{"vbm createvm --basefolder path/machines/default --name default --register", "", nil},
+		{modifyVMcommandWith, "", unsupportedErr},
+		{modifyVMcommandWithout, "", nil},
+		{"vbm modifyvm default --nic1 nat --nictype1 82540EM --cableconnected1 on", "", nil},
+		{"vbm storagectl default --name SATA --add sata --hostiocache on", "", nil},
+		{"vbm storageattach default --storagectl SATA --port 0 --device 0 --type dvddrive --medium path/machines/default/boot2docker.iso", "", nil},
+		{"vbm storageattach default --storagectl SATA --port 1 --device 0 --type hdd --medium path/machines/default/disk.vmdk", "", nil},
+		{"vbm guestproperty set default /VirtualBox/GuestAdd/SharedFolders/MountPrefix /", "", nil},
+		{"vbm guestproperty set default /VirtualBox/GuestAdd/SharedFolders/MountDir /", "", nil},
+		{"vbm sharedfolder add default --name " + shareName + " --hostpath " + shareDir + " --automount", "", nil},
+		{"vbm setextradata default VBoxInternal2/SharedFoldersEnableSymlinksCreate/" + shareName + " 1", "", nil},
+	})
+
+	err := driver.CreateVM()
+
+	assert.NoError(t, err)
+	assert.True(t, driver.NoAccelerate3DOff)
+}
+
 func TestStart(t *testing.T) {
 	driver := NewDriver("default", "path")
 
