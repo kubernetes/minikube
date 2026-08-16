@@ -16,6 +16,13 @@ minikube has built-in support for caching downloaded resources into `$MINIKUBE_H
 * `~/.minikube/cache/<os>/<arch>/<version>` - Kubernetes binaries, such as `kubeadm` and `kubelet`
 * `~/.minikube/cache/preloaded-tarball` - Tarball of preloaded images to improve start time
 
+What appears under `cache/` depends on the driver. `minikube start --download-only`
+with the docker or podman (KIC) driver typically fills `kic/` and
+`preloaded-tarball/` (and `$MINIKUBE_HOME/cache/<os>/<arch>/…` for host
+binaries such as kubectl). `iso/` is only created for VM drivers.
+`images/` is omitted when a preload tarball is present. On Windows,
+`cache/windows/…` is that host-binary path, not a missing ISO.
+
 ## Kubernetes image cache
 
 NOTE: the `none` driver caches images directly into Docker rather than a separate disk cache.
