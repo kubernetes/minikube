@@ -263,8 +263,8 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, 
 	}
 	if len(failed) > 0 {
 		klog.Infof("failed pushing to: %s", strings.Join(failed, " "))
+		return fmt.Errorf("failed to load images to: %s", strings.Join(failed, " "))
 	}
-	// Live pushes are not considered a failure
 	return nil
 }
 
