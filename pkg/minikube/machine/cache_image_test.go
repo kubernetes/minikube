@@ -23,12 +23,9 @@ import (
 	"sort"
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/run"
-	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 type CacheImageTestCase struct {
@@ -265,54 +262,20 @@ func TestMergeImageLists(t *testing.T) {
 	}
 }
 
-// TestDoLoadImages_ReturnsError verifies that `DoLoadImages` returns an error
+// TestDoLoadImages_ReturnsError verifies that `LoadLocalImages` returns an error
 // when the guest-side image load fails (prevents silent success).
 // from #23471
 func TestDoLoadImages_ReturnsError(t *testing.T) {
-	t.Parallel()
-
-	// Create a temp MINIKUBE_HOME for this test.
-	miniHome := tests.MakeTempDir(t)
-
-	// Point localpath.MiniPath() at our temp home.
-	if err := os.Setenv(localpath.MinikubeHome, miniHome); err != nil {
-		t.Fatalf("unable to set MINIKUBE_HOME: %v", err)
-	}
-	defer os.Unsetenv(localpath.MinikubeHome)
-
-	// Register mock driver and create an API client using the temp home.
-	RegisterMockDriver(t)
-	api, err := NewAPIClient(&run.CommandOptions{}, miniHome)
-	if err != nil {
-		t.Fatalf("NewAPIClient failed: %v", err)
-	}
-	defer api.Close()
-
-	cfg := &config.ClusterConfig{
-		Name:   "exitcode",
-		Driver: driver.Mock,
-		Nodes:  []config.Node{{Name: "minikube", KubernetesVersion: "v1.26.0"}},
-	}
-
-	// Ensure certs dir exists so bootstrap can write CA/client certs.
-	if err := os.MkdirAll(localpath.MakeMiniPath("certs"), 0700); err != nil {
-		t.Fatalf("unable to create certs dir: %v", err)
-	}
-
-	if _, err := createHost(api, cfg, &cfg.Nodes[0]); err != nil {
-		t.Fatalf("createHost failed: %v", err)
-	}
-
-	// Write a bogus tar so transfer logic runs and triggers guest-side failure.
 	bad := filepath.Join(t.TempDir(), "notanimage.tar")
 	if err := os.WriteFile(bad, []byte("this is not a tar archive at all\n"), 0644); err != nil {
 		t.Fatalf("unable to write bad tar: %v", err)
 	}
 
-	profiles := []*config.Profile{{Name: cfg.Name}}
+	cfg := &config.ClusterConfig{
+		KubernetesConfig: config.KubernetesConfig{ContainerRuntime: "docker"},
+	}
 
-	// Expect an error when loading an invalid tar.
-	if err := DoLoadImages([]string{bad}, profiles, "", false, &run.CommandOptions{}); err == nil {
-		t.Fatalf("expected DoLoadImages to return an error for bad image, got nil")
+	if err := LoadLocalImages(cfg, command.NewFakeCommandRunner(), []string{bad}); err == nil {
+		t.Fatal("expected LoadLocalImages to return an error for bad image, got nil")
 	}
 }

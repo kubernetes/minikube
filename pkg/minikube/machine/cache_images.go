@@ -209,15 +209,15 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, 
 
 	succeeded := []string{}
 	failed := []string{}
+	failures := []string{}
 
 	for _, p := range profiles { // loading images to all running profiles
 		pName := p.Name // capture the loop variable
 
 		c, err := config.Load(pName)
 		if err != nil {
-			// Non-fatal because it may race with profile deletion
-			klog.Errorf("Failed to load profile %q: %v", pName, err)
-			failed = append(failed, pName)
+			// Non-fatal because it may race with profile deletion.
+			klog.Warningf("Failed to load profile %q: %v", pName, err)
 			continue
 		}
 
@@ -227,6 +227,7 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, 
 			if err != nil {
 				klog.Warningf("error getting status for %s: %v", m, err)
 				failed = append(failed, m)
+				failures = append(failures, fmt.Sprintf("%s: %v", m, err))
 				continue
 			}
 
@@ -235,6 +236,7 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, 
 				if err != nil {
 					klog.Warningf("Failed to load machine %q: %v", m, err)
 					failed = append(failed, m)
+					failures = append(failures, fmt.Sprintf("%s: %v", m, err))
 					continue
 				}
 				cr, err := CommandRunner(h)
@@ -250,7 +252,8 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, 
 				}
 				if err != nil {
 					failed = append(failed, m)
-					klog.Warningf("Failed to load cached images for %q: %v", pName, err)
+					failures = append(failures, fmt.Sprintf("%s: %v", m, err))
+					klog.Warningf("Failed to load images for %q: %v", pName, err)
 					continue
 				}
 				succeeded = append(succeeded, m)
@@ -263,7 +266,7 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, 
 	}
 	if len(failed) > 0 {
 		klog.Infof("failed pushing to: %s", strings.Join(failed, " "))
-		return fmt.Errorf("failed to load images to: %s", strings.Join(failed, " "))
+		return fmt.Errorf("failed to load images to: %s", strings.Join(failures, "; "))
 	}
 	return nil
 }
