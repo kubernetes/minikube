@@ -666,6 +666,13 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 
 	checkExtraDiskOptions(cmd, drvName)
 
+	// nodeOS flag's default value is the literal string "node-os" (not ""), so
+	// only persist it when the user actually passed --node-os.
+	nodeOSVal := ""
+	if cmd.Flags().Changed(nodeOS) {
+		nodeOSVal = viper.GetString(nodeOS)
+	}
+
 	cc = config.ClusterConfig{
 		Name:                    ClusterFlagValue(),
 		KeepContext:             viper.GetBool(keepContext),
@@ -729,7 +736,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		SocketVMnetClientPath:   detect.SocketVMNetClientPath(),
 		SocketVMnetPath:         detect.SocketVMNetPath(),
 		StaticIP:                viper.GetString(staticIP),
-		WindowsNodeVersion:      viper.GetString(windowsNodeVersion),
+		NodeOS:                  nodeOSVal,
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -984,7 +991,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.SocketVMnetClientPath, socketVMnetClientPath)
 	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 	updateDurationFromFlag(cmd, &cc.AutoPauseInterval, autoPauseInterval)
-	updateStringFromFlag(cmd, &cc.WindowsNodeVersion, windowsNodeVersion)
+	updateStringFromFlag(cmd, &cc.NodeOS, nodeOS)
 	updateBoolFromFlag(cmd, &cc.Rosetta, rosetta)
 	updateBoolFromFlag(cmd, &cc.VmnetOffloading, vmnetOffloading)
 

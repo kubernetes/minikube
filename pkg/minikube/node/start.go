@@ -134,6 +134,12 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		}
 
 		showVersionInfo(starter.Node.KubernetesVersion, cr)
+
+		if isMixedOSCluster(*starter.Cfg) {
+			if err := prepareLinuxNodeForWindowsFlannel(starter.Runner); err != nil {
+				klog.Errorf("error preparing linux node %q for windows flannel: %v", starter.Node.Name, err)
+			}
+		}
 	}
 	klog.Infof("configureRuntimes done: cr=%v", cr)
 
@@ -267,30 +273,6 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		}
 	} else {
 		addons.UpdateConfigToDisable(starter.Cfg, options)
-	}
-
-	// for windows node prepare the linux control plane node for windows-specific flannel CNI config
-	if config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) && starter.Cfg.WindowsNodeVersion == "2022" {
-		if err := prepareLinuxNode(starter.Runner); err != nil {
-			klog.Errorf("Failed to prepare Linux node for Windows-specific Flannel CNI config: %v", err)
-		}
-
-		// set up flannel network issues
-		if err := configureFlannelCNI(); err != nil {
-			klog.Errorf("error configuring flannel CNI: %v", err)
-		}
-	}
-
-	// for windows node prepare the linux control plane node for windows-specific flannel CNI config
-	if config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) && starter.Cfg.WindowsNodeVersion == "2022" {
-		if err := prepareLinuxNode(starter.Runner); err != nil {
-			klog.Errorf("Failed to prepare Linux node for Windows-specific Flannel CNI config: %v", err)
-		}
-
-		// set up flannel network issues
-		if err := configureFlannelCNI(); err != nil {
-			klog.Errorf("error configuring flannel CNI: %v", err)
-		}
 	}
 
 	// Write enabled addons to the config before completion
@@ -1067,21 +1049,6 @@ func prepareNone() {
 	}
 }
 
-func configureFlannelCNI() error {
-	err := cmd("kubectl apply -f https://raw.githubusercontent.com/vrapolinario/MinikubeWindowsContainers/main/kube-flannel.yaml")
-	if err != nil {
-		klog.Errorf("failed to apply kube-flannel configuration: %v\n", err)
-	}
-
-	roll_err := cmd("kubectl rollout restart ds kube-flannel-ds -n kube-flannel")
-	if roll_err != nil {
-		klog.Errorf("failed to restart kube-flannel daemonset: %v\n", roll_err)
-	}
-	klog.Infof("Successfully applied the configuration.")
-
-	return nil
-}
-
 // applyWindowsManifest writes content to a temp file then runs kubectl apply -f
 // against it. Using a file avoids PowerShell stdin piping complexity.
 func applyWindowsManifest(content string) error {
@@ -1098,6 +1065,23 @@ func applyWindowsManifest(content string) error {
 	return cmd("kubectl", "apply", "-f", f.Name())
 }
 
+// isMixedOSCluster reports whether a mixed Linux/Windows cluster was
+// requested via the --node-os flag (config.ClusterConfig.NodeOS is only
+// populated when that flag was explicitly passed).
+func isMixedOSCluster(cc config.ClusterConfig) bool {
+	return cc.NodeOS != ""
+}
+
+// prepareLinuxNodeForWindowsFlannel enables bridged traffic to be seen by
+// iptables, required for flannel VXLAN to route between Linux and Windows
+// nodes in a mixed-OS cluster.
+func prepareLinuxNodeForWindowsFlannel(runner command.Runner) error {
+	if _, err := runner.RunCmd(exec.Command("sudo", "sysctl", "net.bridge.bridge-nf-call-iptables=1")); err != nil {
+		return fmt.Errorf("sysctl net.bridge.bridge-nf-call-iptables: %w", err)
+	}
+	return nil
+}
+
 // prepareWindowsNodeFlannel applies the Windows flannel DaemonSet from the
 // manifest bundled in the minikube binary (pkg/minikube/cni/flannel-windows.yaml)
 func prepareWindowsNodeFlannel() error {
@@ -1105,17 +1089,6 @@ func prepareWindowsNodeFlannel() error {
 		klog.Errorf("failed to apply flannel-windows: %v", err)
 	}
 	klog.Infof("Successfully applied flannel Windows configuration.")
-	return nil
-}
-
-// prepare linux nodes for Windows-specific Flannel CNI config
-func prepareLinuxNode(runner command.Runner) error {
-	c := exec.Command("sudo", "sysctl", "net.bridge.bridge-nf-call-iptables=1")
-	if rr, err := runner.RunCmd(c); err != nil {
-		klog.Infof("couldn't run %q command. error: %v", rr.Command(), err)
-	}
-	// log that we managed to run the command
-	klog.Infof("Successfully ran the command.")
 	return nil
 }
 
