@@ -23,7 +23,6 @@ import (
 	"sort"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
@@ -262,20 +261,35 @@ func TestMergeImageLists(t *testing.T) {
 	}
 }
 
-// TestDoLoadImages_ReturnsError verifies that `LoadLocalImages` returns an error
-// when the guest-side image load fails (prevents silent success).
+// TestDoLoadImages_ReturnsError verifies that DoLoadImages returns an error
+// when a machine record exists but cannot be loaded (prevents silent success).
 // from #23471
 func TestDoLoadImages_ReturnsError(t *testing.T) {
-	bad := filepath.Join(t.TempDir(), "notanimage.tar")
-	if err := os.WriteFile(bad, []byte("this is not a tar archive at all\n"), 0644); err != nil {
-		t.Fatalf("unable to write bad tar: %v", err)
-	}
+	home := filepath.Join(t.TempDir(), ".minikube")
+	t.Setenv("MINIKUBE_HOME", home)
 
-	cfg := &config.ClusterConfig{
+	cc := config.ClusterConfig{
+		Name:             "pinprofile",
 		KubernetesConfig: config.KubernetesConfig{ContainerRuntime: "docker"},
+		Nodes:            []config.Node{{Name: "", ControlPlane: true}},
+	}
+	if err := config.SaveProfile("pinprofile", &cc, home); err != nil {
+		t.Fatalf("SaveProfile: %v", err)
 	}
 
-	if err := LoadLocalImages(cfg, command.NewFakeCommandRunner(), []string{bad}); err == nil {
-		t.Fatal("expected LoadLocalImages to return an error for bad image, got nil")
+	// A machine record that exists but cannot be loaded, so Status() errors.
+	md := filepath.Join(home, "machines", "pinprofile")
+	if err := os.MkdirAll(md, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(md, "config.json"), []byte("{not json"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := DoLoadImages([]string{filepath.Join(home, "nope.tar")},
+		[]*config.Profile{{Name: "pinprofile", Config: &cc}},
+		"", false, nil)
+	if err == nil {
+		t.Fatal("expected DoLoadImages to return an error when a machine could not be reached, got nil")
 	}
 }
