@@ -179,6 +179,18 @@ func TestISOImage(t *testing.T) {
 			t.Errorf("expected file %q to exist, but it does not. Per-task IO accounting requires CONFIG_TASK_IO_ACCOUNTING (with CONFIG_TASK_XACCT and CONFIG_TASKSTATS) in kernel configuration.", ioFile)
 		}
 	})
+
+	t.Run("nftablesSupport", func(t *testing.T) {
+		// knftables (e.g. Submariner globalnet since v0.22) needs nftables in the guest kernel (https://github.com/kubernetes/minikube/issues/23450).
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh",
+			`zgrep -E '^CONFIG_NF_TABLES=(y|m)$' /proc/config.gz >/dev/null && echo OK || echo MISSING`))
+		if err != nil {
+			t.Fatalf("failed to check CONFIG_NF_TABLES: args %q: %v", rr.Command(), err)
+		}
+		if strings.TrimSpace(rr.Stdout.String()) != "OK" {
+			t.Errorf("expected CONFIG_NF_TABLES=y|m in /proc/config.gz; knftables requires nftables kernel support")
+		}
+	})
 }
 
 func helmPackageVersion(t *testing.T) string {
