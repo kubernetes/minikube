@@ -477,34 +477,6 @@ func TestValidateRuntime(t *testing.T) {
 	}
 }
 
-func TestValidateWindowsOSVersion(t *testing.T) {
-	var tests = []struct {
-		osVersion string
-		errorMsg  string
-	}{
-		{
-			osVersion: "2025",
-			errorMsg:  "",
-		},
-		{
-			osVersion: "2023",
-			errorMsg:  "Invalid Windows Server OS Version: 2023. Valid OS version are: [2025]",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.osVersion, func(t *testing.T) {
-			got := validateWindowsOSVersion(test.osVersion)
-			gotError := ""
-			if got != nil {
-				gotError = got.Error()
-			}
-			if gotError != test.errorMsg {
-				t.Errorf("ValidateWindowsOSVersion(osVersion=%v): got %v, expected %v", test.osVersion, got, test.errorMsg)
-			}
-		})
-	}
-}
-
 func TestValidMultiNodeOS(t *testing.T) {
 	var tests = []struct {
 		osString string
@@ -534,6 +506,10 @@ func TestValidMultiNodeOS(t *testing.T) {
 			osString: "linux,windows",
 			errorMsg: "invalid OS string format: must be enclosed in [ ]",
 		},
+		{
+			osString: "[[linux,windows]]",
+			errorMsg: "invalid OS string format: must be [linux,windows]",
+		},
 	}
 
 	for _, test := range tests {
@@ -545,6 +521,47 @@ func TestValidMultiNodeOS(t *testing.T) {
 			}
 			if gotError != test.errorMsg {
 				t.Errorf("validMultiNodeOS(osString=%v): got %v, expected %v", test.osString, gotError, test.errorMsg)
+			}
+		})
+	}
+}
+
+func TestMixedOSFlagConflict(t *testing.T) {
+	var tests = []struct {
+		description string
+		changed     bool
+		got         string
+		errorMsg    string
+	}{
+		{
+			description: "flag not passed, no conflict",
+			changed:     false,
+			got:         "docker",
+			errorMsg:    "",
+		},
+		{
+			description: "flag explicitly matches the required value",
+			changed:     true,
+			got:         "hyperv",
+			errorMsg:    "",
+		},
+		{
+			description: "flag explicitly conflicts with the required value",
+			changed:     true,
+			got:         "docker",
+			errorMsg:    "--node-os requires the hyperv driver, but --driver=docker was specified",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			got := mixedOSFlagConflict(test.changed, test.got, "hyperv", "driver", "driver")
+			gotError := ""
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("mixedOSFlagConflict(changed=%v, got=%v): got %v, expected %v", test.changed, test.got, gotError, test.errorMsg)
 			}
 		})
 	}
