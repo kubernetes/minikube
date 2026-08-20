@@ -46,7 +46,6 @@ import (
 	gopshost "github.com/shirou/gopsutil/v4/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/exp/maps"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"k8s.io/klog/v2"
@@ -195,13 +194,6 @@ func runStart(cmd *cobra.Command, _ []string) {
 		exit.Message(reason.Usage, "Only alphanumeric and dashes '-' are permitted. Minimum 2 characters, starting with alphanumeric.")
 	}
 
-	// change the driver to hyperv, cni to flannel and container runtime to containerd if we have --node-os=windows
-	if cmd.Flags().Changed(nodeOS) {
-		viper.Set("driver", driver.HyperV)
-		viper.Set("cni", "flannel")
-		viper.Set(containerRuntime, constants.Containerd)
-
-	}
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
 		kind := reason.HostConfigLoad
@@ -215,6 +207,10 @@ func runStart(cmd *cobra.Command, _ []string) {
 		upgradeExistingConfig(cmd, existing)
 	} else {
 		validateProfileName()
+	}
+
+	if cmd.Flags().Changed(nodeOS) {
+		applyMixedOSDefaults(cmd, existing)
 	}
 
 	validateSpecifiedDriver(existing, options)
@@ -566,11 +562,8 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		}
 	}
 
-	// we currently trigger the windows node start if the user has set the --windows-node-version or --node-os flag
-	// we might need to get rid of --windows-node-version in the future and just use --node-os flag
-	// start windows node. trigger windows node start  if windows node version or node node os is set at the time of minikube start
-	if cmd.Flags().Changed(windowsNodeVersion) || cmd.Flags().Changed(nodeOS) {
-		// TODO: if windows node version is set to windows server 2022 then the windows node name should be minikube-ws2022
+	// start windows node, triggered if --node-os is set at the time of minikube start
+	if cmd.Flags().Changed(nodeOS) {
 		nodeName := node.Name(numNodes + 1)
 		n := config.Node{
 			Name:              nodeName,
@@ -580,7 +573,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 			Worker:            true,
 			Guest: config.Guest{
 				Name:    "windows",
-				Version: viper.GetString(windowsNodeVersion),
+				Version: constants.DefaultWindowsNodeVersion,
 				URL:     viper.GetString(windowsVhdURL),
 			},
 		}
@@ -1398,13 +1391,6 @@ func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 		validateCNI(cmd, viper.GetString(containerRuntime))
 	}
 
-	if cmd.Flags().Changed(windowsNodeVersion) {
-		if err := validateWindowsOSVersion(viper.GetString(windowsNodeVersion)); err != nil {
-			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
-		}
-
-	}
-
 	if cmd.Flags().Changed(nodeOS) {
 		if err := validMultiNodeOS(viper.GetString(nodeOS)); err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
@@ -1547,24 +1533,14 @@ func validateDiskSize(diskSize string) error {
 	return nil
 }
 
-// validateWindowsOSVersion validates the supplied window server os version
-func validateWindowsOSVersion(osVersion string) error {
-	validOptions := node.ValidWindowsOSVersions()
-
-	if validOptions[osVersion] {
-		return nil
-	}
-
-	return fmt.Errorf("Invalid Windows Server OS Version: %s. Valid OS version are: %s", osVersion, maps.Keys(validOptions))
-}
-
 // validateMultiNodeOS validates the supplied OS for multiple nodes
 func validMultiNodeOS(osString string) error {
 	if !strings.HasPrefix(osString, "[") || !strings.HasSuffix(osString, "]") {
 		return fmt.Errorf("invalid OS string format: must be enclosed in [ ]")
 	}
 
-	osString = strings.Trim(osString, "[]")
+	osString = strings.TrimPrefix(osString, "[")
+	osString = strings.TrimSuffix(osString, "]")
 	osString = strings.ReplaceAll(osString, " ", "")
 
 	osValues := strings.Split(osString, ",")
@@ -1573,6 +1549,51 @@ func validMultiNodeOS(osString string) error {
 		return fmt.Errorf("invalid OS string format: must be [linux,windows]")
 	}
 
+	return nil
+}
+
+// applyMixedOSDefaults fills in the driver/cni/container-runtime a mixed-OS
+// cluster requires, but only for a brand-new profile: converting an existing
+// profile to mixed-OS isn't supported yet (its persisted runtime/CNI could
+// silently drift from what --node-os requires, since updateExistingConfigFromFlags
+// only touches fields for flags the user actually passed), so require a fresh
+// profile instead.
+func applyMixedOSDefaults(cmd *cobra.Command, existing *config.ClusterConfig) {
+	if existing != nil {
+		exit.Message(reason.Usage, "--node-os cannot be used with an existing profile; delete it first with 'minikube delete -p {{.profile}}' or start a new profile with --profile", out.V{"profile": ClusterFlagValue()})
+	}
+
+	required := []struct {
+		flagName, want, label string
+	}{
+		{"driver", driver.HyperV, "driver"},
+		{cniFlag, "flannel", "CNI"},
+		{containerRuntime, constants.Containerd, "container runtime"},
+	}
+
+	for _, r := range required {
+		changed := cmd.Flags().Changed(r.flagName)
+		got := viper.GetString(r.flagName)
+		if err := mixedOSFlagConflict(changed, got, r.want, r.flagName, r.label); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+		if !changed {
+			viper.Set(r.flagName, r.want)
+			out.Infof("--node-os: automatically selecting {{.want}} as the {{.label}}", out.V{"want": r.want, "label": r.label})
+		}
+	}
+}
+
+// mixedOSFlagConflict reports a usage error if the user explicitly passed
+// flagName with a value other than want. want is only ever applied as a
+// default (by the caller) when the flag was not explicitly changed - an
+// explicit, conflicting value must be rejected rather than silently
+// overridden, since viper.Set() takes precedence over an explicit flag and
+// would otherwise discard the user's choice without telling them.
+func mixedOSFlagConflict(changed bool, got, want, flagName, label string) error {
+	if changed && got != want {
+		return fmt.Errorf("--node-os requires the %s %s, but --%s=%s was specified", want, label, flagName, got)
+	}
 	return nil
 }
 
