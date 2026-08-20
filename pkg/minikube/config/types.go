@@ -156,6 +156,14 @@ type Node struct {
 	Guest             Guest
 }
 
+// Role returns the node role string for logging and error messages.
+func (n *Node) Role() string {
+	if n.ControlPlane {
+		return "control-plane"
+	}
+	return "worker"
+}
+
 // VersionedExtraOption holds information on flags to apply to a specific range
 // of versions
 type VersionedExtraOption struct {

@@ -43,7 +43,6 @@ import (
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -339,125 +338,27 @@ func startPrimaryControlPlane(starter Starter, cr cruntime.Manager, options *run
 func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrapper.Bootstrapper, options *run.CommandOptions) error {
 	start := time.Now()
 	klog.Infof("joinCluster: %+v", starter.Cfg)
-	out.Step(style.Waiting, "Joining {{.name}} to the cluster", out.V{"name": starter.Node.Name})
 	defer func() {
 		klog.Infof("duration metric: took %s to joinCluster", time.Since(start))
 	}()
 
-	role := "worker"
-	if starter.Node.ControlPlane {
-		role = "control-plane"
-	}
-
 	// avoid "error execution phase kubelet-start: a Node with name "<name>" and status "Ready" already exists in the cluster.
 	// You must delete the existing Node or change the name of this new joining Node"
 	if starter.PreExists {
-		klog.Infof("removing existing %s node %q before attempting to rejoin cluster: %+v", role, starter.Node.Name, starter.Node)
+		klog.Infof("removing existing %s node %q before attempting to rejoin cluster: %+v", starter.Node.Role(), starter.Node.Name, starter.Node)
 		if _, err := teardown(*starter.Cfg, starter.Node.Name, options); err != nil {
-			klog.Errorf("error removing existing %s node %q before rejoining cluster, will continue anyway: %v", role, starter.Node.Name, err)
+			klog.Errorf("error removing existing %s node %q before rejoining cluster, will continue anyway: %v", starter.Node.Role(), starter.Node.Name, err)
 		}
-		klog.Infof("successfully removed existing %s node %q from cluster: %+v", role, starter.Node.Name, starter.Node)
+		klog.Infof("successfully removed existing %s node %q from cluster: %+v", starter.Node.Role(), starter.Node.Name, starter.Node)
 	}
 
-	// declare joinCmd variable
-	var joinCmd string
-	var err error
+	p := newNodeProvisioner(starter, cpBs, bs)
 
-	// if node is a windows node, generate the join command
-	if starter.Node.Guest.IsWindows() {
-		joinCmd, err = cpBs.GenerateTokenWindows(*starter.Cfg, *starter.Node)
-		if err != nil {
-			return fmt.Errorf("error generating join token: %w", err)
-		}
-	} else {
-		joinCmd, err = cpBs.GenerateToken(*starter.Cfg)
-		if err != nil {
-			return fmt.Errorf("error generating join token: %w", err)
-		}
+	if err := p.Join(); err != nil {
+		return err
 	}
-
-	klog.Infof("join command: %s", joinCmd)
-
-	join := func() error {
-		klog.Infof("trying to join %s node %q to cluster: %+v", role, starter.Node.Name, starter.Node)
-		if !starter.Node.Guest.IsWindows() {
-			if err := bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
-				// log the error message and retry
-				klog.Errorf("%s node failed to join cluster, will retry: %v", role, err)
-
-				// reset node to revert any changes made by previous kubeadm init/join
-				klog.Infof("resetting %s node %q before attempting to rejoin cluster...", role, starter.Node.Name)
-				if _, err := starter.Runner.RunCmd(exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("%s reset --force", bsutil.KubeadmCmdWithPath(starter.Cfg.KubernetesConfig.KubernetesVersion)))); err != nil {
-					klog.Infof("kubeadm reset failed, continuing anyway: %v", err)
-				} else {
-					klog.Infof("successfully reset %s node %q", role, starter.Node.Name)
-				}
-
-				return err
-			}
-		} else {
-			driverIP, err := starter.Host.Driver.GetIP()
-			if err != nil {
-				klog.Errorf("Unable to get driver IP: %v", err)
-			}
-			klog.Infof("Driver IP: %s", driverIP)
-
-			// Allow enough time for kubeadm join to complete on a Windows node.
-			// The initial 20s was too short; Windows kubeadm join takes longer.
-			timeout := 1 * time.Minute
-
-			if commandResult, err := bs.JoinClusterWindows(starter.Host, *starter.Cfg, *starter.Node, joinCmd, timeout); err != nil {
-				klog.Infof("%s node failed to join cluster, will retry: %v", role, err)
-				klog.Infof("command result: %s", commandResult)
-
-				// sort out the certificates issues
-				if cmd, err := bs.SetupMinikubeCert(starter.Host); err != nil {
-					klog.Errorf("error setting minikube folder error script: %v", err)
-				} else {
-					klog.Infof("command result: %s", cmd)
-					// retry the join command
-					if commandResult, err := bs.JoinClusterWindows(starter.Host, *starter.Cfg, *starter.Node, joinCmd, 0); err != nil {
-						klog.Errorf("error retrying join command: %v, command result: %s", err, commandResult)
-						return err
-					}
-				}
-				// return err
-
-			}
-
-			// Apply Windows networking config after a successful join regardless
-			// of which join path was taken (first attempt or cert-fix retry).
-			// Previously these were inside the error/retry block so they were
-			// never called when the first join attempt succeeded.
-			if err := prepareWindowsNodeFlannel(); err != nil {
-				klog.Errorf("error preparing windows node flannel: %v", err)
-			}
-
-			if err := prepareWindowsNodeKubeProxy(); err != nil {
-				klog.Errorf("error preparing windows node kube-proxy: %v", err)
-			}
-		}
-		return nil
-	}
-	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
-		if !starter.Node.Guest.IsWindows() {
-			return fmt.Errorf("error joining %s node %q to cluster: %w", role, starter.Node.Name, err)
-		}
-	}
-
-	// Windows nodes take extra time to register with the API server after kubeadm
-	// join returns. Retry labeling until the node object appears (up to 3 minutes).
-	labelFn := func() error {
-		return cpBs.LabelAndUntaintNode(*starter.Cfg, *starter.Node)
-	}
-	if starter.Node.Guest.IsWindows() {
-		if err := retry.Expo(labelFn, 5*time.Second, 3*time.Minute); err != nil {
-			return fmt.Errorf("error applying %s node %q label: %w", role, starter.Node.Name, err)
-		}
-	} else {
-		if err := labelFn(); err != nil {
-			return fmt.Errorf("error applying %s node %q label: %w", role, starter.Node.Name, err)
-		}
+	if err := p.LabelAndUntaint(); err != nil {
+		return err
 	}
 
 	return nil

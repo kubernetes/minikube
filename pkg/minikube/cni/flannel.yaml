@@ -135,7 +135,7 @@ spec:
       serviceAccountName: flannel
       initContainers:
       - name: install-cni-plugin
-        image: ghcr.io/flannel-io/flannel-cni-plugin:v1.9.1-flannel1
+        image: ghcr.io/flannel-io/flannel-cni-plugin:v1.9.1-flannel3
         command:
         - cp
         args:
@@ -146,11 +146,10 @@ spec:
         - name: cni-plugin
           mountPath: /opt/cni/bin
       - name: install-cni
-        image: ghcr.io/flannel-io/flannel:v0.28.4
+        image: ghcr.io/flannel-io/flannel:v0.28.9
         command:
-        - cp
+        - /opt/bin/install-conf
         args:
-        - -f
         - /etc/kube-flannel/cni-conf.json
         - /etc/cni/net.d/10-flannel.conflist
         volumeMounts:
@@ -160,12 +159,29 @@ spec:
           mountPath: /etc/kube-flannel/
       containers:
       - name: kube-flannel
-        image: ghcr.io/flannel-io/flannel:v0.28.4
+        image: ghcr.io/flannel-io/flannel:v0.28.9
         command:
         - /opt/bin/flanneld
         args:
         - --ip-masq
         - --kube-subnet-mgr
+        - --healthz-port=8081
+        ports:
+        - name: healthz
+          containerPort: 8081
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: healthz
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: healthz
+          initialDelaySeconds: 5
+          periodSeconds: 10
         resources:
           requests:
             cpu: "100m"
