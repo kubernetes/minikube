@@ -1199,6 +1199,14 @@ func validateRequestedMemorySize(req int, drvName string) {
 		return
 	}
 
+	// KVM-backed VMs need more memory to boot reliably. Without enough
+	// memory the VM fails to provision with a confusing
+	// "domain minikube didn't return IP" error instead of a clear
+	// validation message (see issue #23317).
+	if driver.IsKVM(drvName) && req < minKvmMemory {
+		exitIfNotForced(reason.RsrcInsufficientKvmMemory, "KVM-backed minikube requires at least {{.minimum}}MiB to boot reliably, but {{.requested}}MiB was requested. Use `minikube start --memory={{.minimum}}mb` or higher.", out.V{"minimum": minKvmMemory, "requested": req})
+	}
+
 	if req < minUsableMem {
 		exitIfNotForced(reason.RsrcInsufficientReqMemory, "Requested memory allocation {{.requested}}MiB is less than the usable minimum of {{.minimum_memory}}MB", out.V{"requested": req, "minimum_memory": minUsableMem})
 	}

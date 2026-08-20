@@ -114,6 +114,10 @@ const (
 	nativeSSH               = "native-ssh"
 	minUsableMem            = 1800 // Kubernetes (kubeadm) will not start with less
 	minRecommendedMem       = 1900 // Warn at no lower than existing configurations
+	// minKvmMemory is the lowest memory that reliably boots a KVM-backed minikube VM.
+	// Below this the VM often fails to provision with a cryptic
+	// "domain didn't return IP" error instead of a clear validation message.
+	minKvmMemory            = 2500
 	minimumCPUS             = 2
 	minimumDiskSize         = 2000
 	autoUpdate              = "auto-update-drivers"

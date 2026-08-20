@@ -224,6 +224,15 @@ var (
 		Style:    style.UnmetRequirement,
 	}
 
+	// insufficient memory allocated to a KVM-backed minikube VM; the VM
+	// cannot boot reliably with less than minKvmMemory and fails with a
+	// confusing "domain didn't return IP" error instead of a clear message.
+	RsrcInsufficientKvmMemory = Kind{
+		ID:       "RSRC_INSUFFICIENT_KVM_MEMORY",
+		ExitCode: ExInsufficientMemory,
+		Style:    style.UnmetRequirement,
+	}
+
 	// insufficient disk storage available to the docker driver
 	RsrcInsufficientDockerStorage = Kind{
 		ID:       "RSRC_DOCKER_STORAGE",
