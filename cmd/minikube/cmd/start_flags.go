@@ -149,6 +149,7 @@ const (
 	staticIP                = "static-ip"
 	gpus                    = "gpus"
 	autoPauseInterval       = "auto-pause-interval"
+	nodeOS                  = "node-os"
 	preloadSrc              = "preload-source"
 	rosetta                 = "rosetta"
 	vmnetOffloading         = "vmnet-offloading"
@@ -219,6 +220,14 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
 	startCmd.Flags().StringP(gpus, "g", "", "Allow pods to use your GPUs. Options include: [all,nvidia,amd] (Docker driver with Docker container-runtime only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
+	startCmd.Flags().String(nodeOS, "", "Experimental: the OS to use for each node in a mixed-OS cluster, e.g. '[linux,windows]'. Requires --nodes=2. Currently only a single linux control-plane node plus a single windows worker node is supported.")
+	// --node-os is scaffolding: it validates and forces driver/cni/runtime, but nothing
+	// yet routes the Windows worker through a Windows-specific node-creation path, so a
+	// mixed-OS cluster requested today still comes up as two Linux nodes. Keep it hidden
+	// until the follow-up PR (kubernetes/minikube#23209) wires up node topology.
+	if err := startCmd.Flags().MarkHidden(nodeOS); err != nil {
+		klog.Warningf("Failed to hide node-os flag: %v\n", err)
+	}
 	startCmd.Flags().String(preloadSrc, "auto", "Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try github first, then gcs as failover).")
 }
 
@@ -757,6 +766,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		MultiNodeRequested: viper.GetInt(nodes) > 1 || viper.GetBool(ha),
 		GPUs:               viper.GetString(gpus),
 		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
+		NodeOS:             viper.GetString(nodeOS),
 		Rosetta:            getRosetta(drvName),
 		VmnetOffloading:    getVmnetOffloading(drvName),
 		DNSServers:         getDNSServers(cmd, drvName),
@@ -991,6 +1001,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.SocketVMnetClientPath, socketVMnetClientPath)
 	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 	updateDurationFromFlag(cmd, &cc.AutoPauseInterval, autoPauseInterval)
+	updateStringFromFlag(cmd, &cc.NodeOS, nodeOS)
 	updateBoolFromFlag(cmd, &cc.Rosetta, rosetta)
 	updateBoolFromFlag(cmd, &cc.VmnetOffloading, vmnetOffloading)
 
