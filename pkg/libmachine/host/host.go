@@ -72,14 +72,23 @@ type Options struct {
 	AuthOptions   *auth.Options
 }
 
+// Guest mirrors config.Guest (pkg/minikube/config). It is duplicated rather
+// than imported to keep libmachine independent of minikube's config package;
+// the compiler enforces the two stay identical in shape via the conversion
+// at machine.start (host.Guest(n.Guest)). GuestOSWindows must be kept equal
+// to config.GuestOSWindows.
 type Guest struct {
 	Name    string
 	Version string
 	URL     string
 }
 
+// GuestOSWindows is the Guest.Name value for Windows worker nodes.
+// Must match config.GuestOSWindows.
+const GuestOSWindows = "windows"
+
 // IsWindows reports whether the guest is a Windows VM.
-func (g Guest) IsWindows() bool { return g.Name == "windows" }
+func (g Guest) IsWindows() bool { return g.Name == GuestOSWindows }
 
 type Metadata struct {
 	ConfigVersion int

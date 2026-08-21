@@ -544,11 +544,6 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 				KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
 				ContainerRuntime:  starter.Cfg.KubernetesConfig.ContainerRuntime,
 				Worker:            true,
-				Guest: config.Guest{
-					Name:    "linux",
-					Version: "latest",
-					URL:     "",
-				},
 			}
 			if i < numCPNodes { // starter node is also counted as (primary) cp node
 				n.ControlPlane = true
