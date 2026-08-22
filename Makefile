@@ -43,7 +43,7 @@ export GOTOOLCHAIN := go$(GO_VERSION)
 GO_K8S_VERSION_PREFIX ?= v1.37.0
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2025.02.14
+BUILDROOT_BRANCH ?= 2025.02.16
 GOLANG_OPTIONS = GOWORK=off GO_VERSION=$(GO_VERSION)
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
@@ -269,7 +269,7 @@ out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 minikube-iso-amd64: minikube-iso-x86_64
 minikube-iso-arm64: minikube-iso-aarch64
 
-minikube-iso-%: iso-prepare-% out/auto-pause-% # build minikube iso
+minikube-iso-%: iso-source-% out/auto-pause-% # build minikube iso
 	cp out/auto-pause-$* deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/usr/bin/auto-pause
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-go
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
@@ -279,6 +279,12 @@ minikube-iso-%: iso-prepare-% out/auto-pause-% # build minikube iso
         else \
                 mv $(BUILD_DIR)/buildroot/output-x86_64/images/rootfs.iso9660 $(BUILD_DIR)/minikube-amd64.iso; \
         fi;
+
+# Download every selected tarball before compiling so missing mirrors fail
+# immediately instead of after hours of ISO package builds.
+.PHONY: iso-source-%
+iso-source-%: iso-prepare-%
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* source
 
 .PHONY: iso-prepare-%
 iso-prepare-%: buildroot
