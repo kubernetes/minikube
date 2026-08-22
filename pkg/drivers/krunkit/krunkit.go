@@ -34,8 +34,8 @@ import (
 
 	"errors"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/ssh"
 	"k8s.io/minikube/pkg/libmachine/state"
@@ -137,7 +137,7 @@ func (d *Driver) GetURL() (string, error) {
 	}
 	ip, err := d.GetIP()
 	if err != nil {
-		log.Warnf("Failed to get IP: %v", err)
+		diagnostics.Warnf("Failed to get IP: %v", err)
 		return "", err
 	}
 	if ip == "" {
@@ -172,18 +172,18 @@ func (d *Driver) Create() error {
 		return err
 	}
 
-	log.Info("Creating SSH key...")
+	diagnostics.Info("Creating SSH key...")
 	if err := ssh.GenerateSSHKey(d.GetSSHKeyPath()); err != nil {
 		return err
 	}
 
-	log.Info("Creating disk image...")
+	diagnostics.Info("Creating disk image...")
 	if err := d.generateDiskImage(d.DiskSize); err != nil {
 		return err
 	}
 
 	if d.ExtraDisks > 0 {
-		log.Info("Creating extra disk images...")
+		diagnostics.Info("Creating extra disk images...")
 		for i := 0; i < d.ExtraDisks; i++ {
 			path := common.ExtraDiskPath(d.BaseDriver, i)
 			if err := common.CreateRawDisk(path, d.DiskSize); err != nil {
@@ -192,7 +192,7 @@ func (d *Driver) Create() error {
 		}
 	}
 
-	log.Info("Starting krunkit VM...")
+	diagnostics.Info("Starting krunkit VM...")
 	return d.Start()
 }
 
@@ -215,7 +215,7 @@ func (d *Driver) Start() error {
 	}
 
 	if len(d.VirtiofsMounts) > 0 {
-		log.Infof("Setup virtiofs mounts ...")
+		diagnostics.Infof("Setup virtiofs mounts ...")
 		if err := virtiofs.SetupMounts(d, d.VirtiofsMounts); err != nil {
 			return err
 		}
@@ -250,7 +250,7 @@ func (d *Driver) startKrunkit(socketPath string) error {
 			"--device", fmt.Sprintf("virtio-fs,sharedDir=%s,mountTag=%s", mount.HostPath, mount.Tag))
 	}
 
-	log.Debugf("executing: krunkit %s", strings.Join(args, " "))
+	diagnostics.Debugf("executing: krunkit %s", strings.Join(args, " "))
 	cmd := exec.Command(driverName, args...)
 
 	// Create krunkit in a new process group, so minikube caller can use killpg
@@ -365,7 +365,7 @@ func (d *Driver) getKrunkitState() (state.State, error) {
 	if !exists {
 		// No process, stale pidfile.
 		if err := os.Remove(pidfile); err != nil {
-			log.Debugf("failed to remove %q: %s", pidfile, err)
+			diagnostics.Debugf("failed to remove %q: %s", pidfile, err)
 		}
 		return state.Stopped, nil
 	}
@@ -379,7 +379,7 @@ func (d *Driver) stopKrunkit() error {
 		// krunkit may be already stopped, shutting down, or not listening. It
 		// does not support HardStop so the only way to recover is to terminate
 		// the process.
-		log.Debugf("Failed to set krunkit state to 'Stop': %s", err)
+		diagnostics.Debugf("Failed to set krunkit state to 'Stop': %s", err)
 		pidfile := d.pidfilePath()
 		pid, err := process.ReadPidfile(pidfile)
 		if err != nil {
@@ -389,15 +389,15 @@ func (d *Driver) stopKrunkit() error {
 			// No pidfile.
 			return nil
 		}
-		log.Debugf("Terminte krunkit (pid=%d)", pid)
+		diagnostics.Debugf("Terminte krunkit (pid=%d)", pid)
 		if err := process.Terminate(pid, driverName); err != nil {
 			if err != os.ErrProcessDone {
 				return err
 			}
 			// No process, stale pidfile.
-			log.Debugf("Remove krunkit pidfile %q", pidfile)
+			diagnostics.Debugf("Remove krunkit pidfile %q", pidfile)
 			if err := os.Remove(pidfile); err != nil {
-				log.Debugf("failed to remove %q: %s", pidfile, err)
+				diagnostics.Debugf("failed to remove %q: %s", pidfile, err)
 			}
 		}
 	}
@@ -415,15 +415,15 @@ func (d *Driver) killKrunkit() error {
 		// No pidfile.
 		return nil
 	}
-	log.Debugf("Kill krunkit (pid=%d)", pid)
+	diagnostics.Debugf("Kill krunkit (pid=%d)", pid)
 	if err := process.Kill(pid, driverName); err != nil {
 		if err != os.ErrProcessDone {
 			return err
 		}
-		log.Debugf("Remove krunkit pidfile %q", pidfile)
+		diagnostics.Debugf("Remove krunkit pidfile %q", pidfile)
 		// No process, stale pidfile.
 		if err := os.Remove(pidfile); err != nil {
-			log.Debugf("failed to remove %q: %s", pidfile, err)
+			diagnostics.Debugf("failed to remove %q: %s", pidfile, err)
 		}
 	}
 	return nil
@@ -464,7 +464,7 @@ func (d *Driver) vmStateURI() string {
 // generateDiskImage generates a boot2docker VM disk image.
 // TODO: duplicate from vfkit and qemu: https://github.com/kubernetes/minikube/issues/21090
 func (d *Driver) generateDiskImage(size int) error {
-	log.Debugf("Creating %d MB hard disk image...", size)
+	diagnostics.Debugf("Creating %d MB hard disk image...", size)
 
 	magicString := "boot2docker, please format-me"
 
@@ -512,7 +512,7 @@ func (d *Driver) generateDiskImage(size int) error {
 	if err := os.Truncate(rawFile, int64(size)*int64(1024*1024)); err != nil {
 		return nil
 	}
-	log.Debugf("DONE writing to %s and %s", rawFile, d.diskPath())
+	diagnostics.Debugf("DONE writing to %s and %s", rawFile, d.diskPath())
 	return nil
 }
 
@@ -533,7 +533,7 @@ type vmState struct {
 func (d *Driver) setKrunkitState(desired string) error {
 	var vmstate vmState
 	vmstate.State = desired
-	log.Infof("Set krunkit state: %+v", vmstate)
+	diagnostics.Infof("Set krunkit state: %+v", vmstate)
 	data, err := json.Marshal(&vmstate)
 	if err != nil {
 		return err

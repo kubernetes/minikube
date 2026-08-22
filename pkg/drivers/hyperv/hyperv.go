@@ -27,8 +27,8 @@ import (
 
 	"errors"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnflag"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/ssh"
@@ -218,12 +218,12 @@ func (d *Driver) Create() error {
 		return err
 	}
 
-	log.Infof("Creating SSH key...")
+	diagnostics.Infof("Creating SSH key...")
 	if err := ssh.GenerateSSHKey(d.GetSSHKeyPath()); err != nil {
 		return err
 	}
 
-	log.Infof("Creating VM...")
+	diagnostics.Infof("Creating VM...")
 	if d.VSwitch == "" {
 		defaultVSwitch, err := d.chooseVirtualSwitch()
 		if err != nil {
@@ -231,7 +231,7 @@ func (d *Driver) Create() error {
 		}
 		d.VSwitch = defaultVSwitch
 	}
-	log.Infof("Using switch %q", d.VSwitch)
+	diagnostics.Infof("Using switch %q", d.VSwitch)
 
 	diskImage, err := d.generateDiskImage()
 	if err != nil {
@@ -290,7 +290,7 @@ func (d *Driver) Create() error {
 		return err
 	}
 
-	log.Infof("Starting VM...")
+	diagnostics.Infof("Starting VM...")
 	return d.Start()
 }
 
@@ -347,7 +347,7 @@ func (d *Driver) chooseVirtualSwitch() (string, error) {
 
 // waitForIP waits until the host has a valid IP
 func (d *Driver) waitForIP() string {
-	log.Infof("Waiting for host to start...")
+	diagnostics.Infof("Waiting for host to start...")
 
 	for {
 		ip, _ := d.GetIP()
@@ -361,7 +361,7 @@ func (d *Driver) waitForIP() string {
 
 // waitStopped waits until the host is stopped
 func (d *Driver) waitStopped() error {
-	log.Infof("Waiting for host to stop...")
+	diagnostics.Infof("Waiting for host to stop...")
 
 	for {
 		s, err := d.GetState()
@@ -488,7 +488,7 @@ func (d *Driver) generateDiskImage() (string, error) {
 		fixedDiskSize = toMb(d.DiskSize)
 	}
 
-	log.Infof("Creating VHD")
+	diagnostics.Infof("Creating VHD")
 	if err := cmd("Hyper-V\\New-VHD", "-Path", quote(fixed), "-SizeBytes", fixedDiskSize, "-Fixed"); err != nil {
 		return "", err
 	}

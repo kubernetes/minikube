@@ -23,7 +23,7 @@ import (
 	"reflect"
 	"strings"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 )
 
 // The /etc/os-release file contains operating system identification data
@@ -88,11 +88,11 @@ func (osr *OsRelease) ParseOsRelease(osReleaseContents []byte) error {
 	for scanner.Scan() {
 		key, val, err := parseLine(scanner.Text())
 		if err != nil {
-			log.Warnf("Warning: got an invalid line error parsing /etc/os-release: %s", err)
+			diagnostics.Warnf("Warning: got an invalid line error parsing /etc/os-release: %s", err)
 			continue
 		}
 		if err := osr.setIfPossible(key, val); err != nil {
-			log.Debug(err)
+			diagnostics.Debug(err)
 		}
 	}
 	return nil
