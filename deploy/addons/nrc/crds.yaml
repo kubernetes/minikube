@@ -1,0 +1,428 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.19.0
+  name: nodereadinessrules.readiness.node.x-k8s.io
+  labels:
+    kubernetes.io/minikube-addons: nrc
+spec:
+  group: readiness.node.x-k8s.io
+  names:
+    kind: NodeReadinessRule
+    listKind: NodeReadinessRuleList
+    plural: nodereadinessrules
+    shortNames:
+    - nrr
+    singular: nodereadinessrule
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: Continuous, Bootstrap or Dryrun - shows if the rule is in enforcement
+        or dryrun mode.
+      jsonPath: .spec.enforcementMode
+      name: Mode
+      type: string
+    - description: The readiness taint applied by this rule.
+      jsonPath: .spec.taint.key
+      name: Taint
+      type: string
+    - description: The age of this resource
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: NodeReadinessRule is the Schema for the NodeReadinessRules API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: spec defines the desired state of NodeReadinessRule
+            properties:
+              conditions:
+                description: |-
+                  conditions contains a list of the Node conditions that defines the specific
+                  criteria that must be met for taints to be managed on the target Node.
+                  The presence or status of these conditions directly triggers the application or removal of Node taints.
+                items:
+                  description: |-
+                    ConditionRequirement defines a specific Node condition and the status value
+                    required to trigger the controller's action.
+                  properties:
+                    requiredStatus:
+                      description: requiredStatus is status of the condition, one
+                        of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: |-
+                        type of Node condition
+
+                        Following kubebuilder validation is referred from https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#Condition
+                      maxLength: 316
+                      minLength: 1
+                      type: string
+                  required:
+                  - requiredStatus
+                  - type
+                  type: object
+                maxItems: 32
+                minItems: 1
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+                x-kubernetes-validations:
+                - message: conditions is immutable
+                  rule: self == oldSelf
+              dryRun:
+                description: |-
+                  dryRun when set to true, The controller will evaluate Node conditions and log intended taint modifications
+                  without persisting changes to the cluster. Proposed actions are reflected in the resource status.
+                type: boolean
+              enforcementMode:
+                description: |-
+                  enforcementMode specifies how the controller maintains the desired state.
+                  enforcementMode is one of bootstrap-only, continuous.
+                  "bootstrap-only" applies the configuration once during initial setup.
+                  "continuous" ensures the state is monitored and corrected throughout the resource lifecycle.
+                enum:
+                - bootstrap-only
+                - continuous
+                type: string
+                x-kubernetes-validations:
+                - message: enforcementMode is immutable
+                  rule: self == oldSelf
+              nodeSelector:
+                description: nodeSelector limits the scope of this rule to a specific
+                  subset of Nodes.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: |-
+                        A label selector requirement is a selector that contains values, a key, and an operator that
+                        relates the key and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: |-
+                            operator represents a key's relationship to a set of values.
+                            Valid operators are In, NotIn, Exists and DoesNotExist.
+                          type: string
+                        values:
+                          description: |-
+                            values is an array of string values. If the operator is In or NotIn,
+                            the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                            the values array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: atomic
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                      map is equivalent to an element of matchExpressions, whose key field is "key", the
+                      operator is "In", and the values array contains only "value". The requirements are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+                x-kubernetes-validations:
+                - message: nodeSelector is immutable
+                  rule: self == oldSelf
+              taint:
+                description: |-
+                  taint defines the specific Taint (Key, Value, and Effect) to be managed
+                  on Nodes that meet the defined condition criteria.
+
+                  The taint key must follow Kubernetes qualified name format: prefix/name
+                  where prefix is 'readiness.k8s.io' (DNS subdomain) and name is a qualified
+                  name (max 63 chars, alphanumeric, '-', '_', '.', must start and end with alphanumeric).
+                  ref: git.k8s.io/kubernetes/staging/src/k8s.io/apimachinery/pkg/api/validate/content/kube.go#L24-L72
+
+                  Supported effects: NoSchedule, PreferNoSchedule, NoExecute.
+                  Caution: NoExecute evicts existing pods and can cause significant disruption
+                  when combined with continuous enforcement mode. Prefer NoSchedule for most use cases.
+                properties:
+                  effect:
+                    description: |-
+                      Required. The effect of the taint on pods
+                      that do not tolerate the taint.
+                      Valid effects are NoSchedule, PreferNoSchedule and NoExecute.
+                    type: string
+                  key:
+                    description: Required. The taint key to be applied to a node.
+                    type: string
+                  timeAdded:
+                    description: TimeAdded represents the time at which the taint
+                      was added.
+                    format: date-time
+                    type: string
+                  value:
+                    description: The taint value corresponding to the taint key.
+                    type: string
+                required:
+                - effect
+                - key
+                type: object
+                x-kubernetes-validations:
+                - message: taint key must start with 'readiness.k8s.io/'
+                  rule: self.key.startsWith('readiness.k8s.io/')
+                - message: taint key length must be at most 253 characters
+                  rule: self.key.size() <= 253
+                - message: taint key must have exactly one '/' separator (prefix/name
+                    format)
+                  rule: size(self.key.split('/')) == 2
+                - message: taint key name part must be 1-63 characters
+                  rule: size(self.key.split('/')[1]) > 0 && size(self.key.split('/')[1])
+                    <= 63
+                - message: taint key name part must consist of alphanumeric characters,
+                    '-', '_' or '.', and must start and end with an alphanumeric character
+                  rule: self.key.split('/')[1].matches('^[A-Za-z0-9]([-A-Za-z0-9_.]*[A-Za-z0-9])?$')
+                - message: taint value length must be at most 63 characters
+                  rule: '!has(self.value) || self.value.size() <= 63'
+                - message: taint effect must be one of 'NoSchedule', 'PreferNoSchedule',
+                    'NoExecute'
+                  rule: self.effect in ['NoSchedule', 'PreferNoSchedule', 'NoExecute']
+                - message: taint key is immutable
+                  rule: '!has(oldSelf.key) || self.key == oldSelf.key'
+                - message: taint effect is immutable
+                  rule: '!has(oldSelf.effect) || self.effect == oldSelf.effect'
+                - message: taint value is immutable
+                  rule: '!has(oldSelf.value) || self.value == oldSelf.value'
+            required:
+            - conditions
+            - enforcementMode
+            - nodeSelector
+            - taint
+            type: object
+          status:
+            description: status defines the observed state of NodeReadinessRule
+            minProperties: 1
+            properties:
+              appliedNodes:
+                description: |-
+                  appliedNodes lists the names of Nodes where the taint has been successfully managed.
+                  This provides a quick reference to the scope of impact for this rule.
+                items:
+                  maxLength: 253
+                  type: string
+                maxItems: 5000
+                type: array
+                x-kubernetes-list-type: set
+              dryRunResults:
+                description: |-
+                  dryRunResults captures the outcome of the rule evaluation when DryRun is enabled.
+                  This field provides visibility into the actions the controller would have taken,
+                  allowing users to preview taint changes before they are committed.
+                minProperties: 1
+                properties:
+                  affectedNodes:
+                    description: affectedNodes is the total count of Nodes that match
+                      the rule's criteria.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                  riskyOperations:
+                    description: |-
+                      riskyOperations represents the count of Nodes where required conditions
+                      are missing entirely, potentially indicating an ambiguous node state.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                  summary:
+                    description: |-
+                      summary provides a human-readable overview of the dry run evaluation,
+                      highlighting key findings or warnings.
+                    maxLength: 4096
+                    minLength: 1
+                    type: string
+                  taintsToAdd:
+                    description: taintsToAdd is the number of Nodes that currently
+                      lack the specified taint and would have it applied.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                  taintsToRemove:
+                    description: |-
+                      taintsToRemove is the number of Nodes that currently possess the
+                      taint but no longer meet the criteria, leading to its removal.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                required:
+                - summary
+                type: object
+              failedNodes:
+                description: |-
+                  failedNodes lists the Nodes where the rule evaluation encountered an error.
+                  This is used for troubleshooting configuration issues, such as invalid selectors during node lookup.
+                items:
+                  description: NodeFailure provides diagnostic details for Nodes that
+                    could not be successfully evaluated by the rule.
+                  properties:
+                    lastEvaluationTime:
+                      description: lastEvaluationTime is the timestamp of the last
+                        rule check failed for this Node.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human-readable message indicating
+                        details about the evaluation.
+                      maxLength: 10240
+                      minLength: 1
+                      type: string
+                    nodeName:
+                      description: |-
+                        nodeName is the name of the failed Node.
+
+                        Following kubebuilder validation is referred from
+                        https://github.com/kubernetes/apimachinery/blob/84d740c9e27f3ccc94c8bc4d13f1b17f60f7080b/pkg/util/validation/validation.go#L198
+                      maxLength: 253
+                      minLength: 1
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                      type: string
+                    reason:
+                      description: reason provides a brief explanation of the evaluation
+                        result.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                  required:
+                  - lastEvaluationTime
+                  - nodeName
+                  type: object
+                maxItems: 5000
+                type: array
+                x-kubernetes-list-map-keys:
+                - nodeName
+                x-kubernetes-list-type: map
+              nodeEvaluations:
+                description: |-
+                  nodeEvaluations provides detailed insight into the rule's assessment for individual Nodes.
+                  This is primarily used for auditing and debugging why specific Nodes were or
+                  were not targeted by the rule.
+                items:
+                  description: NodeEvaluation provides a detailed audit of a single
+                    Node's compliance with the rule.
+                  properties:
+                    conditionResults:
+                      description: |-
+                        conditionResults provides a detailed breakdown of each condition evaluation
+                        for this Node. This allows for granular auditing of which specific
+                        criteria passed or failed during the rule assessment.
+                      items:
+                        description: |-
+                          ConditionEvaluationResult provides a detailed report of the comparison between
+                          the Node's observed condition and the rule's requirement.
+                        properties:
+                          currentStatus:
+                            description: currentStatus is the actual status value
+                              observed on the Node, one of True, False, Unknown.
+                            enum:
+                            - "True"
+                            - "False"
+                            - Unknown
+                            type: string
+                          requiredStatus:
+                            description: requiredStatus is the status value defined
+                              in the rule that must be matched, one of True, False,
+                              Unknown.
+                            enum:
+                            - "True"
+                            - "False"
+                            - Unknown
+                            type: string
+                          type:
+                            description: type corresponds to the Node condition type
+                              being evaluated.
+                            maxLength: 316
+                            minLength: 1
+                            type: string
+                        required:
+                        - currentStatus
+                        - requiredStatus
+                        - type
+                        type: object
+                      maxItems: 5000
+                      type: array
+                      x-kubernetes-list-map-keys:
+                      - type
+                      x-kubernetes-list-type: map
+                    lastEvaluationTime:
+                      description: lastEvaluationTime is the timestamp when the controller
+                        last assessed this Node.
+                      format: date-time
+                      type: string
+                    nodeName:
+                      description: nodeName is the name of the evaluated Node.
+                      maxLength: 253
+                      minLength: 1
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                      type: string
+                    taintStatus:
+                      description: taintStatus represents the taint status on the
+                        Node, one of Present, Absent.
+                      enum:
+                      - Present
+                      - Absent
+                      type: string
+                  required:
+                  - conditionResults
+                  - lastEvaluationTime
+                  - nodeName
+                  - taintStatus
+                  type: object
+                maxItems: 5000
+                type: array
+                x-kubernetes-list-map-keys:
+                - nodeName
+                x-kubernetes-list-type: map
+              observedGeneration:
+                description: observedGeneration reflects the generation of the most
+                  recently observed NodeReadinessRule by the controller.
+                format: int64
+                minimum: 1
+                type: integer
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
