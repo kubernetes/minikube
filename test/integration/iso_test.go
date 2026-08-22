@@ -46,7 +46,7 @@ func TestISOImage(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	t.Run("Setup", func(t *testing.T) {
-		args := append([]string{"start", "-p", profile, "--no-kubernetes", "--memory=2500mb"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--no-kubernetes", "--memory=3072"}, StartArgs()...)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
 			t.Errorf("failed to start minikube: args %q: %v", rr.Command(), err)
@@ -184,7 +184,7 @@ func TestISOImage(t *testing.T) {
 func helmPackageVersion(t *testing.T) string {
 	t.Helper()
 
-	isoArchDir := "deploy/iso/minikube-iso/arch"
+	isoArchDir := filepath.Join(RepoRoot(t), "deploy/iso/minikube-iso/arch")
 	packageFile := filepath.Join(isoArchDir, "x86_64/package/helm-bin/helm-bin.mk")
 	versionName := "HELM_BIN_VERSION"
 	if runtime.GOARCH == "arm64" {
