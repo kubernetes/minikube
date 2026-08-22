@@ -29,6 +29,11 @@ import (
 )
 
 var (
+	// workflowReplace keeps the exact toolchain patch version used to build and test
+	// minikube in sync across every GitHub workflow. This is deliberately not replaced
+	// by setup-go's go-version-file: the go.mod "go" directive is the minimum language
+	// version and always carries a .0 patch, so reading it would downgrade CI to the
+	// compatibility floor. See site/content/en/docs/contrib/dependency_versions.md.
 	workflowReplace = update.Item{
 		Replace: map[string]string{
 			`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
@@ -96,7 +101,9 @@ func main() {
 		klog.Warningf("Golang stable version is a release candidate, skipping: %s", stable)
 		return
 	}
-	// Derive major.minor version (e.g., 1.24.0 from 1.24.2)
+	// Derive major.minor version (e.g., 1.24.0 from 1.24.2). The patch is pinned to 0
+	// because this feeds the go.mod "go" directive, which states the minimum language
+	// version minikube compiles against rather than the toolchain used to build it.
 	majorMinor := stable
 	if parts := strings.Split(stable, "."); len(parts) >= 3 {
 		majorMinor = fmt.Sprintf("%s.%s.0", parts[0], parts[1])
