@@ -49,6 +49,7 @@ func TestImageBuild(t *testing.T) {
 			{"BuildWithDockerIgnore", validateImageBuildWithDockerIgnore},
 			{"BuildWithSpecifiedDockerfile", validateNormalImageBuildWithSpecifiedDockerfile},
 			{"validateImageBuildWithBuildEnv", validateImageBuildWithBuildEnv},
+			{"FailedBuildWithInvalidPath", validateFailedImageBuild},
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
@@ -78,6 +79,18 @@ func validateNormalImageBuild(ctx context.Context, t *testing.T, profile string)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to build image with args: %q : %v", rr.Command(), err)
+	}
+}
+
+// validateFailedImageBuild makes sure 'minikube image build' with an invalid path
+// exits with a non-zero code instead of silently succeeding.
+// Regression test for https://github.com/kubernetes/minikube/issues/12556
+func validateFailedImageBuild(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+	args := []string{"image", "build", "-t", "aaa:latest", "./testdata/image-build/nonexistent", "-p", profile}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err == nil {
+		t.Fatalf("expected a non-zero exit code building an invalid path, but the command succeeded: %q\n%s", rr.Command(), rr.Output())
 	}
 }
 
