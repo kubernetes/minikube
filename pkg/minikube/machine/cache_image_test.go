@@ -17,6 +17,7 @@ limitations under the License.
 package machine
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
 	"testing"
@@ -254,6 +255,57 @@ func TestMergeImageLists(t *testing.T) {
 		}
 		if ok := reflect.DeepEqual(got, tc.expected); !ok {
 			t.Errorf("%s:\nmergeImageLists() = %+v;\nwant %+v", tc.description, got, tc.expected)
+		}
+	}
+}
+
+// fakeImageRemover implements the part of cruntime.Manager that removeImages
+// uses. The embedded interface is nil, so any other method would panic, which
+// is the point: the test would fail loudly if removeImages grew a dependency.
+type fakeImageRemover struct {
+	cruntime.Manager
+	removeErr error
+	exists    bool
+}
+
+func (f *fakeImageRemover) RemoveImage(string) error        { return f.removeErr }
+func (f *fakeImageRemover) ImageExists(string, string) bool { return f.exists }
+
+func TestRemoveImagesTolerantOfMissingImages(t *testing.T) {
+	testCases := []struct {
+		description string
+		removeErr   error
+		exists      bool
+		expectErr   bool
+	}{
+		{
+			description: "removal succeeds",
+			removeErr:   nil,
+			exists:      false,
+			expectErr:   false,
+		},
+		{
+			description: "removal fails and the image is gone, so there was nothing to remove",
+			removeErr:   fmt.Errorf("remove image docker: Error: No such image: missing:v1"),
+			exists:      false,
+			expectErr:   false,
+		},
+		{
+			description: "removal fails and the image is still there",
+			removeErr:   fmt.Errorf("remove image docker: conflict: unable to remove repository reference"),
+			exists:      true,
+			expectErr:   true,
+		},
+	}
+
+	for _, tc := range testCases {
+		crMgr := &fakeImageRemover{removeErr: tc.removeErr, exists: tc.exists}
+		err := removeImages(crMgr, []string{"image:v1"})
+		if tc.expectErr && err == nil {
+			t.Errorf("%s: removeImages() = nil; want an error", tc.description)
+		}
+		if !tc.expectErr && err != nil {
+			t.Errorf("%s: removeImages() = %v; want nil", tc.description, err)
 		}
 	}
 }
