@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         timeout-minutes: 1
       - name: Install bom
-        uses: kubernetes-sigs/release-actions/setup-bom@8753ea6bdadb814d779c6ec34eaca689dbfb492b # main
+        uses: kubernetes-sigs/release-actions/setup-bom@b5b8280a60e6e20607f77068011269b982c60971 # main
         timeout-minutes: 1
       - name: Generage SBOM
         timeout-minutes: 3
