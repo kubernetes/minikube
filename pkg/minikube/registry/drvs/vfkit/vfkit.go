@@ -76,6 +76,12 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	case "vmnet-shared":
 		helper = &vmnet.Helper{
 			MachineDir: filepath.Join(storePath, "machines", machineName),
+			// TODO: Remove hardcoded subnet once proper flag support is added.
+			// Workaround for GitHub runners where the host network uses the
+			// vmnet default subnet (192.168.64.0/24), causing routing conflicts.
+			StartAddress: "192.168.200.1",
+			EndAddress:   "192.168.200.127",
+			SubnetMask:   "255.255.255.0",
 		}
 	default:
 		return nil, fmt.Errorf("unsupported network: %q", cfg.Network)

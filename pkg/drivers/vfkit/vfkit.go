@@ -45,6 +45,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/drivers/common/dhcp"
+	"k8s.io/minikube/pkg/drivers/common/privileges"
 	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -240,6 +241,13 @@ func (d *Driver) extractKernel() error {
 }
 
 func (d *Driver) Start() error {
+	// Fix file ownership to allow vmnet-helper and vfkit to access the machine
+	// directory after vmnet-helper drops privileges. No-op when not under sudo.
+	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
+	if err := privileges.ChownDirAll(machineDir); err != nil {
+		return fmt.Errorf("failed to fix machine dir ownership: %w", err)
+	}
+
 	var socketPath string
 
 	if d.VmnetHelper != nil {
@@ -348,6 +356,12 @@ func (d *Driver) startVfkit(socketPath string) error {
 	// Create vfkit in a new process group, so minikube caller can use killpg
 	// to terminate the entire process group without harming the vfkit process.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	// When running under sudo, start vfkit as the real user so its socket is
+	// accessible by vmnet-helper after it drops privileges.
+	if cred := privileges.Credential(); cred != nil {
+		cmd.SysProcAttr.Credential = cred
+	}
 
 	logfile, err := d.openLogfile()
 	if err != nil {
