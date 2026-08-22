@@ -304,6 +304,30 @@ func TestSuggestMemoryAllocation(t *testing.T) {
 	}
 }
 
+func TestMemoryRequirements(t *testing.T) {
+	tests := []struct {
+		name            string
+		driver          string
+		wantMinimum     int
+		wantRecommended int
+	}{
+		{"KVM2", driver.KVM2, 2500, 3072},
+		{"VirtualBox", driver.VirtualBox, 2500, 3072},
+		{"Docker", driver.Docker, 1800, 1900},
+		{"none", driver.None, 1800, 1900},
+		{"SSH", driver.SSH, 1800, 1900},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gotMinimum, gotRecommended := memoryRequirements(test.driver)
+			if gotMinimum != test.wantMinimum || gotRecommended != test.wantRecommended {
+				t.Errorf("memoryRequirements(%q) = (%d, %d), want (%d, %d)", test.driver, gotMinimum, gotRecommended, test.wantMinimum, test.wantRecommended)
+			}
+		})
+	}
+}
+
 func TestBaseImageFlagDriverCombo(t *testing.T) {
 	tests := []struct {
 		driver        string
