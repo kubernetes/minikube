@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 
 	"k8s.io/klog/v2"
 )
