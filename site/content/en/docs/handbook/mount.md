@@ -107,11 +107,6 @@ specific directories you need.
 Built-in mounts can be disabled by passing the `--disable-driver-mounts` flag to
 `minikube start`.
 
-The HyperKit driver also supports NFS mounts via start flags:
-- `--nfs-share=[]`: Local folders to share with Guest via NFS mounts
-- `--nfs-shares-root='/nfsshares'`: Where to root the NFS shares, defaults to
-  `/nfsshares`
-
 ## File Sync
 
 See [File Sync]({{<ref "filesync.md" >}})

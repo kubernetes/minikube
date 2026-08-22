@@ -64,7 +64,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/driver/auxdriver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -320,7 +319,6 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	virtualBoxMacOS13PlusWarning(driverName)
-	hyperkitDeprecationWarning(driverName)
 	validateFlags(cmd, driverName)
 	validateUser(driverName)
 	if driverName == oci.Docker {
@@ -338,11 +336,6 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		if k8sVersion == constants.NoKubernetesVersion || viper.GetBool(noKubernetes) {
 			exit.Message(reason.Usage, "You cannot enable addons on a cluster without Kubernetes, to enable Kubernetes on your cluster, run: minikube start --kubernetes-version=stable")
 		}
-	}
-
-	// Download & update the driver, even in --download-only mode
-	if !viper.GetBool(dryRun) {
-		updateDriver(driverName)
 	}
 
 	// Check whether we may need to stop Kubernetes.
@@ -434,19 +427,6 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
     https://minikube.sigs.k8s.io/docs/drivers/docker/
     For more details on the issue see: https://github.com/kubernetes/minikube/issues/15274
 `)
-}
-
-// hyperkitDeprecationWarning prints a deprecation warning for the hyperkit driver
-func hyperkitDeprecationWarning(driverName string) {
-	if !driver.IsHyperKit(driverName) {
-		return
-	}
-	out.WarningT(`The 'hyperkit' driver is deprecated and will be removed in a future release.
-    You can use alternative drivers such as 'vfkit', 'qemu', or 'docker'.
-    https://minikube.sigs.k8s.io/docs/drivers/vfkit/
-    https://minikube.sigs.k8s.io/docs/drivers/qemu/
-    https://minikube.sigs.k8s.io/docs/drivers/docker/
-	`)
 }
 
 func validateBuiltImageVersion(r command.Runner, driverName string) {
@@ -551,18 +531,6 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 
 func warnAboutMultiNodeCNI() {
 	out.WarningT("Cluster was created without any CNI, adding a node to it might cause broken networking.")
-}
-
-func updateDriver(driverName string) {
-	if err := auxdriver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), viper.GetBool(flags.Interactive), viper.GetBool(autoUpdate)); err != nil {
-		if errors.Is(err, auxdriver.ErrAuxDriverVersionCommandFailed) {
-			exit.Error(reason.DrvAuxNotHealthy, "Aux driver "+driverName, err)
-		}
-		if errors.Is(err, auxdriver.ErrAuxDriverVersionNotinPath) {
-			exit.Error(reason.DrvAuxNotHealthy, "Aux driver"+driverName, err)
-		} // if failed to update but not a fatal error, log it and continue (old version might still work)
-		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
-	}
 }
 
 func displayVersion(ver string) {

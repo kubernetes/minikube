@@ -67,7 +67,6 @@ If the issue is specific to an operating system, hypervisor, container, addon, o
 
 **co/[driver]**  - When the issue appears specific to a driver
 
-- `co/hyperkit`
 - `co/hyperv`
 - `co/kvm2`
 - `co/none-driver`

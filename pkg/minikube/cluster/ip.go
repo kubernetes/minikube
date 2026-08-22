@@ -119,7 +119,7 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 		ip := ipMatch[1]
 
 		return net.ParseIP(ip), nil
-	case driver.HyperKit, driver.VFKit, driver.Krunkit:
+	case driver.VFKit, driver.Krunkit:
 		// TODO: check why we need this and test with:
 		// - vfkkit+nat
 		// - vfkit+vmnet-shared
