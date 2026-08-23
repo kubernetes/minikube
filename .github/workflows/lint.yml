@@ -21,7 +21,7 @@ permissions:
   contents: read
 jobs:
     Lint:
-        runs-on: ubuntu-22.04
+        runs-on: ubuntu-latest
         steps:
         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
           timeout-minutes: 1
@@ -47,7 +47,7 @@ jobs:
           run: make test
           continue-on-error: false
     Boilerplate:
-        runs-on: ubuntu-22.04
+        runs-on: ubuntu-latest
         steps:
         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
           timeout-minutes: 1
@@ -63,7 +63,7 @@ jobs:
           run: make test
           continue-on-error: false
     Housekeeping:
-       runs-on: ubuntu-22.04
+       runs-on: ubuntu-latest
        steps:
         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
           timeout-minutes: 1
