@@ -471,6 +471,109 @@ func TestValidateRuntime(t *testing.T) {
 	}
 }
 
+func TestValidateMixedOSFlag(t *testing.T) {
+	var tests = []struct {
+		description string
+		osValues    []string
+		errorMsg    string
+	}{
+		{
+			description: "valid",
+			osValues:    []string{"linux", "windows"},
+			errorMsg:    "",
+		},
+		{
+			description: "valid with whitespace",
+			osValues:    []string{" linux", "windows "},
+			errorMsg:    "",
+		},
+		{
+			description: "valid with mixed case",
+			osValues:    []string{"Linux", "WINDOWS"},
+			errorMsg:    "",
+		},
+		{
+			description: "wrong order",
+			osValues:    []string{"windows", "linux"},
+			errorMsg:    "invalid --node-os value: must be linux,windows",
+		},
+		{
+			description: "only one value",
+			osValues:    []string{"linux"},
+			errorMsg:    "invalid --node-os value: must specify exactly 2 comma-separated OS values, e.g. linux,windows",
+		},
+		{
+			description: "three values",
+			osValues:    []string{"linux", "windows", "mac"},
+			errorMsg:    "invalid --node-os value: must specify exactly 2 comma-separated OS values, e.g. linux,windows",
+		},
+		{
+			description: "no values",
+			osValues:    nil,
+			errorMsg:    "invalid --node-os value: must specify exactly 2 comma-separated OS values, e.g. linux,windows",
+		},
+		{
+			description: "old bracket syntax is rejected - StringSlice splits '[linux,windows]' on the comma, leaving stray brackets",
+			osValues:    []string{"[linux", "windows]"},
+			errorMsg:    "invalid --node-os value: must be linux,windows",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			got := validateMixedOSFlag(test.osValues)
+			gotError := ""
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("validateMixedOSFlag(osValues=%v): got %v, expected %v", test.osValues, gotError, test.errorMsg)
+			}
+		})
+	}
+}
+
+func TestCheckMixedOSFlagConflict(t *testing.T) {
+	var tests = []struct {
+		description string
+		changed     bool
+		got         string
+		errorMsg    string
+	}{
+		{
+			description: "flag not passed, no conflict",
+			changed:     false,
+			got:         "docker",
+			errorMsg:    "",
+		},
+		{
+			description: "flag explicitly matches the required value",
+			changed:     true,
+			got:         "hyperv",
+			errorMsg:    "",
+		},
+		{
+			description: "flag explicitly conflicts with the required value",
+			changed:     true,
+			got:         "docker",
+			errorMsg:    "--node-os requires the hyperv driver, but --driver=docker was specified",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			got := checkMixedOSFlagConflict(test.changed, test.got, "hyperv", "driver", "driver")
+			gotError := ""
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("checkMixedOSFlagConflict(changed=%v, got=%v): got %v, expected %v", test.changed, test.got, gotError, test.errorMsg)
+			}
+		})
+	}
+}
+
 func TestIsTwoDigitSemver(t *testing.T) {
 	var tcs = []struct {
 		desc     string

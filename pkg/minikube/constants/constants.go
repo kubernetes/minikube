@@ -175,6 +175,19 @@ const (
 
 	// Mirror CN
 	AliyunMirror = "registry.cn-hangzhou.aliyuncs.com/google_containers"
+
+	// DefaultWindowsNodeVersion is the default Windows Server version used for
+	// the Windows worker node in a mixed-OS cluster (--node-os). Windows
+	// Server 2025 is the only version supported for this feature's first
+	// experimental release.
+	DefaultWindowsNodeVersion = "2025"
+
+	// DefaultWindowsVhdURL is the VHD download URL for Windows Server 2025.
+	// The VHD itself is built by kubernetes-sigs/minikube-os#2
+	// (https://github.com/kubernetes-sigs/minikube-os/pull/2) and published to
+	// an Azure blob storage account owned by Microsoft. This is the URL
+	// currently used for the experimental release of this feature.
+	DefaultWindowsVhdURL = "https://minikubevhdimagebuider.blob.core.windows.net/versions/hybrid-minikube-windows-server.vhdx"
 )
 
 var (

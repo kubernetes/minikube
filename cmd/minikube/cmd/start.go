@@ -208,6 +208,19 @@ func runStart(cmd *cobra.Command, _ []string) {
 		validateProfileName()
 	}
 
+	if cmd.Flags().Changed(nodeOS) {
+		if runtime.GOOS != "windows" {
+			exit.Message(reason.Usage, "--node-os currently requires a Windows host with Hyper-V")
+		}
+		if err := validateMixedOSFlag(viper.GetStringSlice(nodeOS)); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+		if viper.GetInt(nodes) != 2 {
+			exit.Message(reason.Usage, "The --nodes flag must be set to 2 when using --node-os")
+		}
+		applyMixedOSDefaults(cmd, existing)
+	}
+
 	validateSpecifiedDriver(existing, options)
 	if existing == nil {
 		// driver-selection warnings are only meaningful for fresh clusters;
@@ -1976,6 +1989,70 @@ func validateDockerStorageDriver(drvName string) {
 	}
 	out.WarningT("{{.Driver}} is currently using the {{.StorageDriver}} storage driver, setting preload=false", out.V{"StorageDriver": si.StorageDriver, "Driver": drvName})
 	viper.Set(preload, false)
+}
+
+// validateMixedOSFlag validates the supplied --node-os values for a mixed-OS
+// cluster. Only a single linux control-plane node plus a single windows
+// worker node is currently supported, so exactly two values must be given
+// and they must be "linux" then "windows" (case- and whitespace-insensitive).
+func validateMixedOSFlag(osValues []string) error {
+	if len(osValues) != 2 {
+		return errors.New("invalid --node-os value: must specify exactly 2 comma-separated OS values, e.g. linux,windows")
+	}
+
+	first := strings.ToLower(strings.TrimSpace(osValues[0]))
+	second := strings.ToLower(strings.TrimSpace(osValues[1]))
+
+	if first != "linux" || second != "windows" {
+		return errors.New("invalid --node-os value: must be linux,windows")
+	}
+
+	return nil
+}
+
+// applyMixedOSDefaults fills in the driver/cni/container-runtime a mixed-OS
+// cluster requires, but only for a brand-new profile: converting an existing
+// profile to mixed-OS isn't supported yet (its persisted runtime/CNI could
+// silently drift from what --node-os requires, since updateExistingConfigFromFlags
+// only touches fields for flags the user actually passed), so require a fresh
+// profile instead.
+func applyMixedOSDefaults(cmd *cobra.Command, existing *config.ClusterConfig) {
+	if existing != nil {
+		exit.Message(reason.Usage, "--node-os cannot be used with an existing profile; delete it first with 'minikube delete -p {{.profile}}' or start a new profile with --profile", out.V{"profile": ClusterFlagValue()})
+	}
+
+	required := []struct {
+		flagName, want, label string
+	}{
+		{"driver", driver.HyperV, "driver"},
+		{cniFlag, "flannel", "CNI"},
+		{containerRuntime, constants.Containerd, "container runtime"},
+	}
+
+	for _, r := range required {
+		changed := cmd.Flags().Changed(r.flagName)
+		got := viper.GetString(r.flagName)
+		if err := checkMixedOSFlagConflict(changed, got, r.want, r.flagName, r.label); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+		if !changed {
+			viper.Set(r.flagName, r.want)
+			out.Infof("--node-os: automatically selecting {{.want}} as the {{.label}}", out.V{"want": r.want, "label": r.label})
+		}
+	}
+}
+
+// checkMixedOSFlagConflict reports a usage error if the user explicitly passed
+// flagName with a value other than want. want is only ever applied as a
+// default (by the caller) when the flag was not explicitly changed - an
+// explicit, conflicting value must be rejected rather than silently
+// overridden, since viper.Set() takes precedence over an explicit flag and
+// would otherwise discard the user's choice without telling them.
+func checkMixedOSFlagConflict(changed bool, got, want, flagName, label string) error {
+	if changed && got != want {
+		return fmt.Errorf("--node-os requires the %s %s, but --%s=%s was specified", want, label, flagName, got)
+	}
+	return nil
 }
 
 // validateSubnet checks that the subnet provided has a private IP
