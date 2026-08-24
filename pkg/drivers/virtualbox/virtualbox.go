@@ -66,15 +66,15 @@ var (
 	ErrNetworkAddrCollision     = errors.New("host-only cidr conflicts with the network address of a host interface")
 )
 
-// accelerate3DUnsupportedErr matches the VBoxManage error returned when the host's graphics
+// reAccelerate3DUnsupported matches the VBoxManage error returned when the host's graphics
 // controller rejects --accelerate3d off outright, e.g.:
 //
 //	VBoxManage: error: The graphics controller does not support the given feature
 //	VBoxManage: error: Details: code VBOX_E_NOT_SUPPORTED (0x80bb0009), component GraphicsAdapterWrap, interface IGraphicsAdapter, callee nsISupports
 //
-// This was a VirtualBox bug (bugref:10749) introduced in 7.1.0 and fixed shortly after;
+// This was a VirtualBox bug (bugref:10749) introduced in 7.1.0 and fixed in 7.1.2;
 // it should not occur on current VirtualBox releases.
-var accelerate3DUnsupportedErr = regexp.MustCompile(`(?s)VBOX_E_NOT_SUPPORTED.*GraphicsAdapter`)
+var reAccelerate3DUnsupported = regexp.MustCompile(`(?s)VBOX_E_NOT_SUPPORTED.*GraphicsAdapter`)
 
 type Driver struct {
 	*drivers.BaseDriver
@@ -442,8 +442,8 @@ func (d *Driver) CreateVM() error {
 	}
 
 	if err := d.vbm(d.buildModifyVMFlags(cpus, hostDNSResolver, dnsProxy, hostLoopbackReachable)...); err != nil {
-		if !d.NoAccelerate3DOff && accelerate3DUnsupportedErr.MatchString(err.Error()) {
-			return fmt.Errorf("this VirtualBox version rejects --accelerate3d off (%w); this is a known bug (bugref:10749) fixed in VirtualBox releases after 7.1.0, so upgrading VirtualBox should resolve it; alternatively pass --virtualbox-no-accelerate3d-off to work around it now", err)
+		if !d.NoAccelerate3DOff && reAccelerate3DUnsupported.MatchString(err.Error()) {
+			return fmt.Errorf("this VirtualBox version rejects --accelerate3d off (%w); this is a known VirtualBox 7.1.0 bug (bugref:10749); upgrade to VirtualBox 7.1.2 or later to resolve it", err)
 		}
 		return err
 	}

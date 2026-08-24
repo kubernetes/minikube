@@ -677,7 +677,8 @@ func TestCreateVMReturnsUpgradeHintOnAccelerate3DUnsupportedError(t *testing.T) 
 	err := driver.CreateVM()
 
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "--virtualbox-no-accelerate3d-off")
+		assert.Contains(t, err.Error(), "upgrade to VirtualBox 7.1.2 or later")
+		assert.ErrorIs(t, err, unsupportedErr)
 	}
 	assert.False(t, driver.NoAccelerate3DOff)
 }
