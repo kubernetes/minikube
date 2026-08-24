@@ -443,7 +443,7 @@ func (d *Driver) CreateVM() error {
 
 	if err := d.vbm(d.buildModifyVMFlags(cpus, hostDNSResolver, dnsProxy, hostLoopbackReachable)...); err != nil {
 		if !d.NoAccelerate3DOff && reAccelerate3DUnsupported.MatchString(err.Error()) {
-			return fmt.Errorf("this VirtualBox version rejects --accelerate3d off (%w); this is a known VirtualBox 7.1.0 bug (bugref:10749); upgrade to VirtualBox 7.1.2 or later to resolve it", err)
+			return fmt.Errorf("this VirtualBox version rejects disabling 3D acceleration (%w); this is a known VirtualBox 7.1.0 bug (bugref:10749); upgrade to VirtualBox 7.1.2 or later to resolve it", err)
 		}
 		return err
 	}
