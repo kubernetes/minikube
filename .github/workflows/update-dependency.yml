@@ -1,0 +1,260 @@
+name: "update-dependency"
+
+on:
+  workflow_call:
+    inputs:
+      dep:
+        description: "Dependency name for get-dependency-version and default make target"
+        type: string
+        required: false
+        default: ""
+      update-cmd:
+        description: "Custom update command (defaults to make update-<dep>-version)"
+        type: string
+        required: false
+        default: ""
+      get-version-dep:
+        description: "Dependency name for get-dependency-version (defaults to inputs.dep)"
+        type: string
+        required: false
+        default: ""
+      title:
+        description: "PR title override (supports {OLD_VERSION} and {NEW_VERSION} placeholders)"
+        type: string
+        required: false
+        default: ""
+      title-prefix:
+        description: "Prefix for generated title/commit-message (e.g., 'Kicbase/ISO', 'Addon <name>', 'CNI')"
+        type: string
+        required: false
+        default: ""
+      subject:
+        description: "Subject name in title (defaults to inputs.dep)"
+        type: string
+        required: false
+        default: ""
+      commit-message:
+        description: "Commit message override (supports {OLD_VERSION} and {NEW_VERSION})"
+        type: string
+        required: false
+        default: ""
+      branch:
+        description: "PR branch name (defaults to auto_bump_<dep>_version)"
+        type: string
+        required: false
+        default: ""
+      branch-suffix:
+        description: "Branch suffix (e.g., short-commit-hash or empty)"
+        type: string
+        required: false
+        default: ""
+      labels:
+        description: "Comma-separated labels for the PR (e.g., ok-to-test)"
+        type: string
+        required: false
+        default: ""
+      release-url:
+        description: "Upstream release URL for PR body description"
+        type: string
+        required: false
+        default: ""
+      custom-body:
+        description: "Custom PR body markdown"
+        type: string
+        required: false
+        default: ""
+      workflow-file:
+        description: "Source workflow file name for PR attribution"
+        type: string
+        required: false
+        default: ""
+      ok-to-build-image:
+        description: "Whether to post ok-to-build-image comment"
+        type: boolean
+        required: false
+        default: false
+      ok-to-build-iso:
+        description: "Whether to post ok-to-build-iso comment"
+        type: boolean
+        required: false
+        default: false
+      go-version:
+        description: "Go version to use in setup-go"
+        type: string
+        required: false
+        default: "1.26.5"
+    secrets:
+      MINIKUBE_BOT_PAT:
+        required: false
+
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: ${{ inputs.go-version }}
+
+permissions:
+  contents: read
+
+jobs:
+  update-dependency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        timeout-minutes: 1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        timeout-minutes: 2
+        with:
+          go-version: ${{ inputs.go-version }}
+      - name: Bump Dependency Version
+        id: bump
+        timeout-minutes: 5
+        env:
+          DEP_INPUT: ${{ inputs.dep }}
+          GET_DEP_INPUT: ${{ inputs.get-version-dep }}
+          UPDATE_CMD_INPUT: ${{ inputs.update-cmd }}
+          TITLE_INPUT: ${{ inputs.title }}
+          TITLE_PREFIX: ${{ inputs.title-prefix }}
+          SUBJECT_INPUT: ${{ inputs.subject }}
+          COMMIT_MSG_INPUT: ${{ inputs.commit-message }}
+          BRANCH_INPUT: ${{ inputs.branch }}
+          RELEASE_URL: ${{ inputs.release-url }}
+          CUSTOM_BODY: ${{ inputs.custom-body }}
+          WORKFLOW_FILE: ${{ inputs.workflow-file }}
+        run: |
+          set -e
+
+          GET_DEP="${GET_DEP_INPUT:-$DEP_INPUT}"
+          SUBJECT="${SUBJECT_INPUT:-$DEP_INPUT}"
+
+          OLD_VER=""
+          if [ -n "$GET_DEP" ]; then
+            OLD_VER=$(DEP="$GET_DEP" make get-dependency-version 2>/dev/null || true)
+          fi
+          echo "OLD_VERSION=$OLD_VER" >> "$GITHUB_OUTPUT"
+
+          CMD_OUTPUT=""
+          if [ -n "$UPDATE_CMD_INPUT" ]; then
+            CMD_OUTPUT=$(eval "$UPDATE_CMD_INPUT")
+          elif [ -n "$DEP_INPUT" ]; then
+            CMD_OUTPUT=$(make "update-${DEP_INPUT}-version")
+          fi
+
+          NEW_VER=""
+          if [ -n "$GET_DEP" ]; then
+            NEW_VER=$(DEP="$GET_DEP" make get-dependency-version 2>/dev/null || true)
+          fi
+          echo "NEW_VERSION=$NEW_VER" >> "$GITHUB_OUTPUT"
+
+          # Compute Title
+          if [ -n "$TITLE_INPUT" ]; then
+            FINAL_TITLE="${TITLE_INPUT//\$\{OLD_VERSION\}/$OLD_VER}"
+            FINAL_TITLE="${FINAL_TITLE//\{OLD_VERSION\}/$OLD_VER}"
+            FINAL_TITLE="${FINAL_TITLE//\$\{NEW_VERSION\}/$NEW_VER}"
+            FINAL_TITLE="${FINAL_TITLE//\{NEW_VERSION\}/$NEW_VER}"
+          elif [ -n "$OLD_VER" ] && [ -n "$NEW_VER" ]; then
+            if [ -n "$TITLE_PREFIX" ]; then
+              FINAL_TITLE="${TITLE_PREFIX}: Update ${SUBJECT} from ${OLD_VER} to ${NEW_VER}"
+            else
+              FINAL_TITLE="Update ${SUBJECT} from ${OLD_VER} to ${NEW_VER}"
+            fi
+          elif [ -n "$CMD_OUTPUT" ] && echo "$CMD_OUTPUT" | head -n 1 | grep -qE '^(Update|Bump|build:|chore:)'; then
+            FINAL_TITLE=$(echo "$CMD_OUTPUT" | head -n 1)
+          elif [ -n "$TITLE_PREFIX" ]; then
+            FINAL_TITLE="${TITLE_PREFIX}: Update ${SUBJECT}"
+          else
+            FINAL_TITLE="Update ${SUBJECT}"
+          fi
+          echo "title=$FINAL_TITLE" >> "$GITHUB_OUTPUT"
+
+          # Compute Commit Message
+          if [ -n "$COMMIT_MSG_INPUT" ]; then
+            FINAL_COMMIT="${COMMIT_MSG_INPUT//\$\{OLD_VERSION\}/$OLD_VER}"
+            FINAL_COMMIT="${FINAL_COMMIT//\{OLD_VERSION\}/$OLD_VER}"
+            FINAL_COMMIT="${FINAL_COMMIT//\$\{NEW_VERSION\}/$NEW_VER}"
+            FINAL_COMMIT="${FINAL_COMMIT//\{NEW_VERSION\}/$NEW_VER}"
+          else
+            FINAL_COMMIT="$FINAL_TITLE"
+          fi
+          echo "commit_message=$FINAL_COMMIT" >> "$GITHUB_OUTPUT"
+
+          # Compute Branch
+          if [ -n "$BRANCH_INPUT" ]; then
+            FINAL_BRANCH="$BRANCH_INPUT"
+          elif [ -n "$DEP_INPUT" ]; then
+            FINAL_BRANCH="auto_bump_${DEP_INPUT}_version"
+          else
+            FINAL_BRANCH="auto_bump_dependency_version"
+          fi
+          echo "branch=$FINAL_BRANCH" >> "$GITHUB_OUTPUT"
+
+          # Capture Git Changes
+          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
+          git status --porcelain >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          # Compute PR Body
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          if [ -n "$CUSTOM_BODY" ]; then
+            FINAL_BODY="${CUSTOM_BODY//\$\{OLD_VERSION\}/$OLD_VER}"
+            FINAL_BODY="${FINAL_BODY//\{OLD_VERSION\}/$OLD_VER}"
+            FINAL_BODY="${FINAL_BODY//\$\{NEW_VERSION\}/$NEW_VER}"
+            FINAL_BODY="${FINAL_BODY//\{NEW_VERSION\}/$NEW_VER}"
+            echo "$FINAL_BODY" >> "$GITHUB_OUTPUT"
+          else
+            if [ -n "$RELEASE_URL" ]; then
+              echo "The ${SUBJECT} project released a [new version](${RELEASE_URL})" >> "$GITHUB_OUTPUT"
+              echo "" >> "$GITHUB_OUTPUT"
+            fi
+            if [ -n "$WORKFLOW_FILE" ]; then
+              echo "This PR was auto-generated using [${WORKFLOW_FILE}](https://github.com/kubernetes/minikube/tree/master/.github/workflows/${WORKFLOW_FILE}) CI Workflow." >> "$GITHUB_OUTPUT"
+            else
+              echo "This PR was auto-generated by the CI Workflow." >> "$GITHUB_OUTPUT"
+            fi
+          fi
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR
+        id: createPR
+        if: ${{ steps.bump.outputs.changes != '' }}
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
+        timeout-minutes: 2
+        with:
+          token: ${{ secrets.MINIKUBE_BOT_PAT }}
+          commit-message: ${{ steps.bump.outputs.commit_message }}
+          committer: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
+          author: minikube-bot <20374350+minikube-bot@users.noreply.github.com>
+          branch: ${{ steps.bump.outputs.branch }}
+          branch-suffix: ${{ inputs.branch-suffix }}
+          push-to-fork: minikube-bot/minikube
+          base: master
+          delete-branch: true
+          title: ${{ steps.bump.outputs.title }}
+          labels: ${{ inputs.labels }}
+          body: ${{ steps.bump.outputs.body }}
+
+      - name: Comment ok-to-build-image
+        if: ${{ inputs.ok-to-build-image && steps.bump.outputs.changes != '' && steps.createPR.outputs.pull-request-number }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        timeout-minutes: 1
+        with:
+          github-token: ${{ secrets.MINIKUBE_BOT_PAT }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ steps.createPR.outputs.pull-request-number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'ok-to-build-image'
+            })
+
+      - name: Comment ok-to-build-iso
+        if: ${{ inputs.ok-to-build-iso && steps.bump.outputs.changes != '' && steps.createPR.outputs.pull-request-number }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        timeout-minutes: 1
+        with:
+          github-token: ${{ secrets.MINIKUBE_BOT_PAT }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ steps.createPR.outputs.pull-request-number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'ok-to-build-iso'
+            })
