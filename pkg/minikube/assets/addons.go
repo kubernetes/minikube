@@ -367,7 +367,7 @@ var Addons = map[string]*Addon{
 		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/inspektor-gadget/",
 	},
 		map[string]string{
-			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.54.0@sha256:f909665fdf8e8a3bad54c6ffd6dc04919bc0604c54b3e4bd34c77ef55dada5ab",
+			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.55.1@sha256:537dcc61c26922a1d8a2a4ce1cf207705fd03daabd495f345d61857c1be2a032",
 		}, map[string]string{
 			"InspektorGadget": "ghcr.io",
 		}, nil),
@@ -384,8 +384,8 @@ var Addons = map[string]*Addon{
 		VerifiedMaintainer: "@gAmUssA",
 		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/",
 	}, map[string]string{
-		"Kong":        "kong:3.9.1@sha256:a2b2ec9964bba34065943e8be1d56791a4a06b7b0c10222f05564b372ca87840",
-		"KongIngress": "kong/kubernetes-ingress-controller:3.5.10@sha256:1f68c096f181c492b6d12203db265d25f7e821fae6c5122ca79ba9a8366c8a47",
+		"Kong":        "kong:3.9.3@sha256:4d6a4ead594e9bf468d07a54d30a57991904b220403af1a43c5a3679615d11de",
+		"KongIngress": "kong/kubernetes-ingress-controller:3.5.13@sha256:979f12864a13031545d58623d17af7a071b417396fbb3928a169d897b056b68f",
 	}, map[string]string{
 		"Kong":        "docker.io",
 		"KongIngress": "docker.io",
@@ -775,9 +775,9 @@ var Addons = map[string]*Addon{
 		VerifiedMaintainer: "hwdef",
 		Docs:               "",
 	}, map[string]string{
-		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.14.2@sha256:efdefa4a8068960a5b4ac7f631ac75fe5d28e575b9008df5dcb0c94ebaa4dc66",
-		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.14.2@sha256:90f12443e6597820be8b934ab0598558835bcd07b8b1cc98e8e6ea2add70437d",
-		"vc_scheduler":          "volcanosh/vc-scheduler:v1.14.2@sha256:7ac36345224c4e0f7ab8188c5234439bc58784c77066c3c3e2539bb8804fd788",
+		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.15.1@sha256:569e3671b6d9619c175062e6d3e82bfe3bb4bc3628b36347406ccc07f10fe12c",
+		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.15.1@sha256:555245dd5c73524dee627ad0c2e308c9dd95af234df791d11e6bcdfa2f33a4ef",
+		"vc_scheduler":          "volcanosh/vc-scheduler:v1.15.1@sha256:e79dc85279b5fd2c5e431571b4683f819ff0dfeacdf230fca49e6ce1f4509ae1",
 	}, map[string]string{
 		"vc_webhook_manager":    "docker.io",
 		"vc_controller_manager": "docker.io",
@@ -956,7 +956,7 @@ var Addons = map[string]*Addon{
 		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
 	},
 		map[string]string{
-			"Headlamp": "headlamp-k8s/headlamp:v0.43.0@sha256:5d03caa26df7a715079405df2949907160518750b9b62b6bf4de8d1a6142c541",
+			"Headlamp": "headlamp-k8s/headlamp:v0.45.0@sha256:db3f0e0fc58d358d41daa3fe7fc852437552c7ee873c3645470f7b86a8e0db49",
 		},
 		map[string]string{
 			"Headlamp": "ghcr.io",
@@ -970,7 +970,7 @@ var Addons = map[string]*Addon{
 		VerifiedMaintainer: "",
 		Docs:               "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/",
 	}, map[string]string{
-		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.55@sha256:ad54472fe7b161b9214f7f816f304b649a4779e348229c375ac067f5ed5a6422",
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.56@sha256:18a56fd557011e50e1733a9232e8d17ec9bdd7e51f6cf7660f14c234479f4f36",
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
 	}, nil),
@@ -994,7 +994,7 @@ var Addons = map[string]*Addon{
 		Docs:               "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/",
 	},
 		map[string]string{
-			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.19.3@sha256:25cc340fe6fd53c101e16fc452f503e7a92c219c64a80ed5381784b522dbbf77",
+			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.20.0@sha256:a61ba9fd8efb82f3a79f877f7580e02c1e8e7593f62473644bc9c79e315c3312",
 		}, map[string]string{
 			"NvidiaDevicePlugin": "nvcr.io",
 		}, nil),

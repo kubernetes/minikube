@@ -22,7 +22,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -43,7 +46,7 @@ func TestISOImage(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	t.Run("Setup", func(t *testing.T) {
-		args := append([]string{"start", "-p", profile, "--no-kubernetes", "--memory=2500mb"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--no-kubernetes", "--memory=3072"}, StartArgs()...)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
 			t.Errorf("failed to start minikube: args %q: %v", rr.Command(), err)
@@ -57,6 +60,7 @@ func TestISOImage(t *testing.T) {
 			"curl",
 			"docker",
 			"git",
+			"helm",
 			"iptables",
 			"podman",
 			"rsync",
@@ -119,6 +123,30 @@ func TestISOImage(t *testing.T) {
 		}
 	})
 
+	t.Run("HelmVersion", func(t *testing.T) {
+		cmd := exec.CommandContext(
+			ctx,
+			Target(),
+			"-p",
+			profile,
+			"ssh",
+			"--",
+			"helm",
+			"version",
+			"--template",
+			"{{.Version}}",
+		)
+		rr, err := Run(t, cmd)
+		if err != nil {
+			t.Fatalf("failed to run helm version. args %q: %v", rr.Command(), err)
+		}
+
+		expectedVersion := helmPackageVersion(t)
+		if actual := strings.TrimSpace(rr.Stdout.String()); actual != expectedVersion {
+			t.Errorf("helm version mismatch: expected %q, got %q", expectedVersion, actual)
+		}
+	})
+
 	t.Run("eBPFSupport", func(t *testing.T) {
 		// Ensure that BTF type information is available (https://github.com/kubernetes/minikube/issues/21788)
 		btfFile := "/sys/kernel/btf/vmlinux"
@@ -151,4 +179,40 @@ func TestISOImage(t *testing.T) {
 			t.Errorf("expected file %q to exist, but it does not. Per-task IO accounting requires CONFIG_TASK_IO_ACCOUNTING (with CONFIG_TASK_XACCT and CONFIG_TASKSTATS) in kernel configuration.", ioFile)
 		}
 	})
+
+	t.Run("nftablesSupport", func(t *testing.T) {
+		// knftables (e.g. Submariner globalnet since v0.22) needs nftables in the guest kernel (https://github.com/kubernetes/minikube/issues/23450).
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh",
+			`zgrep -E '^CONFIG_NF_TABLES=(y|m)$' /proc/config.gz >/dev/null && echo OK || echo MISSING`))
+		if err != nil {
+			t.Fatalf("failed to check CONFIG_NF_TABLES: args %q: %v", rr.Command(), err)
+		}
+		if strings.TrimSpace(rr.Stdout.String()) != "OK" {
+			t.Errorf("expected CONFIG_NF_TABLES=y|m in /proc/config.gz; knftables requires nftables kernel support")
+		}
+	})
+}
+
+func helmPackageVersion(t *testing.T) string {
+	t.Helper()
+
+	isoArchDir := filepath.Join(RepoRoot(t), "deploy/iso/minikube-iso/arch")
+	packageFile := filepath.Join(isoArchDir, "x86_64/package/helm-bin/helm-bin.mk")
+	versionName := "HELM_BIN_VERSION"
+	if runtime.GOARCH == "arm64" {
+		packageFile = filepath.Join(isoArchDir, "aarch64/package/helm-bin-aarch64/helm-bin.mk")
+		versionName = "HELM_BIN_AARCH64_VERSION"
+	}
+
+	data, err := os.ReadFile(packageFile)
+	if err != nil {
+		t.Fatalf("failed to read %s: %v", packageFile, err)
+	}
+
+	re := regexp.MustCompile(fmt.Sprintf(`%s = (.+)`, versionName))
+	match := re.FindStringSubmatch(string(data))
+	if match == nil {
+		t.Fatalf("failed to find %s in %s:\n%s", versionName, packageFile, string(data))
+	}
+	return match[1]
 }
