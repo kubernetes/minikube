@@ -333,7 +333,7 @@ func ClusterFlagValue() string {
 }
 
 // generateClusterConfig generate a config.ClusterConfig based on flags or existing cluster config
-func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, rtime string, drvName string, options *run.CommandOptions) (config.ClusterConfig, config.Node, error) {
+func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, crName string, drvName string, options *run.CommandOptions) (config.ClusterConfig, config.Node, error) {
 	var cc config.ClusterConfig
 	if existing != nil {
 		cc = updateExistingConfigFromFlags(cmd, existing)
@@ -344,7 +344,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 	} else {
 		klog.Info("no existing cluster config was found, will generate one from the flags ")
-		cc = generateNewConfigFromFlags(cmd, k8sVersion, rtime, drvName, options)
+		cc = generateNewConfigFromFlags(cmd, k8sVersion, crName, drvName, options)
 
 		cnm, err := cni.New(&cc)
 		if err != nil {
@@ -654,7 +654,7 @@ func getMDNS(cmd *cobra.Command, driverName string) bool {
 }
 
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
-func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string, options *run.CommandOptions) config.ClusterConfig {
+func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, crName string, drvName string, options *run.CommandOptions) config.ClusterConfig {
 	var cc config.ClusterConfig
 
 	// networkPlugin cni deprecation warning
@@ -745,7 +745,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 			APIServerIPs:           apiServerIPs,
 			DNSDomain:              viper.GetString(dnsDomain),
 			FeatureGates:           viper.GetString(featureGates),
-			ContainerRuntime:       rtime,
+			ContainerRuntime:       crName,
 			CRISocket:              viper.GetString(criSocket),
 			NetworkPlugin:          chosenNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
