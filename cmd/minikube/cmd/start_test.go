@@ -125,7 +125,7 @@ func TestMirrorCountry(t *testing.T) {
 	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
 	checkRepository = checkRepoMock
 	k8sVersion := constants.DefaultKubernetesVersion
-	crName := constants.DefaultContainerRuntime
+	crName := defaultRuntime()
 	var tests = []struct {
 		description     string
 		k8sVersion      string
@@ -186,7 +186,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
 
 	k8sVersion := constants.NewestKubernetesVersion
-	crName := constants.DefaultContainerRuntime
+	crName := defaultRuntime()
 	var tests = []struct {
 		description  string
 		proxy        string
