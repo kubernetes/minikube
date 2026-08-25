@@ -213,6 +213,10 @@ func New(c Config) (Manager, error) {
 	sm := sysinit.New(c.Runner)
 
 	switch c.Type {
+	// "" is docker: until c4800a611 (2022, "Make the default container runtime
+	// dynamic") start persisted the raw --container-runtime flag, whose default
+	// is "". Those profiles are docker. Later starts store a real name, so ""
+	// is not the current product default and must not become containerd.
 	case "", "docker":
 		sp := c.Socket
 		cs := ""
