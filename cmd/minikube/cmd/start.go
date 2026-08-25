@@ -1348,8 +1348,9 @@ func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterC
 		if err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
-		validateCNI(cmd, viper.GetString(containerRuntime))
 	}
+
+	validateCNI(cmd, getContainerRuntime(existing))
 
 	if cmd.Flags().Changed(staticIP) {
 		if err := validateStaticIP(viper.GetString(staticIP), drvName, viper.GetString(subnet)); err != nil {
