@@ -1408,7 +1408,7 @@ func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterC
 		exit.Message(reason.Usage, "Sorry, please set the --output flag to one of the following valid options: [text,json]")
 	}
 
-	validateBareMetal(drvName)
+	validateBareMetal(drvName, getContainerRuntime(existing))
 	validateRegistryMirror()
 	validateInsecureRegistry()
 }
@@ -2022,7 +2022,7 @@ func validateStaticIP(staticIP, drvName, subnet string) error {
 	return nil
 }
 
-func validateBareMetal(drvName string) {
+func validateBareMetal(drvName, crName string) {
 	if !driver.BareMetal(drvName) {
 		return
 	}
@@ -2035,9 +2035,7 @@ func validateBareMetal(drvName string) {
 		exit.Message(reason.DrvUnsupportedProfile, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
 	}
 
-	// default container runtime varies, starting with Kubernetes 1.24 - assume that only the default container runtime has been tested
-	crName := viper.GetString(containerRuntime)
-	if crName != constants.DefaultContainerRuntime && crName != defaultRuntime() {
+	if crName != constants.Docker {
 		out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": crName})
 	}
 
