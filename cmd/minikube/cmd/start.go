@@ -352,10 +352,6 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	crName := getContainerRuntime(existing)
-	if crName == constants.Docker && (existing == nil || viper.IsSet(containerRuntime)) {
-		// TODO: remove this warning in minikube v1.40
-		out.WarningT(constants.DefaultContainerRuntimeChangeWarning)
-	}
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, crName, driverName, options)
 	if err != nil {
 		return node.Starter{}, fmt.Errorf("Failed to generate cluster config: %w", err)
@@ -1555,7 +1551,7 @@ func getContainerRuntime(old *config.ClusterConfig) string {
 // defaultRuntime returns the default container runtime.
 // Keep in sync with test/integration.ContainerRuntime.
 func defaultRuntime() string {
-	return constants.Docker
+	return constants.Containerd
 }
 
 // if container runtime is not docker, check that cni is not disabled
