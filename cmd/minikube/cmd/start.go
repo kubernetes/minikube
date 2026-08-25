@@ -1552,9 +1552,9 @@ func getContainerRuntime(old *config.ClusterConfig) string {
 	return userValue
 }
 
-// defaultRuntime returns the default container runtime
+// defaultRuntime returns the default container runtime.
+// Keep in sync with test/integration.ContainerRuntime.
 func defaultRuntime() string {
-	// minikube default
 	return constants.Docker
 }
 
