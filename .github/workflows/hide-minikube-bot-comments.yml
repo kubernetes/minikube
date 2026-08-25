@@ -9,5 +9,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: spowelljr/hide-minikube-bot-comments@6ef419ab40a17cf0bdc1f98f2442bf19b72d911d
+        timeout-minutes: 1
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}

@@ -18,6 +18,86 @@ package constants
 
 var (
 	KubeadmImages = map[string]map[string]string{
+		"v1.36.4": {
+			"coredns/coredns": "v1.14.2",
+			"etcd":            "3.6.8-0",
+			"pause":           "3.10.2",
+		},
+		"v1.35.8": {
+			"coredns/coredns": "v1.13.1",
+			"etcd":            "3.6.6-0",
+			"pause":           "3.10.1",
+		},
+		"v1.34.11": {
+			"coredns/coredns": "v1.12.1",
+			"etcd":            "3.6.5-0",
+			"pause":           "3.10.1",
+		},
+		"v1.37.0-rc.1": {
+			"coredns/coredns": "v1.14.6",
+			"etcd":            "3.7.0-0",
+			"pause":           "3.10.2",
+		},
+		"v1.37.0-rc.0": {
+			"coredns/coredns": "v1.14.6",
+			"etcd":            "3.7.0-0",
+			"pause":           "3.10.2",
+		},
+		"v1.36.3": {
+			"coredns/coredns": "v1.14.2",
+			"etcd":            "3.6.8-0",
+			"pause":           "3.10.2",
+		},
+		"v1.35.7": {
+			"coredns/coredns": "v1.13.1",
+			"etcd":            "3.6.6-0",
+			"pause":           "3.10.1",
+		},
+		"v1.34.10": {
+			"coredns/coredns": "v1.12.1",
+			"etcd":            "3.6.5-0",
+			"pause":           "3.10.1",
+		},
+		"v1.37.0-beta.0": {
+			"coredns/coredns": "v1.14.6",
+			"etcd":            "3.7.0-0",
+			"pause":           "3.10.2",
+		},
+		"v1.37.0-alpha.3": {
+			"coredns/coredns": "v1.14.4",
+			"etcd":            "3.7.0-rc.0-0",
+			"pause":           "3.10.2",
+		},
+		"v1.37.0-alpha.2": {
+			"coredns/coredns": "v1.14.4",
+			"etcd":            "3.7.0-rc.0-0",
+			"pause":           "3.10.2",
+		},
+		"v1.36.2": {
+			"coredns/coredns": "v1.14.2",
+			"etcd":            "3.6.8-0",
+			"pause":           "3.10.2",
+		},
+		"v1.35.6": {
+			"coredns/coredns": "v1.13.1",
+			"etcd":            "3.6.6-0",
+			"pause":           "3.10.1",
+		},
+		"v1.34.9": {
+			"coredns/coredns": "v1.12.1",
+			"etcd":            "3.6.5-0",
+			"pause":           "3.10.1",
+		},
+		"v1.33.13": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.24-0",
+			"pause":           "3.10",
+		},
+		"v1.37.0-alpha.1": {
+			"coredns/coredns": "v1.14.2",
+			"etcd":            "3.7.0-rc.0-0",
+			"pause":           "3.10.2",
+		},
 		"v1.36.1": {
 			"coredns/coredns": "v1.14.2",
 			"etcd":            "3.6.8-0",

@@ -157,6 +157,13 @@ kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} |
 
 	minikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard
 `, out.V{"profileArg": tipProfileArg})
+	case "traefik":
+		out.Styled(style.Tip, `To open the Traefik dashboard:
+
+	minikube{{.profileArg}} addons open traefik
+
+    For more information see https://minikube.sigs.k8s.io/docs/handbook/addons/traefik
+`, out.V{"profileArg": tipProfileArg})
 	}
 }
 
@@ -452,15 +459,21 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 	}
 
 	if addon.HelmChart != nil {
-		err := helmInstallBinary(addon, runner)
-		if err != nil {
-			return err
+		// Install helm if we don't have a usable helm executable. This can
+		// happen if helm is missing, corrupted, or returns an invalid version.
+		if v, err := HelmVersion(runner); err != nil {
+			klog.Info(err)
+			if err := InstallHelm(runner, HelmOptions{}); err != nil {
+				return err
+			}
+		} else {
+			klog.Infof("using helm %s", v)
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 		cmd := helmUninstallOrInstall(ctx, addon.HelmChart, enable)
-		_, err = runner.RunCmd(cmd)
+		_, err := runner.RunCmd(cmd)
 		return err
 	}
 

@@ -56,6 +56,9 @@ var stderrAllow = []string{
 	`For more information, see`,
 	// warning about upcoming default container runtime change
 	regexp.QuoteMeta(constants.DefaultContainerRuntimeChangeWarning),
+	// registry connectivity warning from inside the container
+	`Failing to connect to https://registry.k8s.io/`,
+	`you may need to configure a proxy`,
 }
 
 // stderrAllowRe combines rootCauses into a single regex

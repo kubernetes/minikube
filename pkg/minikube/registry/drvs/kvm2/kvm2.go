@@ -31,8 +31,10 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
+	"k8s.io/minikube/pkg/drivers/common/mac"
 	"k8s.io/minikube/pkg/drivers/kvm"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -59,6 +61,7 @@ func init() {
 		Status:   status,
 		Default:  true,
 		Priority: registry.Preferred,
+		Parallel: true,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
@@ -66,6 +69,9 @@ func init() {
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	name := config.MachineName(cc, n)
+	macAddr := mac.FromName(name)
+	privateMACAddr := mac.FromName(name + "-private")
+	klog.Infof("Using mac address %s, private mac address %s", macAddr, privateMACAddr)
 	return kvm.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
@@ -80,6 +86,8 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		DiskSize:       cc.DiskSize,
 		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", name, fmt.Sprintf("%s.rawdisk", name)),
 		ISO:            filepath.Join(localpath.MiniPath(), "machines", name, "boot2docker.iso"),
+		MAC:            macAddr,
+		PrivateMAC:     privateMACAddr,
 		GPU:            cc.KVMGPU,
 		Hidden:         cc.KVMHidden,
 		ConnectionURI:  cc.KVMQemuURI,
@@ -118,6 +126,31 @@ func status(_ *run.CommandOptions) registry.State {
 		return rs
 	}
 
+	// Check libvirt group membership before running any virsh commands.
+	// This avoids waiting on a potentially slow or hanging virsh call
+	// when we already know the user lacks the required permissions,
+	// and ensures a clear PR_KVM_USER_PERMISSION error is returned
+	// instead of the outer Status() timeout swallowing the real cause.
+	// See https://github.com/kubernetes/minikube/issues/23360
+	member, err := isCurrentUserLibvirtGroupMember()
+	if err != nil {
+		return registry.State{
+			Error:  fmt.Errorf("failed to check libvirt group membership:\n%v", err.Error()),
+			Reason: "PR_KVM_GROUP_CHECK_FAILED",
+			Fix:    "This is likely an internal error. Please check that your system's user/group database is working correctly.",
+			Doc:    docURL,
+		}
+	}
+	if !member {
+		return registry.State{
+			// keep the error message in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
+			Error:  errors.New("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
+			Reason: "PR_KVM_USER_PERMISSION",
+			Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
+			Doc:    docURL,
+		}
+	}
+
 	// Allow no more than 6 seconds for querying state
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
@@ -131,33 +164,6 @@ func status(_ *run.CommandOptions) registry.State {
 	cmd := exec.CommandContext(ctx, path, "domcapabilities", "--virttype", "kvm")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("LIBVIRT_DEFAULT_URI=%s", defaultURI()))
 	out, err := cmd.CombinedOutput()
-
-	// If we fail to connect to libvirt, first check whether we're member of the libvirt group.
-	if err != nil {
-		member, err := isCurrentUserLibvirtGroupMember()
-		if err != nil {
-			return registry.State{
-				Installed: true,
-				Running:   true,
-				// keep the error message in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
-				Error:  fmt.Errorf("libvirt group membership check failed:\n%v", err.Error()),
-				Reason: "PR_KVM_USER_PERMISSION",
-				Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
-				Doc:    docURL,
-			}
-		}
-		if !member {
-			return registry.State{
-				Installed: true,
-				Running:   true,
-				// keep the error message in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
-				Error:  errors.New("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
-				Reason: "PR_KVM_USER_PERMISSION",
-				Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
-				Doc:    docURL,
-			}
-		}
-	}
 
 	if ctx.Err() == context.DeadlineExceeded {
 		return registry.State{

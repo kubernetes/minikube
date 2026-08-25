@@ -18,19 +18,19 @@
 # https://systemd.io/CONTAINER_INTERFACE/
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
-ARG KICBASE_IMAGE="debian:bookworm-20260518-slim"
+ARG KICBASE_IMAGE="debian:bookworm-20260713-slim"
 # start from debin 12, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need.
 FROM ${KICBASE_IMAGE} AS kicbase
 
-ARG BUILDKIT_VERSION="v0.29.0"
+ARG BUILDKIT_VERSION="v0.32.2"
 ARG CRIO_VERSION="v1.35"
 ARG CRICTL_VERSION="v1.35.0"
 ARG CRI_DOCKERD_VERSION="v0.4.3"
 ARG CRI_DOCKERD_COMMIT="d969e29f500151687337b2a896ab65e8192f3145"
 ARG CNI_PLUGINS_VERSION="v1.9.1"
 ARG TARGETARCH
-ARG NERDCTL_VERSION="2.3.1"
+ARG NERDCTL_VERSION="2.3.5"
 ARG NERDCTLD_VERSION="0.7.0"
 
 # copy in static files (configs, scripts)

@@ -292,6 +292,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 	})
 
 	t.Run("VerifyCleanup", func(t *testing.T) {
+		t.Skip("skipping: flaky mount cleanup timing: https://github.com/kubernetes/minikube/issues/23139")
 		tempDir := t.TempDir()
 
 		ctx, cancel := context.WithTimeout(ctx, Minutes(10))

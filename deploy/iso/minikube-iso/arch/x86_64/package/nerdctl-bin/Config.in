@@ -1,4 +1,4 @@
 config BR2_PACKAGE_NERDCTL_BIN
-        bool "nerdctl-bin"
-        default y
-        depends on BR2_x86_64
+	bool "nerdctl-bin"
+	default y
+	depends on BR2_x86_64

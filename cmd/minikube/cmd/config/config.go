@@ -177,6 +177,10 @@ var settings = []Setting{
 		set:         SetStringSlice,
 		validations: []setFn{IsValidIPAddressSlice},
 	},
+	{
+		name: config.MDNS,
+		set:  SetBool,
+	},
 }
 
 // ConfigCmd represents the config command

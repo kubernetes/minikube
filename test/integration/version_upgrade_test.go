@@ -81,6 +81,9 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	if TestingKicBaseImage() {
 		t.Skipf("Skipping, test does not make sense with --base-image")
 	}
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23150")
+	}
 
 	MaybeParallel(t)
 	profile := UniqueProfileName("running-upgrade")
