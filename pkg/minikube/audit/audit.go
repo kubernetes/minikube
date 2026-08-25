@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"slices"
 	"strings"
 	"time"
 
@@ -151,12 +152,7 @@ func shouldLog() bool {
 	// commands that should not be logged.
 	no := []string{"status", "version", "logs", "generate-docs", "profile"}
 	a := pflag.Arg(0)
-	for _, c := range no {
-		if a == c {
-			return false
-		}
-	}
-	return true
+	return !slices.Contains(no, a)
 }
 
 // isDeletePurge return true if command is delete with purge flag.

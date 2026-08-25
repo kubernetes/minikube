@@ -27,6 +27,6 @@ type MiniTestDeployer interface {
 	Execute(args ...string) error
 	// SyncToRemote sync file or folder from src on host to dst on deployed environment
 	SyncToRemote(src string, dst string, excludedPattern []string) error
-	// SyncToRemote sync file or folder from src on remote to host
+	// SyncToHost sync file or folder from src on remote to host
 	SyncToHost(src string, dst string, excludedPattern []string) error
 }

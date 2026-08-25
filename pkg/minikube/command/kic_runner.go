@@ -124,9 +124,7 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 		}
 		return rr, nil
 	}
-	if exitError, ok := err.(*exec.ExitError); ok {
-		rr.ExitCode = exitError.ExitCode()
-	}
+	rr.ExitCode = k.exitCode(err)
 	return rr, fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
 
 }
@@ -296,6 +294,18 @@ func (k *kicRunner) Remove(f assets.CopyableFile) error {
 
 	_, err := k.RunCmd(exec.Command("sudo", "rm", dst))
 	return err
+}
+
+// exitCode extracts the exit code from an exec error.
+// docker/podman exec propagates the container's exit code (including
+// 127 for missing binaries) as the process exit code, so
+// *exec.ExitError is sufficient — no special handling needed unlike
+// execRunner.
+func (*kicRunner) exitCode(err error) int {
+	if exitError, ok := err.(*exec.ExitError); ok {
+		return exitError.ExitCode()
+	}
+	return 0
 }
 
 // isTerminal returns true if the writer w is a terminal

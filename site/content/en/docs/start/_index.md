@@ -724,4 +724,10 @@ minikube delete --all
 * [Community-contributed tutorials]({{<ref "/docs/tutorials">}})
 * [minikube command reference]({{<ref "/docs/commands">}})
 * [Contributors guide]({{<ref "/docs/contrib">}})
+* [Principles]({{< ref "/docs/contrib/principles" >}})
 * Take our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A) to share your thoughts 🙏
+
+{{% alert title="Note" color="info" %}}
+minikube is for learning and development. For a production cluster, see the Kubernetes
+[production environment](https://kubernetes.io/docs/setup/production-environment/) docs.
+{{% /alert %}}

@@ -86,6 +86,9 @@ func validateFreshStart(ctx context.Context, t *testing.T, profile string) {
 // validateStartNoReconfigure validates that starting a running cluster does not invoke reconfiguration
 func validateStartNoReconfigure(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23141")
+	}
 
 	args := []string{"start", "-p", profile, "--alsologtostderr", "-v=1"}
 	args = append(args, StartArgs()...)

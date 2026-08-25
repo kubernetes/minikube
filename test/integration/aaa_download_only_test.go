@@ -31,6 +31,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -43,6 +44,9 @@ import (
 
 // TestDownloadOnly makes sure the --download-only parameter in minikube start caches the appropriate images and tarballs.
 func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
+	if DockerDriver() {
+		t.Skip("skipping: flaky on Docker driver: https://github.com/kubernetes/minikube/issues/23163")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 
 	// separate each k8s version testrun into individual profiles to avoid ending up with subsequently mixed up configs like:
@@ -64,10 +68,15 @@ func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 		constants.NewestKubernetesVersion,
 	}
 
-	// Small optimization, don't run the exact same set of tests twice
-	if constants.DefaultKubernetesVersion == constants.NewestKubernetesVersion {
-		versions = versions[:len(versions)-1]
+	// Remove duplicate versions, preserving order. Right now Default and
+	// Newest are the same, so we would otherwise run the same test twice.
+	deduped := make([]string, 0, len(versions))
+	for _, v := range versions {
+		if !slices.Contains(deduped, v) {
+			deduped = append(deduped, v)
+		}
 	}
+	versions = deduped
 
 	for _, v := range versions {
 		t.Run(v, func(t *testing.T) {
@@ -218,6 +227,9 @@ func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 func TestDownloadOnlyKic(t *testing.T) {
 	if !KicDriver() {
 		t.Skip("skipping, only for docker or podman driver")
+	}
+	if DockerDriver() {
+		t.Skip("skipping: flaky on Docker driver: https://github.com/kubernetes/minikube/issues/23163")
 	}
 	profile := UniqueProfileName("download-docker")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))

@@ -33,6 +33,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
+// NotFound is the POSIX exit code returned when the command binary
+// does not exist.
+const NotFound = 127
+
 var (
 	// ErrPrefix notes an error
 	ErrPrefix = "! "
@@ -46,8 +50,10 @@ var (
 
 // RunResult holds the results of a Runner
 type RunResult struct {
-	Stdout   bytes.Buffer
-	Stderr   bytes.Buffer
+	Stdout bytes.Buffer
+	Stderr bytes.Buffer
+	// ExitCode is the exit code of the command, or NotFound if the binary
+	// does not exist.
 	ExitCode int
 	Args     []string // the args that was passed to Runner
 }

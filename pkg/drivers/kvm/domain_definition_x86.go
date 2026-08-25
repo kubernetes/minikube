@@ -57,10 +57,16 @@ const domainTmpl = `
     </disk>
     <interface type='network'>
       <source network='{{.PrivateNetwork}}'/>
+      {{- if .PrivateMAC}}
+      <mac address='{{.PrivateMAC}}'/>
+      {{- end}}
       <model type='virtio'/>
     </interface>
     <interface type='network'>
       <source network='{{.Network}}'/>
+      {{- if .MAC}}
+      <mac address='{{.MAC}}'/>
+      {{- end}}
       <model type='virtio'/>
     </interface>
     <serial type='pty'>

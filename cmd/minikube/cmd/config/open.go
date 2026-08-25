@@ -100,10 +100,13 @@ You can add one by annotating a service with the label {{.labelName}}:{{.addonNa
 
 			if len(urlString) != 0 {
 				out.Styled(style.Celebrate, "Opening Kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
-				for _, url := range urlString {
-					if err := browser.OpenURL(url); err != nil {
-						exit.Error(reason.HostBrowser, fmt.Sprintf("browser failed to open url %s", url), err)
-					}
+				// Open only the first URL. Opening multiple browser tabs is
+				// never what a user wants — if a service provides a web page,
+				// there is a single relevant page. We assume the first port is
+				// the right one. This works with current addons but may need
+				// smarter selection (e.g. a port hint) for future addons.
+				if err := browser.OpenURL(urlString[0]); err != nil {
+					exit.Error(reason.HostBrowser, fmt.Sprintf("browser failed to open url %s", urlString[0]), err)
 				}
 			}
 		}

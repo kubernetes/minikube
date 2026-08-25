@@ -87,10 +87,7 @@ func compareNumeric(v1, v2 string) int {
 		otherTab = strings.Split(v2, ".")
 	)
 
-	maxLen := len(currTab)
-	if len(otherTab) > maxLen {
-		maxLen = len(otherTab)
-	}
+	maxLen := max(len(otherTab), len(currTab))
 	for i := 0; i < maxLen; i++ {
 		var currInt, otherInt int
 

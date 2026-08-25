@@ -60,7 +60,6 @@ func TestNoKubernetes(t *testing.T) {
 			{"ProfileList", validateProfileListNoK8S},
 			{"Stop", validateStopNoK8S},
 			{"StartNoArgs", validateStartNoArgs},
-			{"VerifyK8sNotRunningSecond", validateK8SNotRunning},
 		}
 
 		for _, tc := range tests {
@@ -211,12 +210,17 @@ func validateProfileListNoK8S(ctx context.Context, t *testing.T, profile string)
 // validateStartNoArgs validates that minikube start with no args works.
 func validateStartNoArgs(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+	if KVMDriver() {
+		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23154")
+	}
 
 	args := append([]string{"start", "-p", profile}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
+
+	validateK8SNotRunning(ctx, t, profile)
 }
 
 // getK8sStatus returns whether Kubernetes is running.

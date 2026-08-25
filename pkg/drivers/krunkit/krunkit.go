@@ -202,8 +202,6 @@ func (d *Driver) Start() error {
 		return err
 	}
 
-	d.MACAddress = d.VmnetHelper.GetMACAddress()
-
 	if err := d.startKrunkit(socketPath); err != nil {
 		return err
 	}

@@ -111,6 +111,11 @@ type DriverDef struct {
 
 	// Priority returns the prioritization for selecting a driver by default.
 	Priority Priority
+
+	// Parallel is true for drivers that can start multiple profiles in
+	// parallel. When false (default) all profiles using this driver are
+	// serialized.
+	Parallel bool
 }
 
 // Empty returns true if the driver is nil

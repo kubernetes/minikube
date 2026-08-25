@@ -58,12 +58,12 @@ type Driver struct {
 	// The location of the iso to boot from
 	ISO string
 
-	// The randomly generated MAC Address
-	// If empty, a random MAC will be generated.
+	// MAC address for the NIC attached to the default network.
+	// If empty, libvirt generates a random address.
 	MAC string
 
-	// The randomly generated MAC Address for the NIC attached to the private network
-	// If empty, a random MAC will be generated.
+	// MAC address for the NIC attached to the private network.
+	// If empty, libvirt generates a random address.
 	PrivateMAC string
 
 	// Whether to passthrough GPU devices from the host to the VM.

@@ -29,7 +29,7 @@ type MiniTestRunner interface {
 	Execute(args ...string) error
 	// SyncToRemote copy files from src on host to dst on deployed environment
 	SyncToRemote(src string, dst string, excludedPattern []string) error
-	// SyncToRemote copy files from src on remote to host
+	// SyncToHost copy files from src on remote to host
 	SyncToHost(src string, dst string, excludedPattern []string) error
 }
 

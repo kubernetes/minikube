@@ -19,9 +19,12 @@ package command
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
 	"strings"
 	"sync"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func TestTeePrefix(t *testing.T) {
@@ -60,4 +63,62 @@ func TestTeePrefix(t *testing.T) {
 	if gotLog != wantLog {
 		t.Errorf("log=%q, want: %q", gotLog, wantLog)
 	}
+}
+
+func TestSSHRunner(t *testing.T) {
+	commands := map[string]tests.CommandResult{
+		"ok":           {},
+		"ok-out":       {Stdout: "out"},
+		"ok-err":       {Stderr: "err"},
+		"ok-out-err":   {Stdout: "out", Stderr: "err"},
+		"fail":         {ExitCode: 1},
+		"fail-out-err": {Stdout: "out", Stderr: "err", ExitCode: 42},
+	}
+
+	s, err := tests.NewSSHServer(t, commands)
+	if err != nil {
+		t.Fatalf("NewSSHServer: %v", err)
+	}
+
+	if err := s.Start(); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer s.Stop()
+
+	client, err := s.Dial()
+	if err != nil {
+		t.Fatalf("Dial: %v", err)
+	}
+	defer client.Close()
+
+	runner := &SSHRunner{c: client}
+
+	for cmd, result := range commands {
+		t.Run(cmd, func(t *testing.T) {
+			rr, err := runner.RunCmd(exec.Command(cmd))
+			wantErr := result.ExitCode != 0
+			if (err != nil) != wantErr {
+				t.Errorf("err = %v, want error: %v", err, wantErr)
+			}
+			if rr.ExitCode != result.ExitCode {
+				t.Errorf("ExitCode = %d, want %d", rr.ExitCode, result.ExitCode)
+			}
+			if rr.Stdout.String() != result.Stdout {
+				t.Errorf("Stdout = %q, want %q", rr.Stdout.String(), result.Stdout)
+			}
+			if rr.Stderr.String() != result.Stderr {
+				t.Errorf("Stderr = %q, want %q", rr.Stderr.String(), result.Stderr)
+			}
+		})
+	}
+
+	t.Run("no-such-command", func(t *testing.T) {
+		rr, err := runner.RunCmd(exec.Command("no-such-command"))
+		if err == nil {
+			t.Errorf("err = nil, want error")
+		}
+		if rr.ExitCode != 127 {
+			t.Errorf("ExitCode = %d, want 127", rr.ExitCode)
+		}
+	})
 }

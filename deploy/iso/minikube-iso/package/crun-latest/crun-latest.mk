@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-CRUN_LATEST_VERSION = 1.27.1
-CRUN_LATEST_COMMIT = 3ec076b3b6714ec2f1a10533cf18d5605a6de637
+CRUN_LATEST_VERSION = 1.29
+CRUN_LATEST_COMMIT = d66af6a0fc2ab5fabd951b427a292344632ce074
 # need the pre-generated release tarball with the git submodules and configure
 CRUN_LATEST_SITE = https://github.com/containers/crun/releases/download/$(CRUN_LATEST_VERSION)
 CRUN_LATEST_LICENSE = GPL-2.0

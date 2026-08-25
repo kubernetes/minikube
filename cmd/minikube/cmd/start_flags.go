@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -155,6 +156,7 @@ const (
 	rosetta                 = "rosetta"
 	vmnetOffloading         = "vmnet-offloading"
 	dnsServers              = config.DNSServers
+	mdns                    = config.MDNS
 )
 
 var (
@@ -326,6 +328,7 @@ func initNetworkingFlags() {
 
 	// dns
 	startCmd.Flags().StringSlice(dnsServers, nil, "Static DNS server IP addresses for the VM (VM drivers only)")
+	startCmd.Flags().Bool(mdns, false, "Enable mDNS (.local address resolution) by configuring systemd-resolved inside the node (VM drivers only)")
 
 	// socket vmnet
 	startCmd.Flags().String(socketVMnetClientPath, "", "Path to the socket vmnet client binary (QEMU driver only)")
@@ -644,6 +647,20 @@ func getDNSServers(cmd *cobra.Command, driverName string) []netip.Addr {
 	return addrs
 }
 
+// getMDNS returns true if mDNS should be enabled for the given driver.
+// For non-VM drivers the value is ignored since mDNS configuration via
+// systemd-resolved is not applicable.
+func getMDNS(cmd *cobra.Command, driverName string) bool {
+	enabled := viper.GetBool(mdns)
+	if enabled && (!driver.IsVM(driverName) || driver.IsSSH(driverName)) {
+		if cmd.Flags().Changed(mdns) {
+			out.WarningT("--mdns flag is only valid with VM drivers, it will be ignored")
+		}
+		return false
+	}
+	return enabled
+}
+
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
 func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string, options *run.CommandOptions) config.ClusterConfig {
 	var cc config.ClusterConfig
@@ -759,6 +776,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		Rosetta:            getRosetta(drvName),
 		VmnetOffloading:    getVmnetOffloading(drvName),
 		DNSServers:         getDNSServers(cmd, drvName),
+		MDNS:               getMDNS(cmd, drvName),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 
@@ -1126,14 +1144,7 @@ func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
 	supportedDrivers := []string{driver.HyperKit, driver.KVM2, driver.QEMU2, driver.VFKit, driver.Krunkit}
 
 	if cmd.Flags().Changed(extraDisks) {
-		supported := false
-		for _, d := range supportedDrivers {
-			if driverName == d {
-				supported = true
-				break
-			}
-		}
-		if !supported {
+		if !slices.Contains(supportedDrivers, driverName) {
 			out.WarningT("Specifying extra disks is currently only supported for the following drivers: {{.supported_drivers}}. If you can contribute to add this feature, please create a PR.", out.V{"supported_drivers": supportedDrivers})
 		}
 	}

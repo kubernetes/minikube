@@ -31,10 +31,26 @@ func TestTag(t *testing.T) {
 			expected: "image:tag",
 		}, {
 			image:    "image@sha256:digest",
-			expected: "image@sha256:digest",
+			expected: "image",
 		}, {
 			image:    "image",
 			expected: "image",
+		},
+		{
+			image:    "localhost:5000/myimage:v1",
+			expected: "localhost:5000/myimage:v1",
+		}, {
+			image:    "localhost:5000/mymirror/kube-apiserver:v1.30.0",
+			expected: "localhost:5000/mymirror/kube-apiserver:v1.30.0",
+		}, {
+			image:    "registry.io:5000/path/img:v1@sha256:digest",
+			expected: "registry.io:5000/path/img:v1",
+		}, {
+			image:    "localhost:5000/myimage:v1@sha256:digest",
+			expected: "localhost:5000/myimage:v1",
+		}, {
+			image:    "localhost:5000/mymirror/kube-apiserver:v1.30.0@sha256:digest",
+			expected: "localhost:5000/mymirror/kube-apiserver:v1.30.0",
 		},
 	}
 	for _, tc := range tcs {

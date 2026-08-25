@@ -107,16 +107,22 @@ func DigestByGoLib(imgName string) string {
 	return cf.Hex
 }
 
-// Tag returns just the image with the tag
-// eg image:tag@sha256:digest -> image:tag if there is an associated tag
-// if not possible, just return the initial img
+// Tag returns the image ref with any digest stripped
+//
+//	image:tag@sha256:digest	-> image:tag
+//	image@sha256:digest	-> image
+//	localhost:5000/myimage:v1@sha256:digest	-> localhost:5000/myimage:v1
+//
+// refs without a digest are returned unchanged:
+//
+//	image:tag -> image:tag
+//	image	-> image
 func Tag(img string) string {
-	split := strings.Split(img, ":")
-	if len(split) == 3 {
-		tag := strings.Split(split[1], "@")[0]
-		return fmt.Sprintf("%s:%s", split[0], tag)
+	at := strings.LastIndex(img, "@")
+	if at == -1 {
+		return img
 	}
-	return img
+	return img[:at]
 }
 
 func canonicalName(ref name.Reference) string {

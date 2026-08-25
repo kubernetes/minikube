@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"slices"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/out"
@@ -49,10 +50,8 @@ func TestGetDefaults(t *testing.T) {
 			if tc.shouldErr {
 				return
 			}
-			for _, d := range defaults {
-				if d == tc.expectedContents {
-					return
-				}
+			if slices.Contains(defaults, tc.expectedContents) {
+				return
 			}
 			t.Fatalf("defaults didn't contain expected default. Actual: %v\nExpected: %v\n", defaults, tc.expectedContents)
 		})

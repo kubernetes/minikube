@@ -134,7 +134,7 @@ spec:
                     type: object
                     x-kubernetes-map-type: atomic
                   type: array
-                  x-kubernetes-list-type: set
+                  x-kubernetes-list-type: atomic
                 ignoredInterfaces:
                   items:
                     type: string
@@ -193,7 +193,7 @@ spec:
                     type: object
                     x-kubernetes-map-type: atomic
                   type: array
-                  x-kubernetes-list-type: set
+                  x-kubernetes-list-type: atomic
                 programClusterRoutes:
                   enum:
                     - Enabled
@@ -208,7 +208,7 @@ spec:
                     type: object
                     x-kubernetes-map-type: atomic
                   type: array
-                  x-kubernetes-list-type: set
+                  x-kubernetes-list-type: atomic
                 serviceExternalIPs:
                   items:
                     properties:
@@ -218,7 +218,7 @@ spec:
                     type: object
                     x-kubernetes-map-type: atomic
                   type: array
-                  x-kubernetes-list-type: set
+                  x-kubernetes-list-type: atomic
                 serviceLoadBalancerAggregation:
                   default: Enabled
                   enum:
@@ -234,7 +234,7 @@ spec:
                     type: object
                     x-kubernetes-map-type: atomic
                   type: array
-                  x-kubernetes-list-type: set
+                  x-kubernetes-list-type: atomic
               type: object
               x-kubernetes-validations:
                 - message:
@@ -7101,6 +7101,15 @@ rules:
       - get
       - list
       - watch
+  # KubeVirt VM/VMI informers for IPAM garbage collection of KubeVirt workloads.
+  - apiGroups: ["kubevirt.io"]
+    resources:
+      - virtualmachines
+      - virtualmachineinstances
+    verbs:
+      - get
+      - list
+      - watch
 ---
 # Source: calico/templates/calico-node-rbac.yaml
 # Include a clusterrole for the calico-node DaemonSet,
@@ -7332,6 +7341,13 @@ rules:
       - create
       - update
       - delete
+  # The CNI plugin reads KubeVirt resources for IPAM of KubeVirt workloads.
+  - apiGroups: ["kubevirt.io"]
+    resources:
+      - virtualmachineinstances
+      - virtualmachines
+    verbs:
+      - get
 ---
 # Source: calico/templates/tier-getter.yaml
 # Implements the necessary permissions for the kube-controller-manager to interact with
@@ -7455,7 +7471,7 @@ spec:
         # It can be deleted if this is a fresh installation, or if you have already
         # upgraded to use calico-ipam.
         - name: upgrade-ipam
-          image: quay.io/calico/cni:v3.32.0
+          image: quay.io/calico/cni:v3.32.1
           imagePullPolicy: IfNotPresent
           command: ["/opt/cni/bin/calico-ipam", "-upgrade"]
           envFrom:
@@ -7483,7 +7499,7 @@ spec:
         # This container installs the CNI binaries
         # and CNI network config file on each node.
         - name: install-cni
-          image: quay.io/calico/cni:v3.32.0
+          image: quay.io/calico/cni:v3.32.1
           imagePullPolicy: IfNotPresent
           command: ["/opt/cni/bin/install"]
           envFrom:
@@ -7527,7 +7543,7 @@ spec:
         # networking to allow communication with the API Server. Calico-node initialization is executed
         # in best effort fashion, i.e. no failure for errors, to not disrupt pod creation in iptables mode.
         - name: "ebpf-bootstrap"
-          image: quay.io/calico/node:v3.32.0
+          image: quay.io/calico/node:v3.32.1
           imagePullPolicy: IfNotPresent
           command: ["calico-node", "-init", "-best-effort"]
           volumeMounts:
@@ -7553,7 +7569,7 @@ spec:
         # container programs network policy and routes on each
         # host.
         - name: calico-node
-          image: quay.io/calico/node:v3.32.0
+          image: quay.io/calico/node:v3.32.1
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
@@ -7776,7 +7792,7 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
         - name: calico-kube-controllers
-          image: quay.io/calico/kube-controllers:v3.32.0
+          image: quay.io/calico/kube-controllers:v3.32.1
           imagePullPolicy: IfNotPresent
           env:
             # Choose which controllers to run.

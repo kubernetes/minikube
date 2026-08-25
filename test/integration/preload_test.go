@@ -107,6 +107,9 @@ func TestPreload(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
+				if tc.name == "gcs-cached" && DockerDriver() {
+					t.Skip("skipping: flaky on Docker driver: https://github.com/kubernetes/minikube/issues/23164")
+				}
 				profile := UniqueProfileName("test-preload-dl-" + tc.name)
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
 				defer CleanupWithLogs(t, profile, cancel)

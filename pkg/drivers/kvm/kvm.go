@@ -129,27 +129,38 @@ func machineState(lvs libvirt.DomainState) state.State {
 }
 
 // GetIP returns an IP or hostname that this host is available at
+// Returns the stored address if available, otherwise queries libvirt.
 func (d *Driver) GetIP() (string, error) {
+	if d.IPAddress != "" {
+		return d.IPAddress, nil
+	}
+
 	s, err := d.GetState()
 	if err != nil {
 		return "", fmt.Errorf("getting domain state: %w", err)
 	}
 
 	if s != state.Running {
-		return "", errors.New("domain is not running")
+		return "", errors.New("IP address is not set and domain is not running")
 	}
 
-	conn, err := getConnection(d.ConnectionURI)
+	dom, conn, err := d.getDomain()
 	if err != nil {
-		return "", fmt.Errorf("failed opening libvirt connection: %w", err)
+		return "", fmt.Errorf("failed getting domain: %w", err)
 	}
 	defer func() {
-		if _, err := conn.Close(); err != nil {
-			log.Errorf("failed closing libvirt connection: %v", lvErr(err))
+		if err := closeDomain(dom, conn); err != nil {
+			log.Errorf("failed closing domain: %v", err)
 		}
 	}()
 
-	return ipFromXML(conn, d.MachineName, d.PrivateNetwork)
+	ip := d.lookupIP(dom)
+	if ip == "" {
+		return "", fmt.Errorf("IP address not found for domain %s", d.MachineName)
+	}
+
+	d.IPAddress = ip
+	return ip, nil
 }
 
 // GetSSHHostname returns hostname for use with ssh
@@ -240,8 +251,7 @@ func (d *Driver) Start() error {
 	}
 	log.Info("domain is now running")
 
-	log.Info("waiting for IP...")
-	if err := d.waitForStaticIP(conn, 90*time.Second); err != nil {
+	if err := d.waitForStaticIP(dom, conn, 90*time.Second); err != nil {
 		return fmt.Errorf("waiting for IP: %w", err)
 	}
 
@@ -275,34 +285,33 @@ func (d *Driver) waitForDomainState(targetState state.State, maxTime time.Durati
 }
 
 // waitForStaticIP waits for IP address of domain that has been created & starting and then makes that IP static.
-func (d *Driver) waitForStaticIP(conn *libvirt.Connect, maxTime time.Duration) error {
-	query := func() error {
-		sip, err := ipFromAPI(conn, d.MachineName, d.PrivateNetwork)
-		if err != nil {
-			return fmt.Errorf("getting domain IP, will retry: %w", err)
+// Polling is required since libvirt does not provide an event for DHCP lease changes.
+func (d *Driver) waitForStaticIP(dom *libvirt.Domain, conn *libvirt.Connect, maxTime time.Duration) error {
+	log.Infof("waiting for IP address for %s (timeout %v)", d.MachineName, maxTime)
+	start := time.Now()
+	deadline := start.Add(maxTime)
+	for attempt := 1; ; attempt++ {
+		log.Debugf("looking up IP address (attempt %d)", attempt)
+		ip := d.lookupIP(dom)
+		if ip != "" {
+			log.Infof("found IP address %s for %s in %.3f seconds", ip, d.MachineName, time.Since(start).Seconds())
+			d.reserveIP(conn, ip)
+			return nil
 		}
-
-		if sip == "" {
-			return errors.New("waiting for domain to come up")
+		if time.Now().After(deadline) {
+			return fmt.Errorf("domain %s didn't return IP after %v", d.MachineName, maxTime)
 		}
-
-		log.Infof("found domain IP: %s", sip)
-		d.IPAddress = sip
-
-		return nil
+		time.Sleep(2 * time.Second)
 	}
-	if err := retry.Local(query, maxTime); err != nil {
-		return fmt.Errorf("domain %s didn't return IP after %v", d.MachineName, maxTime)
-	}
+}
 
-	log.Info("reserving static IP address...")
-	if err := addStaticIP(conn, d.PrivateNetwork, d.MachineName, d.PrivateMAC, d.IPAddress); err != nil {
-		log.Warnf("failed reserving static IP address %s for domain %s, will continue anyway: %v", d.IPAddress, d.MachineName, err)
-	} else {
-		log.Infof("reserved static IP address %s for domain %s", d.IPAddress, d.MachineName)
+// reserveIP stores the IP in the driver and reserves it as a static DHCP lease.
+func (d *Driver) reserveIP(conn *libvirt.Connect, ip string) {
+	d.IPAddress = ip
+	log.Infof("found domain IP: %s", ip)
+	if err := addStaticIP(conn, d.PrivateNetwork, d.MachineName, d.PrivateMAC, ip); err != nil {
+		log.Warnf("failed reserving static IP address %s for domain %s, will continue anyway: %v", ip, d.MachineName, err)
 	}
-
-	return nil
 }
 
 // Create a host using the driver's config

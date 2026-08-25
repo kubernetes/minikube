@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= "v1.38.0"-1781468667-23151
+ISO_VERSION ?= v1.38.0-1787519808-23544
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -35,15 +35,15 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.26.2
+GO_VERSION ?= 1.26.5
 # set GOTOOLCHAIN to GO_VERSION to override any toolchain version specified in
 # go.mod (ref: https://go.dev/doc/toolchain#GOTOOLCHAIN)
 export GOTOOLCHAIN := go$(GO_VERSION)
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.36.0
+GO_K8S_VERSION_PREFIX ?= v1.37.0
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2025.02.14
+BUILDROOT_BRANCH ?= 2025.02.16
 GOLANG_OPTIONS = GOWORK=off GO_VERSION=$(GO_VERSION)
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
@@ -269,7 +269,7 @@ out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 minikube-iso-amd64: minikube-iso-x86_64
 minikube-iso-arm64: minikube-iso-aarch64
 
-minikube-iso-%: iso-prepare-% out/auto-pause-% # build minikube iso
+minikube-iso-%: iso-source-% out/auto-pause-% # build minikube iso
 	cp out/auto-pause-$* deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/usr/bin/auto-pause
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-go
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
@@ -279,6 +279,12 @@ minikube-iso-%: iso-prepare-% out/auto-pause-% # build minikube iso
         else \
                 mv $(BUILD_DIR)/buildroot/output-x86_64/images/rootfs.iso9660 $(BUILD_DIR)/minikube-amd64.iso; \
         fi;
+
+# Download every selected tarball before compiling so missing mirrors fail
+# immediately instead of after hours of ISO package builds.
+.PHONY: iso-source-%
+iso-source-%: iso-prepare-%
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* source
 
 .PHONY: iso-prepare-%
 iso-prepare-%: buildroot
