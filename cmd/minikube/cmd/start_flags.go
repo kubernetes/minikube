@@ -893,7 +893,7 @@ func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig) {
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
 // skipping updating existing docker env, docker opt, InsecureRegistry, registryMirror, extra-config, apiserver-ips
 func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig { //nolint to suppress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
-	validateFlags(cmd, existing.Driver)
+	validateFlags(cmd, existing.Driver, existing)
 
 	cc := *existing
 

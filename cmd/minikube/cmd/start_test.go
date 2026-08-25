@@ -807,13 +807,13 @@ func TestValidateGPUs(t *testing.T) {
 		{"", "kvm", "containerd", ""},
 		{"all", "docker", "docker", ""},
 		{"nvidia", "docker", "docker", ""},
-		{"all", "docker", "", ""},
-		{"nvidia", "docker", "", ""},
+		{"all", "docker", "", "The gpus flag can only be used with the docker driver and docker container-runtime"},
+		{"nvidia", "docker", "", "The gpus flag can only be used with the docker driver and docker container-runtime"},
+		{"amd", "docker", "", "The gpus flag can only be used with the docker driver and docker container-runtime"},
 		{"all", "kvm", "docker", "The gpus flag can only be used with the docker driver and docker container-runtime"},
 		{"nvidia", "docker", "containerd", "The gpus flag can only be used with the docker driver and docker container-runtime"},
 		{"cat", "docker", "docker", `The gpus flag must be passed a value of "nvidia", "nvidia.com", "amd" or "all"`},
 		{"amd", "docker", "docker", ""},
-		{"amd", "docker", "", ""},
 		{"amd", "docker", "containerd", "The gpus flag can only be used with the docker driver and docker container-runtime"},
 	}
 

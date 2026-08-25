@@ -321,7 +321,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 
 	virtualBoxMacOS13PlusWarning(driverName)
 	hyperkitDeprecationWarning(driverName)
-	validateFlags(cmd, driverName)
+	validateFlags(cmd, driverName, existing)
 	validateUser(driverName)
 	if driverName == oci.Docker {
 		validateDockerStorageDriver(driverName)
@@ -1296,7 +1296,7 @@ func validateCPUCount(drvName string) {
 }
 
 // validateFlags validates the supplied flags against known bad combinations
-func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
+func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterConfig) { //nolint:gocyclo
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		err := validateDiskSize(viper.GetString(humanReadableDiskSize))
 		if err != nil {
@@ -1358,7 +1358,7 @@ func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 	}
 
 	if cmd.Flags().Changed(gpus) {
-		if err := validateGPUs(viper.GetString(gpus), drvName, viper.GetString(containerRuntime)); err != nil {
+		if err := validateGPUs(viper.GetString(gpus), drvName, getContainerRuntime(existing)); err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 	}
@@ -1513,7 +1513,7 @@ func validateGPUs(value, drvName, crName string) error {
 	if value != "nvidia" && value != "all" && value != "amd" && value != "nvidia.com" {
 		return errors.New(`The gpus flag must be passed a value of "nvidia", "nvidia.com", "amd" or "all"`)
 	}
-	if drvName == constants.Docker && (crName == constants.Docker || crName == constants.DefaultContainerRuntime) {
+	if drvName == constants.Docker && crName == constants.Docker {
 		return nil
 	}
 	return errors.New("The gpus flag can only be used with the docker driver and docker container-runtime")
