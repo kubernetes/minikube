@@ -17,6 +17,7 @@ limitations under the License.
 package node
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"os"
@@ -952,7 +953,7 @@ func prepareNone() {
 }
 
 // applyWindowsManifest writes content to a temp file then runs kubectl apply -f
-// against it. Using a file avoids PowerShell stdin piping complexity.
+// against it. Using a file avoids stdin piping complexity.
 func applyWindowsManifest(content string) error {
 	f, err := os.CreateTemp("", "minikube-windows-*.yaml")
 	if err != nil {
@@ -964,7 +965,19 @@ func applyWindowsManifest(content string) error {
 		return fmt.Errorf("write temp manifest: %w", err)
 	}
 	f.Close()
-	return cmd("kubectl", "apply", "-f", f.Name())
+
+	c := exec.Command("kubectl", "apply", "-f", f.Name())
+	var stdout, stderr bytes.Buffer
+	c.Stdout = &stdout
+	c.Stderr = &stderr
+	klog.Infof("[executing ==>] : %v %v", c.Path, strings.Join(c.Args, " "))
+	err = c.Run()
+	klog.Infof("[stdout =====>] : %s", stdout.String())
+	klog.Infof("[stderr =====>] : %s", stderr.String())
+	if err != nil {
+		return fmt.Errorf("kubectl apply -f %s: %w: %s", f.Name(), err, strings.TrimSpace(stderr.String()))
+	}
+	return nil
 }
 
 // isMixedOSCluster reports whether a mixed Linux/Windows cluster was
