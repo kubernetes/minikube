@@ -970,7 +970,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringSliceFromFlag(cmd, &cc.KubernetesConfig.APIServerNames, "apiserver-names")
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.DNSDomain, dnsDomain)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.FeatureGates, featureGates)
-	updateStringFromFlag(cmd, &cc.KubernetesConfig.ContainerRuntime, containerRuntime)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.CRISocket, criSocket)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.NetworkPlugin, networkPlugin)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDR, serviceCIDR)
