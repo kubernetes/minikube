@@ -853,3 +853,61 @@ func TestValidateAutoPause(t *testing.T) {
 		}
 	}
 }
+
+func TestGetContainerRuntime(t *testing.T) {
+	orig := viper.GetString(containerRuntime)
+	t.Cleanup(func() { viper.Set(containerRuntime, orig) })
+
+	tests := []struct {
+		description string
+		flag        string
+		old         *cfg.ClusterConfig
+		want        string
+	}{
+		{
+			description: "new cluster uses product default",
+			want:        defaultRuntime(),
+		},
+		{
+			description: "flag docker",
+			flag:        constants.Docker,
+			want:        constants.Docker,
+		},
+		{
+			description: "flag containerd",
+			flag:        constants.Containerd,
+			want:        constants.Containerd,
+		},
+		{
+			description: "existing docker profile",
+			old:         &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{ContainerRuntime: constants.Docker}},
+			want:        constants.Docker,
+		},
+		{
+			description: "existing containerd profile",
+			old:         &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{ContainerRuntime: constants.Containerd}},
+			want:        constants.Containerd,
+		},
+		{
+			description: "legacy empty profile is docker",
+			old:         &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{ContainerRuntime: ""}},
+			want:        constants.Docker,
+		},
+		{
+			description: "flag overrides existing profile",
+			flag:        constants.CRIO,
+			old:         &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{ContainerRuntime: constants.Docker}},
+			want:        constants.CRIO,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			viper.Set(containerRuntime, test.flag)
+			got := getContainerRuntime(test.old)
+			if got != test.want {
+				t.Errorf("getContainerRuntime() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}

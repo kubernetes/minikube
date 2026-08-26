@@ -1535,18 +1535,21 @@ func validateAutoPauseInterval(interval time.Duration) error {
 }
 
 func getContainerRuntime(old *config.ClusterConfig) string {
-	paramRuntime := viper.GetString(containerRuntime)
-
-	// try to load the old version first if the user didn't specify anything
-	if paramRuntime == constants.DefaultContainerRuntime && old != nil {
-		paramRuntime = old.KubernetesConfig.ContainerRuntime
+	userValue := viper.GetString(containerRuntime)
+	if userValue == constants.DefaultContainerRuntime {
+		// Use value from old cluster config.
+		if old != nil {
+			if old.KubernetesConfig.ContainerRuntime == "" {
+				// Pre-2022 profiles stored "" to mean docker (the then-default).
+				// Do not map that to defaultRuntime() or those clusters would
+				// switch to containerd.
+				return constants.Docker
+			}
+			return old.KubernetesConfig.ContainerRuntime
+		}
+		return defaultRuntime()
 	}
-
-	if paramRuntime == constants.DefaultContainerRuntime {
-		paramRuntime = defaultRuntime()
-	}
-
-	return paramRuntime
+	return userValue
 }
 
 // defaultRuntime returns the default container runtime
