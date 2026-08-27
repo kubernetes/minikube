@@ -30,6 +30,8 @@ import (
 var (
 	// SupportedArchitectures is the list of supported architectures
 	SupportedArchitectures = [4]string{"amd64", "arm64", "ppc64le", "s390x"}
+	// IP Address for the control plane
+	MasterNodeIP = ""
 )
 
 const (
@@ -175,6 +177,13 @@ const (
 
 	// Mirror CN
 	AliyunMirror = "registry.cn-hangzhou.aliyuncs.com/google_containers"
+
+	// DefaultWindowsNodeVersion is the default version of Windows node
+	DefaultWindowsNodeVersion = "2025"
+
+	// DefaultWindowsVhdURL is the VHD download URL for Windows Server 2025.
+	// This will be used whenever the user does NOT supply --windows-vhd-url.
+	DefaultWindowsVhdURL = "https://minikubevhdimagebuider.blob.core.windows.net/versions/hybrid-minikube-windows-server.vhdx"
 )
 
 var (

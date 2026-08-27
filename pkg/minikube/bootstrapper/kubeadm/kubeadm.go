@@ -43,6 +43,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -502,8 +503,11 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	out.Step(style.HealthCheck, "Verifying Kubernetes components...")
 	// regardless if waiting is set or not, we will make sure kubelet is not stopped
 	// to solve corner cases when a container is hibernated and once coming back kubelet not running.
-	if err := sysinit.New(k.c).Start("kubelet"); err != nil {
-		klog.Warningf("Couldn't ensure kubelet is started this might cause issues: %v", err)
+	// Windows nodes use Windows services (not systemd), so skip sysinit-based kubelet management.
+	if !n.Guest.IsWindows() {
+		if err := sysinit.New(k.c).Start("kubelet"); err != nil {
+			klog.Warningf("Couldn't ensure kubelet is started this might cause issues: %v", err)
+		}
 	}
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
 	cp, err := config.ControlPlane(cfg)
@@ -573,7 +577,8 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		}
 	}
 
-	if cfg.VerifyComponents[kverify.KubeletKey] {
+	// Windows nodes use Windows services (not systemd); systemctl is unavailable so skip.
+	if cfg.VerifyComponents[kverify.KubeletKey] && !n.Guest.IsWindows() {
 		if err := kverify.WaitForService(k.c, "kubelet", timeout); err != nil {
 			return fmt.Errorf("waiting for kubelet: %w", err)
 		}
@@ -747,6 +752,78 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 	return nil
 }
 
+//
+//
+
+func (k *Bootstrapper) SetupMinikubeCert(host *host.Host) (string, error) {
+	out.Step(style.Provisioning, "Setting up minikube certificates folder...")
+
+	certsDir := `C:\var\lib\minikube\certs`
+	k8sPkiDir := `C:\etc\kubernetes\pki`
+	caCert := `ca.crt`
+
+	script := fmt.Sprintf(
+		`mkdir %s; `+
+			`Copy-Item %s\%s -Destination %s; `+
+			`Remove-Item %s\%s`,
+		certsDir, k8sPkiDir, caCert, certsDir, k8sPkiDir, caCert,
+	)
+
+	script = strings.ReplaceAll(script, `"`, `\"`)
+
+	command := fmt.Sprintf("powershell -NoProfile -NonInteractive -Command \"%s\"", script)
+	klog.Infof("[executing] : %v", command)
+
+	host.RunSSHCommand(command)
+
+	return "", nil
+}
+
+func (k *Bootstrapper) JoinClusterWindows(host *host.Host, cc config.ClusterConfig, n config.Node, joinCmd string, timeout time.Duration) (string, error) {
+	setLocationPath := `Set-Location -Path "C:\k"`
+
+	psScript := fmt.Sprintf("%s; %s", setLocationPath, joinCmd)
+
+	psScript = strings.ReplaceAll(psScript, `"`, `\"`)
+
+	command := fmt.Sprintf("powershell -NoProfile -NonInteractive -Command \"%s\"", psScript)
+	klog.Infof("[executing] : %v", command)
+
+	// TODO: Explore how to make this better; channels for result and errors for now exist
+	resultChan := make(chan string, 1)
+	errorChan := make(chan error, 1)
+
+	go func() {
+		output, err := host.RunSSHCommand(command)
+		if err != nil {
+			errorChan <- err
+			return
+		}
+
+		resultChan <- output
+	}()
+
+	if timeout > 0 {
+		// If timeout is set, enforce it
+		select {
+		case result := <-resultChan:
+			return result, nil
+		case err := <-errorChan:
+			return "", err
+		case <-time.After(timeout):
+			return "", fmt.Errorf("operation timed out after %s", timeout)
+		}
+	} else {
+		// If no timeout is set, just wait for result or error
+		select {
+		case result := <-resultChan:
+			return result, nil
+		case err := <-errorChan:
+			return "", err
+		}
+	}
+}
+
 // JoinCluster adds new node to an existing cluster.
 func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinCmd string) error {
 	// Join the control plane by specifying its token
@@ -772,6 +849,33 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	}
 
 	return nil
+}
+
+// GenerateTokenWindows creates a token and returns the appropriate kubeadm join command to run, or the already existing token
+func (k *Bootstrapper) GenerateTokenWindows(cc config.ClusterConfig, n config.Node) (string, error) {
+	tokenCmd := exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion)))
+	r, err := k.c.RunCmd(tokenCmd)
+	if err != nil {
+		return "", fmt.Errorf("generating join command: %w", err)
+	}
+
+	joinCmd := r.Stdout.String()
+	// log the join command for debugging purposes
+	klog.Infof("Generated join command ===: %s", joinCmd)
+	joinCmd = strings.Replace(joinCmd, "kubeadm", ".\\kubeadm.exe", 1)
+	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
+
+	// set the node name explicitly so it matches the minikube machine name
+	// (the Windows VHD hostname may differ from the expected <profile>-m02 name)
+	joinCmd = fmt.Sprintf("%s --node-name %s", joinCmd, config.MachineName(cc, n))
+
+	// append the cri-socket flag to the join command for windows
+	joinCmd = fmt.Sprintf("%s --cri-socket \"npipe:////./pipe/containerd-containerd\"", joinCmd)
+
+	// append --v=5 to the join command for windows
+	joinCmd = fmt.Sprintf("%s --v=5", joinCmd)
+
+	return joinCmd, nil
 }
 
 // GenerateToken creates a token and returns the appropriate kubeadm join command to run, or the already existing token
@@ -927,6 +1031,12 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 
 // UpdateNode updates new or existing node.
 func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cruntime.Manager) error {
+	// skip if the node is a windows node
+	if n.Guest.IsWindows() {
+		klog.Infof("skipping node %v update, as it is a windows node", n)
+		return nil
+	}
+
 	klog.Infof("updating node %v ...", n)
 
 	kubeletCfg, err := bsutil.NewKubeletConfig(cfg, n, r)

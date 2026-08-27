@@ -1,0 +1,131 @@
+name: Provision Windows Self-Hosted Runner
+
+# Manually triggered only — this creates/updates the persistent self-hosted runner VM.
+# Run once to provision, or re-run to re-register the runner after a VM reimage.
+on:
+  workflow_dispatch:
+    inputs:
+      runner_name:
+        description: 'Runner VM name and GitHub display name'
+        required: false
+        default: 'vm-minikube-runner'
+      resource_group:
+        description: 'Azure resource group (created if it does not exist)'
+        required: false
+        default: 'rg-minikube-ci-runner'
+      location:
+        description: 'Azure region'
+        required: false
+        default: 'eastus'
+
+# Required secrets (Settings → Secrets → Actions):
+#   RUNNER_AZ_CLIENT_ID       — service principal app ID
+#   RUNNER_AZ_CLIENT_SECRET   — service principal secret
+#   RUNNER_AZ_SUBSCRIPTION_ID — target Azure subscription
+#   RUNNER_AZ_TENANT_ID       — Azure AD tenant
+#   RUNNER_AZ_VM_PASSWORD     — password set on the VM admin account (min 12 chars, upper+lower+digit+symbol)
+#   RUNNER_REGISTRATION_PAT   — GitHub PAT with 'repo' scope to register the runner
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    env:
+      VM_NAME: ${{ github.event.inputs.runner_name }}
+      RESOURCE_GROUP: ${{ github.event.inputs.resource_group }}
+      LOCATION: ${{ github.event.inputs.location }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.RUNNER_AZ_CLIENT_ID }}","clientSecret":"${{ secrets.RUNNER_AZ_CLIENT_SECRET }}","subscriptionId":"${{ secrets.RUNNER_AZ_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.RUNNER_AZ_TENANT_ID }}"}'
+
+      - name: Create Resource Group
+        run: |
+          az group create \
+            --name "$RESOURCE_GROUP" \
+            --location "$LOCATION" \
+            --tags project=minikube purpose=ci-runner
+
+      - name: Deploy Runner VM
+        id: deploy_vm
+        env:
+          RUNNER_AZ_VM_PASSWORD: ${{ secrets.RUNNER_AZ_VM_PASSWORD }}
+        uses: azure/bicep-deploy@v2
+        with:
+          type: deployment
+          operation: create
+          name: runner-${{ github.run_id }}
+          scope: resourceGroup
+          resource-group-name: ${{ env.RESOURCE_GROUP }}
+          subscription-id: ${{ secrets.RUNNER_AZ_SUBSCRIPTION_ID }}
+          template-file: ./hack/windows-ci-runner/runner.bicep
+          parameters-file: ./hack/windows-ci-runner/runner.bicepparam
+          parameters: '{"vmName": "${{ env.VM_NAME }}"}'
+
+      - name: Enable Hyper-V and Reboot
+        env:
+          SSHPASS: ${{ secrets.RUNNER_AZ_VM_PASSWORD }}
+        run: |
+          HOST="${{ env.VM_NAME }}.${{ env.LOCATION }}.cloudapp.azure.com"
+          USER="minikubeadmin"
+
+          echo "Waiting for SSH (OpenSSH extension may still be running)..."
+          for i in {1..30}; do
+            if sshpass -e ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 "$USER@$HOST" "echo SSH Ready"; then
+              echo "SSH ready."
+              break
+            fi
+            echo "Attempt $i/30 — retrying in 15s..."
+            sleep 15
+          done
+
+          echo "Enabling Hyper-V (VM will reboot)..."
+          sshpass -e ssh -o StrictHostKeyChecking=no "$USER@$HOST" \
+            "powershell -Command \"Install-WindowsFeature -Name Hyper-V -IncludeManagementTools; shutdown /r /t 10\""
+
+          echo "Waiting for VM to reboot and SSH to return..."
+          sleep 60
+          for i in {1..20}; do
+            if sshpass -e ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 "$USER@$HOST" "echo SSH Ready after reboot"; then
+              echo "VM back online."
+              exit 0
+            fi
+            echo "Attempt $i/20 — retrying in 15s..."
+            sleep 15
+          done
+          echo "VM did not come back online in time."
+          exit 1
+
+      - name: Install GitHub Actions Runner
+        env:
+          SSHPASS: ${{ secrets.RUNNER_AZ_VM_PASSWORD }}
+        run: |
+          HOST="${{ env.VM_NAME }}.${{ env.LOCATION }}.cloudapp.azure.com"
+          USER="minikubeadmin"
+
+          sshpass -e scp -o StrictHostKeyChecking=no \
+            ./hack/windows-ci-runner/setup-runner.ps1 "$USER@$HOST:C:/Users/$USER/"
+
+          sshpass -e ssh -o StrictHostKeyChecking=no "$USER@$HOST" \
+            "powershell -ExecutionPolicy Bypass -File C:/Users/$USER/setup-runner.ps1 -GitHubPAT '${{ secrets.RUNNER_REGISTRATION_PAT }}' -RunnerName '${{ env.VM_NAME }}'"
+
+      - name: Verify Runner Registration
+        env:
+          RUNNER_REGISTRATION_PAT: ${{ secrets.RUNNER_REGISTRATION_PAT }}
+        run: |
+          for i in {1..12}; do
+            STATUS=$(curl -s -H "Authorization: token $RUNNER_REGISTRATION_PAT" \
+              "https://api.github.com/repos/bobsira/minikube/actions/runners" \
+              | jq -r ".runners[] | select(.name==\"${{ env.VM_NAME }}\") | .status")
+            echo "Runner status: ${STATUS:-not found}"
+            if [ "$STATUS" = "online" ]; then
+              echo "Runner is online."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Runner did not come online within 2 minutes."
+          exit 1

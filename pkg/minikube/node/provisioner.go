@@ -16,6 +16,8 @@ limitations under the License.
 
 package node
 
+import "k8s.io/minikube/pkg/minikube/bootstrapper"
+
 // Provisioner encapsulates OS-specific node lifecycle operations using a strategy pattern.
 // Different OS implementations (Linux, Windows) use the same interface but with different
 // join mechanisms and readiness verification strategies.
@@ -48,17 +50,15 @@ type Provisioner interface {
 	// Windows: Retries labeling for up to 3 minutes as Windows nodes take extra time to register
 	// with the API server after kubeadm join completes.
 	LabelAndUntaint() error
+}
 
-	// PostJoin performs OS-specific operations after node successfully joins the cluster.
-	// Runs after LabelAndUntaint() completes. Used for CNI and network setup that must happen
-	// after the node is labeled and integrated into the cluster.
-	// Preconditions: node is labeled and registered with apiserver
-	// Side effects: applies CNI manifests, configures network plugins
-	//
-	// Linux: No operation needed. CNI is configured externally or handled by control-plane addons.
-	//
-	// Windows: Applies Windows-specific CNI manifests (e.g., Flannel-Windows DaemonSet,
-	// kube-proxy-windows DaemonSet) that are bundled in the minikube binary. These cannot
-	// run on Linux nodes and must be applied only to Windows workers.
-	// PostJoin() error
+// newNodeProvisioner binds starter, cpBs, and bs once for the lifetime of the
+// provisioning workflow and returns the OS-appropriate implementation.
+// cpBs is the control-plane bootstrapper used to generate join tokens.
+// bs is the target node bootstrapper used to execute join operations.
+func newNodeProvisioner(starter Starter, cpBs, bs bootstrapper.Bootstrapper) Provisioner {
+	if starter.Node.Guest.IsWindows() {
+		return &windowsProvisioner{starter: starter, controlplane: cpBs, worker: bs}
+	}
+	return &linuxProvisioner{starter: starter, controlplane: cpBs, worker: bs}
 }

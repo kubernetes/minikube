@@ -186,8 +186,12 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 }
 
 // ensureSyncedGuestClock ensures that the guest system clock is relatively in-sync
-func ensureSyncedGuestClock(h hostRunner, drv string) error {
+func ensureSyncedGuestClock(h hostRunner, drv string, guestOS string) error {
 	if !driver.IsVM(drv) {
+		return nil
+	}
+	// Windows guests don't support the Linux "date +%s.%N" command.
+	if guestOS == config.GuestOSWindows {
 		return nil
 	}
 	d, err := guestClockDelta(h, time.Now())

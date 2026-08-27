@@ -51,6 +51,12 @@ runs:
 
         STAT=$(gopogh -in "$JSON_REPORT" -out_html "$HTML_REPORT" -out_summary "$SUMMARY_JSON" -name "$REPORT_TITLE ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}") || true
 
+        # Guard against gopogh emitting non-JSON (e.g. missing/empty testout.json)
+        if ! echo "$STAT" | jq . > /dev/null 2>&1; then
+          echo "WARNING: gopogh did not produce valid JSON (testout.json may be missing or empty)"
+          STAT='{"NumberOfTests":0,"NumberOfPass":0,"NumberOfFail":0,"NumberOfSkip":0}'
+        fi
+
         # Check for timeouts
         IS_TIMEOUT=0
         if [[ "$TEST_OUTCOME" == "failure" && -n "$TEST_TEXT_PATH" && -f "$TEST_TEXT_PATH" ]]; then

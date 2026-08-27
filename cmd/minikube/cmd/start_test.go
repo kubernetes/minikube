@@ -471,6 +471,96 @@ func TestValidateRuntime(t *testing.T) {
 	}
 }
 
+func TestValidMultiNodeOS(t *testing.T) {
+	var tests = []struct {
+		osString string
+		errorMsg string
+	}{
+		{
+			osString: "[linux,windows]",
+			errorMsg: "",
+		},
+		{
+			osString: "[linux, windows]",
+			errorMsg: "",
+		},
+		{
+			osString: "[windows,linux]",
+			errorMsg: "invalid OS string format: must be [linux,windows]",
+		},
+		{
+			osString: "[linux]",
+			errorMsg: "invalid OS string format: must be [linux,windows]",
+		},
+		{
+			osString: "[linux,windows,mac]",
+			errorMsg: "invalid OS string format: must be [linux,windows]",
+		},
+		{
+			osString: "linux,windows",
+			errorMsg: "invalid OS string format: must be enclosed in [ ]",
+		},
+		{
+			osString: "[[linux,windows]]",
+			errorMsg: "invalid OS string format: must be [linux,windows]",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.osString, func(t *testing.T) {
+			got := validMultiNodeOS(test.osString)
+			gotError := ""
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("validMultiNodeOS(osString=%v): got %v, expected %v", test.osString, gotError, test.errorMsg)
+			}
+		})
+	}
+}
+
+func TestMixedOSFlagConflict(t *testing.T) {
+	var tests = []struct {
+		description string
+		changed     bool
+		got         string
+		errorMsg    string
+	}{
+		{
+			description: "flag not passed, no conflict",
+			changed:     false,
+			got:         "docker",
+			errorMsg:    "",
+		},
+		{
+			description: "flag explicitly matches the required value",
+			changed:     true,
+			got:         "hyperv",
+			errorMsg:    "",
+		},
+		{
+			description: "flag explicitly conflicts with the required value",
+			changed:     true,
+			got:         "docker",
+			errorMsg:    "--node-os requires the hyperv driver, but --driver=docker was specified",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			got := mixedOSFlagConflict(test.changed, test.got, "hyperv", "driver", "driver")
+			gotError := ""
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("mixedOSFlagConflict(changed=%v, got=%v): got %v, expected %v", test.changed, test.got, gotError, test.errorMsg)
+			}
+		})
+	}
+}
+
 func TestIsTwoDigitSemver(t *testing.T) {
 	var tcs = []struct {
 		desc     string

@@ -193,6 +193,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 		out.WarningT("Profile name '{{.name}}' is not valid", out.V{"name": ClusterFlagValue()})
 		exit.Message(reason.Usage, "Only alphanumeric and dashes '-' are permitted. Minimum 2 characters, starting with alphanumeric.")
 	}
+
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
 		kind := reason.HostConfigLoad
@@ -206,6 +207,10 @@ func runStart(cmd *cobra.Command, _ []string) {
 		upgradeExistingConfig(cmd, existing)
 	} else {
 		validateProfileName()
+	}
+
+	if cmd.Flags().Changed(nodeOS) {
+		applyMixedOSDefaults(cmd, existing)
 	}
 
 	validateSpecifiedDriver(existing, options)
@@ -507,6 +512,13 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 	// target total and number of control-plane nodes
 	numCPNodes := 1
 	numNodes := viper.GetInt(nodes)
+	// if we have -node-os flag set, then nodes flag will be set to 2
+	//  it means one of the nodes is a control-plane node and the other is a windows worker node
+	// so we need to reduce the numNodes by 1
+	if cmd.Flags().Changed(nodeOS) {
+		numNodes--
+	}
+
 	if existing != nil {
 		numCPNodes = 0
 		for _, n := range existing.Nodes {
@@ -539,8 +551,31 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		}
 
 		out.Ln("") // extra newline for clarity on the command line
+		// 1st call
 		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
-			return nil, fmt.Errorf("adding node: %w", err)
+			return nil, fmt.Errorf("adding linux node: %w", err)
+		}
+	}
+
+	// start windows node, triggered if --node-os is set at the time of minikube start
+	if cmd.Flags().Changed(nodeOS) {
+		nodeName := node.Name(numNodes + 1)
+		n := config.Node{
+			Name:              nodeName,
+			Port:              starter.Cfg.APIServerPort,
+			KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
+			ContainerRuntime:  starter.Cfg.KubernetesConfig.ContainerRuntime,
+			Worker:            true,
+			Guest: config.Guest{
+				Name:    "windows",
+				Version: constants.DefaultWindowsNodeVersion,
+				URL:     viper.GetString(windowsVhdURL),
+			},
+		}
+
+		out.Ln("") // extra newline for clarity on the command line
+		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
+			return nil, fmt.Errorf("adding windows node: %w", err)
 		}
 	}
 
@@ -1351,6 +1386,30 @@ func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 		validateCNI(cmd, viper.GetString(containerRuntime))
 	}
 
+	if cmd.Flags().Changed(nodeOS) {
+		if err := validMultiNodeOS(viper.GetString(nodeOS)); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+
+		if viper.GetInt(nodes) != 2 {
+			exit.Message(reason.Usage, "The --nodes flag must be set to 2 when using --node-os")
+		}
+	}
+
+	if cmd.Flags().Changed(windowsVhdURL) {
+		if viper.GetString(windowsVhdURL) == "" {
+			// set a default URL if the user has not specified one
+			viper.Set(windowsVhdURL, constants.DefaultWindowsVhdURL)
+			exit.Message(reason.Usage, "The --windows-vhd-url flag must be set to a valid URL")
+		}
+
+		// add validation logic for the windows vhd URL
+		url := viper.GetString(windowsVhdURL)
+		if !strings.HasSuffix(url, ".vhd") && !strings.HasSuffix(url, ".vhdx") {
+			exit.Message(reason.Usage, "The --windows-vhd-url flag must point to a valid VHD or VHDX file")
+		}
+	} ////
+
 	if cmd.Flags().Changed(staticIP) {
 		if err := validateStaticIP(viper.GetString(staticIP), drvName, viper.GetString(subnet)); err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
@@ -1465,6 +1524,70 @@ func validateDiskSize(diskSize string) error {
 	}
 	if diskSizeMB < minimumDiskSize {
 		return fmt.Errorf("Requested disk size %v is less than minimum of %v", diskSizeMB, minimumDiskSize)
+	}
+	return nil
+}
+
+// validateMultiNodeOS validates the supplied OS for multiple nodes
+func validMultiNodeOS(osString string) error {
+	if !strings.HasPrefix(osString, "[") || !strings.HasSuffix(osString, "]") {
+		return fmt.Errorf("invalid OS string format: must be enclosed in [ ]")
+	}
+
+	osString = strings.TrimPrefix(osString, "[")
+	osString = strings.TrimSuffix(osString, "]")
+	osString = strings.ReplaceAll(osString, " ", "")
+
+	osValues := strings.Split(osString, ",")
+
+	if len(osValues) != 2 || osValues[0] != "linux" || osValues[1] != "windows" {
+		return fmt.Errorf("invalid OS string format: must be [linux,windows]")
+	}
+
+	return nil
+}
+
+// applyMixedOSDefaults fills in the driver/cni/container-runtime a mixed-OS
+// cluster requires, but only for a brand-new profile: converting an existing
+// profile to mixed-OS isn't supported yet (its persisted runtime/CNI could
+// silently drift from what --node-os requires, since updateExistingConfigFromFlags
+// only touches fields for flags the user actually passed), so require a fresh
+// profile instead.
+func applyMixedOSDefaults(cmd *cobra.Command, existing *config.ClusterConfig) {
+	if existing != nil {
+		exit.Message(reason.Usage, "--node-os cannot be used with an existing profile; delete it first with 'minikube delete -p {{.profile}}' or start a new profile with --profile", out.V{"profile": ClusterFlagValue()})
+	}
+
+	required := []struct {
+		flagName, want, label string
+	}{
+		{"driver", driver.HyperV, "driver"},
+		{cniFlag, "flannel", "CNI"},
+		{containerRuntime, constants.Containerd, "container runtime"},
+	}
+
+	for _, r := range required {
+		changed := cmd.Flags().Changed(r.flagName)
+		got := viper.GetString(r.flagName)
+		if err := mixedOSFlagConflict(changed, got, r.want, r.flagName, r.label); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+		if !changed {
+			viper.Set(r.flagName, r.want)
+			out.Infof("--node-os: automatically selecting {{.want}} as the {{.label}}", out.V{"want": r.want, "label": r.label})
+		}
+	}
+}
+
+// mixedOSFlagConflict reports a usage error if the user explicitly passed
+// flagName with a value other than want. want is only ever applied as a
+// default (by the caller) when the flag was not explicitly changed - an
+// explicit, conflicting value must be rejected rather than silently
+// overridden, since viper.Set() takes precedence over an explicit flag and
+// would otherwise discard the user's choice without telling them.
+func mixedOSFlagConflict(changed bool, got, want, flagName, label string) error {
+	if changed && got != want {
+		return fmt.Errorf("--node-os requires the %s %s, but --%s=%s was specified", want, label, flagName, got)
 	}
 	return nil
 }

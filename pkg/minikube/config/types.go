@@ -110,6 +110,7 @@ type ClusterConfig struct {
 	SSHAgentPID             int
 	GPUs                    string
 	AutoPauseInterval       time.Duration // Specifies interval of time to wait before checking if cluster should be paused
+	NodeOS                  string        // Raw --node-os flag value (e.g. "[linux,windows]"), set when a mixed-OS cluster was requested
 	Rosetta                 bool          // Only used by vfkit driver
 	VmnetOffloading         bool          // Only used by krunkit driver
 	DNSServers              []netip.Addr  // Static DNS servers for the VM (VM drivers only)
@@ -153,6 +154,7 @@ type Node struct {
 	ContainerRuntime  string
 	ControlPlane      bool
 	Worker            bool
+	Guest             Guest
 }
 
 // Role returns the node role string for logging and error messages.
@@ -194,3 +196,17 @@ type ScheduledStopConfig struct {
 	InitiationTime int64
 	Duration       time.Duration
 }
+
+// GuestOSWindows is the Guest.Name value for Windows worker nodes.
+const GuestOSWindows = "windows"
+
+type Guest struct {
+	Name    string
+	Version string
+	URL     string
+}
+
+// IsWindows reports whether the guest is a Windows VM.
+// Linux/default nodes have an empty Guest.Name, so all OS-specific guards
+// should use IsWindows() rather than checking for a specific Linux value.
+func (g Guest) IsWindows() bool { return g.Name == GuestOSWindows }
