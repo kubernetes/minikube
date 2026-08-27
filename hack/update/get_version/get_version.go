@@ -52,7 +52,7 @@ var dependencies = map[string]dependency{
 	"flannel":                 {"pkg/minikube/cni/flannel.yaml", `flannel:(.*)`},
 	"gcp-auth":                {addonsFile, `k8s-minikube/gcp-auth-webhook:(.*)@`},
 	"gh":                      {"hack/jenkins/installers/check_install_gh.sh", `GH_VERSION="(.*)"`},
-	"golang":                  {"Makefile", `\nGO_VERSION \?= (.*)`},
+	"golang":                  {"go.mod", `\ntoolchain go(.*)`},
 	"go-github":               {"go.mod", `github\.com\/google\/go-github\/.* (.*)`},
 	"golint":                  {"Makefile", `GOLINT_VERSION \?= (.*)`},
 	"gopogh":                  {"hack/jenkins/installers/check_install_gopogh.sh", `github.com/medyagh/gopogh/cmd/gopogh@(.*)`},
