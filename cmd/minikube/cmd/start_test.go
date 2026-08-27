@@ -440,35 +440,34 @@ func TestValidateDiskSize(t *testing.T) {
 }
 
 func TestValidateRuntime(t *testing.T) {
-	var tests = []struct {
-		runtime  string
-		errorMsg string
+	valid := []struct {
+		name  string
+		value string
 	}{
-		{
-			runtime:  "cri-o",
-			errorMsg: "",
-		},
-		{
-			runtime:  "docker",
-			errorMsg: "",
-		},
-		{
-			runtime:  "test",
-			errorMsg: fmt.Sprintf("Invalid Container Runtime: test. Valid runtimes are: %v", cruntime.ValidRuntimes()),
-		},
+		{"default", constants.DefaultContainerRuntime},
+		{"docker", constants.Docker},
+		{"containerd", constants.Containerd},
+		{"crio", constants.CRIO},
+		{"cri-o", "cri-o"},
 	}
-	for _, test := range tests {
-		t.Run(test.runtime, func(t *testing.T) {
-			got := validateRuntime(test.runtime)
-			gotError := ""
-			if got != nil {
-				gotError = got.Error()
-			}
-			if gotError != test.errorMsg {
-				t.Errorf("ValidateRuntime(runtime=%v): got %v, expected %v", test.runtime, got, test.errorMsg)
+	for _, tc := range valid {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := validateRuntime(tc.value); err != nil {
+				t.Errorf("validateRuntime(%q) = %v, want nil", tc.value, err)
 			}
 		})
 	}
+
+	t.Run("invalid", func(t *testing.T) {
+		err := validateRuntime("invalid")
+		if err == nil {
+			t.Fatal("validateRuntime(\"invalid\") = nil, want error")
+		}
+		want := fmt.Sprintf("Invalid Container Runtime: invalid. Valid runtimes are: %v", cruntime.ValidRuntimes())
+		if err.Error() != want {
+			t.Errorf("validateRuntime(\"invalid\") = %q, want %q", err, want)
+		}
+	})
 }
 
 func TestIsTwoDigitSemver(t *testing.T) {

@@ -1343,11 +1343,10 @@ func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterC
 		}
 	}
 
-	if cmd.Flags().Changed(containerRuntime) {
-		err := validateRuntime(viper.GetString(containerRuntime))
-		if err != nil {
-			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
-		}
+	// Always validate: viper includes config and MINIKUBE_CONTAINER_RUNTIME,
+	// not only --container-runtime. Empty is the auto sentinel and is valid.
+	if err := validateRuntime(viper.GetString(containerRuntime)); err != nil {
+		exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 	}
 
 	validateCNI(cmd, getContainerRuntime(existing))
