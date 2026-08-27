@@ -237,6 +237,8 @@ func setContainerRuntimeOptions(name string, p miniProvisioner) error {
 	case "containerd":
 		return nil
 	default:
+		// docker, including "" (pre-2022 stored empty flag, same as
+		// cruntime.New). Unknown names also get docker options.
 		_, err := p.GenerateDockerOptions(engine.DefaultPort)
 		return err
 	}

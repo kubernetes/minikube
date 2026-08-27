@@ -125,7 +125,7 @@ func TestMirrorCountry(t *testing.T) {
 	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
 	checkRepository = checkRepoMock
 	k8sVersion := constants.DefaultKubernetesVersion
-	rtime := constants.DefaultContainerRuntime
+	crName := defaultRuntime()
 	var tests = []struct {
 		description     string
 		k8sVersion      string
@@ -171,7 +171,7 @@ func TestMirrorCountry(t *testing.T) {
 			viper.SetDefault(imageRepository, test.imageRepository)
 			viper.SetDefault(imageMirrorCountry, test.mirrorCountry)
 			viper.SetDefault(kvmNUMACount, 1)
-			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, rtime, driver.Mock, &run.CommandOptions{})
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, crName, driver.Mock, &run.CommandOptions{})
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
@@ -186,7 +186,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
 
 	k8sVersion := constants.NewestKubernetesVersion
-	rtime := constants.DefaultContainerRuntime
+	crName := defaultRuntime()
 	var tests = []struct {
 		description  string
 		proxy        string
@@ -232,7 +232,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 
 			cfg.DockerEnv = []string{} // clear docker env to avoid pollution
 			proxy.SetDockerEnv()
-			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, rtime, "none", &run.CommandOptions{})
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, crName, "none", &run.CommandOptions{})
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
@@ -440,35 +440,34 @@ func TestValidateDiskSize(t *testing.T) {
 }
 
 func TestValidateRuntime(t *testing.T) {
-	var tests = []struct {
-		runtime  string
-		errorMsg string
+	valid := []struct {
+		name  string
+		value string
 	}{
-		{
-			runtime:  "cri-o",
-			errorMsg: "",
-		},
-		{
-			runtime:  "docker",
-			errorMsg: "",
-		},
-		{
-			runtime:  "test",
-			errorMsg: fmt.Sprintf("Invalid Container Runtime: test. Valid runtimes are: %v", cruntime.ValidRuntimes()),
-		},
+		{"default", constants.DefaultContainerRuntime},
+		{"docker", constants.Docker},
+		{"containerd", constants.Containerd},
+		{"crio", constants.CRIO},
+		{"cri-o", "cri-o"},
 	}
-	for _, test := range tests {
-		t.Run(test.runtime, func(t *testing.T) {
-			got := validateRuntime(test.runtime)
-			gotError := ""
-			if got != nil {
-				gotError = got.Error()
-			}
-			if gotError != test.errorMsg {
-				t.Errorf("ValidateRuntime(runtime=%v): got %v, expected %v", test.runtime, got, test.errorMsg)
+	for _, tc := range valid {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := validateRuntime(tc.value); err != nil {
+				t.Errorf("validateRuntime(%q) = %v, want nil", tc.value, err)
 			}
 		})
 	}
+
+	t.Run("invalid", func(t *testing.T) {
+		err := validateRuntime("invalid")
+		if err == nil {
+			t.Fatal("validateRuntime(\"invalid\") = nil, want error")
+		}
+		want := fmt.Sprintf("Invalid Container Runtime: invalid. Valid runtimes are: %v", cruntime.ValidRuntimes())
+		if err.Error() != want {
+			t.Errorf("validateRuntime(\"invalid\") = %q, want %q", err, want)
+		}
+	})
 }
 
 func TestIsTwoDigitSemver(t *testing.T) {
@@ -807,13 +806,13 @@ func TestValidateGPUs(t *testing.T) {
 		{"", "kvm", "containerd", ""},
 		{"all", "docker", "docker", ""},
 		{"nvidia", "docker", "docker", ""},
-		{"all", "docker", "", ""},
-		{"nvidia", "docker", "", ""},
+		{"all", "docker", "", "The gpus flag can only be used with the docker driver and docker container-runtime"},
+		{"nvidia", "docker", "", "The gpus flag can only be used with the docker driver and docker container-runtime"},
+		{"amd", "docker", "", "The gpus flag can only be used with the docker driver and docker container-runtime"},
 		{"all", "kvm", "docker", "The gpus flag can only be used with the docker driver and docker container-runtime"},
 		{"nvidia", "docker", "containerd", "The gpus flag can only be used with the docker driver and docker container-runtime"},
 		{"cat", "docker", "docker", `The gpus flag must be passed a value of "nvidia", "nvidia.com", "amd" or "all"`},
 		{"amd", "docker", "docker", ""},
-		{"amd", "docker", "", ""},
 		{"amd", "docker", "containerd", "The gpus flag can only be used with the docker driver and docker container-runtime"},
 	}
 
@@ -852,5 +851,63 @@ func TestValidateAutoPause(t *testing.T) {
 		if err == nil && tc.shouldError {
 			t.Errorf("interval of %q passed validation; expected it to fail: %v", input, err)
 		}
+	}
+}
+
+func TestGetContainerRuntime(t *testing.T) {
+	orig := viper.GetString(containerRuntime)
+	t.Cleanup(func() { viper.Set(containerRuntime, orig) })
+
+	tests := []struct {
+		description string
+		flag        string
+		old         *cfg.ClusterConfig
+		want        string
+	}{
+		{
+			description: "new cluster uses product default",
+			want:        defaultRuntime(),
+		},
+		{
+			description: "flag docker",
+			flag:        constants.Docker,
+			want:        constants.Docker,
+		},
+		{
+			description: "flag containerd",
+			flag:        constants.Containerd,
+			want:        constants.Containerd,
+		},
+		{
+			description: "existing docker profile",
+			old:         &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{ContainerRuntime: constants.Docker}},
+			want:        constants.Docker,
+		},
+		{
+			description: "existing containerd profile",
+			old:         &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{ContainerRuntime: constants.Containerd}},
+			want:        constants.Containerd,
+		},
+		{
+			description: "legacy empty profile is docker",
+			old:         &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{ContainerRuntime: ""}},
+			want:        constants.Docker,
+		},
+		{
+			description: "flag overrides existing profile",
+			flag:        constants.CRIO,
+			old:         &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{ContainerRuntime: constants.Docker}},
+			want:        constants.CRIO,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			viper.Set(containerRuntime, test.flag)
+			got := getContainerRuntime(test.old)
+			if got != test.want {
+				t.Errorf("getContainerRuntime() = %q, want %q", got, test.want)
+			}
+		})
 	}
 }

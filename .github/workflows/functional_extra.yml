@@ -120,7 +120,7 @@ jobs:
           \$env:Path += ';C:\Users\minikubeadmin\go\bin';
           \$OutputEncoding = [System.Text.Encoding]::UTF8;
           
-          ./e2e-windows-amd64.exe --minikube-start-args='--driver=hyperv' --binary=./minikube-windows-amd64.exe '-test.run' TestFunctional '-test.v' '-test.timeout=40m' | Tee-Object -FilePath testout.txt
+          ./e2e-windows-amd64.exe --minikube-start-args='--driver=hyperv --container-runtime=docker' --binary=./minikube-windows-amd64.exe '-test.run' TestFunctional '-test.v' '-test.timeout=40m' | Tee-Object -FilePath testout.txt
           \$env:result=\$lastexitcode
           
           Get-Content testout.txt | go tool test2json -t | Out-File -Encoding UTF8 testout.json
