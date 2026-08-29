@@ -23,8 +23,41 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/assets"
+	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 )
+
+func captureStdout(t *testing.T, f func()) string {
+	t.Helper()
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create pipe: %v", err)
+	}
+	defer r.Close()
+	old := os.Stdout
+	defer func() {
+		os.Stdout = old
+		out.SetOutFile(old)
+	}()
+	os.Stdout = w
+	out.SetOutFile(w)
+
+	done := make(chan string, 1)
+	go func() {
+		b, _ := io.ReadAll(r)
+		done <- string(b)
+	}()
+
+	f()
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close pipe: %v", err)
+	}
+
+	return <-done
+}
 
 func TestAddonsList(t *testing.T) {
 	tests := []struct {
@@ -38,32 +71,9 @@ func TestAddonsList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run("NonExistingClusterTable"+tt.name, func(t *testing.T) {
-			r, w, err := os.Pipe()
-			if err != nil {
-				t.Fatalf("failed to create pipe: %v", err)
-			}
-			defer r.Close()
-			old := os.Stdout
-			defer func() {
-				os.Stdout = old
-				out.SetOutFile(old)
-			}()
-			os.Stdout = w
-			out.SetOutFile(w)
-
-			done := make(chan string, 1)
-			go func() {
-				b, _ := io.ReadAll(r)
-				done <- string(b)
-			}()
-
-			printAddonsList(nil, tt.printDocs)
-
-			if err := w.Close(); err != nil {
-				t.Fatalf("failed to close pipe: %v", err)
-			}
-
-			s := <-done
+			s := captureStdout(t, func() {
+				printAddonsList(nil, tt.printDocs)
+			})
 			lines := strings.Split(s, "\n")
 			if len(lines) < 3 {
 				t.Fatalf("failed to read stdout: got %d lines: %q", len(lines), s)
@@ -76,18 +86,64 @@ func TestAddonsList(t *testing.T) {
 				got += lines[i]
 			}
 			// ┌─────────────────────────────┬────────────────────────────────────────┐
-			// │         ADDON NAME          │               MAINTAINER               │
+			// │         ADDON NAME          │              DESCRIPTION               │
 			// ├─────────────────────────────┼────────────────────────────────────────┤
 			// ┌─────────────────────────────┬────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────┐
-			// │         ADDON NAME          │               MAINTAINER               │                                     DOCS                                      │
+			// │         ADDON NAME          │              DESCRIPTION               │                                     DOCS                                      │
 			// ├─────────────────────────────┼────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────┤
 
 			expected := tt.want
 			if pipeCount != expected {
 				t.Errorf("Expected header to have %d pipes; got = %d: %q", expected, pipeCount, got)
 			}
+			if !strings.Contains(s, "DESCRIPTION") {
+				t.Errorf("expected output to contain DESCRIPTION header: %q", s)
+			}
+			if strings.Contains(s, "MAINTAINER") {
+				t.Errorf("expected output to not contain MAINTAINER header: %q", s)
+			}
+			if !strings.Contains(s, "Web interface for managing Kubernetes resources") {
+				t.Errorf("expected output to contain dashboard description: %q", s)
+			}
+			if !tt.printDocs && strings.Contains(s, "https://minikube.sigs.k8s.io/docs/handbook/dashboard/") {
+				t.Errorf("expected dashboard docs URL to not appear in description-only output: %q", s)
+			}
+			if tt.printDocs && strings.Count(s, "https://minikube.sigs.k8s.io/docs/handbook/dashboard/") != 1 {
+				t.Errorf("expected dashboard docs URL to appear exactly once in docs column: %q", s)
+			}
+			if !strings.Contains(s, "Runs a local container image registry") {
+				t.Errorf("expected output to contain registry description without docs URL: %q", s)
+			}
+			if strings.Contains(s, "3rd party (Ambassador)") {
+				t.Errorf("expected output to not contain maintainer metadata in description column: %q", s)
+			}
 		})
 	}
+
+	t.Run("ExistingClusterTableDescription", func(t *testing.T) {
+		cc := &pkgConfig.ClusterConfig{
+			Name:   "minikube",
+			Addons: map[string]bool{"dashboard": false},
+		}
+		s := captureStdout(t, func() {
+			printAddonsList(cc, false)
+		})
+		if !strings.Contains(s, "DESCRIPTION") {
+			t.Errorf("expected output to contain DESCRIPTION header: %q", s)
+		}
+		if strings.Contains(s, "MAINTAINER") {
+			t.Errorf("expected output to not contain MAINTAINER header: %q", s)
+		}
+		if !strings.Contains(s, "Web interface for managing Kubernetes resources") {
+			t.Errorf("expected output to contain dashboard description: %q", s)
+		}
+		if strings.Contains(s, "https://minikube.sigs.k8s.io/docs/handbook/dashboard/") {
+			t.Errorf("expected dashboard docs URL to not appear in description-only output: %q", s)
+		}
+		if strings.Contains(s, "3rd party (Ambassador)") {
+			t.Errorf("expected output to not contain maintainer metadata in description column: %q", s)
+		}
+	})
 
 	t.Run("NonExistingClusterJSON", func(t *testing.T) {
 		type addons struct {
@@ -118,4 +174,96 @@ func TestAddonsList(t *testing.T) {
 			t.Errorf("expected `ambassador` field to not be nil, but was")
 		}
 	})
+}
+
+func TestAddonDescription(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		{
+			name: "ambassador",
+			want: "API gateway and ingress controller",
+		},
+		{
+			name: "auto-pause",
+			want: "Pauses idle Kubernetes workloads automatically",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			addon := assets.Addons[tt.name]
+			originalDescription := addon.Description
+			originalDocs := addon.Docs
+			got := addonDescription(addon)
+			if got != tt.want {
+				t.Errorf("expected description %q, got %q", tt.want, got)
+			}
+			if strings.TrimSpace(got) != got {
+				t.Errorf("expected description to not have surrounding spaces: %q", got)
+			}
+			if strings.Contains(got, "  ") {
+				t.Errorf("expected description to not contain double spaces: %q", got)
+			}
+			if addon.Docs != "" && strings.Contains(got, addon.Docs) {
+				t.Errorf("expected docs URL to not be appended: %q", got)
+			}
+			if addon.Description != originalDescription {
+				t.Errorf("expected stored description to remain %q, got %q", originalDescription, addon.Description)
+			}
+			if addon.Docs != originalDocs {
+				t.Errorf("expected stored docs URL to remain %q, got %q", originalDocs, addon.Docs)
+			}
+		})
+	}
+}
+
+func TestFormatAddonDescription(t *testing.T) {
+	tests := []struct {
+		name             string
+		description      string
+		documentationURL string
+		want             string
+	}{
+		{
+			name:             "with URL",
+			description:      "API gateway and ingress controller",
+			documentationURL: "https://minikube.sigs.k8s.io/docs/handbook/addons/ambassador/",
+			want:             "API gateway and ingress controller",
+		},
+		{
+			name:             "without URL",
+			description:      "Pauses idle Kubernetes workloads automatically",
+			documentationURL: "",
+			want:             "Pauses idle Kubernetes workloads automatically",
+		},
+		{
+			name:             "trims inputs",
+			description:      " API gateway and ingress controller ",
+			documentationURL: " https://minikube.sigs.k8s.io/docs/handbook/addons/ambassador/ ",
+			want:             "API gateway and ingress controller",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := formatAddonDescription(tt.description, tt.documentationURL)
+			if got != tt.want {
+				t.Errorf("expected description %q, got %q", tt.want, got)
+			}
+			if strings.TrimSpace(got) != got {
+				t.Errorf("expected description to not have surrounding spaces: %q", got)
+			}
+			if strings.HasSuffix(got, "\n") {
+				t.Errorf("expected description to not have trailing newline: %q", got)
+			}
+			if tt.documentationURL == "" && strings.Contains(got, "\n") {
+				t.Errorf("expected empty docs URL to not add an extra line: %q", got)
+			}
+			if tt.documentationURL != "" && strings.Contains(got, strings.TrimSpace(tt.documentationURL)) {
+				t.Errorf("expected docs URL to not appear in description: %q", got)
+			}
+		})
+	}
 }
