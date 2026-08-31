@@ -30,7 +30,7 @@ brew install krunkit
 krunkit --version
 ```
 
-Instal latest vmnet-helper:
+Install latest vmnet-helper:
 
 ```shell
 curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | bash
@@ -406,7 +406,7 @@ EOF
 
 We configured our llama-server OpenAI compatible API endpoints using the
 `OPENAI_API_BASE_URLS` environment variable.
-Check [Open WebUI documenation](https://docs.openwebui.com) to learn how to
+Check [Open WebUI documentation](https://docs.openwebui.com) to learn how to
 configure it using the Admin Panel.
 
 Wait until the deployment is available:

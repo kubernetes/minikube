@@ -1092,7 +1092,7 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 	}
 }
 
-func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
+func TestWaitAndMaybeOpenServiceForNotDefaultNamespace(t *testing.T) {
 	initializeMockObjects()
 
 	defaultAPI := &tests.MockAPI{
