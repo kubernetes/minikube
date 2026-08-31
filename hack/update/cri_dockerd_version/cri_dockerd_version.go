@@ -78,17 +78,15 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	ghc := update.GHClient()
-	release, _, err := ghc.Repositories.GetLatestRelease(ctx, "Mirantis", "cri-dockerd")
+	rel, err := update.GHLatestRelease(ctx, "Mirantis", "cri-dockerd")
 	if err != nil {
 		klog.Fatalf("Unable to get latest cri-dockerd release: %v", err)
 	}
-	version := strings.TrimPrefix(release.GetTagName(), "v")
-	commit, _, err := ghc.Repositories.GetCommit(ctx, "Mirantis", "cri-dockerd", release.GetTagName(), nil)
-	if err != nil {
-		klog.Fatalf("Unable to resolve cri-dockerd commit: %v", err)
+	version := strings.TrimPrefix(rel.Tag, "v")
+	data := Data{
+		Version:    version,
+		FullCommit: rel.Commit,
 	}
-	data := Data{Version: version, FullCommit: commit.GetSHA()}
 
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
