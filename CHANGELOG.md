@@ -2,17 +2,17 @@
 
 ## Version 1.38.1 - 2026-02-19
 
-## Feature
+### Feature
 
 * Add Support for Kubernetes version v1.35.1 ([#22665](https://github.com/kubernetes/minikube/pull/22665))
 
-## Bug fixes
+### Bug fixes
 
 * Fix lock file regression by appending UID to the lock driectory ([#22623](https://github.com/kubernetes/minikube/pull/22623))
 * Fix regression cross-arch execution by masking systemd-binfmt ([#22621](https://github.com/kubernetes/minikube/pull/22621))
 * Fix: PowerShell curl alias on Windows to check resgistry.k8s.io connectivity ([#22659](https://github.com/kubernetes/minikube/pull/22659))
 
-## Addons
+### Addons
 
 * Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from 1.5.47 to 1.5.49 ([#22637](https://github.com/kubernetes/minikube/pull/22637))
 * Addon Headlamp: Update Headlamp image from v0.39.0 to v0.40.0 ([#22640](https://github.com/kubernetes/minikube/pull/22640))
@@ -28,7 +28,7 @@
 * Addon yakd: Update manusa/yakd image from 0.0.7 to 0.0.8 ([#22639](https://github.com/kubernetes/minikube/pull/22639))
 * HA (multi-control plane): Update kube-vip from v1.0.3 to v1.0.4 ([#22598](https://github.com/kubernetes/minikube/pull/22598))
 
-## CNI
+### CNI
 
 * CNI: Update cilium from v1.18.6 to v1.19.0 ([#22636](https://github.com/kubernetes/minikube/pull/22636))
 * CNI: Update flannel from v0.27.4 to v0.28.1 ([#22635](https://github.com/kubernetes/minikube/pull/22635))
@@ -63,13 +63,13 @@ Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/cont
 
 ## Version 1.38.0 - 2026-01-28
 
-## Higlight
+### Higlight
 
 * No Sudo required for with vfkit/krunkit on macOS 26+ (requires latest vmnet-helper)
 * No Sudo required to run [AI Playground on Macos GPUs using minikube](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
 * vfkit: Add Rosetta support for deploying amd64 images on Apple silicon (#22140)
 
-## Features
+### Features
 
 * Add support for Kubernetes v1.35.0 v1.34.1 (#21650)(#22015)(#22119)(#22328)
 * VM Drivers: add support for NVMe-oF/TCP block devices (#22464)
@@ -79,13 +79,13 @@ Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/cont
 * add option to add helm-based addons (#21847)
 * preload: download from github when gcs not available (#21605)
 
-## Warnings & Deprications
+### Warnings & Deprications
 
 * UI: Add a warning on changing default runtime to "containerd" in the next version (v1.39.0) (#22508)
 * hyperkit: remove driver builds & warn users to switch (#21946)
 * Remove minikube support for 32-bit architectures (#22401)
 
-## Improvements
+### Improvements
 
 * UI: colorful based on status (profile list, addons list) (#22418)
 * Skip caching binaries when --no-kubernetes is set (#21139)
@@ -102,7 +102,7 @@ Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/cont
 * image save: Add retry logic for local image in case of EOF (#22072)
 * HA (multi-control plane): Update kube-vip from v1.0.0 to v1.0.3  (#21699)(#21960)(#22258)
 
-## Drivers
+### Drivers
 
 * drivers: Introduce WaitForSSHAccess and fix macos smoke tests (#22179)
 * hyperkit driver: Fix file descriptor leaks in status (#22524)
@@ -115,7 +115,7 @@ Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/cont
 * vfkit: Add Rosetta support for deploying amd64 images on Apple silicon (#22140)
 * VM: Enable cgroup v2 by using "systemd cgroup driver"  for Kubernetes… (#22320)
 
-## Bug fixes
+### Bug fixes
 
 * KIC Drivers: fix docker driver with crio runtime: install dbus (#21724)
 * fix: correctly detect nested VMs on macOS and remove timeout multiplier (#22277)
@@ -129,7 +129,7 @@ Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/cont
 * fix kubelet config option FailCgroupV1 to failCgroupV1 (#22325)
 * addon registry-creds: Fix segfault without config file (#21786)
 
-## UI
+### UI
 
 * Add support for Kurdish language through LANGUAGE=ku  (#22512)
 * Add support for Ukrainian language through LANGUAGE=uk (#21624)
@@ -140,14 +140,14 @@ Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/cont
 * ui: fix correct formatting in tunnel service output (#22400)
 * align command paramaters for the ai playground fix (#21583)
 
-## CNI
+### CNI
 
 * CNI: Update calico from v3.30.3 to v3.31.3 (#21835)(#21961)(#22259)
 * CNI: Update cilium from v1.18.1 to v1.18.6 (#21655)(#21794)(#21953)(#22253)(#22487)
 * CNI: Update flannel from v0.27.3 to v0.27.4 (#21700)
 * CNI: Update kindnetd from v20250512-df8de77b to v20251212-v0.29.0-alpha-105-g20ccfc88 (#22127)
 
-## Addons
+### Addons
 
 * Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from 1.5.41 to 1.5.47 (#21709)(#21832)(#21956)(#22255)(#22489)
 * Addon Headlamp: Update Headlamp image from v0.35.0 to v0.36.0 (#21706)(#21958)(#22256)
@@ -166,7 +166,7 @@ Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/cont
 * addon: fix registry-proxy alpine-slim to use wget (#22550)
 * inspektor-gadget addon: remove deleted asset (#21855)
 
-## Base image versions
+### Base image versions
 
 * iso: bump to containerd/nerdctl 2.x (#21409)
 * ISO: Update docker-buildx from v0.17.1 to v0.30.1 (#22425)
@@ -186,7 +186,7 @@ Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/cont
 * Kicbase: Switch ubuntu jammy to debian bookworm (#21643)
 * Kicbase: Update nerdctld from 0.6.1 to 0.7.0 (#21703)
 
-## Infra Migration
+### Infra Migration
 
 minikube infra structure is under heavy migration to k8s-infra here are some related PRs:
 
@@ -308,11 +308,11 @@ Thank you to our triage members for this release!
 
 ## Version 1.37.0 - 2025-09-09
 
-## Highlight
+### Highlight
 
 Run AI workloads on Macbook's GPU in Kubernetes using the new `krunkit driver`. Get started with our [AI Playground tutorial](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
 
-## Features
+### Features
 
 * Bump Kubernetes version default: v1.34.0 and latest: v1.34.0 (#21439)
 * Add krunkit driver supporting GPU acceleration on macOS (#20826) [Tutorial](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
@@ -322,7 +322,7 @@ Run AI workloads on Macbook's GPU in Kubernetes using the new `krunkit driver`. 
 * new addon: kubetail (#20345)
 * drivers: Add support for Virtiofs mounts for vfkit and krunkit (#21149)
 
-## Improvements
+### Improvements
 
 * Improve ingress-dns addon for ipv4 and windows v0.0.4  (#21449)
 * iso: Disable grub timeout speeding up vm start by 5 seconds (#20895)
@@ -335,11 +335,11 @@ Run AI workloads on Macbook's GPU in Kubernetes using the new `krunkit driver`. 
 * Don't call startKicServiceTunnel for non-kic drivers (#20863)
 * krunkit: Disable offloading for faster networking (#21341)
 
-## Deprication
+### Deprication
 
 * Deprecate HyperKit driver with warning (#21024)
 
-## Bug fixes
+### Bug fixes
 
 * fix dirty commit version  (#21062)
 * Fix minikube image load on windows (#20529) (#20921)
@@ -348,7 +348,7 @@ Run AI workloads on Macbook's GPU in Kubernetes using the new `krunkit driver`. 
 * iso: Fix `minikube stop` with vfkit and krunkit drivers (#21089)
 * iso: Fix console for vfkit/krunkit (#20832)
 
-## Addons
+### Addons
 
 * Addon nvidia-device-plugin: Update nvidia/k8s-device-plugin image from v0.17.2 to v0.17.3 (#21225)
 * Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from 1.5.34 to 1.5.41 (#20976)(#21040)(#21243)(#21287)(#21359)(#21512)
@@ -364,13 +364,13 @@ Run AI workloads on Macbook's GPU in Kubernetes using the new `krunkit driver`. 
 * Addon kubetail: update version 0.13.3 (#21244)
 * HA (multi-control plane): Update kube-vip from v0.9.1 to v1.0.0 (#20999)(#21228)
 
-## CNI versions
+### CNI versions
 
 * CNI: Update calico from v3.30.0 to v3.30.3 (#20871)(#20971)(#21416)
 * CNI: Update cilium from v1.17.4 to v1.18.1 (#20968)(#21226)(#21349)
 * CNI: Update flannel from v0.26.7 to v0.27.0 (#20907)(#21230)(#21504)
 
-## Base image versions
+### Base image versions
 
 * iso: Update to longterm kernel to 6.6.95 (#20995)
 * iso: Enable VirtioFS for x86_64 and aarch64 (#21147)
@@ -380,7 +380,7 @@ Run AI workloads on Macbook's GPU in Kubernetes using the new `krunkit driver`. 
 * Kicbase/ISO: Update docker from 28.0.4 to 28.4.0 (#21053)(#21248)(#21488)
 * Kicbase: Bump ubuntu:jammy from 20250415.1 to 20250819 (#21233)(#21413)(#21505)
 
-## UI
+### UI
 
 * redo "minikube profile list" to move the verbose details into a --det… (#20544)
 * improve config flag long description (#21515)
@@ -388,7 +388,7 @@ Run AI workloads on Macbook's GPU in Kubernetes using the new `krunkit driver`. 
 * do not show "create github issue" twice if kubeadm init fails (#21263)
 * Refactor table rendering (#20893)
 
-## UI/Translations
+### UI/Translations
 
 * Add Greak Translation
 * Add more Korean translations (#21467)(#21465)
