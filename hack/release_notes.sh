@@ -28,6 +28,11 @@ function cleanup_token() {
 }
 trap cleanup_token EXIT
 
+# changelog.go authenticates via GITHUB_TOKEN. Without it, GitHub's
+# unauthenticated limit (60 req/hr) is usually exceeded while listing PRs.
+export GITHUB_TOKEN
+GITHUB_TOKEN=$(cat "$GH_TOKEN")
+
 if  ! [[ -x "${DIR}/pullsheet" ]]; then
   echo >&2 'Installing pullsheet'
   GOBIN="$DIR" go install github.com/google/pullsheet@latest
