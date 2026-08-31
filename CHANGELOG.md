@@ -1,5 +1,246 @@
 # Release Notes
 
+## Version 1.39.0 - 2026-09-01
+
+### Highlights
+
+* Add support for Kubernetes v1.36 and v1.37 (default: v1.37.0)
+* Default container runtime is now containerd
+* Add Traefik Helm-based ingress addon
+* VirtualBox driver now supports Apple Silicon (VirtualBox 7.1+)
+
+### Features
+
+* Add support for Kubernetes v1.36 and v1.37 (default: v1.37.0) (#23567, #23596)
+* Add Traefik Helm-based addon (#23225)
+* Add Helm to minikube ISO (#23420)
+* Upgrade default guest Helm client to Helm 4 (#23383)
+* Add configurable DNS servers for VM drivers (#23069)
+* Add `--mdns` flag to enable mDNS on every VM start (#22964, #23208)
+* drivers: Use deterministic MAC addresses (#23172)
+* vfkit: Auto-select vmnet-shared network when available (#23040)
+* virtualbox: Support darwin/arm64 with VirtualBox 7.1+ (#22861)
+* ISO: Add systemd-coredump for crash stack traces (#23064)
+* ISO: Enable kernel nftables (CONFIG_NF_TABLES) for knftables consumers (#23518)
+* ISO: Enable securityfs for Calico 3.32.2 (#23592)
+* ISO: Include openvswitch kernel module for aarch64 (#23151)
+* ISO: Enable CONFIG_TASK_IO_ACCOUNTING and related kernel options (#23271)
+* infra: Download preloads from GitHub as default and GCS as failover (#23087)
+
+### Performance
+
+* drivers: Start VM drivers in parallel (#23112)
+* Add `--vmnet-offloading` start flag for krunkit driver (#22962)
+* ssh: Prefer AES-GCM ciphers for external SSH client (#23125)
+* ssh: Avoid unneeded sleep when waiting for SSH server (#23001)
+
+### Bug fixes
+
+* addons: Fix Helm verification failure inside guest VMs (#23253, #23329)
+* Fix kubectl exec with cri-dockerd on Kubernetes v1.36+ by disabling ExtendWebSocketsToKubelet (#22921)
+* Fix `--extra-config=etcd.*` producing invalid kubeadm config (#23051)
+* Fix logic for multi-node CNI warning. (#22779)
+* Fix SSHRunner ExitCode always returning 0 for SSH commands (#23364)
+* Fix usage string for minikube node commands. (#22775)
+* kvm: Check libvirt group membership before running virsh (#23369)
+* Fix preserve tag for registry refs with a port (#23228)
+* Use buffered channels to prevent goroutine leak on status timeout (#23215)
+* Fix warning against virtualbox only when the flag is explicit (#22960)
+* image load: Fix silent failure when loading an image used by a container (#23034)
+* node add: Use suggestMemoryAllocation instead of hardcoded 2200MB (#23305)
+* proxy: Walk RoundTripper wrappers to strip proxy on inner *http.Transport (#22910)
+* vmnet: Fix brew install path on Intel Macs and support brew bin path (#23039)
+* mount: Clarify need for bidirectional firewall rules (#20442)
+* drivers: Deduplicate DHCP lease handling on macOS (#23084)
+* hack/update: Track registry addon on the major tag (#23586)
+* hack/update: Update kong image tag to 3 (#23585)
+* ISO: Replace spaces with tabs in nerdctl-bin Buildroot package files (#23438)
+* ISO: Attempt to fix ISO build failures (#22879)
+* ISO: Fix ISO build script reliability and error handling (#23218)
+* ISO: Support building the arm64 ISO on an arm64 host (#22862)
+* ISO: Use binaries for docker buildx instead of build from source (#22942)
+
+### Breaking changes
+
+* Change default container runtime to containerd (#23562)
+* ISO/KIC: Limit support for cri-dockerd to x86 & arm64 and migrate cri-dockerd to pre-compiled GitHub binaries (#22922)
+
+### Addons
+
+* Addon Headlamp: Update from v0.40.0 to v0.45.0
+* Addon Volcano: Update from v1.14.1 to v1.15.1
+* Addon cloud-spanner: Update from 1.5.49 to 1.5.56
+* Addon ingress: Update from v1.14.3 to v1.15.1
+* Addon ingress: Update kube-webhook-certgen image from v1.6.7 to v1.6.9
+* Addon inspektor-gadget: Update from v0.49.1 to v0.55.1
+* Addon kong: Update kong image from 3.9.1 to 3.9.3
+* Addon kong: Update kong/kubernetes-ingress-controller image from 3.5.3 to 3.5.13
+* Addon kubevirt: Update from v1.7.0 to v1.9.0
+* Addon metrics-server: Update from v0.8.1 to v0.9.0
+* Addon nvidia-device-plugin: Update from v0.18.2 to v0.20.0
+* Addon registry: Update from 3.0.0 to 3.1.1
+* Addon yakd: Update from 0.0.8 to 0.0.9
+* HA (multi-control plane): Update kube-vip from v1.0.4 to v1.2.3
+
+### Base images
+
+* ISO: Update Buildroot to 2025.02.16
+* ISO: Update docker-buildx from v0.33.0 to v0.36.1
+* ISO: Update kernel from 6.6.95 to 6.6.152
+* Kicbase/ISO: Update buildkit from v0.26.3 to v0.32.2
+* Kicbase/ISO: Update cni-plugins from v1.9.0 to v1.9.1
+* Kicbase/ISO: Update containerd from 2.2.1 to 2.3.4
+* Kicbase/ISO: Update cri-dockerd from v0.4.1 to v0.4.3
+* Kicbase/ISO: Update crun from 1.26 to 1.29.1
+* Kicbase/ISO: Update go from 1.26.2 to 1.26.4
+* Kicbase/ISO: Update nerdctl from 2.2.1 to 2.3.5
+* Kicbase/ISO: Update runc from v1.4.0 to v1.5.1
+* Kicbase: Bump debian:bookworm from 20260202 to 20260713
+
+### CNI
+
+* CNI: Update calico from v3.31.3 to v3.32.2
+* CNI: Update cilium from v1.19.0 to v1.20.1
+* CNI: Update flannel from v0.28.1 to v0.28.9
+* CNI: Update kindnetd from v20260213-ea8e5717 to v20260820-69b56db7
+
+### Localization
+
+* Add Brazilian Portuguese language through LANGUAGE=pt-BR (#23062, #23580)
+
+### Site
+
+* docs: Add tutorial for running minikube on AWS EC2 (#23017)
+* docs: Fix tunnel desc link (#22389)
+* Fix ai-playground.md request limits to use the devic.es/dri (#23152)
+* Fix typos in vmnet-helper documentation (#22655)
+* Remove unnecessary comma in dashboard.md (#23101)
+* Fix copy button and code block overlap (#23443)
+* Update deployment image tag from v10 to v11 (#23060)
+* Update hyperkit to note deprecation, note Apple Silicon hypervisor alternatives (#23027)
+* Update roadmap with minikube-machine removed (#22763)
+
+### Owners
+
+* Add nirs to minikube approvers (#22936)
+* Move spowelljr from emeritus_approvers to reviewers (#23555)
+
+### Testing
+
+* Add etcd-extra-args.yaml to template generation (#23556)
+* containerd: Skip TestPreload user-image check (#23036)
+* Fix flaky TestHelmInstall: use minimum version floor (#23326)
+* helm: Improve error handling, type safety, and test clarity (#23348)
+* Fix golangci-lint v2.12.2 update & verify exact checksums (#23009)
+* golangci-lint: Fix all lint errors with latest version (#23058)
+* hack/prow: Update cri-dockerd to v0.4.3 for the none-driver integration script (#22992)
+* lint: Change lint level from min to default (#23011)
+* lint: Tighten golangci-lint rules and modernize Go concurrency, sorting, and error handling (#23015)
+* Skip flaky integration tests to unblock CI (#23137)
+* Skip TestAddons/parallel/Registry to unblock development (#23049)
+* Skip unrelated workflows for site-only changes (#23133)
+* tests: Fix TestISOImage memory and HelmVersion path (#23527)
+* virtiofs: Build and test the package only on darwin (#23504)
+
+### Build
+
+* infra: Add auto-pause-hook image build & push target for registry.k8s.io in prow (#23021)
+* infra: Add storage provisioner image targets for building in staging registry.k8s.io (#22970)
+* infra: Isolate `gsutil` state directory to prevent resumable upload conflicts (#23020)
+* infra: Modularize prow image targets to its own makefile (#23019)
+* infra: Fix gh cli installation in prow kic image (#22978)
+* infra: Fix kic image build in staging registry.k8s.io (#22973)
+* hack/release_notes: Export GITHUB_TOKEN for changelog.go (#23602)
+
+### Refactoring
+
+* refactor: Add NodeProvisioner interface with linuxNodeProvisioner (#23319)
+* refactor: Replace Split in loops with more efficient SplitSeq (#23033)
+* refactor: Use slices.Contains to simplify code (#23221)
+* refactor: Use the built-in max/min to simplify the code (#23384)
+* Remove redundant variable declarations in for loops (#23113)
+
+### Thank you
+
+Thank you to our contributors for this release!
+
+- Abdul Rehman
+- Abedegno
+- Anders F Björklund
+- Bob Sira
+- Dean Chen
+- Edward Vielmetti
+- Felipe Soler
+- Hemanth_JS
+- Jathavedhan M
+- Jonathan Krefting
+- Krypt0n123
+- Kubernetes Prow Robot
+- Masaru Nomura
+- Matthew Cengia
+- Medya Ghazizadeh
+- Nir Soffer
+- Nitish Agarwal
+- Noam Cohen
+- Patrick Hagan
+- Rafael Moura Friederick
+- Roslaan001
+- Ross Alexander
+- Samrridh
+- Santhosh Bheeman
+- Sathvik
+- Shriamrut V
+- Steven Powell
+- Swastik Baranwal
+- Todd Liebenschutz-Jones
+- Vladyslav Tkachenko
+- adisivaprasad
+- baohuy1303
+- caltechustc
+- coderrick
+- daixihegu
+- dependabot[bot]
+- kubernetes-prow[bot]
+- minikube-bot
+- no
+- pengqima
+- pli01
+- priya11-2
+- solunolab
+- tanikush
+- thc1006
+- tim-alt-delete
+- wasimat404
+- yash2006kr
+- zjuzhongwen
+- zxuhan7
+
+Thank you to our PR reviewers for this release!
+
+- nirs (537 comments)
+- Roslaan001 (75 comments)
+- Copilot (57 comments)
+- afbjorklund (32 comments)
+- medyagh (17 comments)
+- bobsira (8 comments)
+- nitishagar (4 comments)
+- obnoxxx (3 comments)
+- abedegno (2 comments)
+- HarnageaGabriel (1 comments)
+
+Thank you to our triage members for this release!
+
+- nirs (95 comments)
+- afbjorklund (40 comments)
+- Roslaan001 (21 comments)
+- OchukoWH (14 comments)
+- bhavyaBeliever (9 comments)
+
+### More info
+
+* [Commits since v1.38.1](https://github.com/kubernetes/minikube/compare/v1.38.1...v1.39.0)
+* [Contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.39.0/)
+
 ## Version 1.38.1 - 2026-02-19
 
 ### Feature
