@@ -27,6 +27,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"golang.org/x/oauth2/google"
@@ -217,6 +218,8 @@ func refreshExistingPods(cc *config.ClusterConfig) error {
 
 			klog.Infof("refreshing pod %q", p.Name)
 
+			oldUID := p.UID
+
 			// Recreating the pod should pickup the necessary changes
 			err := pods.Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
 			if err != nil {
@@ -228,15 +231,36 @@ func refreshExistingPods(cc *config.ClusterConfig) error {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
 
-			for err == nil {
+			recreatedByController := false
+			for {
 				if ctx.Err() == context.DeadlineExceeded {
 					return fmt.Errorf("pod %q failed to restart", p.Name)
 				}
-				_, err = pods.Get(context.TODO(), p.Name, metav1.GetOptions{})
+
+				pod, getErr := pods.Get(context.TODO(), p.Name, metav1.GetOptions{})
+				if getErr != nil {
+					if apierrors.IsNotFound(getErr) {
+						break
+					}
+					return fmt.Errorf("failed to get pod %q: %v", p.Name, getErr)
+				}
+
+				if pod.UID != oldUID {
+					recreatedByController = true
+					break
+				}
+
 				time.Sleep(time.Second)
 			}
 
+			if recreatedByController {
+				continue
+			}
+
 			if _, err := pods.Create(context.TODO(), &p, metav1.CreateOptions{}); err != nil {
+				if apierrors.IsAlreadyExists(err) {
+					continue
+				}
 				return fmt.Errorf("failed to create pod %q: %v", p.Name, err)
 			}
 		}
