@@ -75,6 +75,9 @@ func checkReleasesV1(t *testing.T, r notify.Release) {
 		"windows": r.Checksums.Windows,
 	}
 	for platform, sha := range checksums {
+		if sha == "" {
+			continue
+		}
 		fmt.Printf("Checking SHA for %s.\n", platform)
 		actualSha, err := getSHAFromURL(util.GetBinaryDownloadURL(r.Name, platform, "amd64"))
 		if err != nil {
@@ -90,22 +93,40 @@ func checkReleasesV1(t *testing.T, r notify.Release) {
 
 func getSHAMap(r notify.Release) map[string]map[string]string {
 	c := r.Checksums
-	return map[string]map[string]string{
-		"darwin": {
-			"amd64": c.AMD64.Darwin,
-			"arm64": c.ARM64.Darwin,
-		},
-		"linux": {
-			"amd64":   c.AMD64.Linux,
-			"arm":     c.ARM.Linux,
-			"arm64":   c.ARM64.Linux,
-			"ppc64le": c.PPC64LE.Linux,
-			"s390x":   c.S390X.Linux,
-		},
-		"windows": {
-			"amd64": c.AMD64.Windows,
-		},
+	m := map[string]map[string]string{
+		"darwin":  {},
+		"linux":   {},
+		"windows": {},
 	}
+	if c.AMD64 != nil {
+		if c.AMD64.Darwin != "" {
+			m["darwin"]["amd64"] = c.AMD64.Darwin
+		}
+		if c.AMD64.Linux != "" {
+			m["linux"]["amd64"] = c.AMD64.Linux
+		}
+		if c.AMD64.Windows != "" {
+			m["windows"]["amd64"] = c.AMD64.Windows
+		}
+	}
+	if c.ARM != nil && c.ARM.Linux != "" {
+		m["linux"]["arm"] = c.ARM.Linux
+	}
+	if c.ARM64 != nil {
+		if c.ARM64.Darwin != "" {
+			m["darwin"]["arm64"] = c.ARM64.Darwin
+		}
+		if c.ARM64.Linux != "" {
+			m["linux"]["arm64"] = c.ARM64.Linux
+		}
+	}
+	if c.PPC64LE != nil && c.PPC64LE.Linux != "" {
+		m["linux"]["ppc64le"] = c.PPC64LE.Linux
+	}
+	if c.S390X != nil && c.S390X.Linux != "" {
+		m["linux"]["s390x"] = c.S390X.Linux
+	}
+	return m
 }
 
 func checkReleasesV2(t *testing.T, rs notify.Releases) {
