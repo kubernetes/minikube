@@ -2419,10 +2419,14 @@ func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
 
 }
 
-// validateLicenseCmd asserts that the `minikube license` command downloads and untars the licenses
-// Note: This test will fail on release PRs as the licenses file for the new version won't be uploaded at that point
+// validateLicenseCmd asserts that the `minikube license` command downloads and untars the licenses.
+// licenses.tar.gz is uploaded by the release job, so version-bump PRs see a 404 until then.
 func validateLicenseCmd(ctx context.Context, t *testing.T, _ string) {
-	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "license")); err != nil {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "license"))
+	if err != nil {
+		if rr != nil && strings.Contains(rr.Stderr.String(), "received: 404") {
+			t.Skipf("licenses tarball not published for this version yet: %v", err)
+		}
 		t.Fatalf("command %q failed: %v", rr.Stdout.String(), err)
 	}
 	defer os.Remove("./licenses")
