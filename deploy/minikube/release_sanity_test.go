@@ -32,7 +32,7 @@ func getSHAFromURL(url string) (string, error) {
 	fmt.Println("Downloading: ", url)
 	r, err := retryablehttp.Get(url)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("GET %s: %w", url, err)
 	}
 	defer r.Body.Close()
 	h := sha256.New()
