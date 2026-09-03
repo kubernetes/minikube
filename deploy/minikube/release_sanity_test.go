@@ -35,13 +35,12 @@ func getSHAFromURL(url string) (string, error) {
 		return "", err
 	}
 	defer r.Body.Close()
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return "", err
+	h := sha256.New()
+	if _, err := io.Copy(h, r.Body); err != nil {
+		return "", fmt.Errorf("GET %s: failed to copy body: %w", url, err)
 	}
 
-	b := sha256.Sum256(body)
-	return hex.EncodeToString(b[:]), nil
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // TestReleasesJSON checks if all *GA* releases
