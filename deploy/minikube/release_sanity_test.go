@@ -17,11 +17,13 @@ limitations under the License.
 package main
 
 import (
+	"cmp"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"testing"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
@@ -38,7 +40,7 @@ func TestReleasesJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error getting releases.json: %v", err)
 	}
-	checkReleasesV2(t, releases)
+	checkReleases(t, releases)
 }
 
 // TestBetaReleasesJSON checks if all *BETA* releases
@@ -50,87 +52,112 @@ func TestBetaReleasesJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error getting releases-bets.json: %v", err)
 	}
-	checkReleasesV2(t, releases)
+	checkReleases(t, releases)
 }
 
-func checkReleasesV1(t *testing.T, r notify.Release) {
-	checksums := map[string]string{
-		"darwin":  r.Checksums.Darwin,
-		"linux":   r.Checksums.Linux,
-		"windows": r.Checksums.Windows,
-	}
-	for platform, sha := range checksums {
-		if sha == "" {
-			continue
-		}
-		fmt.Printf("Checking SHA for %s.\n", platform)
-		actualSha, err := getSHAFromURL(util.GetBinaryDownloadURL(r.Name, platform, "amd64"))
-		if err != nil {
-			t.Errorf("Error calculating SHA for %s-%s. Error: %v", r.Name, platform, err)
-			continue
-		}
-		if actualSha != sha {
-			t.Errorf("ERROR: SHA does not match for version %s, platform %s. Expected %s, got %s.", r.Name, platform, sha, actualSha)
-			continue
-		}
-	}
+type binary struct {
+	OS   string
+	Arch string
+	SHA  string
 }
 
-func getSHAMap(r notify.Release) map[string]map[string]string {
+// validateChecksums verifies that the v1 flat fields and v2 nested amd64
+// fields are identical.
+func validateChecksums(r notify.Release) error {
 	c := r.Checksums
-	m := map[string]map[string]string{
-		"darwin":  {},
-		"linux":   {},
-		"windows": {},
+	if c.AMD64 == nil {
+		return nil
 	}
+	if c.Darwin != c.AMD64.Darwin {
+		return fmt.Errorf("darwin amd64 checksum mismatch: v1=%s v2=%s", c.Darwin, c.AMD64.Darwin)
+	}
+	if c.Linux != c.AMD64.Linux {
+		return fmt.Errorf("linux amd64 checksum mismatch: v1=%s v2=%s", c.Linux, c.AMD64.Linux)
+	}
+	if c.Windows != c.AMD64.Windows {
+		return fmt.Errorf("windows amd64 checksum mismatch: v1=%s v2=%s", c.Windows, c.AMD64.Windows)
+	}
+	return nil
+}
+
+// releaseBinaries returns a deduplicated list of binaries with expected
+// checksums for a release. The releases JSON contains entries in two formats:
+//   - v1 (older releases): flat "darwin"/"linux"/"windows" fields, always amd64.
+//   - v2 (newer releases): nested arch objects ("amd64", "arm64", …) plus the
+//     same flat fields duplicated for backward compatibility.
+//
+// Both are normalized into a single list so each binary is checked exactly once.
+func releaseBinaries(r notify.Release) []binary {
+	c := r.Checksums
+	var bins []binary
+
 	if c.AMD64 != nil {
+		// v2: nested arch objects.
 		if c.AMD64.Darwin != "" {
-			m["darwin"]["amd64"] = c.AMD64.Darwin
+			bins = append(bins, binary{"darwin", "amd64", c.AMD64.Darwin})
 		}
 		if c.AMD64.Linux != "" {
-			m["linux"]["amd64"] = c.AMD64.Linux
+			bins = append(bins, binary{"linux", "amd64", c.AMD64.Linux})
 		}
 		if c.AMD64.Windows != "" {
-			m["windows"]["amd64"] = c.AMD64.Windows
+			bins = append(bins, binary{"windows", "amd64", c.AMD64.Windows})
+		}
+	} else {
+		// v1: flat fields, always amd64.
+		if c.Darwin != "" {
+			bins = append(bins, binary{"darwin", "amd64", c.Darwin})
+		}
+		if c.Linux != "" {
+			bins = append(bins, binary{"linux", "amd64", c.Linux})
+		}
+		if c.Windows != "" {
+			bins = append(bins, binary{"windows", "amd64", c.Windows})
 		}
 	}
 	if c.ARM != nil && c.ARM.Linux != "" {
-		m["linux"]["arm"] = c.ARM.Linux
+		bins = append(bins, binary{"linux", "arm", c.ARM.Linux})
 	}
 	if c.ARM64 != nil {
 		if c.ARM64.Darwin != "" {
-			m["darwin"]["arm64"] = c.ARM64.Darwin
+			bins = append(bins, binary{"darwin", "arm64", c.ARM64.Darwin})
 		}
 		if c.ARM64.Linux != "" {
-			m["linux"]["arm64"] = c.ARM64.Linux
+			bins = append(bins, binary{"linux", "arm64", c.ARM64.Linux})
 		}
 	}
 	if c.PPC64LE != nil && c.PPC64LE.Linux != "" {
-		m["linux"]["ppc64le"] = c.PPC64LE.Linux
+		bins = append(bins, binary{"linux", "ppc64le", c.PPC64LE.Linux})
 	}
 	if c.S390X != nil && c.S390X.Linux != "" {
-		m["linux"]["s390x"] = c.S390X.Linux
+		bins = append(bins, binary{"linux", "s390x", c.S390X.Linux})
 	}
-	return m
+
+	slices.SortFunc(bins, func(a, b binary) int {
+		if c := cmp.Compare(a.OS, b.OS); c != 0 {
+			return c
+		}
+		return cmp.Compare(a.Arch, b.Arch)
+	})
+	return bins
 }
 
-func checkReleasesV2(t *testing.T, rs notify.Releases) {
+func checkReleases(t *testing.T, rs notify.Releases) {
 	for _, r := range rs.Releases {
 		fmt.Printf("Checking release: %s\n", r.Name)
-		checkReleasesV1(t, r)
-		release := getSHAMap(r)
-		for os, archs := range release {
-			for arch, sha := range archs {
-				fmt.Printf("Checking SHA for %s-%s.\n", os, arch)
-				actualSha, err := getSHAFromURL(util.GetBinaryDownloadURL(r.Name, os, arch))
-				if err != nil {
-					t.Errorf("Error calculating SHA for %s-%s-%s. Error: %v", r.Name, os, arch, err)
-					continue
-				}
-				if actualSha != sha {
-					t.Errorf("ERROR: SHA does not match for version %s, os %s, arch %s. Expected %s, got %s.", r.Name, os, arch, sha, actualSha)
-					continue
-				}
+		if err := validateChecksums(r); err != nil {
+			t.Errorf("release %s: %v", r.Name, err)
+			continue
+		}
+		for _, bin := range releaseBinaries(r) {
+			fmt.Printf("Checking SHA for %s-%s.\n", bin.OS, bin.Arch)
+			actualSha, err := getSHAFromURL(util.GetBinaryDownloadURL(r.Name, bin.OS, bin.Arch))
+			if err != nil {
+				t.Errorf("Error calculating SHA for %s-%s-%s. Error: %v", r.Name, bin.OS, bin.Arch, err)
+				continue
+			}
+			if actualSha != bin.SHA {
+				t.Errorf("ERROR: SHA does not match for version %s, os %s, arch %s. Expected %s, got %s.", r.Name, bin.OS, bin.Arch, bin.SHA, actualSha)
+				continue
 			}
 		}
 	}
