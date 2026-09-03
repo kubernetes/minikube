@@ -142,30 +142,32 @@ func releaseBinaries(r notify.Release) []binary {
 }
 
 func checkReleases(t *testing.T, rs notify.Releases) {
+	client := retryablehttp.NewClient()
+	client.Logger = nil
 	for _, r := range rs.Releases {
-		fmt.Printf("Checking release: %s\n", r.Name)
-		if err := validateChecksums(r); err != nil {
-			t.Errorf("release %s: %v", r.Name, err)
-			continue
-		}
-		for _, bin := range releaseBinaries(r) {
-			fmt.Printf("Checking SHA for %s-%s.\n", bin.OS, bin.Arch)
-			actualSha, err := getSHAFromURL(util.GetBinaryDownloadURL(r.Name, bin.OS, bin.Arch))
-			if err != nil {
-				t.Errorf("Error calculating SHA for %s-%s-%s. Error: %v", r.Name, bin.OS, bin.Arch, err)
-				continue
+		t.Run(r.Name, func(t *testing.T) {
+			if err := validateChecksums(r); err != nil {
+				t.Fatalf("%v", err)
 			}
-			if actualSha != bin.SHA {
-				t.Errorf("ERROR: SHA does not match for version %s, os %s, arch %s. Expected %s, got %s.", r.Name, bin.OS, bin.Arch, bin.SHA, actualSha)
-				continue
+			for _, bin := range releaseBinaries(r) {
+				t.Run(bin.OS+"-"+bin.Arch, func(t *testing.T) {
+					t.Parallel()
+					url := util.GetBinaryDownloadURL(r.Name, bin.OS, bin.Arch)
+					actualSha, err := getSHAFromURL(client, url)
+					if err != nil {
+						t.Fatalf("Error calculating SHA: %v", err)
+					}
+					if actualSha != bin.SHA {
+						t.Fatalf("SHA mismatch: expected %s, got %s", bin.SHA, actualSha)
+					}
+				})
 			}
-		}
+		})
 	}
 }
 
-func getSHAFromURL(url string) (string, error) {
-	fmt.Println("Downloading: ", url)
-	r, err := retryablehttp.Get(url)
+func getSHAFromURL(client *retryablehttp.Client, url string) (string, error) {
+	r, err := client.Get(url)
 	if err != nil {
 		return "", fmt.Errorf("GET %s: %w", url, err)
 	}
