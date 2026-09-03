@@ -90,21 +90,33 @@ func checkReleasesV1(t *testing.T, r notify.Release) {
 
 func getSHAMap(r notify.Release) map[string]map[string]string {
 	c := r.Checksums
+	darwinSHAs := make(map[string]string)
+	linuxSHAs := make(map[string]string)
+	windowsSHAs := make(map[string]string)
+
+	if c.AMD64 != nil {
+		darwinSHAs["amd64"] = c.AMD64.Darwin
+		linuxSHAs["amd64"] = c.AMD64.Linux
+		windowsSHAs["amd64"] = c.AMD64.Windows
+	}
+	if c.ARM != nil {
+		linuxSHAs["arm"] = c.ARM.Linux
+	}
+	if c.ARM64 != nil {
+		darwinSHAs["arm64"] = c.ARM64.Darwin
+		linuxSHAs["arm64"] = c.ARM64.Linux
+	}
+	if c.PPC64LE != nil {
+		linuxSHAs["ppc64le"] = c.PPC64LE.Linux
+	}
+	if c.S390X != nil {
+		linuxSHAs["s390x"] = c.S390X.Linux
+	}
+
 	return map[string]map[string]string{
-		"darwin": {
-			"amd64": c.AMD64.Darwin,
-			"arm64": c.ARM64.Darwin,
-		},
-		"linux": {
-			"amd64":   c.AMD64.Linux,
-			"arm":     c.ARM.Linux,
-			"arm64":   c.ARM64.Linux,
-			"ppc64le": c.PPC64LE.Linux,
-			"s390x":   c.S390X.Linux,
-		},
-		"windows": {
-			"amd64": c.AMD64.Windows,
-		},
+		"darwin":  darwinSHAs,
+		"linux":   linuxSHAs,
+		"windows": windowsSHAs,
 	}
 }
 
