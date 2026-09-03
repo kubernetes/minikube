@@ -24,6 +24,7 @@ import (
 	"io"
 	"net/http"
 	"slices"
+	"sync/atomic"
 	"testing"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
@@ -31,28 +32,30 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-// TestReleasesJSON checks if all *GA* releases
-//
-//	enlisted in https://storage.googleapis.com/minikube/releases-v2.json
-//	are available to download and have correct hashsum
-func TestReleasesJSON(t *testing.T) {
-	releases, err := notify.AllVersionsFromURL(notify.GithubMinikubeReleasesURL)
-	if err != nil {
-		t.Fatalf("Error getting releases.json: %v", err)
-	}
-	checkReleases(t, releases)
-}
+// TestReleases checks if all releases enlisted in the releases JSON files
+// are available to download and have correct checksums.
+func TestReleases(t *testing.T) {
+	var checked atomic.Int32
 
-// TestBetaReleasesJSON checks if all *BETA* releases
-//
-//	enlisted in https://storage.googleapis.com/minikube/releases-beta-v2.json
-//	are available to download and have correct hashsum
-func TestBetaReleasesJSON(t *testing.T) {
-	releases, err := notify.AllVersionsFromURL(notify.GithubMinikubeBetaReleasesURL)
-	if err != nil {
-		t.Fatalf("Error getting releases-bets.json: %v", err)
+	t.Run("stable", func(t *testing.T) {
+		releases, err := notify.AllVersionsFromURL(notify.GithubMinikubeReleasesURL)
+		if err != nil {
+			t.Fatalf("Error getting releases.json: %v", err)
+		}
+		checkReleases(t, &checked, releases)
+	})
+
+	t.Run("beta", func(t *testing.T) {
+		releases, err := notify.AllVersionsFromURL(notify.GithubMinikubeBetaReleasesURL)
+		if err != nil {
+			t.Fatalf("Error getting releases-beta.json: %v", err)
+		}
+		checkReleases(t, &checked, releases)
+	})
+
+	if checked.Load() == 0 {
+		t.Fatal("no binaries were checked")
 	}
-	checkReleases(t, releases)
 }
 
 type binary struct {
@@ -141,7 +144,7 @@ func releaseBinaries(r notify.Release) []binary {
 	return bins
 }
 
-func checkReleases(t *testing.T, rs notify.Releases) {
+func checkReleases(t *testing.T, checked *atomic.Int32, rs notify.Releases) {
 	client := retryablehttp.NewClient()
 	client.Logger = nil
 	for _, r := range rs.Releases {
@@ -152,6 +155,7 @@ func checkReleases(t *testing.T, rs notify.Releases) {
 			for _, bin := range releaseBinaries(r) {
 				t.Run(bin.OS+"-"+bin.Arch, func(t *testing.T) {
 					t.Parallel()
+					checked.Add(1)
 					url := util.GetBinaryDownloadURL(r.Name, bin.OS, bin.Arch)
 					actualSha, err := getSHAFromURL(client, url)
 					if err != nil {
