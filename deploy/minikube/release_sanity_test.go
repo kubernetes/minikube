@@ -29,24 +29,6 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-func getSHAFromURL(url string) (string, error) {
-	fmt.Println("Downloading: ", url)
-	r, err := retryablehttp.Get(url)
-	if err != nil {
-		return "", fmt.Errorf("GET %s: %w", url, err)
-	}
-	defer r.Body.Close()
-	if r.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("GET %s: %s", url, r.Status)
-	}
-	h := sha256.New()
-	if _, err := io.Copy(h, r.Body); err != nil {
-		return "", fmt.Errorf("GET %s: failed to copy body: %w", url, err)
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
 // TestReleasesJSON checks if all *GA* releases
 //
 //	enlisted in https://storage.googleapis.com/minikube/releases-v2.json
@@ -152,4 +134,22 @@ func checkReleasesV2(t *testing.T, rs notify.Releases) {
 			}
 		}
 	}
+}
+
+func getSHAFromURL(url string) (string, error) {
+	fmt.Println("Downloading: ", url)
+	r, err := retryablehttp.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("GET %s: %w", url, err)
+	}
+	defer r.Body.Close()
+	if r.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("GET %s: %s", url, r.Status)
+	}
+	h := sha256.New()
+	if _, err := io.Copy(h, r.Body); err != nil {
+		return "", fmt.Errorf("GET %s: failed to copy body: %w", url, err)
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
