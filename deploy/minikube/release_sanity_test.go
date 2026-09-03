@@ -21,6 +21,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"net/http"
 	"testing"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
@@ -35,6 +36,9 @@ func getSHAFromURL(url string) (string, error) {
 		return "", fmt.Errorf("GET %s: %w", url, err)
 	}
 	defer r.Body.Close()
+	if r.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("GET %s: %s", url, r.Status)
+	}
 	h := sha256.New()
 	if _, err := io.Copy(h, r.Body); err != nil {
 		return "", fmt.Errorf("GET %s: failed to copy body: %w", url, err)
