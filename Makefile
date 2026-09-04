@@ -644,8 +644,8 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
 
 .PHONY: check-release
-check-release: ## Execute go test
-	go test -timeout 42m -v ./deploy/minikube/release_sanity_test.go
+check-release: ## Verify release checksums for $(VERSION) in releases JSON
+	go test -v ./deploy/minikube/release_sanity_test.go -run '//$(subst .,\.,$(VERSION))$$'
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
