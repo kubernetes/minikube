@@ -37,6 +37,7 @@ import (
 type HelmChart struct {
 	Name       string
 	Repo       string
+	Version    string
 	Namespace  string
 	Values     []string
 	ValueFiles []string
@@ -798,8 +799,9 @@ var Addons = map[string]*Addon{
 		// - https://doc.traefik.io/traefik/setup/kubernetes/
 		// - https://github.com/traefik/traefik-helm-chart/blob/master/traefik/VALUES.md
 		&HelmChart{
-			Name: "traefik",
-			Repo: "oci://ghcr.io/traefik/helm/traefik",
+			Name:    "traefik",
+			Repo:    "oci://ghcr.io/traefik/helm/traefik",
+			Version: "41.1.1", // traefik-version
 			// TODO: Use traefik namespace (requires support in addons infra)
 			Namespace: "kube-system",
 			Values: []string{

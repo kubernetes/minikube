@@ -43,6 +43,9 @@ func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 	if chart.Namespace != "" {
 		args = append(args, "--namespace", chart.Namespace)
 	}
+	if chart.Version != "" {
+		args = append(args, "--version", chart.Version)
+	}
 
 	if chart.Values != nil {
 		for _, value := range chart.Values {
