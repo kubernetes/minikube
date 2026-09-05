@@ -29,7 +29,7 @@ import (
 
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 )
 
 const (
@@ -87,7 +87,7 @@ func (v *VBoxCmdManager) vbmOutErr(args ...string) (string, string, error) {
 
 func (v *VBoxCmdManager) vbmOutErrRetry(retry int, args ...string) (string, string, error) {
 	cmd := exec.Command(vboxManageCmd, args...)
-	log.Debugf("COMMAND: %v %v", vboxManageCmd, strings.Join(args, " "))
+	diagnostics.Debugf("COMMAND: %v %v", vboxManageCmd, strings.Join(args, " "))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -95,8 +95,8 @@ func (v *VBoxCmdManager) vbmOutErrRetry(retry int, args ...string) (string, stri
 	err := v.runCmd(cmd)
 	stderrStr := stderr.String()
 	if len(args) > 0 {
-		log.Debugf("STDOUT:\n{\n%v}", stdout.String())
-		log.Debugf("STDERR:\n{\n%v}", stderrStr)
+		diagnostics.Debugf("STDOUT:\n{\n%v}", stdout.String())
+		diagnostics.Debugf("STDERR:\n{\n%v}", stderrStr)
 	}
 
 	if err != nil {
@@ -132,7 +132,7 @@ func checkVBoxManageVersion(version string) error {
 	}
 
 	if major < 5 {
-		log.Warnf("You are using version %s of VirtualBox. If you encounter issues, you might want to upgrade to version 5 at https://www.virtualbox.org", version)
+		diagnostics.Warnf("You are using version %s of VirtualBox. If you encounter issues, you might want to upgrade to version 5 at https://www.virtualbox.org", version)
 	}
 
 	return nil

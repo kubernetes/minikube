@@ -24,10 +24,10 @@ import (
 	"os"
 	"time"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/drivers/plugin/localbinary"
 	"k8s.io/minikube/pkg/libmachine/drivers/rpcdriver"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/version"
 )
 
@@ -45,7 +45,7 @@ Please use this plugin through the main 'docker-machine' binary.
 		os.Exit(1)
 	}
 
-	log.SetDebug(true)
+	diagnostics.SetDebug(true)
 	_ = os.Setenv("MACHINE_DEBUG", "1")
 
 	rpcd := rpcdriver.NewRPCServerDriver(d)
@@ -70,7 +70,7 @@ Please use this plugin through the main 'docker-machine' binary.
 		for {
 			select {
 			case <-rpcd.CloseCh:
-				log.Debug("Closing plugin on server side")
+				diagnostics.Debug("Closing plugin on server side")
 				os.Exit(0)
 			case <-rpcd.HeartbeatCh:
 				continue

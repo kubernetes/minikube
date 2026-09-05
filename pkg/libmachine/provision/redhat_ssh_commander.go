@@ -19,8 +19,8 @@ package provision
 import (
 	"fmt"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/ssh"
 )
 
@@ -34,7 +34,7 @@ func (sshCmder RedHatSSHCommander) SSHCommand(args string) (string, error) {
 		return "", err
 	}
 
-	log.Debugf("About to run SSH command:\n%s", args)
+	diagnostics.Debugf("About to run SSH command:\n%s", args)
 
 	// redhat needs "-t" for tty allocation on ssh therefore we check for the
 	// external client and add as needed.
@@ -49,7 +49,7 @@ func (sshCmder RedHatSSHCommander) SSHCommand(args string) (string, error) {
 		output, err = c.OutputWithPty(args)
 	}
 
-	log.Debugf("SSH cmd err, output: %v: %s", err, output)
+	diagnostics.Debugf("SSH cmd err, output: %v: %s", err, output)
 	if err != nil {
 		return "", fmt.Errorf(`something went wrong running an SSH command
 command : %s

@@ -20,9 +20,9 @@ import (
 	"fmt"
 
 	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/provision/pkgaction"
 	"k8s.io/minikube/pkg/libmachine/provision/serviceaction"
 	"k8s.io/minikube/pkg/libmachine/swarm"
@@ -117,12 +117,12 @@ func DetectProvisioner(d drivers.Driver) (Provisioner, error) {
 }
 
 func (detector StandardDetector) DetectProvisioner(d drivers.Driver) (Provisioner, error) {
-	log.Info("Waiting for SSH to be available...")
+	diagnostics.Info("Waiting for SSH to be available...")
 	if err := drivers.WaitForSSH(d); err != nil {
 		return nil, err
 	}
 
-	log.Info("Detecting the provisioner...")
+	diagnostics.Info("Detecting the provisioner...")
 
 	osReleaseOut, err := drivers.RunSSHCommandFromDriver(d, "cat /etc/os-release")
 	if err != nil {
@@ -139,7 +139,7 @@ func (detector StandardDetector) DetectProvisioner(d drivers.Driver) (Provisione
 		provisioner.SetOsReleaseInfo(osReleaseInfo)
 
 		if provisioner.CompatibleWithHost() {
-			log.Debugf("found compatible host: %s", osReleaseInfo.ID)
+			diagnostics.Debugf("found compatible host: %s", osReleaseInfo.ID)
 			return provisioner, nil
 		}
 	}

@@ -26,7 +26,7 @@ import (
 
 	"runtime"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 )
 
 const (
@@ -92,7 +92,7 @@ func (n *hostOnlyNetwork) Save(vbox VBoxManager) error {
 func (n *hostOnlyNetwork) SaveIPv4(vbox VBoxManager) error {
 	if n.IPv4.IP != nil && n.IPv4.Mask != nil {
 		if runtime.GOOS == "windows" {
-			log.Warn("Windows might ask for the permission to configure a network adapter. Sometimes, such confirmation window is minimized in the taskbar.")
+			diagnostics.Warn("Windows might ask for the permission to configure a network adapter. Sometimes, such confirmation window is minimized in the taskbar.")
 		}
 
 		if err := vbox.vbm("hostonlyif", "ipconfig", n.Name, "--ip", n.IPv4.IP.String(), "--netmask", net.IP(n.IPv4.Mask).String()); err != nil {
@@ -106,7 +106,7 @@ func (n *hostOnlyNetwork) SaveIPv4(vbox VBoxManager) error {
 // createHostonlyAdapter creates a new host-only network.
 func createHostonlyAdapter(vbox VBoxManager) (*hostOnlyNetwork, error) {
 	if runtime.GOOS == "windows" {
-		log.Warn("Windows might ask for the permission to create a network adapter. Sometimes, such confirmation window is minimized in the taskbar.")
+		diagnostics.Warn("Windows might ask for the permission to create a network adapter. Sometimes, such confirmation window is minimized in the taskbar.")
 	}
 
 	out, err := vbox.vbmOut("hostonlyif", "create")
@@ -190,12 +190,12 @@ func getHostOnlyAdapter(nets map[string]*hostOnlyNetwork, hostIP net.IP, netmask
 		// newly created adapter.
 		if hostIP.Equal(n.IPv4.IP) &&
 			(netmask.String() == n.IPv4.Mask.String() || n.IPv4.Mask.String() == buggyNetmask) {
-			log.Debugf("Found: %s", n.Name)
+			diagnostics.Debugf("Found: %s", n.Name)
 			return n
 		}
 	}
 
-	log.Debug("Not found")
+	diagnostics.Debug("Not found")
 	return nil
 }
 
@@ -211,8 +211,8 @@ func getOrCreateHostOnlyNetwork(hostIP net.IP, netmask net.IPMask, nets map[stri
 	if err != nil {
 		// Sometimes the host-only adapter fails to create. See https://www.virtualbox.org/ticket/14040
 		// BUT, it is created in fact! So let's wait until it appears last in the list
-		log.Warnf("Creating a new host-only adapter produced an error: %s", err)
-		log.Warn("This is a known VirtualBox bug. Let's try to recover anyway...")
+		diagnostics.Warnf("Creating a new host-only adapter produced an error: %s", err)
+		diagnostics.Warn("This is a known VirtualBox bug. Let's try to recover anyway...")
 	}
 
 	// It can take some time for an adapter to appear. Let's poll.
@@ -222,7 +222,7 @@ func getOrCreateHostOnlyNetwork(hostIP net.IP, netmask net.IPMask, nets map[stri
 		return nil, errNewHostOnlyAdapterNotVisible
 	}
 
-	log.Warnf("Found a new host-only adapter: %q", hostOnlyAdapter.Name)
+	diagnostics.Warnf("Found a new host-only adapter: %q", hostOnlyAdapter.Name)
 
 	hostOnlyAdapter.IPv4.IP = hostIP
 	hostOnlyAdapter.IPv4.Mask = netmask
@@ -272,7 +272,7 @@ func removeOrphanDHCPServers(vbox VBoxManager) error {
 		return nil
 	}
 
-	log.Debug("Removing orphan DHCP servers...")
+	diagnostics.Debug("Removing orphan DHCP servers...")
 
 	nets, err := listHostOnlyAdapters(vbox)
 	if err != nil {
@@ -283,7 +283,7 @@ func removeOrphanDHCPServers(vbox VBoxManager) error {
 		if strings.HasPrefix(name, dhcpPrefix) {
 			if _, present := nets[name]; !present {
 				if err := vbox.vbm("dhcpserver", "remove", "--netname", name); err != nil {
-					log.Warnf("Unable to remove orphan dhcp server %q: %s", name, err)
+					diagnostics.Warnf("Unable to remove orphan dhcp server %q: %s", name, err)
 				}
 			}
 		}
@@ -326,7 +326,7 @@ func addHostOnlyDHCPServer(ifname string, d dhcpServer, vbox VBoxManager) error 
 	}
 
 	if runtime.GOOS == "windows" {
-		log.Warn("Windows might ask for the permission to configure a dhcp server. Sometimes, such confirmation window is minimized in the taskbar.")
+		diagnostics.Warn("Windows might ask for the permission to configure a dhcp server. Sometimes, such confirmation window is minimized in the taskbar.")
 	}
 
 	return vbox.vbm(args...)
