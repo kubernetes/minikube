@@ -350,6 +350,11 @@ func IsTerminal(w fdWriter) bool {
 	return isatty.IsTerminal(w.Fd())
 }
 
+// IsStyleEnabled returns whether emoji and color output is currently enabled
+func IsStyleEnabled() bool {
+	return useColor
+}
+
 // SetSilent configures whether output is disabled or not
 func SetSilent(q bool) {
 	klog.Infof("Setting silent to %v", q)
