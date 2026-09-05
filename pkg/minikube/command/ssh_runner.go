@@ -154,8 +154,9 @@ func (s *SSHRunner) Remove(f assets.CopyableFile) error {
 	return sess.Run(fmt.Sprintf("sudo rm %s", dst))
 }
 
-// teeSSH runs an SSH command, streaming stdout, stderr to logs
-func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
+// teeSSH runs an SSH command, streaming stdout, stderr to logs, and inR (when
+// non-nil) to the remote command's stdin.
+func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer, inR io.Reader) error {
 	outPipe, err := s.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("stdout: %w", err)
@@ -165,6 +166,26 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("stderr: %w", err)
 	}
+
+	// Errors writing stdin are returned rather than only logged: a truncated
+	// stdin silently corrupts what the remote command consumes.
+	var g errgroup.Group
+	if inR != nil {
+		inPipe, err := s.StdinPipe()
+		if err != nil {
+			return fmt.Errorf("stdin: %w", err)
+		}
+		g.Go(func() error {
+			// Closing signals EOF, without which commands reading until EOF
+			// (docker load, podman load) never terminate.
+			defer inPipe.Close()
+			if _, err := io.Copy(inPipe, inR); err != nil {
+				return fmt.Errorf("copy stdin: %w", err)
+			}
+			return nil
+		})
+	}
+
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		if err := teePrefix(ErrPrefix, errPipe, errB, klog.V(8).Infof); err != nil {
@@ -178,15 +199,17 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	})
 	err = s.Run(cmd)
 	wg.Wait()
-	return err
+
+	// Report the command's own failure first: if it exited early, the stdin
+	// copy failing with a closed pipe is a symptom, not the cause.
+	if err != nil {
+		return err
+	}
+	return g.Wait()
 }
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
 func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
-	if cmd.Stdin != nil {
-		return nil, errors.New("SSHRunner does not support stdin - you could be the first to add it")
-	}
-
 	rr := &RunResult{Args: cmd.Args}
 	klog.Infof("Run: %v", rr.Command())
 
@@ -220,7 +243,7 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 		}
 	}()
 
-	err = teeSSH(sess, shellquote.Join(cmd.Args...), outb, errb)
+	err = teeSSH(sess, shellquote.Join(cmd.Args...), outb, errb, cmd.Stdin)
 	elapsed := time.Since(start)
 
 	rr.ExitCode = s.exitCode(err)
