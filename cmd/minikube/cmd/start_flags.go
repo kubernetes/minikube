@@ -152,6 +152,9 @@ const (
 	preloadSrc              = "preload-source"
 	rosetta                 = "rosetta"
 	vmnetOffloading         = "vmnet-offloading"
+	vmnetStartAddress       = "vmnet-start-address"
+	vmnetEndAddress         = "vmnet-end-address"
+	vmnetSubnetMask         = "vmnet-subnet-mask"
 	dnsServers              = config.DNSServers
 	mdns                    = config.MDNS
 )
@@ -300,6 +303,13 @@ func initDriverFlags() {
 
 	// krunkit
 	startCmd.Flags().Bool(vmnetOffloading, false, "Enable vmnet checksum and TSO offloading. See krunkit driver documentation for known limitations (krunkit driver only)")
+
+	// vfkit (vmnet-shared) and krunkit: pin the vmnet network. All three must be
+	// set together, or none (empty keeps current behavior, letting the vmnet
+	// framework allocate the network). Help text mirrors vmnet-helper's run -h.
+	startCmd.Flags().String(vmnetStartAddress, "", "The starting IPv4 address for the vmnet interface, used as the gateway address. The subsequent address up to and including --vmnet-end-address are placed in the DHCP pool. All other addresses are available for static assignment. The address must be in the private IP range (RFC 1918). Must be set together with --vmnet-end-address and --vmnet-subnet-mask (vfkit with --network vmnet-shared, and krunkit drivers only)")
+	startCmd.Flags().String(vmnetEndAddress, "", "The DHCP IPv4 range end address for the vmnet interface. Must be in the private IP range (RFC 1918) and in the same subnet as --vmnet-start-address. Must be set together with --vmnet-start-address and --vmnet-subnet-mask (vfkit with --network vmnet-shared, and krunkit drivers only)")
+	startCmd.Flags().String(vmnetSubnetMask, "", "The IPv4 subnet mask to use on the vmnet interface. Must be set together with --vmnet-start-address and --vmnet-end-address (vfkit with --network vmnet-shared, and krunkit drivers only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -610,6 +620,58 @@ func getVmnetOffloading(driverName string) bool {
 	return enabled
 }
 
+// validateVmnetOptions is the start-time handler for the three vmnet network
+// flags. It does driver/network scoping (R9) first, then per-value validation
+// (R3): each provided value is parsed with netip (like --dns-servers) and the
+// canonical spelling is stored. The all-or-none (R5) and cross-field (R4)
+// checks are NOT made here — they run in vmnet.Helper.Validate() from the
+// vfkit and krunkit drivers' Start(), so every path that starts a VM (start,
+// node add, node start, ...) validates at the point of use without each
+// command carrying its own call.
+//
+// Scoping is done first so an unsupported driver is warned+cleared without
+// surfacing value errors for flags that are ignored. It returns the three
+// values, possibly cleared to "" when the driver cannot honor them (so an
+// unsupported-driver drop is reflected in the assembled config). On a usage
+// violation it exits with reason.Usage (R7).
+func validateVmnetOptions(drvName, network, start, end, mask string) (string, string, string) {
+	// R9: driver/network scoping (cmd-specific). Done first so unsupported drivers
+	// are warned+cleared without surfacing value errors for flags that are ignored.
+	if !driver.IsVFKit(drvName) && !driver.IsKrunkit(drvName) {
+		if start != "" || end != "" || mask != "" {
+			out.WarningT("--vmnet-* flags are only valid with the vfkit and krunkit drivers, they will be ignored")
+			return "", "", ""
+		}
+		return start, end, mask
+	}
+	// krunkit always uses vmnet, so only vfkit is gated on the effective network.
+	if driver.IsVFKit(drvName) && network != "vmnet-shared" {
+		exit.Message(reason.Usage, "--vmnet-* flags with the vfkit driver require --network vmnet-shared")
+	}
+	if start != "" {
+		v, err := vmnet.NormalizeAddress(start)
+		if err != nil {
+			exit.Message(reason.Usage, "--vmnet-start-address: {{.err}}", out.V{"err": err})
+		}
+		start = v
+	}
+	if end != "" {
+		v, err := vmnet.NormalizeAddress(end)
+		if err != nil {
+			exit.Message(reason.Usage, "--vmnet-end-address: {{.err}}", out.V{"err": err})
+		}
+		end = v
+	}
+	if mask != "" {
+		v, err := vmnet.NormalizeSubnetMask(mask)
+		if err != nil {
+			exit.Message(reason.Usage, "--vmnet-subnet-mask: {{.err}}", out.V{"err": err})
+		}
+		mask = v
+	}
+	return start, end, mask
+}
+
 // getDNSServers returns the configured DNS servers for VM drivers.
 // For non-VM drivers the value is ignored since DNS configuration via
 // systemd-resolved is not applicable.
@@ -673,13 +735,19 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, crName st
 
 	checkExtraDiskOptions(cmd, drvName)
 
+	// Validate the three vmnet options against the effective network + driver
+	// (R5/R9). Done once here so the populated config already reflects any
+	// unsupported-driver drop. May exit with reason.Usage (R7).
+	network := getNetwork(drvName, options)
+	vmnetStart, vmnetEnd, vmnetMask := validateVmnetOptions(drvName, network, viper.GetString(vmnetStartAddress), viper.GetString(vmnetEndAddress), viper.GetString(vmnetSubnetMask))
+
 	cc = config.ClusterConfig{
 		Name:                    ClusterFlagValue(),
 		KeepContext:             viper.GetBool(keepContext),
 		EmbedCerts:              viper.GetBool(embedCerts),
 		MinikubeISO:             viper.GetString(isoURL),
 		KicBaseImage:            viper.GetString(kicBaseImage),
-		Network:                 getNetwork(drvName, options),
+		Network:                 network,
 		Subnet:                  viper.GetString(subnet),
 		Memory:                  getMemorySize(cmd, drvName),
 		CPUs:                    getCPUCount(drvName),
@@ -759,6 +827,9 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, crName st
 		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
 		Rosetta:            getRosetta(drvName),
 		VmnetOffloading:    getVmnetOffloading(drvName),
+		VmnetStartAddress:  vmnetStart,
+		VmnetEndAddress:    vmnetEnd,
+		VmnetSubnetMask:    vmnetMask,
 		DNSServers:         getDNSServers(cmd, drvName),
 		MDNS:               getMDNS(cmd, drvName),
 	}
@@ -992,6 +1063,9 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateDurationFromFlag(cmd, &cc.AutoPauseInterval, autoPauseInterval)
 	updateBoolFromFlag(cmd, &cc.Rosetta, rosetta)
 	updateBoolFromFlag(cmd, &cc.VmnetOffloading, vmnetOffloading)
+	updateStringFromFlag(cmd, &cc.VmnetStartAddress, vmnetStartAddress)
+	updateStringFromFlag(cmd, &cc.VmnetEndAddress, vmnetEndAddress)
+	updateStringFromFlag(cmd, &cc.VmnetSubnetMask, vmnetSubnetMask)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		kubeVer, err := getKubernetesVersion(existing)
@@ -1031,6 +1105,11 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	if cc.ScheduledStop != nil && time.Until(time.Unix(cc.ScheduledStop.InitiationTime, 0).Add(cc.ScheduledStop.Duration)) <= 0 {
 		cc.ScheduledStop = nil
 	}
+
+	// Validate the merged vmnet options on restart (R5): a partial set left in
+	// the persisted config, or a flag overriding one of three, must be caught
+	// before start (R7). Re-assigns in case of an unsupported-driver drop.
+	cc.VmnetStartAddress, cc.VmnetEndAddress, cc.VmnetSubnetMask = validateVmnetOptions(cc.Driver, cc.Network, cc.VmnetStartAddress, cc.VmnetEndAddress, cc.VmnetSubnetMask)
 
 	return cc
 }

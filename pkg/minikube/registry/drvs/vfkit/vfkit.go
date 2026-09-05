@@ -75,7 +75,10 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	case "nat", "":
 	case "vmnet-shared":
 		helper = &vmnet.Helper{
-			MachineDir: filepath.Join(storePath, "machines", machineName),
+			MachineDir:   filepath.Join(storePath, "machines", machineName),
+			StartAddress: cfg.VmnetStartAddress,
+			EndAddress:   cfg.VmnetEndAddress,
+			SubnetMask:   cfg.VmnetSubnetMask,
 		}
 	default:
 		return nil, fmt.Errorf("unsupported network: %q", cfg.Network)

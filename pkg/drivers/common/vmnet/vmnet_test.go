@@ -219,3 +219,66 @@ func TestExecutableName(t *testing.T) {
 		})
 	}
 }
+
+func TestHelperValidate(t *testing.T) {
+	tests := []struct {
+		name   string
+		helper Helper
+		match  string
+	}{
+		{
+			name:   "empty helper keeps default behavior",
+			helper: Helper{},
+		},
+		{
+			name: "valid triple",
+			helper: Helper{
+				StartAddress: "192.168.200.1",
+				EndAddress:   "192.168.200.127",
+				SubnetMask:   "255.255.255.0",
+			},
+		},
+		{
+			name: "partial triple rejected",
+			helper: Helper{
+				StartAddress: "192.168.1.1",
+			},
+			match: "set together",
+		},
+		{
+			name: "start and end in different subnets rejected",
+			helper: Helper{
+				StartAddress: "192.168.1.1",
+				EndAddress:   "192.168.2.10",
+				SubnetMask:   "255.255.255.0",
+			},
+			match: "same subnet",
+		},
+		{
+			name: "end not above start rejected",
+			helper: Helper{
+				StartAddress: "192.168.1.10",
+				EndAddress:   "192.168.1.5",
+				SubnetMask:   "255.255.255.0",
+			},
+			match: "greater than",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.helper.Validate()
+			if tt.match == "" {
+				if err != nil {
+					t.Errorf("Validate() unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("Validate() expected error containing %q, got nil", tt.match)
+			}
+			if !strings.Contains(err.Error(), tt.match) {
+				t.Errorf("Validate() error %q does not contain %q", err.Error(), tt.match)
+			}
+		})
+	}
+}
