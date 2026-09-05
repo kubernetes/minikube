@@ -23,7 +23,9 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"text/template"
 	"time"
@@ -168,4 +170,38 @@ func parseTmpl(text string, data interface{}, name string) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+// UpdateVersionJSON updates a dependency version in pkg/minikube/assets/versions.json
+func UpdateVersionJSON(dep string, version string) error {
+	filePath := filepath.Join(FSRoot, "pkg/minikube/assets/versions.json")
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("unable to read versions.json: %w", err)
+	}
+
+	var versions map[string]string
+	if err := json.Unmarshal(data, &versions); err != nil {
+		return fmt.Errorf("unable to unmarshal versions.json: %w", err)
+	}
+
+	if versions[dep] == version {
+		return nil
+	}
+
+	versions[dep] = version
+
+	out, err := json.MarshalIndent(versions, "", "  ")
+	if err != nil {
+		return fmt.Errorf("unable to marshal versions.json: %w", err)
+	}
+
+	out = append(out, '\n')
+
+	if err := os.WriteFile(filePath, out, 0644); err != nil {
+		return fmt.Errorf("unable to write versions.json: %w", err)
+	}
+
+	klog.Infof("Updated versions.json key '%s' to '%s'", dep, version)
+	return nil
 }

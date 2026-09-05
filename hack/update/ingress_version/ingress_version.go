@@ -81,6 +81,10 @@ func main() {
 
 	data := Data{Controller: string(controllerImage), Webhook: string(webhookImage)}
 
+	
+	if err := update.UpdateVersionJSON("ingress", strings.TrimPrefix(tag, "controller-")); err != nil {
+		klog.Fatalf("unable to update versions.json: %v", err)
+	}
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
 	}
