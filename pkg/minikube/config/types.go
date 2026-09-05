@@ -114,6 +114,7 @@ type ClusterConfig struct {
 	VmnetOffloading         bool          // Only used by krunkit driver
 	DNSServers              []netip.Addr  // Static DNS servers for the VM (VM drivers only)
 	MDNS                    bool          // Enable mDNS (.local) resolution via systemd-resolved
+	HTTPS                   bool          // Install trusted TLS certificate and CA in user trust store
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
