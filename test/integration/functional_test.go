@@ -128,7 +128,13 @@ func testFunctionalInternal(t *testing.T, k8sVersion string) {
 			if ctx.Err() == context.DeadlineExceeded {
 				t.Fatalf("Unable to run more tests (deadline exceeded)")
 			}
-			if tc.name == "StartWithProxy" && runCorpProxy {
+			// The mitmdump-based StartWithCustomCerts is flaky on rootless
+			// (minikube start stalls dialing SSH through the rootless port
+			// forward), so keep the plain HTTP proxy there.
+			// Deliberate: this roster slot reports StartWithProxy on rootless and
+			// StartWithCustomCerts everywhere else.
+			// https://github.com/kubernetes/minikube/issues/23630
+			if tc.name == "StartWithProxy" && runCorpProxy && !RootlessDriver() {
 				tc.name = "StartWithCustomCerts"
 				tc.validator = validateStartWithCustomCerts
 			}
@@ -140,8 +146,9 @@ func testFunctionalInternal(t *testing.T, k8sVersion string) {
 
 	defer func() {
 		cleanupUnwantedImages(ctx, t, profile)
-		if runCorpProxy {
+		if mitm != nil {
 			mitm.Stop(t)
+			mitm = nil
 		}
 	}()
 
