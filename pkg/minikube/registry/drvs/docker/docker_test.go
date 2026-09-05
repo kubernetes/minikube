@@ -22,7 +22,9 @@ import (
 	"testing"
 
 	"github.com/blang/semver/v4"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/run"
@@ -194,4 +196,47 @@ func TestStatus(t *testing.T) {
 			t.Errorf("status(%q) = %+v; expected shouldReturnError = %t", tt.input, state, tt.shouldReturnError)
 		}
 	}
+}
+
+func TestConfigureExposedPortsOnlyOnPrimaryNode(t *testing.T) {
+	primary := config.Node{Name: "m01"}
+	extra := config.Node{Name: "m02"}
+	cc := config.ClusterConfig{
+		Name:         "p",
+		ExposedPorts: []string{"80:80"},
+		Nodes:        []config.Node{primary, extra},
+	}
+
+	got, err := configure(cc, primary)
+	if err != nil {
+		t.Fatalf("configure primary: %v", err)
+	}
+	d, ok := got.(*kic.Driver)
+	if !ok {
+		t.Fatalf("configure primary returned %T", got)
+	}
+	if !containsPair(d.NodeConfig.ExtraArgs, "-p", "80:80") {
+		t.Errorf("primary ExtraArgs = %v, want -p 80:80", d.NodeConfig.ExtraArgs)
+	}
+
+	got, err = configure(cc, extra)
+	if err != nil {
+		t.Fatalf("configure extra: %v", err)
+	}
+	d, ok = got.(*kic.Driver)
+	if !ok {
+		t.Fatalf("configure extra returned %T", got)
+	}
+	if containsPair(d.NodeConfig.ExtraArgs, "-p", "80:80") {
+		t.Errorf("additional node ExtraArgs = %v, did not want -p 80:80", d.NodeConfig.ExtraArgs)
+	}
+}
+
+func containsPair(args []string, flag, value string) bool {
+	for i := 0; i+1 < len(args); i++ {
+		if args[i] == flag && args[i+1] == value {
+			return true
+		}
+	}
+	return false
 }
