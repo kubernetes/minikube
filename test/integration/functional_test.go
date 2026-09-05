@@ -738,6 +738,11 @@ func validateStartWithCustomCerts(ctx context.Context, t *testing.T, profile str
 	if PodmanDriver() && ContainerRuntime() == "crio" {
 		t.Skip("skipping StartWithCustomCerts on podman+crio: hangs minikube start, https://github.com/kubernetes/minikube/issues/23629")
 	}
+	// Bound this test so a hang fails fast here instead of tripping the
+	// 18-minute GHA step / 40-minute suite timeout. The plain HTTP proxy
+	// test already started the cluster, so later serial tests still have one.
+	ctx, cancel := context.WithTimeout(ctx, Minutes(5))
+	defer cancel()
 	err := startProxyWithCustomCerts(ctx, t)
 	if err != nil {
 		t.Fatalf("failed to set up the test proxy: %s", err)
