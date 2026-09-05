@@ -18,6 +18,7 @@ package oci
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -110,6 +111,23 @@ func TestPointToHostPodman(t *testing.T) {
 		if v := os.Getenv(exp.key); v != exp.value {
 			t.Errorf("invalid %v env variable. got: %v, want: %v", exp.value, v, exp.value)
 		}
+	}
+}
+
+func TestInspectIgnoresStderr(t *testing.T) {
+	script := filepath.Join(t.TempDir(), "fake-oci")
+	content := "#!/bin/sh\necho '192.168.49.2'\necho 'WARN[0000] The BoltDB backend is deprecated' >&2\n"
+	if err := os.WriteFile(script, []byte(content), 0700); err != nil {
+		t.Fatal(err)
+	}
+
+	lines, err := inspect(script, "test-container", "{{.NetworkSettings.IPAddress}}")
+	if err != nil {
+		t.Fatalf("inspect failed: %v", err)
+	}
+
+	if len(lines) != 1 || lines[0] != "192.168.49.2" {
+		t.Errorf("inspect returned %v, want [\"192.168.49.2\"]", lines)
 	}
 }
 
