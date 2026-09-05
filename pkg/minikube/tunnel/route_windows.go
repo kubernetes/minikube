@@ -49,30 +49,23 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	klog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()
 	message := string(stdInAndOut)
-	if message != " OK!\r\n" {
-		return fmt.Errorf("error adding route: %s, %d", message, len(strings.Split(message, "\n")))
-	}
 	klog.Infof("%s", stdInAndOut)
 	if err != nil {
+		exists, recheckErr := isValidToAddOrDelete(router, route)
+		if recheckErr == nil && exists {
+			return nil
+		}
 		klog.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
-		return err
+		return fmt.Errorf("error adding route: %s, %v", message, err)
 	}
 	return nil
 }
 
 func (router *osRouter) parseTable(table []byte) routingTable {
 	t := routingTable{}
-	skip := true
 	for _, line := range strings.Split(string(table), "\n") {
-		// after first line of header we can start consuming
-		if strings.HasPrefix(line, "Network Destination") {
-			skip = false
-			continue
-		}
-
 		fields := strings.Fields(line)
-		// don't care about the 0.0.0.0 routes
-		if skip || len(fields) == 0 || len(fields) > 0 && (fields[0] == "default" || fields[0] == "0.0.0.0") {
+		if len(fields) == 0 || fields[0] == "default" || fields[0] == "0.0.0.0" {
 			continue
 		}
 		if len(fields) > 2 {
@@ -130,13 +123,10 @@ func (router *osRouter) Cleanup(route *Route) error {
 	klog.Infof("Cleaning up route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
 	command := exec.Command("route", "delete", serviceCIDR)
 	stdInAndOut, err := command.CombinedOutput()
-	if err != nil {
-		return err
-	}
 	message := string(stdInAndOut)
 	klog.Infof("'%s'", message)
-	if message != " OK!\r\n" {
-		return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
+	if err != nil {
+		return fmt.Errorf("error deleting route: %s, %v", message, err)
 	}
 	return nil
 }
