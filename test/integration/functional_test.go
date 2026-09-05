@@ -734,6 +734,13 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 // only runs on GitHub Actions for amd64 linux, otherwise validateStartWithProxy runs instead
 func validateStartWithCustomCerts(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+	if PodmanDriver() && ContainerRuntime() == "crio" {
+		t.Skip("skipping StartWithCustomCerts on podman+crio: hangs minikube start, https://github.com/kubernetes/minikube/issues/23629")
+	}
+	// Bound this test so a hang fails fast instead of tripping the
+	// 18-minute GHA step / 40-minute suite timeout.
+	ctx, cancel := context.WithTimeout(ctx, Minutes(5))
+	defer cancel()
 	err := startProxyWithCustomCerts(ctx, t)
 	if err != nil {
 		t.Fatalf("failed to set up the test proxy: %s", err)
