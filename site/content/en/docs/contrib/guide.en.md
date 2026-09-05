@@ -56,6 +56,27 @@ To get feedback on a larger, more ambitious changes, create a PR containing your
 
 If you send out a large change without a MEP, prepare to be asked by other contributors for one to be included within the PR.
 
+### Commit messages
+
+Follow the Kubernetes
+[Commit Message Guidelines](https://www.kubernetes.dev/docs/guide/pull-requests/#commit-message-guidelines):
+imperative subject, body that explains the **problem** then the **solution**,
+wrap at 72 columns. Title-only commits are not enough unless the problem and
+solution fit in one line.
+
+Do **not** use GitHub closing keywords (`fixes`, `closes`, …) with `#N` in the
+**commit message** — that applies `do-not-merge/invalid-commit-message`. Put
+`Fixes #N` in the **pull request description** instead. Avoid `@mentions` in
+commits.
+
+If you use a coding agent (Cursor, Claude Code, Copilot, Codex, and others that
+support [Agent Skills](https://agentskills.io/)), point it at:
+
+[`.agents/skills/commit-message/`](https://github.com/kubernetes/minikube/tree/master/.agents/skills/commit-message)
+
+Ask the agent to draft or revise the commit message from your diff. AI drafts
+are fine when they accurately describe the change.
+
 ### Style Guides
 
 For coding, refer to the [Kubernetes Coding Conventions](https://github.com/kubernetes/community/blob/master/contributors/guide/coding-conventions.md#code-conventions)
