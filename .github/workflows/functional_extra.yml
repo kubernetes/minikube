@@ -30,18 +30,18 @@ jobs:
       VM_NAME: m-${{ github.event.pull_request.number || github.ref_name }}-${{ github.run_id }}
       STACK_NAME: ${{ github.event.pull_request.number || github.ref_name }}-${{ github.run_id }}-stack
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # pull_request_target checks out the base branch by default
           # We need to explicitly checkout the PR's head commit to test the changes
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - name: Azure Login
         id: azlogin
-        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
+        uses: azure/login@7ddb5af1ef8758cf1353cf3b42f940aee27ba21c # v3.0.2
         with:
           creds: '{"clientId":"${{ secrets.MINIKUBE_AZ_CLIENT_ID }}","clientSecret":"${{ secrets.MINIKUBE_AZ_PASSWORD }}","subscriptionId":"${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.MINIKUBE_AZ_TENANT_ID }}"}'
       - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -120,7 +120,7 @@ jobs:
           \$env:Path += ';C:\Users\minikubeadmin\go\bin';
           \$OutputEncoding = [System.Text.Encoding]::UTF8;
           
-          ./e2e-windows-amd64.exe --minikube-start-args='--driver=hyperv' --binary=./minikube-windows-amd64.exe '-test.run' TestFunctional '-test.v' '-test.timeout=40m' | Tee-Object -FilePath testout.txt
+          ./e2e-windows-amd64.exe --minikube-start-args='--driver=hyperv --container-runtime=docker' --binary=./minikube-windows-amd64.exe '-test.run' TestFunctional '-test.v' '-test.timeout=40m' | Tee-Object -FilePath testout.txt
           \$env:result=\$lastexitcode
           
           Get-Content testout.txt | go tool test2json -t | Out-File -Encoding UTF8 testout.json

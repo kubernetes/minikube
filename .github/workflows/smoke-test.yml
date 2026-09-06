@@ -41,25 +41,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: qemu-docker-macos-15-x86
+          - name: qemu-containerd-macos-15-x86
             driver: qemu
             os: macos-15-intel
-            start_flags: --network socket_vmnet --force
+            start_flags: --network socket_vmnet --force --container-runtime=containerd
             sudo: "sudo"
-          - name: vfkit-docker-macos-15-x86
+          - name: vfkit-containerd-macos-15-x86
             driver: vfkit
             os: macos-15-intel
-            start_flags: --network vmnet-shared --force
+            start_flags: --network vmnet-shared --force --container-runtime=containerd
             sudo: "sudo"
-          - name: docker-docker-ubuntu-24.04-x86
+          - name: docker-containerd-ubuntu-24.04-x86
             driver: docker
             os: ubuntu-24.04
-            start_flags: ""
+            start_flags: --container-runtime=containerd
             sudo: ""
-          - name: docker-docker-ubuntu-24.04-arm
+          - name: docker-containerd-ubuntu-24.04-arm
             driver: docker
             os: ubuntu-24.04-arm
-            start_flags: ""
+            start_flags: --container-runtime=containerd
             sudo: ""
     steps:
       - id: info-block
@@ -73,9 +73,9 @@ jobs:
           sudo mdutil -a -i off
           # Erase Existing Indexes
           sudo mdutil -E /
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         timeout-minutes: 1
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         timeout-minutes: 8
         with:
           go-version-file: go.mod

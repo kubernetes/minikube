@@ -17,7 +17,10 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"k8s.io/minikube/hack/update"
 
@@ -39,14 +42,14 @@ type Data struct {
 }
 
 func main() {
-	tags, err := update.ImageTagsFromDockerHub("library/registry")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	stable, _, _, err := update.GHReleases(ctx, "distribution", "distribution")
 	if err != nil {
-		klog.Fatal(err)
+		klog.Fatalf("Unable to get stable version: %v", err)
 	}
-	tag, err := latestStableSemverTag(tags)
-	if err != nil {
-		klog.Fatal(err)
-	}
+	tag := strings.TrimPrefix(semver.Major(stable.Tag), "v")
 	sha, err := update.GetImageSHA(fmt.Sprintf("docker.io/registry:%s", tag))
 	if err != nil {
 		klog.Fatalf("failed to get image SHA: %v", err)
@@ -57,14 +60,4 @@ func main() {
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
 	}
-}
-
-func latestStableSemverTag(tags []string) (string, error) {
-	for _, tag := range tags {
-		vTag := fmt.Sprintf("v%s", tag)
-		if semver.IsValid(vTag) && semver.Prerelease(vTag) == "" {
-			return tag, nil
-		}
-	}
-	return "", fmt.Errorf("no stable semver tag found")
 }

@@ -31,6 +31,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -67,10 +68,15 @@ func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 		constants.NewestKubernetesVersion,
 	}
 
-	// Small optimization, don't run the exact same set of tests twice
-	if constants.DefaultKubernetesVersion == constants.NewestKubernetesVersion {
-		versions = versions[:len(versions)-1]
+	// Remove duplicate versions, preserving order. Right now Default and
+	// Newest are the same, so we would otherwise run the same test twice.
+	deduped := make([]string, 0, len(versions))
+	for _, v := range versions {
+		if !slices.Contains(deduped, v) {
+			deduped = append(deduped, v)
+		}
 	}
+	versions = deduped
 
 	for _, v := range versions {
 		t.Run(v, func(t *testing.T) {

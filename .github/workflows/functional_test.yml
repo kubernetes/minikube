@@ -48,9 +48,9 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     name: ${{ matrix.name }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         timeout-minutes: 1
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         timeout-minutes: 2
         with:
           go-version: ${{env.GO_VERSION}}
@@ -82,12 +82,14 @@ jobs:
           - name: docker-docker-ubuntu24.04-x86
             driver: docker
             cruntime: docker
+            extra-start-args: --container-runtime=docker
             os: ubuntu-24.04
             arch: amd64
             test-timeout: 18m
           - name: docker-docker-ubuntu24.04-arm
             driver: docker
             cruntime: docker
+            extra-start-args: --container-runtime=docker
             os: ubuntu-24.04-arm
             arch: arm64
             test-timeout: 18m 
@@ -113,21 +115,24 @@ jobs:
             rootless: true
             arch: amd64
             test-timeout: 18m 
-          - name: podman-docker-ubuntu-24.04-x86
+          - name: podman-crio-ubuntu-24.04-x86
             driver: podman
-            cruntime: docker
+            cruntime: crio
+            extra-start-args: --container-runtime=crio
             os: ubuntu-24.04
             arch: amd64
             test-timeout: 22m
           - name: baremetal-docker-ubuntu-24.04-x86
             driver: none
             cruntime: docker
+            extra-start-args: --container-runtime=docker
             os: ubuntu-24.04
             arch: amd64
             test-timeout: 10m
           - name: baremetal-docker-ubuntu-24.04-arm
             driver: none
             cruntime: docker
+            extra-start-args: --container-runtime=docker
             os: ubuntu-24.04-arm
             arch: arm64
             test-timeout: 10m
@@ -149,10 +154,10 @@ jobs:
       - id: info-block
         uses: medyagh/info-block@f5c042624acf8ce21bed4b0de77962e0a56ad88e # v1
         timeout-minutes: 1
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
 
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         timeout-minutes: 2
         with:
           go-version: ${{env.GO_VERSION}}

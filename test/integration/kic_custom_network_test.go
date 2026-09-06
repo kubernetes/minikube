@@ -53,6 +53,7 @@ func TestKicCustomNetwork(t *testing.T) {
 			defer Cleanup(t, profile, cancel)
 
 			startArgs := []string{"start", "-p", profile, fmt.Sprintf("--network=%s", test.networkName)}
+			startArgs = append(startArgs, StartArgs()...)
 			c := exec.CommandContext(ctx, Target(), startArgs...)
 			rr, err := Run(t, c)
 			if err != nil {
@@ -89,6 +90,7 @@ func TestKicExistingNetwork(t *testing.T) {
 	verifyNetworkExists(ctx, t, networkName)
 
 	startArgs := []string{"start", "-p", profile, fmt.Sprintf("--network=%s", networkName)}
+	startArgs = append(startArgs, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 	if err != nil {
@@ -108,6 +110,7 @@ func TestKicCustomSubnet(t *testing.T) {
 
 	subnet := "192.168.60.0/24"
 	startArgs := []string{"start", "-p", profile, fmt.Sprintf("--subnet=%s", subnet)}
+	startArgs = append(startArgs, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 	if err != nil {
@@ -128,6 +131,7 @@ func TestKicStaticIP(t *testing.T) {
 
 	staticIP := "192.168.200.200"
 	startArgs := []string{"start", "-p", profile, fmt.Sprintf("--static-ip=%s", staticIP)}
+	startArgs = append(startArgs, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 	if err != nil {

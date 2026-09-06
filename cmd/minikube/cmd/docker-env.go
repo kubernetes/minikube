@@ -310,13 +310,13 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 		if len(co.Config.Nodes) > 1 {
 			exit.Message(reason.EnvMultiConflict, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
-		cr := co.Config.KubernetesConfig.ContainerRuntime
-		if err := dockerEnvSupported(cr, driverName); err != nil {
+		crName := co.Config.KubernetesConfig.ContainerRuntime
+		if err := dockerEnvSupported(crName, driverName); err != nil {
 			exit.Message(reason.Usage, err.Error())
 		}
 
 		// for the sake of docker-env command, start nerdctl and nerdctld
-		if cr == constants.Containerd {
+		if crName == constants.Containerd {
 			out.WarningT("Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better")
 
 			startNerdctld(options)
@@ -342,7 +342,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 
 		r := co.CP.Runner
 
-		if cr == constants.Docker {
+		if crName == constants.Docker {
 			ensureDockerd(cname, r)
 		}
 
@@ -416,7 +416,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			cmd.Stderr = os.Stderr
 
 			// TODO: refactor to work with docker, temp fix to resolve regression
-			if cr == constants.Containerd {
+			if crName == constants.Containerd {
 				cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AUTH_SOCK=%s", co.Config.SSHAuthSock))
 				cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AGENT_PID=%d", co.Config.SSHAgentPID))
 			}
@@ -426,7 +426,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			}
 
 			// TODO: refactor to work with docker, temp fix to resolve regression
-			if cr == constants.Containerd {
+			if crName == constants.Containerd {
 				// eventually, run something similar to ssh --append-known
 				appendKnownHelper(nodeName, true)
 			}

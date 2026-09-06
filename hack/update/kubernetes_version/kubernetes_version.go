@@ -117,6 +117,7 @@ func addTestDataItemsToSchema(versionMM string, mmVar string, p0Var string) {
 		"crio.yaml",
 		"default.yaml",
 		"dns.yaml",
+		"etcd-extra-args.yaml",
 		"image-repository.yaml",
 		"options.yaml",
 	}

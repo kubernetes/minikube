@@ -500,6 +500,29 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 	}
 }
 
+// RepoRoot returns the module root by walking up from cwd until go.mod is
+// found. The compiled e2e binary is invoked from the project root (hit on
+// the first try). `go test` sets cwd to the test package, including
+// test/integration and any nested or future test package.
+func RepoRoot(t *testing.T) string {
+	t.Helper()
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	start := dir
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatalf("failed to find go.mod from %s", start)
+		}
+		dir = parent
+	}
+}
+
 // MaybeParallel sets that the test should run in parallel
 func MaybeParallel(t *testing.T) {
 	t.Helper()
