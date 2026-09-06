@@ -23,6 +23,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,6 +32,13 @@ import (
 
 	"k8s.io/klog/v2"
 )
+
+// nerdctlVersionFile is where the kic nerdctl version is pinned (same source
+// as `DEP=nerdctl make get-dependency-version`).
+const nerdctlVersionFile = "../deploy/kicbase/Dockerfile"
+
+// nerdctlVersionRe extracts the pinned nerdctl version from nerdctlVersionFile.
+var nerdctlVersionRe = regexp.MustCompile(`(?m)^ARG NERDCTL_VERSION="(.*)"$`)
 
 const cxTimeout = 5 * time.Minute
 
@@ -68,6 +77,16 @@ func main() {
 		// Makefile needs "2.1.4" instead of "v2.1.4"
 		Version: strings.TrimPrefix(stable.Tag, "v"),
 		Commit:  stable.Commit,
+	}
+
+	// nerdctl tracks containerd's major.minor: if the new containerd is ahead
+	// of the pinned nerdctl's major.minor, nerdctl cannot support it yet and
+	// this update must wait for a nerdctl bump (#22084).
+	if nerdctl, err := pinnedNerdctlVersion(); err != nil {
+		klog.Fatalf("Unable to read the pinned nerdctl version: %v", err)
+	} else if !containerdNerdctlCompatible(data.Version, nerdctl) {
+		klog.Infof("Skipping: containerd %s is incompatible with nerdctl %s (containerd major.minor is ahead); waiting for a nerdctl update", data.Version, nerdctl)
+		return
 	}
 
 	if err := update.Apply(schema, data); err != nil {
@@ -134,4 +153,56 @@ func updateHashFile(source string, arch archInfo, shaSum [sha256.Size]byte) erro
 		return fmt.Errorf("failed to write to hash file: %v", err)
 	}
 	return nil
+}
+
+// pinnedNerdctlVersion returns the nerdctl version currently pinned in
+// deploy/kicbase/Dockerfile.
+func pinnedNerdctlVersion() (string, error) {
+	b, err := os.ReadFile(nerdctlVersionFile)
+	if err != nil {
+		return "", fmt.Errorf("failed to read %s: %v", nerdctlVersionFile, err)
+	}
+	m := nerdctlVersionRe.FindSubmatch(b)
+	if m == nil {
+		return "", fmt.Errorf("no NERDCTL_VERSION found in %s", nerdctlVersionFile)
+	}
+	return string(m[1]), nil
+}
+
+// containerdNerdctlCompatible reports whether the given containerd version can
+// be used with the given nerdctl version: incompatible when containerd's
+// major.minor is strictly ahead of nerdctl's, matching the rule from the
+// retired CI check (#22084).
+func containerdNerdctlCompatible(containerdVersion, nerdctlVersion string) bool {
+	c := majorMinor(containerdVersion)
+	n := majorMinor(nerdctlVersion)
+	return !versionAhead(c, n)
+}
+
+// majorMinor returns the "major.minor" prefix of a semantic version string.
+func majorMinor(version string) string {
+	parts := strings.SplitN(version, ".", 3)
+	if len(parts) < 2 {
+		return version
+	}
+	return parts[0] + "." + parts[1]
+}
+
+// versionAhead reports whether a is strictly greater than b, comparing
+// dot-separated numeric components (non-numeric components compare as 0).
+func versionAhead(a, b string) bool {
+	as, bs := strings.Split(a, "."), strings.Split(b, ".")
+	for i := 0; i < len(as) || i < len(bs); i++ {
+		var av, bv int
+		if i < len(as) {
+			av, _ = strconv.Atoi(as[i])
+		}
+		if i < len(bs) {
+			bv, _ = strconv.Atoi(bs[i])
+		}
+		if av != bv {
+			return av > bv
+		}
+	}
+	return false
 }
