@@ -70,6 +70,10 @@ func main() {
 		Commit:  stable.Commit,
 	}
 
+	
+	if err := update.UpdateVersionJSON("containerd", strings.TrimPrefix(stable.Tag, "v")); err != nil {
+		klog.Fatalf("unable to update versions.json: %v", err)
+	}
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
 	}

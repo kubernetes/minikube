@@ -43,6 +43,10 @@ func main() {
 	}
 	data := Data{LatestVersion: tags[0]}
 
+	
+	if err := update.UpdateVersionJSON("kindnetd", tags[0]); err != nil {
+		klog.Fatalf("unable to update versions.json: %v", err)
+	}
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
 	}

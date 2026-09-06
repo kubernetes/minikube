@@ -58,6 +58,10 @@ func main() {
 	data := Data{StableVersion: stable}
 	klog.Infof("kube-vip stable version: %s", stable)
 
+	
+	if err := update.UpdateVersionJSON("kube-vip", stable); err != nil {
+		klog.Fatalf("unable to update versions.json: %v", err)
+	}
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
 	}
