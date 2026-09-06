@@ -61,11 +61,8 @@ import (
 // validateFunc are for subtests that share a single setup
 type validateFunc func(context.Context, *testing.T, string)
 
-// used in validateStartWithProxy and validateSoftStart
+// used in validateSoftStart
 var apiPortTest = 8441
-
-// Store the proxy session so we can clean it up at the end
-var mitm *StartSession
 
 var runCorpProxy = detect.GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform()
 
@@ -91,67 +88,36 @@ func testFunctionalInternal(t *testing.T, k8sVersion string) {
 	profile := UniqueProfileName("functional")
 	ctx := context.WithValue(context.Background(), ContextKey("k8sVersion"), k8sVersion)
 	ctx, cancel := context.WithTimeout(ctx, Minutes(40))
-	defer func() {
-		if !*cleanup {
-			return
-		}
-		p := localSyncTestPath()
-		if err := os.Remove(p); err != nil {
-			t.Logf("unable to remove %q: %v", p, err)
-		}
+	t.Cleanup(cancel)
 
-		Cleanup(t, profile, cancel)
-	}()
-	// Serial tests
-	t.Run("serial", func(t *testing.T) {
-		tests := []struct {
-			name      string
-			validator validateFunc
-		}{
-			{"CopySyncFile", setupFileSync},                 // Set file for the file sync test case
-			{"StartWithProxy", validateStartWithProxy},      // Set everything else up for success
-			{"AuditLog", validateAuditAfterStart},           // check audit feature works
-			{"SoftStart", validateSoftStart},                // do a soft start. ensure config didn't change.
-			{"KubeContext", validateKubeContext},            // Racy: must come immediately after "minikube start"
-			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
-			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
-			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
-			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
-			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
-			{"ComponentHealth", validateComponentHealth},
-			{"LogsCmd", validateLogsCmd},
-			{"LogsFileCmd", validateLogsFileCmd},
-			{"InvalidService", validateInvalidService},
-		}
-		for _, tc := range tests {
-			tc := tc
-			if ctx.Err() == context.DeadlineExceeded {
-				t.Fatalf("Unable to run more tests (deadline exceeded)")
-			}
-			if tc.name == "StartWithProxy" && runCorpProxy {
-				tc.name = "StartWithCustomCerts"
-				tc.validator = validateStartWithCustomCerts
-			}
-			t.Run(tc.name, func(t *testing.T) {
-				tc.validator(ctx, t, profile)
-			})
-		}
-	})
+	// Setup: prepare file sync test data
+	setupFileSync(ctx, t, profile)
 
-	defer func() {
-		cleanupUnwantedImages(ctx, t, profile)
-		if runCorpProxy {
-			mitm.Stop(t)
-		}
-	}()
+	// Setup: start proxy and minikube cluster (shared by serial and parallel tests)
+	if runCorpProxy {
+		addr := startProxyWithCustomCerts(ctx, t)
+		startMinikubeWithProxy(ctx, t, profile, "HTTPS_PROXY", addr)
+	} else {
+		addr := startHTTPProxy(ctx, t)
+		startMinikubeWithProxy(ctx, t, profile, "HTTP_PROXY", addr)
+	}
 
-	// Parallelized tests
+	// Parallelized tests: run first while the cluster is stable.
 	t.Run("parallel", func(t *testing.T) {
 		tests := []struct {
 			name      string
 			validator validateFunc
 		}{
-			{"ConfigCmd", validateConfigCmd},
+			{"ComponentHealth", validateComponentHealth},
+			{"AuditLog", validateAuditAfterStart},
+			{"KubeContext", validateKubeContext},
+			{"KubectlGetPods", validateKubectlGetPods},
+			{"CacheCmd", validateCacheCmd},
+			{"MinikubeKubectlCmd", validateMinikubeKubectl},
+			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
+			{"LogsCmd", validateLogsCmd},
+			{"LogsFileCmd", validateLogsFileCmd},
+			{"InvalidService", validateInvalidService},
 			{"DashboardCmd", validateDashboardCmd},
 			{"DryRun", validateDryRun},
 			{"InternationalLanguage", validateInternationalLanguage},
@@ -190,39 +156,28 @@ func testFunctionalInternal(t *testing.T, k8sVersion string) {
 		}
 	})
 
-}
+	// Serial tests: only tests that mutate cluster state belong here.
+	// Run after parallel tests so mutations don't affect concurrent tests.
+	t.Run("serial", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			validator validateFunc
+		}{
+			{"SoftStart", validateSoftStart},     // soft start restarts cluster
+			{"ExtraConfig", validateExtraConfig}, // restarts apiserver
+			{"ConfigCmd", validateConfigCmd},     // writes profile config
+		}
+		for _, tc := range tests {
+			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+			t.Run(tc.name, func(t *testing.T) {
+				tc.validator(ctx, t, profile)
+			})
+		}
+	})
 
-func cleanupUnwantedImages(ctx context.Context, t *testing.T, profile string) {
-	_, err := exec.LookPath(oci.Docker)
-	if err != nil {
-		t.Skipf("docker is not installed, cannot delete docker images")
-	} else {
-		t.Run("delete echo-server images", func(t *testing.T) {
-			tags := []string{"1.0", profile}
-			for _, tag := range tags {
-				image := fmt.Sprintf("%s:%s", echoServerImage, tag)
-				rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", image))
-				if err != nil {
-					t.Logf("failed to remove image %q from docker images. args %q: %v", image, rr.Command(), err)
-				}
-			}
-		})
-		t.Run("delete my-image image", func(t *testing.T) {
-			newImage := fmt.Sprintf("localhost/my-image:%s", profile)
-			rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", newImage))
-			if err != nil {
-				t.Logf("failed to remove image my-image from docker images. args %q: %v", rr.Command(), err)
-			}
-		})
-
-		t.Run("delete minikube cached images", func(t *testing.T) {
-			img := "minikube-local-cache-test:" + profile
-			rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", img))
-			if err != nil {
-				t.Logf("failed to remove image minikube local cache test images from docker. args %q: %v", rr.Command(), err)
-			}
-		})
-	}
 }
 
 // validateNodeLabels checks if minikube cluster is created with correct kubernetes's node label
@@ -309,6 +264,29 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	if VFKitDriver() && runtime.GOOS == "darwin" {
 		t.Skip("skipping on darwin github action runners, as this test requires a running docker daemon")
 	}
+
+	t.Cleanup(func() {
+		if _, err := exec.LookPath(oci.Docker); err != nil {
+			return
+		}
+		for _, tag := range []string{"1.0", profile} {
+			image := fmt.Sprintf("%s:%s", echoServerImage, tag)
+			rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", image))
+			if err != nil {
+				t.Logf("failed to remove image %q from docker images. args %q: %v", image, rr.Command(), err)
+			}
+		}
+		newImage := fmt.Sprintf("localhost/my-image:%s", profile)
+		rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", newImage))
+		if err != nil {
+			t.Logf("failed to remove image my-image from docker images. args %q: %v", rr.Command(), err)
+		}
+		img := "minikube-local-cache-test:" + profile
+		rr, err = Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", img))
+		if err != nil {
+			t.Logf("failed to remove image minikube local cache test images from docker. args %q: %v", rr.Command(), err)
+		}
+	})
 
 	runImageList(ctx, t, profile, "ImageListShort", "short", "%s")
 	runImageList(ctx, t, profile, "ImageListTable", "table", "│ %s")
@@ -715,33 +693,6 @@ func validatePodmanEnv(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateStartWithProxy makes sure minikube start respects the HTTP_PROXY environment variable
-func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
-	defer PostMortemLogs(t, profile)
-	// docs: Start a local HTTP proxy
-	addr, err := startHTTPProxy(t)
-	if err != nil {
-		t.Fatalf("failed to set up the test proxy: %s", err)
-	}
-
-	// docs: Start minikube with the environment variable `HTTP_PROXY` set to the local HTTP proxy
-	startMinikubeWithProxy(ctx, t, profile, "HTTP_PROXY", addr)
-}
-
-// validateStartWithCustomCerts makes sure minikube start respects the HTTPS_PROXY environment variable and works with custom certs
-// a proxy is started by calling the mitmdump binary in the background, then installing the certs generated by the binary
-// mitmproxy/dump creates the proxy at localhost on a random port
-// only runs on GitHub Actions for amd64 linux, otherwise validateStartWithProxy runs instead
-func validateStartWithCustomCerts(ctx context.Context, t *testing.T, profile string) {
-	defer PostMortemLogs(t, profile)
-	addr, err := startProxyWithCustomCerts(ctx, t)
-	if err != nil {
-		t.Fatalf("failed to set up the test proxy: %s", err)
-	}
-
-	startMinikubeWithProxy(ctx, t, profile, "HTTPS_PROXY", addr)
-}
-
 // validateAuditAfterStart makes sure the audit log contains the correct logging after minikube start
 func validateAuditAfterStart(_ context.Context, t *testing.T, profile string) {
 	// docs: Read the audit log file and make sure it contains the current minikube profile name
@@ -762,7 +713,7 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	start := time.Now()
-	// docs: The test `validateStartWithProxy` should have start minikube, make sure the configured node port is `8441`
+	// docs: Make sure the configured node port is `8441`
 	beforeCfg, err := config.LoadProfile(profile)
 	if err != nil {
 		t.Fatalf("error reading cluster config before soft start: %v", err)
@@ -877,7 +828,7 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 	start := time.Now()
 	// docs: The tests before this already created a profile
 	// docs: Soft-start minikube with different `--extra-config` command line option
-	startArgs := []string{"start", "-p", profile, "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision", "--wait=all"}
+	startArgs := []string{"start", "-p", profile, "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision"}
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 	if err != nil {
@@ -918,8 +869,8 @@ func imageID(image string) string {
 	panic("unexpected image name: " + image)
 }
 
-// validateComponentHealth asserts that all Kubernetes components are healthy
-// NOTE: It expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag
+// validateComponentHealth asserts that all Kubernetes components are healthy.
+// NOTE: depends on --wait=all in startMinikubeWithProxy.
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 	if KVMDriver() {
@@ -1977,8 +1928,14 @@ func localEmptyCertPath() string {
 // 2. Certificate sync: Files placed in $MINIKUBE_HOME/certs should be installed as system certificates in the VM.
 //   - minikube_test.pem -> /etc/ssl/certs/... (verified by validateCertSync)
 func setupFileSync(_ context.Context, t *testing.T, _ string) {
+	t.Helper()
 	p := localSyncTestPath()
 	t.Logf("local sync path: %s", p)
+	t.Cleanup(func() {
+		if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
+			t.Logf("unable to remove %q: %v", p, err)
+		}
+	})
 	// This file is tested by validateFileSync to ensure generic file sync works
 	syncFile := filepath.Join(*testdataDir, "sync.test")
 	err := cp.Copy(syncFile, p)
@@ -2259,8 +2216,11 @@ users:
 	}
 }
 
-// startProxyWithCustomCerts mimics starts a proxy with custom certs by using mitmproxy and installing its certs
-func startProxyWithCustomCerts(ctx context.Context, t *testing.T) (string, error) {
+// startProxyWithCustomCerts starts a mitmproxy with custom certs for testing HTTPS proxy
+// support. It downloads mitmproxy, installs certs, and registers cleanup via
+// t.Cleanup. Only runs on GitHub Actions for Linux.
+func startProxyWithCustomCerts(ctx context.Context, t *testing.T) string {
+	t.Helper()
 	arch := "x86_64"
 	if runtime.GOARCH == "arm64" {
 		arch = "aarch64"
@@ -2271,11 +2231,10 @@ func startProxyWithCustomCerts(ctx context.Context, t *testing.T) (string, error
 	// Download the mitmproxy bundle for mitmdump
 	_, err := Run(t, exec.CommandContext(ctx, "curl", "--fail", "--location", "--remote-name", "--retry", "3", url))
 	if err != nil {
-		return "", fmt.Errorf("download mitmproxy tar: %w", err)
+		t.Fatalf("download mitmproxy tar: %v", err)
 	}
 	defer func() {
-		err := os.Remove(filename)
-		if err != nil {
+		if err := os.Remove(filename); err != nil {
 			t.Logf("remove tarball: %v", err)
 		}
 	}()
@@ -2284,69 +2243,62 @@ func startProxyWithCustomCerts(ctx context.Context, t *testing.T) (string, error
 
 	_, err = Run(t, exec.CommandContext(ctx, "tar", "xzf", filename, "-C", mitmDir))
 	if err != nil {
-		return "", fmt.Errorf("untar mitmproxy tar: %w", err)
+		t.Fatalf("untar mitmproxy tar: %v", err)
 	}
 
 	port, err := freeport.GetFreePort()
 	if err != nil {
-		return "", fmt.Errorf("get free port: %w", err)
+		t.Fatalf("get free port: %v", err)
 	}
 
 	// Start mitmdump in the background, this will create the needed certs
 	// and provide the necessary proxy at 127.0.0.1:<port>
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
-	mitmRR, err := Start(t, exec.CommandContext(ctx, path.Join(mitmDir, "mitmdump"), "-p", fmt.Sprintf("%d", port), "--set", fmt.Sprintf("confdir=%s", mitmDir)))
+	session, err := Start(t, exec.CommandContext(ctx, path.Join(mitmDir, "mitmdump"), "-p", fmt.Sprintf("%d", port), "--set", fmt.Sprintf("confdir=%s", mitmDir)))
 	if err != nil {
-		return "", fmt.Errorf("starting mitmproxy: %w", err)
+		t.Fatalf("starting mitmproxy: %v", err)
 	}
+	t.Cleanup(func() { session.Stop(t) })
 
-	// Store it for cleanup later
-	mitm = mitmRR
-
-	// Add a symlink from the cert to the correct directory
+	// Wait for the cert file to appear (up to 15 seconds)
 	certFile := path.Join(mitmDir, "mitmproxy-ca-cert.pem")
-	// wait 15 seconds for the certs to show up
 	_, err = os.Stat(certFile)
-	tries := 1
-	for os.IsNotExist(err) {
+	for tries := 1; os.IsNotExist(err) && tries <= 15; tries++ {
 		time.Sleep(1 * time.Second)
-		tries++
-		if tries > 15 {
-			break
-		}
 		_, err = os.Stat(certFile)
 	}
 	if os.IsNotExist(err) {
-		return "", fmt.Errorf("cert files never showed up: %w", err)
+		t.Fatalf("cert files never showed up: %v", err)
 	}
 
 	destCertPath := path.Join("/etc/ssl/certs", "mitmproxy-ca-cert.pem")
 	symLinkCmd := fmt.Sprintf("ln -fs %s %s", certFile, destCertPath)
 	if _, err := Run(t, exec.CommandContext(ctx, "sudo", "/bin/bash", "-c", symLinkCmd)); err != nil {
-		return "", fmt.Errorf("cert symlink: %w", err)
+		t.Fatalf("cert symlink: %v", err)
 	}
 
 	// Add a symlink of the form {hash}.0
 	rr, err := Run(t, exec.CommandContext(ctx, "openssl", "x509", "-hash", "-noout", "-in", certFile))
 	if err != nil {
-		return "", fmt.Errorf("cert hashing: %w", err)
+		t.Fatalf("cert hashing: %v", err)
 	}
 	stringHash := strings.TrimSpace(rr.Stdout.String())
 	hashLink := path.Join("/etc/ssl/certs", fmt.Sprintf("%s.0", stringHash))
 
 	hashCmd := fmt.Sprintf("test -L %s || ln -fs %s %s", hashLink, destCertPath, hashLink)
 	if _, err := Run(t, exec.CommandContext(ctx, "sudo", "/bin/bash", "-c", hashCmd)); err != nil {
-		return "", fmt.Errorf("cert hash symlink: %w", err)
+		t.Fatalf("cert hash symlink: %v", err)
 	}
 
-	return addr, nil
+	return addr
 }
 
 // startHTTPProxy starts a local HTTP proxy on a random port and returns its address.
-func startHTTPProxy(t *testing.T) (string, error) {
+func startHTTPProxy(_ context.Context, t *testing.T) string {
+	t.Helper()
 	port, err := freeport.GetFreePort()
 	if err != nil {
-		return "", fmt.Errorf("failed to get an open port: %w", err)
+		t.Fatalf("failed to get an open port: %v", err)
 	}
 
 	addr := fmt.Sprintf("localhost:%d", port)
@@ -2357,10 +2309,12 @@ func startHTTPProxy(t *testing.T) (string, error) {
 			t.Errorf("Failed to start http server for proxy mock")
 		}
 	}(srv, t)
-	return addr, nil
+	return addr
 }
 
 func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, proxyEnv string, addr string) {
+	t.Helper()
+	t.Cleanup(func() { Cleanup(t, profile, func() {}) })
 	// Use more memory so that we may reliably fit MySQL and nginx
 	memoryFlag := "--memory=4096"
 	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
@@ -2368,6 +2322,7 @@ func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, p
 		memoryFlag = "--memory=6144"
 	}
 	// passing --api-server-port so later verify it didn't change in soft start.
+	// --wait=all ensures all components are healthy for validateComponentHealth.
 	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgsWithContext(ctx)...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
@@ -2376,7 +2331,7 @@ func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, p
 	c.Env = env
 	rr, err := Run(t, c)
 	if err != nil {
-		t.Errorf("failed minikube start. args %q: %v", rr.Command(), err)
+		t.Fatalf("failed minikube start. args %q: %v", rr.Command(), err)
 	}
 
 	want := "Found network options:"
