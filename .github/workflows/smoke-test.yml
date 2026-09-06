@@ -41,11 +41,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: qemu-containerd-macos-15-x86
-            driver: qemu
-            os: macos-15-intel
-            start_flags: --network socket_vmnet --force --container-runtime=containerd
-            sudo: "sudo"
           - name: vfkit-containerd-macos-15-x86
             driver: vfkit
             os: macos-15-intel
@@ -100,12 +95,6 @@ jobs:
         run: |
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
-      - name: Install qemu and socket_vmnet (macos)
-        timeout-minutes: 6
-        if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
-        run: |
-          brew install qemu socket_vmnet
-          HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
       - name: Inspect host before test (macos)
         timeout-minutes: 1
         if: contains(matrix.os, 'macos')
