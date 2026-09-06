@@ -23,9 +23,9 @@ import (
 	"text/template"
 
 	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/provision/pkgaction"
 	"k8s.io/minikube/pkg/libmachine/provision/serviceaction"
@@ -127,11 +127,11 @@ func installDocker(provisioner *RedHatProvisioner) error {
 }
 
 func (provisioner *RedHatProvisioner) dockerDaemonResponding() bool {
-	log.Debug("checking docker daemon")
+	diagnostics.Debug("checking docker daemon")
 
 	if out, err := provisioner.SSHCommand("sudo docker version"); err != nil {
-		log.Warnf("Error getting SSH command to check if the daemon is up: %s", err)
-		log.Debugf("'sudo docker version' output:\n%s", out)
+		diagnostics.Warnf("Error getting SSH command to check if the daemon is up: %s", err)
+		diagnostics.Debugf("'sudo docker version' output:\n%s", out)
 		return false
 	}
 
@@ -157,7 +157,7 @@ func (provisioner *RedHatProvisioner) Provision(swarmOptions swarm.Options, auth
 	}
 
 	for _, pkg := range provisioner.Packages {
-		log.Debugf("installing base package: name=%s", pkg)
+		diagnostics.Debugf("installing base package: name=%s", pkg)
 		if err := provisioner.Package(pkg, pkgaction.Install); err != nil {
 			return err
 		}

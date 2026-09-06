@@ -23,8 +23,8 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnflag"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/ssh"
@@ -55,7 +55,7 @@ func ExtraDiskPath(d *drivers.BaseDriver, diskID int) string {
 //	path := ExtraDiskPath(baseDriver, diskID)
 //	err := CreateRawDisk(path, baseDriver.DiskSize)
 func CreateRawDisk(diskPath string, sizeMB int) error {
-	log.Infof("Creating raw disk image: %s of size %vMB", diskPath, sizeMB)
+	diagnostics.Infof("Creating raw disk image: %s of size %vMB", diskPath, sizeMB)
 
 	_, err := os.Stat(diskPath)
 	if err != nil {

@@ -29,7 +29,7 @@ import (
 	"github.com/moby/term"
 	"golang.org/x/crypto/ssh"
 	terminal "golang.org/x/term"
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 )
 
@@ -109,22 +109,22 @@ func SetDefaultClient(clientType ClientType) {
 func NewClient(user string, host string, port int, auth *Auth) (Client, error) {
 	sshBinaryPath, err := exec.LookPath("ssh")
 	if err != nil {
-		log.Debug("SSH binary not found, using native Go implementation")
+		diagnostics.Debug("SSH binary not found, using native Go implementation")
 		client, err := NewNativeClient(user, host, port, auth)
-		log.Debug(client)
+		diagnostics.Debug(client)
 		return client, err
 	}
 
 	if defaultClientType == Native {
-		log.Debug("Using SSH client type: native")
+		diagnostics.Debug("Using SSH client type: native")
 		client, err := NewNativeClient(user, host, port, auth)
-		log.Debug(client)
+		diagnostics.Debug(client)
 		return client, err
 	}
 
-	log.Debug("Using SSH client type: external")
+	diagnostics.Debug("Using SSH client type: external")
 	client, err := NewExternalClient(sshBinaryPath, user, host, port, auth)
-	log.Debug(client)
+	diagnostics.Debug(client)
 	return client, err
 }
 
@@ -174,7 +174,7 @@ func NewNativeConfig(user string, auth *Auth) (ssh.ClientConfig, error) {
 func (client *NativeClient) dialSuccess() bool {
 	conn, err := ssh.Dial("tcp", net.JoinHostPort(client.Hostname, strconv.Itoa(client.Port)), &client.Config)
 	if err != nil {
-		log.Debugf("Error dialing TCP: %s", err)
+		diagnostics.Debugf("Error dialing TCP: %s", err)
 		return false
 	}
 	closeConn(conn)
@@ -370,7 +370,7 @@ func NewExternalClient(sshBinaryPath, user, host string, port int, auth *Auth) (
 			}
 			if runtime.GOOS != "windows" {
 				mode := fi.Mode()
-				log.Debugf("Using SSH private key: %s (%s)", privateKeyPath, mode)
+				diagnostics.Debugf("Using SSH private key: %s (%s)", privateKeyPath, mode)
 				// Private key file should have strict permissions
 				perm := mode.Perm()
 				if perm&0400 == 0 {
@@ -408,7 +408,7 @@ func (client *ExternalClient) Shell(args ...string) error {
 	args = append(client.BaseArgs, args...)
 	cmd := getSSHCmd(client.BinaryPath, args...)
 
-	log.Debug(cmd)
+	diagnostics.Debug(cmd)
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -422,7 +422,7 @@ func (client *ExternalClient) Start(command string) (io.ReadCloser, io.ReadClose
 	args = append(args, command)
 	cmd := getSSHCmd(client.BinaryPath, args...)
 
-	log.Debug(cmd)
+	diagnostics.Debug(cmd)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -458,6 +458,6 @@ func (client *ExternalClient) Wait() error {
 func closeConn(c io.Closer) {
 	err := c.Close()
 	if err != nil {
-		log.Debugf("Error closing SSH Client: %s", err)
+		diagnostics.Debugf("Error closing SSH Client: %s", err)
 	}
 }

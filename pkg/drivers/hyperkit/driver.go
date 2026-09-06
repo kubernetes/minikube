@@ -36,8 +36,8 @@ import (
 	"github.com/shirou/gopsutil/v4/process"
 	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/drivers/common/dhcp"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/detect"
 )
@@ -90,7 +90,7 @@ func (d *Driver) verifyRootPermissions() error {
 		return err
 	}
 	euid := syscall.Geteuid()
-	log.Debugf("exe=%s uid=%d", exe, euid)
+	diagnostics.Debugf("exe=%s uid=%d", exe, euid)
 	if euid != 0 {
 		return fmt.Errorf(permErr, filepath.Base(exe), exe, exe)
 	}
@@ -145,7 +145,7 @@ func pidState(pid int) (state.State, error) {
 	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
 		if errors.Is(err, process.ErrorProcessNotRunning) {
-			log.Debugf("hyperkit pid %d: %v", pid, err)
+			diagnostics.Debugf("hyperkit pid %d: %v", pid, err)
 			return state.Stopped, nil
 		}
 		return state.Error, err
@@ -153,12 +153,12 @@ func pidState(pid int) (state.State, error) {
 	name, err := proc.Name()
 	if err != nil {
 		// Process might be gone
-		log.Debugf("hyperkit pid %d missing from process table", pid)
+		diagnostics.Debugf("hyperkit pid %d missing from process table", pid)
 		return state.Stopped, nil
 	}
 	// hyperkit or com.docker.hyper
 	if !strings.Contains(name, "hyper") {
-		log.Debugf("pid %d is stale, and is being used by %s", pid, name)
+		diagnostics.Debugf("pid %d is stale, and is being used by %s", pid, name)
 		return state.Stopped, nil
 	}
 	return state.Running, nil
@@ -171,7 +171,7 @@ func (d *Driver) GetState() (state.State, error) {
 	}
 
 	pid := d.getPid()
-	log.Debugf("hyperkit pid from json: %d", pid)
+	diagnostics.Debugf("hyperkit pid from json: %d", pid)
 	return pidState(pid)
 }
 
@@ -191,7 +191,7 @@ func (d *Driver) Remove() error {
 
 	s, err := d.GetState()
 	if err != nil || s == state.Error {
-		log.Debugf("Error checking machine status: %v, assuming it has been removed already", err)
+		diagnostics.Debugf("Error checking machine status: %v, assuming it has been removed already", err)
 	}
 	if s == state.Running {
 		if err := d.Stop(); err != nil {
@@ -263,15 +263,15 @@ func (d *Driver) Start() error {
 		return err
 	}
 
-	log.Debugf("Using UUID %s", h.UUID)
+	diagnostics.Debugf("Using UUID %s", h.UUID)
 	mac, err := GetMACAddressFromUUID(h.UUID)
 	if err != nil {
 		return fmt.Errorf("getting MAC address from UUID: %w", err)
 	}
 
-	log.Debugf("Generated MAC %s", mac)
+	diagnostics.Debugf("Generated MAC %s", mac)
 
-	log.Debugf("Starting with cmdline: %s", d.Cmdline)
+	diagnostics.Debugf("Starting with cmdline: %s", d.Cmdline)
 	_, err = h.Start(d.Cmdline)
 	if err != nil {
 		return fmt.Errorf("starting with cmd line %s: %w", d.Cmdline, err)
@@ -309,7 +309,7 @@ func (d *Driver) setupIP(mac string) error {
 		multiplier = 3 // will help with running in Free github action Macos VMs (takes 112+ retries on average)
 	}
 	for i := 0; i < 60*multiplier; i++ {
-		log.Debugf("Attempt %d", i)
+		diagnostics.Debugf("Attempt %d", i)
 		err = getIP()
 		if err == nil {
 			break
@@ -323,7 +323,7 @@ func (d *Driver) setupIP(mac string) error {
 	if err != nil {
 		return fmt.Errorf("IP address never found in dhcp leases file %v", err)
 	}
-	log.Debugf("IP: %s", d.IPAddress)
+	diagnostics.Debugf("IP: %s", d.IPAddress)
 
 	return nil
 }
@@ -332,13 +332,13 @@ func (d *Driver) setupNFSMounts() error {
 	var err error
 
 	if len(d.NFSShares) > 0 {
-		log.Info("Setting up NFS mounts")
+		diagnostics.Info("Setting up NFS mounts")
 		// takes some time here for ssh / nfsd to work properly
 		time.Sleep(time.Second * 30)
 		err = d.setupNFSShare()
 		if err != nil {
 			// TODO(tstromberg): Check that logging an and error and return it is appropriate. Seems weird.
-			log.Errorf("NFS setup failed: %v", err)
+			diagnostics.Errorf("NFS setup failed: %v", err)
 			return err
 		}
 	}
@@ -367,13 +367,13 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 
 	if _, err := os.Stat(pidFile); err != nil {
 		if os.IsNotExist(err) {
-			log.Debugf("clean start, hyperkit pid file doesn't exist: %s", pidFile)
+			diagnostics.Debugf("clean start, hyperkit pid file doesn't exist: %s", pidFile)
 			return nil
 		}
 		return fmt.Errorf("stat: %w", err)
 	}
 
-	log.Warnf("minikube might have been shutdown in an unclean way, the hyperkit pid file still exists: %s", pidFile)
+	diagnostics.Warnf("minikube might have been shutdown in an unclean way, the hyperkit pid file still exists: %s", pidFile)
 	bs, err := os.ReadFile(pidFile)
 	if err != nil {
 		return fmt.Errorf("reading pidfile %s: %w", pidFile, err)
@@ -389,11 +389,11 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 		return fmt.Errorf("pidState: %w", err)
 	}
 
-	log.Debugf("pid %d is in state %q", pid, st)
+	diagnostics.Debugf("pid %d is in state %q", pid, st)
 	if st == state.Running {
 		return nil
 	}
-	log.Debugf("Removing stale pid file %s...", pidFile)
+	diagnostics.Debugf("Removing stale pid file %s...", pidFile)
 	if err := os.Remove(pidFile); err != nil {
 		return fmt.Errorf("removing pidFile %s: %w", pidFile, err)
 	}
@@ -413,7 +413,7 @@ func (d *Driver) Stop() error {
 
 	// wait 5s for graceful shutdown
 	for i := 0; i < 5; i++ {
-		log.Debug("waiting for graceful shutdown")
+		diagnostics.Debug("waiting for graceful shutdown")
 		time.Sleep(time.Second * 1)
 		s, err := d.GetState()
 		if err != nil {
@@ -424,7 +424,7 @@ func (d *Driver) Stop() error {
 		}
 	}
 
-	log.Debug("sending sigkill")
+	diagnostics.Debug("sending sigkill")
 	return d.Kill()
 }
 
@@ -479,7 +479,7 @@ func (d *Driver) setupNFSShare() error {
 	}
 
 	mountCommands := "#/bin/bash\\n"
-	log.Info(d.IPAddress)
+	diagnostics.Info(d.IPAddress)
 
 	for _, share := range d.NFSShares {
 		if !path.IsAbs(share) {
@@ -489,7 +489,7 @@ func (d *Driver) setupNFSShare() error {
 
 		if _, err := nfsexports.Add("", d.nfsExportIdentifier(share), nfsConfig); err != nil {
 			if strings.Contains(err.Error(), "conflicts with existing export") {
-				log.Info("Conflicting NFS Share not setup and ignored:", err)
+				diagnostics.Info("Conflicting NFS Share not setup and ignored:", err)
 				continue
 			}
 			return err
@@ -533,7 +533,7 @@ func (d *Driver) getPid() int {
 
 	f, err := os.Open(pidPath)
 	if err != nil {
-		log.Warnf("Error reading pid file: %v", err)
+		diagnostics.Warnf("Error reading pid file: %v", err)
 		return 0
 	}
 	defer f.Close()
@@ -545,7 +545,7 @@ func (d *Driver) getPid() int {
 	}
 
 	if err := dec.Decode(&config); err != nil {
-		log.Warnf("Error decoding pid file: %v", err)
+		diagnostics.Warnf("Error decoding pid file: %v", err)
 		return 0
 	}
 
@@ -554,15 +554,15 @@ func (d *Driver) getPid() int {
 
 func (d *Driver) cleanupNfsExports() {
 	if len(d.NFSShares) > 0 {
-		log.Infof("You must be root to remove NFS shared folders. Please type root password.")
+		diagnostics.Infof("You must be root to remove NFS shared folders. Please type root password.")
 		for _, share := range d.NFSShares {
 			if _, err := nfsexports.Remove("", d.nfsExportIdentifier(share)); err != nil {
-				log.Errorf("failed removing nfs share (%s): %v", share, err)
+				diagnostics.Errorf("failed removing nfs share (%s): %v", share, err)
 			}
 		}
 
 		if err := nfsexports.ReloadDaemon(); err != nil {
-			log.Errorf("failed to reload the nfs daemon: %v", err)
+			diagnostics.Errorf("failed to reload the nfs daemon: %v", err)
 		}
 	}
 }

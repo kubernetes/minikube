@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/minikube/detect"
 )
 
@@ -65,18 +65,18 @@ func WaitForLease(mac string, timeout time.Duration) (string, error) {
 		return "", err
 	}
 	if detect.NestedVM() {
-		log.Debugf("Nested VM detected, increasing timeout from %s to %s", timeout, timeout*3)
+		diagnostics.Debugf("Nested VM detected, increasing timeout from %s to %s", timeout, timeout*3)
 		timeout *= 3
 	}
-	log.Infof("Waiting for DHCP lease for %s (timeout %s)", mac, timeout)
+	diagnostics.Infof("Waiting for DHCP lease for %s (timeout %s)", mac, timeout)
 
 	start := time.Now()
 	deadline := start.Add(timeout)
 	for i := 0; ; i++ {
-		log.Debugf("Searching for %s in %s (attempt %d) ...", mac, leasesPath, i)
+		diagnostics.Debugf("Searching for %s in %s (attempt %d) ...", mac, leasesPath, i)
 		ip, err := ipAddressFromFile(macAddress, leasesPath)
 		if err == nil {
-			log.Infof("Found DHCP lease for %s: %s in %.3f seconds", mac, ip, time.Since(start).Seconds())
+			diagnostics.Infof("Found DHCP lease for %s: %s in %.3f seconds", mac, ip, time.Since(start).Seconds())
 			return ip, nil
 		}
 		if time.Now().After(deadline) {
@@ -141,7 +141,7 @@ func parseLeases(r io.Reader) ([]Entry, error) {
 		case "hw_address":
 			hwType, hwAddr, ok := strings.Cut(val, ",")
 			if !ok {
-				log.Warnf("invalid hw_address in dhcp leases file: %q", val)
+				diagnostics.Warnf("invalid hw_address in dhcp leases file: %q", val)
 				continue
 			}
 			switch hwType {
@@ -150,7 +150,7 @@ func parseLeases(r io.Reader) ([]Entry, error) {
 				// Example: hw_address=1,52:e9:a0:9b:7d:7b
 				macAddress, err := parseMAC(hwAddr)
 				if err != nil {
-					log.Warnf("unable to parse hw_address in dhcp leases file: %q: %s", val, err)
+					diagnostics.Warnf("unable to parse hw_address in dhcp leases file: %q: %s", val, err)
 					continue
 				}
 				entry.HWAddress = macAddress
@@ -160,7 +160,7 @@ func parseLeases(r io.Reader) ([]Entry, error) {
 				// Minikube VMs always use Ethernet so they never create these entries,
 				// but other VMs on the same host may.
 			default:
-				log.Warnf("unknown hw_address type in dhcp leases file: %q", val)
+				diagnostics.Warnf("unknown hw_address type in dhcp leases file: %q", val)
 			}
 		case "identifier":
 			entry.ID = val

@@ -25,8 +25,8 @@ import (
 	"strconv"
 	"time"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
 )
 
 const (
@@ -60,7 +60,7 @@ func WaitForSSHAccess(d drivers.Driver) error {
 		return err
 	}
 	addr := net.JoinHostPort(ip, strconv.Itoa(port))
-	log.Infof("Waiting until SSH server %q is accessible", addr)
+	diagnostics.Infof("Waiting until SSH server %q is accessible", addr)
 
 	start := time.Now()
 	deadline := start.Add(timeout)
@@ -73,7 +73,7 @@ func WaitForSSHAccess(d drivers.Driver) error {
 			return err
 		}
 		if done {
-			log.Infof("SSH server %q is accessible in %.3f seconds", addr, time.Since(start).Seconds())
+			diagnostics.Infof("SSH server %q is accessible in %.3f seconds", addr, time.Since(start).Seconds())
 			return nil
 		}
 		if time.Since(checkStart) < retryThreshold {
@@ -91,29 +91,29 @@ func checkSSHAccess(dialer *net.Dialer, addr string) (bool, error) {
 		return false, fmt.Errorf("timeout waiting for SSH server %q", addr)
 	}
 
-	log.Debugf("Dialing to SSH server %q", addr)
+	diagnostics.Debugf("Dialing to SSH server %q", addr)
 	conn, err := dialer.Dial("tcp", addr)
 	if err != nil {
 		if errors.Is(err, os.ErrDeadlineExceeded) {
 			return false, fmt.Errorf("timeout dialing to SSH server %q", addr)
 		}
-		log.Debugf("Failed to dial: %v", err)
+		diagnostics.Debugf("Failed to dial: %v", err)
 		return false, nil
 	}
 
 	defer conn.Close()
 
 	if err := conn.SetReadDeadline(dialer.Deadline); err != nil {
-		log.Debugf("Failed to set timeout: %v", err)
+		diagnostics.Debugf("Failed to set timeout: %v", err)
 		return false, nil
 	}
 
-	log.Debugf("Reading from SSH server %q", addr)
+	diagnostics.Debugf("Reading from SSH server %q", addr)
 	if _, err := conn.Read(make([]byte, 1)); err != nil && err != io.EOF {
 		if errors.Is(err, os.ErrDeadlineExceeded) {
 			return false, fmt.Errorf("timeout reading from SSH server %q", addr)
 		}
-		log.Debugf("Failed to read: %v", err)
+		diagnostics.Debugf("Failed to read: %v", err)
 		return false, nil
 	}
 

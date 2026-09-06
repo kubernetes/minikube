@@ -34,8 +34,8 @@ import (
 
 	"errors"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/ssh"
 	"k8s.io/minikube/pkg/libmachine/state"
@@ -136,7 +136,7 @@ func (d *Driver) GetURL() (string, error) {
 	}
 	ip, err := d.GetIP()
 	if err != nil {
-		log.Warnf("Failed to get IP: %v", err)
+		diagnostics.Warnf("Failed to get IP: %v", err)
 		return "", err
 	}
 	if ip == "" {
@@ -240,7 +240,7 @@ func (d *Driver) Create() error {
 	switch d.Network {
 	case "builtin", "user":
 		minPort, maxPort, err := parsePortRange(d.LocalPorts)
-		log.Debugf("port range: %d -> %d", minPort, maxPort)
+		diagnostics.Debugf("port range: %d -> %d", minPort, maxPort)
 		if err != nil {
 			return err
 		}
@@ -271,25 +271,25 @@ func (d *Driver) Create() error {
 		return err
 	}
 
-	log.Info("Creating SSH key...")
+	diagnostics.Info("Creating SSH key...")
 	if err := ssh.GenerateSSHKey(d.sshKeyPath()); err != nil {
 		return err
 	}
 
-	log.Info("Creating Disk image...")
+	diagnostics.Info("Creating Disk image...")
 	if err := d.generateDiskImage(d.DiskSize); err != nil {
 		return err
 	}
 
 	if d.UserDataFile != "" {
-		log.Info("Creating Userdata Disk...")
+		diagnostics.Info("Creating Userdata Disk...")
 		if d.CloudConfigRoot, err = d.generateUserdataDisk(d.UserDataFile); err != nil {
 			return err
 		}
 	}
 
 	if d.ExtraDisks > 0 {
-		log.Info("Creating extra disk images...")
+		diagnostics.Info("Creating extra disk images...")
 		for i := 0; i < d.ExtraDisks; i++ {
 			path := common.ExtraDiskPath(d.BaseDriver, i)
 			if err := common.CreateRawDisk(path, d.DiskSize); err != nil {
@@ -298,7 +298,7 @@ func (d *Driver) Create() error {
 		}
 	}
 
-	log.Info("Starting QEMU VM...")
+	diagnostics.Info("Starting QEMU VM...")
 	return d.Start()
 }
 
@@ -349,10 +349,10 @@ func getAvailableTCPPortFromRange(minPort, maxPort int) (int, error) {
 			}
 		} else {
 			port = getRandomPortNumberInRange(minPort, maxPort)
-			log.Debugf("testing port: %d", port)
+			diagnostics.Debugf("testing port: %d", port)
 			ln, err = net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", port))
 			if err != nil {
-				log.Debugf("port already in use: %d", port)
+				diagnostics.Debugf("port already in use: %d", port)
 				continue
 			}
 		}
@@ -555,7 +555,7 @@ func isBootpdError(err error) bool {
 
 func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	cmd := exec.Command(cmdStr, args...)
-	log.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
+	diagnostics.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -563,8 +563,8 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	err := cmd.Run()
 	stdoutStr := stdout.String()
 	stderrStr := stderr.String()
-	log.Debugf("STDOUT: %s", stdoutStr)
-	log.Debugf("STDERR: %s", stderrStr)
+	diagnostics.Debugf("STDOUT: %s", stdoutStr)
+	diagnostics.Debugf("STDERR: %s", stderrStr)
 	if err != nil {
 		if ee, ok := err.(*exec.Error); ok && ee == exec.ErrNotFound {
 			err = fmt.Errorf("mystery error: %v", ee)
@@ -582,7 +582,7 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 
 func cmdStart(cmdStr string, args ...string) (string, string, error) {
 	cmd := exec.Command(cmdStr, args...)
-	log.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
+	diagnostics.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
 	return "", "", cmd.Start()
 }
 
@@ -674,7 +674,7 @@ func (d *Driver) pidfilePath() string {
 
 // Make a boot2docker VM disk image.
 func (d *Driver) generateDiskImage(size int) error {
-	log.Debugf("Creating %d MB hard disk image...", size)
+	diagnostics.Debugf("Creating %d MB hard disk image...", size)
 
 	magicString := "boot2docker, please format-me"
 
@@ -729,7 +729,7 @@ func (d *Driver) generateDiskImage(size int) error {
 		fmt.Printf("ERROR: %s\n", stderr)
 		return err
 	}
-	log.Debugf("DONE writing to %s and %s", rawFile, d.diskPath())
+	diagnostics.Debugf("DONE writing to %s and %s", rawFile, d.diskPath())
 	return nil
 }
 

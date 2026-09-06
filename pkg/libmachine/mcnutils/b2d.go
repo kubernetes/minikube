@@ -32,7 +32,7 @@ import (
 	"runtime"
 	"strings"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 )
 
 const (
@@ -193,10 +193,10 @@ func (b *b2dReleaseGetter) getReleaseURL(apiURL string) (string, error) {
 		return "", err
 	}
 
-	log.Infof("Latest release for %s/%s/%s is %s", host, org, repo, tag)
+	diagnostics.Infof("Latest release for %s/%s/%s is %s", host, org, repo, tag)
 	bugURL, ok := AUFSBugB2DVersions[tag]
 	if ok {
-		log.Warnf(`
+		diagnostics.Warnf(`
 Boot2Docker %s has a known issue with AUFS.
 See here for more details: %s
 Consider specifying another storage driver (e.g. 'overlay') using '--engine-storage-driver' instead.
@@ -248,7 +248,7 @@ func (*b2dReleaseGetter) download(dir, file, isoURL string) error {
 
 	defer func() {
 		if err := removeFileIfExists(f.Name()); err != nil {
-			log.Warnf("Error removing file: %s", err)
+			diagnostics.Warnf("Error removing file: %s", err)
 		}
 	}()
 
@@ -338,7 +338,7 @@ func (b *b2dISO) version() (string, error) {
 	// This will return "v0.1.0" given the above string
 	vers := trimmedVersion[versionIndex+1:]
 
-	log.Debug("local Boot2Docker ISO version: ", vers)
+	diagnostics.Debug("local Boot2Docker ISO version: ", vers)
 	return vers, nil
 }
 
@@ -375,7 +375,7 @@ func NewB2dUtils(storePath string) *B2dUtils {
 
 // DownloadISO downloads boot2docker ISO image for the given tag and save it at dest.
 func (b *B2dUtils) DownloadISO(dir, file, isoURL string) error {
-	log.Infof("Downloading %s from %s...", b.path(), isoURL)
+	diagnostics.Infof("Downloading %s from %s...", b.path(), isoURL)
 	return b.download(dir, file, isoURL)
 }
 
@@ -431,7 +431,7 @@ func (b *B2dUtils) DownloadISOFromURL(latestReleaseURL string) error {
 func (b *B2dUtils) UpdateISOCache(isoURL string) error {
 	// recreate the cache dir if it has been manually deleted
 	if _, err := os.Stat(b.imgCachePath); os.IsNotExist(err) {
-		log.Infof("Image cache directory does not exist, creating it at %s...", b.imgCachePath)
+		diagnostics.Infof("Image cache directory does not exist, creating it at %s...", b.imgCachePath)
 		if err := os.Mkdir(b.imgCachePath, 0700); err != nil {
 			return err
 		}
@@ -442,20 +442,20 @@ func (b *B2dUtils) UpdateISOCache(isoURL string) error {
 	if isoURL != "" {
 		if exists {
 			// Warn that the b2d iso won't be updated if isoURL is set
-			log.Warnf("Boot2Docker URL was explicitly set to %q at create time, so Docker Machine cannot upgrade this machine to the latest version.", isoURL)
+			diagnostics.Warnf("Boot2Docker URL was explicitly set to %q at create time, so Docker Machine cannot upgrade this machine to the latest version.", isoURL)
 		}
 		// Non-default B2D are not cached
 		return nil
 	}
 
 	if !exists {
-		log.Info("No default Boot2Docker ISO found locally, downloading the latest release...")
+		diagnostics.Info("No default Boot2Docker ISO found locally, downloading the latest release...")
 		return b.DownloadLatestBoot2Docker("")
 	}
 
 	latest := b.isLatest()
 	if !latest {
-		log.Info("Default Boot2Docker ISO is out-of-date, downloading the latest release...")
+		diagnostics.Info("Default Boot2Docker ISO is out-of-date, downloading the latest release...")
 		return b.DownloadLatestBoot2Docker("")
 	}
 
@@ -473,7 +473,7 @@ func (b *B2dUtils) CopyIsoToMachineDir(isoURL, machineName string) error {
 
 	// By default just copy the existing "cached" iso to the machine's directory...
 	if isoURL == "" {
-		log.Infof("Copying %s to %s...", b.path(), machineIsoPath)
+		diagnostics.Infof("Copying %s to %s...", b.path(), machineIsoPath)
 		return CopyFile(b.path(), machineIsoPath)
 	}
 
@@ -494,13 +494,13 @@ func (b *B2dUtils) CopyIsoToMachineDir(isoURL, machineName string) error {
 func (b *B2dUtils) isLatest() bool {
 	localVer, err := b.version()
 	if err != nil {
-		log.Warn("Unable to get the local Boot2Docker ISO version: ", err)
+		diagnostics.Warn("Unable to get the local Boot2Docker ISO version: ", err)
 		return false
 	}
 
 	latestVer, err := b.getReleaseTag("")
 	if err != nil {
-		log.Warn("Unable to get the latest Boot2Docker ISO release version: ", err)
+		diagnostics.Warn("Unable to get the latest Boot2Docker ISO release version: ", err)
 		return true
 	}
 
@@ -518,7 +518,7 @@ func MakeDiskImage(publicSSHKeyPath string) (*bytes.Buffer, error) {
 	// magicString first so the automount script knows to format the disk
 	file := &tar.Header{Name: magicString, Size: int64(len(magicString))}
 
-	log.Debug("Writing magic tar header")
+	diagnostics.Debug("Writing magic tar header")
 
 	if err := tw.WriteHeader(file); err != nil {
 		return nil, err
@@ -534,7 +534,7 @@ func MakeDiskImage(publicSSHKeyPath string) (*bytes.Buffer, error) {
 		return nil, err
 	}
 
-	log.Debug("Writing SSH key tar header")
+	diagnostics.Debug("Writing SSH key tar header")
 
 	pubKey, err := os.ReadFile(publicSSHKeyPath)
 	if err != nil {

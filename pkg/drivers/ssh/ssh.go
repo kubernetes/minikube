@@ -30,9 +30,9 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -126,9 +126,9 @@ func (d *Driver) PreCreateCheck() error {
 // Create a host using the driver's config
 func (d *Driver) Create() error {
 	if d.SSHKey == "" {
-		log.Info("No SSH key specified. Assuming an existing key at the default location.")
+		diagnostics.Info("No SSH key specified. Assuming an existing key at the default location.")
 	} else {
-		log.Info("Importing SSH key...")
+		diagnostics.Info("Importing SSH key...")
 
 		d.SSHKeyPath = d.ResolveStorePath(path.Base(d.SSHKey))
 		if err := copySSHKey(d.SSHKey, d.SSHKeyPath); err != nil {
@@ -136,7 +136,7 @@ func (d *Driver) Create() error {
 		}
 
 		if err := copySSHKey(d.SSHKey+".pub", d.SSHKeyPath+".pub"); err != nil {
-			log.Infof("Couldn't copy SSH public key : %s", err)
+			diagnostics.Infof("Couldn't copy SSH public key : %s", err)
 		}
 	}
 
@@ -152,7 +152,7 @@ func (d *Driver) Create() error {
 		}
 	}
 
-	log.Debugf("IP: %s", d.IPAddress)
+	diagnostics.Debugf("IP: %s", d.IPAddress)
 
 	return nil
 }

@@ -29,8 +29,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnflag"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/state"
@@ -333,7 +333,7 @@ func (d *Driver) Create() error {
 		return err
 	}
 
-	log.Info("Starting the VM...")
+	diagnostics.Info("Starting the VM...")
 	return d.Start()
 }
 
@@ -354,7 +354,7 @@ func importBoot2Docker(d *Driver, name string) error {
 		return err
 	}
 
-	log.Debugf("Importing VM settings...")
+	diagnostics.Debugf("Importing VM settings...")
 	vmInfo, err := getVMInfo(name, d.VBoxManager)
 	if err != nil {
 		return err
@@ -371,7 +371,7 @@ func (d *Driver) CreateVM() error {
 		return err
 	}
 
-	log.Info("Creating VirtualBox VM...")
+	diagnostics.Info("Creating VirtualBox VM...")
 
 	// import b2d VM if requested
 	if d.Boot2DockerImportVM != "" {
@@ -381,18 +381,18 @@ func (d *Driver) CreateVM() error {
 			return err
 		}
 
-		log.Debugf("Importing SSH key...")
+		diagnostics.Debugf("Importing SSH key...")
 		keyPath := filepath.Join(mcnutils.GetHomeDir(), ".ssh", "id_boot2docker")
 		if err := mcnutils.CopyFile(keyPath, d.GetSSHKeyPath()); err != nil {
 			return err
 		}
 	} else {
-		log.Infof("Creating SSH key...")
+		diagnostics.Infof("Creating SSH key...")
 		if err := d.sshKeyGenerator.Generate(d.GetSSHKeyPath()); err != nil {
 			return err
 		}
 
-		log.Debugf("Creating disk image...")
+		diagnostics.Debugf("Creating disk image...")
 		if err := d.diskCreator.Create(d.DiskSize, d.publicSSHKeyPath(), d.diskPath()); err != nil {
 			return err
 		}
@@ -405,8 +405,8 @@ func (d *Driver) CreateVM() error {
 		return err
 	}
 
-	log.Debugf("VM CPUS: %d", d.CPU)
-	log.Debugf("VM Memory: %d", d.Memory)
+	diagnostics.Debugf("VM CPUS: %d", d.CPU)
+	diagnostics.Debugf("VM Memory: %d", d.Memory)
 
 	cpus := d.CPU
 	if cpus < 1 {
@@ -576,7 +576,7 @@ func parseShareFolder(shareFolder string) (string, string) {
 }
 
 func setupShareDir(d *Driver, shareDir, shareName string) error {
-	log.Debugf("setting up shareDir '%s' -> '%s'", shareDir, shareName)
+	diagnostics.Debugf("setting up shareDir '%s' -> '%s'", shareDir, shareName)
 	if _, err := os.Stat(shareDir); err != nil && !os.IsNotExist(err) {
 		return err
 	} else if !os.IsNotExist(err) {
@@ -604,15 +604,15 @@ func setupShareDir(d *Driver, shareDir, shareName string) error {
 func (d *Driver) hostOnlyIPAvailable() bool {
 	ip, err := d.GetIP()
 	if err != nil {
-		log.Debugf("ERROR getting IP: %s", err)
+		diagnostics.Debugf("ERROR getting IP: %s", err)
 		return false
 	}
 	if ip == "" {
-		log.Debug("Strangely, there was no error attempting to get the IP, but it was still empty.")
+		diagnostics.Debug("Strangely, there was no error attempting to get the IP, but it was still empty.")
 		return false
 	}
 
-	log.Debugf("IP is %s", ip)
+	diagnostics.Debugf("IP is %s", ip)
 	return true
 }
 
@@ -624,7 +624,7 @@ func (d *Driver) Start() error {
 
 	var hostOnlyAdapter *hostOnlyNetwork
 	if s == state.Stopped {
-		log.Infof("Check network to re-create if needed...")
+		diagnostics.Infof("Check network to re-create if needed...")
 
 		if hostOnlyAdapter, err = d.setupHostOnlyNetwork(d.MachineName); err != nil {
 			//nolint:staticcheck // ST1005: error strings should not be capitalized
@@ -651,9 +651,9 @@ func (d *Driver) Start() error {
 		if err := d.vbm("controlvm", d.MachineName, "resume", "--type", d.UIType); err != nil {
 			return err
 		}
-		log.Infof("Resuming VM ...")
+		diagnostics.Infof("Resuming VM ...")
 	default:
-		log.Infof("VM not in restartable state")
+		diagnostics.Infof("VM not in restartable state")
 	}
 
 	if !d.NoVTXCheck {
@@ -669,7 +669,7 @@ func (d *Driver) Start() error {
 		}
 	}
 
-	log.Infof("Waiting for an IP...")
+	diagnostics.Infof("Waiting for an IP...")
 	if err := d.ipWaiter.Wait(d); err != nil {
 		return err
 	}
@@ -709,7 +709,7 @@ func (d *Driver) Start() error {
 	}
 
 	// This happens a lot on windows. The adapter has an invalid IP and the VM has the same IP
-	log.Warn("The host-only adapter is corrupted. Let's stop the VM, fix the host-only adapter and restart the VM")
+	diagnostics.Warn("The host-only adapter is corrupted. Let's stop the VM, fix the host-only adapter and restart the VM")
 	if err := d.Stop(); err != nil {
 		return err
 	}
@@ -717,7 +717,7 @@ func (d *Driver) Start() error {
 	// We have to be sure the host-only adapter is not used by the VM
 	d.sleeper.Sleep(5 * time.Second)
 
-	log.Debugf("Fixing %+v...", hostOnlyAdapter)
+	diagnostics.Debugf("Fixing %+v...", hostOnlyAdapter)
 	if err := hostOnlyAdapter.SaveIPv4(d.VBoxManager); err != nil {
 		return err
 	}
@@ -730,7 +730,7 @@ func (d *Driver) Start() error {
 		return fmt.Errorf("Unable to start the VM: %s", err)
 	}
 
-	log.Infof("Waiting for an IP...")
+	diagnostics.Infof("Waiting for an IP...")
 	return d.ipWaiter.Wait(d)
 }
 
@@ -744,7 +744,7 @@ func (d *Driver) Stop() error {
 		if err := d.vbm("controlvm", d.MachineName, "resume"); err != nil { // , "--type", d.UIType
 			return err
 		}
-		log.Infof("Resuming VM ...")
+		diagnostics.Infof("Resuming VM ...")
 	}
 
 	if err := d.vbm("controlvm", d.MachineName, "acpipowerbutton"); err != nil {
@@ -1074,14 +1074,14 @@ func (d *Driver) GetIP() (string, error) {
 		return "", err
 	}
 
-	log.Debugf("Host-only MAC: %s\n", macAddress)
+	diagnostics.Debugf("Host-only MAC: %s\n", macAddress)
 
 	output, err := drivers.RunSSHCommandFromDriver(d, "ip addr show")
 	if err != nil {
 		return "", err
 	}
 
-	log.Debugf("SSH returned: %s\nEND SSH\n", output)
+	diagnostics.Debugf("SSH returned: %s\nEND SSH\n", output)
 
 	ipAddress, err := d.parseIPForMACFromIPAddr(output, macAddress)
 	if err != nil {
@@ -1127,7 +1127,7 @@ func (d *Driver) setupHostOnlyNetwork(machineName string) (*hostOnlyNetwork, err
 		return nil, err
 	}
 
-	log.Debugf("Searching for hostonly interface for IPv4: %s and Mask: %s", ip, network.Mask)
+	diagnostics.Debugf("Searching for hostonly interface for IPv4: %s and Mask: %s", ip, network.Mask)
 	hostOnlyAdapter, err := getOrCreateHostOnlyNetwork(ip, network.Mask, nets, d.VBoxManager)
 	if err != nil {
 		return nil, err
@@ -1144,7 +1144,7 @@ func (d *Driver) setupHostOnlyNetwork(machineName string) (*hostOnlyNetwork, err
 
 	lowerIP, upperIP := getDHCPAddressRange(dhcpAddr, network)
 
-	log.Debugf("Adding/Modifying DHCP server %q with address range %q - %q...", dhcpAddr, lowerIP, upperIP)
+	diagnostics.Debugf("Adding/Modifying DHCP server %q with address range %q - %q...", dhcpAddr, lowerIP, upperIP)
 
 	dhcp := dhcpServer{}
 	dhcp.IPv4.IP = dhcpAddr
@@ -1339,7 +1339,7 @@ func setPortForwarding(d *Driver, interfaceNum int, mapName, protocol string, gu
 		return -1, err
 	}
 	if desiredHostPort != actualHostPort && desiredHostPort != 0 {
-		log.Debugf("NAT forwarding host port for guest port %d (%s) changed from %d to %d",
+		diagnostics.Debugf("NAT forwarding host port for guest port %d (%s) changed from %d to %d",
 			guestPort, mapName, desiredHostPort, actualHostPort)
 	}
 	cmd := fmt.Sprintf("--natpf%d", interfaceNum)
@@ -1384,7 +1384,7 @@ func detectVBoxManageCmdInPath() string {
 
 func (d *Driver) readVBoxLog() ([]string, error) {
 	logPath := filepath.Join(d.ResolveStorePath(d.MachineName), "Logs", "VBox.log")
-	log.Debugf("Checking vm logs: %s", logPath)
+	diagnostics.Debugf("Checking vm logs: %s", logPath)
 
 	return d.logsReader.Read(logPath)
 }

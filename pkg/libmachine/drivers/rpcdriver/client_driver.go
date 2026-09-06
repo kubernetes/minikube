@@ -24,9 +24,9 @@ import (
 
 	"io"
 
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/drivers/plugin/localbinary"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnflag"
 	"k8s.io/minikube/pkg/libmachine/state"
 	"k8s.io/minikube/pkg/libmachine/version"
@@ -103,7 +103,7 @@ const (
 
 func (ic *InternalClient) Call(serviceMethod string, args interface{}, reply interface{}) error {
 	if serviceMethod != HeartbeatMethod {
-		log.Debugf("(%s) Calling %+v", ic.MachineName, serviceMethod)
+		diagnostics.Debugf("(%s) Calling %+v", ic.MachineName, serviceMethod)
 	}
 	return ic.RPCClient.Call(ic.rpcServiceName+serviceMethod, args, reply)
 }
@@ -144,7 +144,7 @@ func (f *DefaultRPCClientDriverFactory) NewRPCClientDriver(driverName string, ra
 	go func() {
 		if err := p.Serve(); err != nil {
 			// TODO: Is this best approach?
-			log.Warn(err)
+			diagnostics.Warn(err)
 			return
 		}
 	}()
@@ -172,8 +172,8 @@ func (f *DefaultRPCClientDriverFactory) NewRPCClientDriver(driverName string, ra
 	if err := c.Client.Call(GetVersionMethod, struct{}{}, &serverVersion); err != nil {
 		// this is the first call we make to the server. We try to play nice with old pre 0.5.1 client,
 		// by gracefully trying old RPCServiceName, we do this only once, and keep the result for future calls.
-		log.Debugf("%s", err.Error())
-		log.Debugf("Client (%s) with %s does not work, re-attempting with %s", c.Client.MachineName, RPCServiceNameV1, RPCServiceNameV0)
+		diagnostics.Debugf("%s", err.Error())
+		diagnostics.Debugf("Client (%s) with %s does not work, re-attempting with %s", c.Client.MachineName, RPCServiceNameV1, RPCServiceNameV0)
 		c.Client.switchToV0()
 		if err := c.Client.Call(GetVersionMethod, struct{}{}, &serverVersion); err != nil {
 			return nil, err
@@ -183,7 +183,7 @@ func (f *DefaultRPCClientDriverFactory) NewRPCClientDriver(driverName string, ra
 	if serverVersion != version.APIVersion {
 		return nil, fmt.Errorf("Driver binary uses an incompatible API version (%d)", serverVersion)
 	}
-	log.Debug("Using API Version ", serverVersion)
+	diagnostics.Debug("Using API Version ", serverVersion)
 
 	go func(c *RPCClientDriver) {
 		for {
@@ -192,9 +192,9 @@ func (f *DefaultRPCClientDriverFactory) NewRPCClientDriver(driverName string, ra
 				return
 			case <-time.After(heartbeatInterval):
 				if err := c.Client.Call(HeartbeatMethod, struct{}{}, nil); err != nil {
-					log.Warnf("Wrapper Docker Machine process exiting due to closed plugin server (%s)", err)
+					diagnostics.Warnf("Wrapper Docker Machine process exiting due to closed plugin server (%s)", err)
 					if err := c.close(); err != nil {
-						log.Warn(err)
+						diagnostics.Warn(err)
 					}
 				}
 			}
@@ -225,15 +225,15 @@ func (c *RPCClientDriver) close() error {
 	c.heartbeatDoneCh <- true
 	close(c.heartbeatDoneCh)
 
-	log.Debug("Making call to close driver server")
+	diagnostics.Debug("Making call to close driver server")
 
 	if err := c.Client.Call(CloseMethod, struct{}{}, nil); err != nil {
-		log.Debugf("Failed to make call to close driver server: %s", err)
+		diagnostics.Debugf("Failed to make call to close driver server: %s", err)
 	} else {
-		log.Debug("Successfully made call to close driver server")
+		diagnostics.Debug("Successfully made call to close driver server")
 	}
 
-	log.Debug("Making call to close connection to plugin binary")
+	diagnostics.Debug("Making call to close connection to plugin binary")
 
 	return c.plugin.Close()
 }
@@ -254,7 +254,7 @@ func (c *RPCClientDriver) GetCreateFlags() []mcnflag.Flag {
 	var flags []mcnflag.Flag
 
 	if err := c.Client.Call(GetCreateFlagsMethod, struct{}{}, &flags); err != nil {
-		log.Warnf("Error attempting call to get create flags: %s", err)
+		diagnostics.Warnf("Error attempting call to get create flags: %s", err)
 	}
 
 	return flags
@@ -278,7 +278,7 @@ func (c *RPCClientDriver) GetConfigRaw() ([]byte, error) {
 func (c *RPCClientDriver) DriverName() string {
 	driverName, err := c.rpcStringCall(DriverNameMethod)
 	if err != nil {
-		log.Warnf("Error attempting call to get driver name: %s", err)
+		diagnostics.Warnf("Error attempting call to get driver name: %s", err)
 	}
 
 	return driverName
@@ -295,7 +295,7 @@ func (c *RPCClientDriver) GetURL() (string, error) {
 func (c *RPCClientDriver) GetMachineName() string {
 	name, err := c.rpcStringCall(GetMachineNameMethod)
 	if err != nil {
-		log.Warnf("Error attempting call to get machine name: %s", err)
+		diagnostics.Warnf("Error attempting call to get machine name: %s", err)
 	}
 
 	return name
@@ -314,7 +314,7 @@ func (c *RPCClientDriver) GetSSHHostname() (string, error) {
 func (c *RPCClientDriver) GetSSHKeyPath() string {
 	path, err := c.rpcStringCall(GetSSHKeyPathMethod)
 	if err != nil {
-		log.Warnf("Error attempting call to get SSH key path: %s", err)
+		diagnostics.Warnf("Error attempting call to get SSH key path: %s", err)
 	}
 
 	return path
@@ -333,7 +333,7 @@ func (c *RPCClientDriver) GetSSHPort() (int, error) {
 func (c *RPCClientDriver) GetSSHUsername() string {
 	username, err := c.rpcStringCall(GetSSHUsernameMethod)
 	if err != nil {
-		log.Warnf("Error attempting call to get SSH username: %s", err)
+		diagnostics.Warnf("Error attempting call to get SSH username: %s", err)
 	}
 
 	return username

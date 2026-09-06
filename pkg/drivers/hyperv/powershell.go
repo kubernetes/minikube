@@ -25,7 +25,7 @@ import (
 
 	"fmt"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 )
 
 var powershell string
@@ -44,14 +44,14 @@ func init() {
 func cmdOut(args ...string) (string, error) {
 	args = append([]string{"-NoProfile", "-NonInteractive"}, args...)
 	cmd := exec.Command(powershell, args...)
-	log.Debugf("[executing ==>] : %v %v", powershell, strings.Join(args, " "))
+	diagnostics.Debugf("[executing ==>] : %v %v", powershell, strings.Join(args, " "))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-	log.Debugf("[stdout =====>] : %s", stdout.String())
-	log.Debugf("[stderr =====>] : %s", stderr.String())
+	diagnostics.Debugf("[stdout =====>] : %s", stdout.String())
+	diagnostics.Debugf("[stderr =====>] : %s", stderr.String())
 	return stdout.String(), err
 }
 
@@ -104,7 +104,7 @@ func isAdministrator() (bool, error) {
 func isHypervAdministrator() bool {
 	stdout, err := cmdOut(`@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(([System.Security.Principal.SecurityIdentifier]::new("S-1-5-32-578")))`)
 	if err != nil {
-		log.Debug(err)
+		diagnostics.Debug(err)
 		return false
 	}
 

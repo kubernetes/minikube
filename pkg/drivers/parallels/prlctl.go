@@ -47,7 +47,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 )
 
 func detectCmdInPath(cmd string) string {
@@ -77,7 +77,7 @@ func runCmd(cmdName string, args []string, notFound error) (string, string, erro
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
-	log.Debugf("executing: %v %v", cmdName, strings.Join(args, " "))
+	diagnostics.Debugf("executing: %v %v", cmdName, strings.Join(args, " "))
 
 	err := cmd.Run()
 	if err != nil {

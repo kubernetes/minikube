@@ -52,8 +52,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/mcnflag"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/ssh"
@@ -134,14 +134,14 @@ func (d *Driver) Create() error {
 		return err
 	}
 
-	log.Infof("Creating SSH key...")
+	diagnostics.Infof("Creating SSH key...")
 	sshKeyPath := d.GetSSHKeyPath()
-	log.Debugf("SSH key: %s", sshKeyPath)
+	diagnostics.Debugf("SSH key: %s", sshKeyPath)
 	if err = ssh.GenerateSSHKey(sshKeyPath); err != nil {
 		return err
 	}
 
-	log.Infof("Creating Parallels Desktop VM...")
+	diagnostics.Infof("Creating Parallels Desktop VM...")
 
 	ver, err := getParallelsVersion()
 	if err != nil {
@@ -268,7 +268,7 @@ func (d *Driver) Create() error {
 			}
 			if _, err := os.Stat(fAbs); err != nil {
 				if os.IsNotExist(err) {
-					log.Infof("Host path '%s' does not exist. Skipping sharing it with the machine...", fAbs)
+					diagnostics.Infof("Host path '%s' does not exist. Skipping sharing it with the machine...", fAbs)
 					continue
 				}
 				return err
@@ -282,7 +282,7 @@ func (d *Driver) Create() error {
 		}
 	}
 
-	log.Infof("Starting Parallels Desktop VM...")
+	diagnostics.Infof("Starting Parallels Desktop VM...")
 
 	// Don't use Start() since it expects to have a dhcp lease already
 	if err = prlctl("start", d.MachineName); err != nil {
@@ -291,20 +291,20 @@ func (d *Driver) Create() error {
 
 	var ip string
 
-	log.Infof("Waiting for VM to come online...")
+	diagnostics.Infof("Waiting for VM to come online...")
 	for i := 1; i <= 60; i++ {
 		ip, err = d.getIPfromDHCPLease()
 		if err != nil {
-			log.Debugf("Not there yet %d/%d, error: %s", i, 60, err)
+			diagnostics.Debugf("Not there yet %d/%d, error: %s", i, 60, err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
 
 		if ip != "" {
-			log.Debugf("Got an ip: %s", ip)
+			diagnostics.Debugf("Got an ip: %s", ip)
 			conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", ip, d.SSHPort), 2*time.Second)
 			if err != nil {
-				log.Debugf("SSH Daemon not responding yet: %s", err)
+				diagnostics.Debugf("SSH Daemon not responding yet: %s", err)
 				time.Sleep(2 * time.Second)
 				continue
 			}
@@ -422,7 +422,7 @@ func (d *Driver) PreCreateCheck() error {
 		return err
 	}
 
-	log.Debugf("Found Parallels Desktop version: %d, edition: %s", ver, edit)
+	diagnostics.Debugf("Found Parallels Desktop version: %d, edition: %s", ver, edit)
 
 	switch edit {
 	case "pro", "business":
@@ -451,7 +451,7 @@ func (d *Driver) Remove() error {
 	s, err := d.GetState()
 	if err != nil {
 		if err == errMachineNotExist {
-			log.Infof("machine does not exist, assuming it has been removed already")
+			diagnostics.Infof("machine does not exist, assuming it has been removed already")
 			return nil
 		}
 		return err
@@ -558,11 +558,11 @@ func (d *Driver) Start() error {
 		if err = prlctl("start", d.MachineName); err != nil {
 			return err
 		}
-		log.Infof("Waiting for VM to start...")
+		diagnostics.Infof("Waiting for VM to start...")
 	case state.Running:
 		break
 	default:
-		log.Infof("VM not in restartable state")
+		diagnostics.Infof("VM not in restartable state")
 	}
 
 	if err = drivers.WaitForSSH(d); err != nil {
@@ -642,7 +642,7 @@ func (d *Driver) getIPfromDHCPLease() (string, error) {
 		ip := l[1]
 		expiry, _ := strconv.ParseUint(l[2], 10, 64)
 		leaseTime, _ := strconv.ParseUint(l[3], 10, 32)
-		log.Debugf("Found lease: %s for MAC: %s, expiring at %d, leased for %d s.\n", ip, mac, expiry, leaseTime)
+		diagnostics.Debugf("Found lease: %s for MAC: %s, expiring at %d, leased for %d s.\n", ip, mac, expiry, leaseTime)
 		if mostRecentLease <= expiry-leaseTime {
 			mostRecentIP = ip
 			mostRecentLease = expiry - leaseTime
@@ -652,7 +652,7 @@ func (d *Driver) getIPfromDHCPLease() (string, error) {
 	if len(mostRecentIP) == 0 {
 		return "", fmt.Errorf("IP lease not found for MAC address %s in: %s\n", mac, DHCPLeaseFile)
 	}
-	log.Debugf("Found IP lease: %s for MAC address %s\n", mostRecentIP, mac)
+	diagnostics.Debugf("Found IP lease: %s for MAC address %s\n", mostRecentIP, mac)
 
 	return mostRecentIP, nil
 }
@@ -673,7 +673,7 @@ func (d *Driver) getShareFolders() (map[string]string, error) {
 	for _, match := range reSharedFolder.FindAllStringSubmatch(stdout, -1) {
 		sName := match[1]
 		sPath := match[2]
-		log.Debugf("Found the configured shared folder. Name: %q, Path: %q\n", sName, sPath)
+		diagnostics.Debugf("Found the configured shared folder. Name: %q, Path: %q\n", sName, sPath)
 		res[sName] = sPath
 	}
 	return res, nil
@@ -684,7 +684,7 @@ func (d *Driver) mountShareFolder(shareName string, mountPoint string) error {
 	// Check the host path is available
 	if _, err := os.Stat(mountPoint); err != nil {
 		if os.IsNotExist(err) {
-			log.Infof("Host path %q does not exist. Skipping mount to VM...", mountPoint)
+			diagnostics.Infof("Host path %q does not exist. Skipping mount to VM...", mountPoint)
 			return nil
 		}
 		return err
@@ -693,12 +693,12 @@ func (d *Driver) mountShareFolder(shareName string, mountPoint string) error {
 	// Ensure that the share is available on the guest side
 	checkCmd := fmt.Sprintf("sudo modprobe prl_fs && grep -w %q /proc/fs/prl_fs/sf_list", shareName)
 	if _, err := drivers.RunSSHCommandFromDriver(d, checkCmd); err != nil {
-		log.Infof("Shared folder %q is unavailable. Skipping mount to VM...", shareName)
+		diagnostics.Infof("Shared folder %q is unavailable. Skipping mount to VM...", shareName)
 		return nil
 	}
 
 	// Mount the shared folder
-	log.Infof("Mounting shared folder %q ...", mountPoint)
+	diagnostics.Infof("Mounting shared folder %q ...", mountPoint)
 	mountCmd := fmt.Sprintf("sudo mkdir -p %q && sudo mount -t prl_fs %q %q", mountPoint, shareName, mountPoint)
 	if _, err := drivers.RunSSHCommandFromDriver(d, mountCmd); err != nil {
 		return fmt.Errorf("Error mounting shared folder: %s", err)
@@ -735,7 +735,7 @@ func (d *Driver) generateDiskImage(size int) error {
 		return fmt.Errorf("Could not find *.hds image in %s", d.diskPath())
 	}
 	hdsPath := hdsList[0]
-	log.Debugf("HDS image path: %s", hdsPath)
+	diagnostics.Debugf("HDS image path: %s", hdsPath)
 
 	// Write tar to the hds file
 	hds, err := os.OpenFile(hdsPath, os.O_WRONLY, 0644)
@@ -820,19 +820,19 @@ func checkSharedNetworkConnected() error {
 	}
 
 	sharedNetworkIP := net.ParseIP(res[1])
-	log.Debugf("IP address of Shared network adapter: %s", sharedNetworkIP)
+	diagnostics.Debugf("IP address of Shared network adapter: %s", sharedNetworkIP)
 
 	hostAddrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return err
 	}
-	log.Debugf("All host interface addresses: %v", hostAddrs)
+	diagnostics.Debugf("All host interface addresses: %v", hostAddrs)
 
 	// Check if the there is an interface with the Shared network adapter's IP assigned
 	for _, netAddr := range hostAddrs {
 		ipAddr := netAddr.(*net.IPNet).IP
 		if ipAddr.Equal(sharedNetworkIP) {
-			log.Debugf("Parallels Shared network adapter is connected")
+			diagnostics.Debugf("Parallels Shared network adapter is connected")
 			return nil
 		}
 	}

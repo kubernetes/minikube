@@ -19,7 +19,7 @@ package drivers
 import (
 	"fmt"
 
-	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/diagnostics"
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/ssh"
 )
@@ -55,10 +55,10 @@ func RunSSHCommandFromDriver(d Driver, command string) (string, error) {
 		return "", err
 	}
 
-	log.Debugf("About to run SSH command:\n%s", command)
+	diagnostics.Debugf("About to run SSH command:\n%s", command)
 
 	output, err := client.Output(command)
-	log.Debugf("SSH cmd err, output: %v: %s", err, output)
+	diagnostics.Debugf("SSH cmd err, output: %v: %s", err, output)
 	if err != nil {
 		return "", fmt.Errorf(`ssh command error:
 command : %s
@@ -71,9 +71,9 @@ output  : %s`, command, err, output)
 
 func sshAvailableFunc(d Driver) func() bool {
 	return func() bool {
-		log.Debug("Getting to WaitForSSH function...")
+		diagnostics.Debug("Getting to WaitForSSH function...")
 		if _, err := RunSSHCommandFromDriver(d, "exit 0"); err != nil {
-			log.Debugf("Error getting ssh command 'exit 0' : %s", err)
+			diagnostics.Debugf("Error getting ssh command 'exit 0' : %s", err)
 			return false
 		}
 		return true
