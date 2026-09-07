@@ -248,6 +248,15 @@ RUN export ARCH=$(dpkg --print-architecture) && \
     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list && \
     clean-install nvidia-container-toolkit; fi
 
+# install helm
+ARG HELM_VERSION="v4.2.3"
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    mkdir /tmp/helm && \
+    curl -fsSL --retry 5 -o /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-${ARCH}.tar.gz" && \
+    tar --strip-components=1 -xzf /tmp/helm.tgz -C /tmp/helm && \
+    install -D -m 0755 /tmp/helm/helm /usr/bin/helm && \
+    rm -rf /tmp/helm /tmp/helm.tgz
+    
 # install version.json
 ARG VERSION_JSON
 RUN echo "${VERSION_JSON}" > /version.json
