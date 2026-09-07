@@ -17,9 +17,9 @@
 # For systemd + docker configuration used below, see the following references:
 # https://systemd.io/CONTAINER_INTERFACE/
 
-# this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
-ARG KICBASE_IMAGE="debian:bookworm-20260713-slim"
-# start from debin 12, this image is reasonably small as a starting point
+# this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:trixie-slim-*
+ARG KICBASE_IMAGE="debian:trixie-20260824-slim"
+# start from debian 13, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need.
 FROM ${KICBASE_IMAGE} AS kicbase
 
@@ -87,7 +87,7 @@ RUN echo "Ensuring scripts are executable ..." \
     && rm -f /lib/systemd/system/sockets.target.wants/*initctl* \
     && rm -f /lib/systemd/system/basic.target.wants/* \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
-    && ln -s "$(which systemd)" /sbin/init \
+    && ln -sf /usr/lib/systemd/systemd /sbin/init \
  && echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests \
  && echo "Adjusting systemd-tmpfiles timer" \
