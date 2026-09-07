@@ -321,22 +321,10 @@ func (r *Containerd) RemoveImage(name string) error {
 func (r *Containerd) TagImage(source string, target string) error {
 	klog.Infof("Tagging image %s: %s", source, target)
 	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "tag", source, target)
-	if _, err := r.Runner.RunCmd(c); err == nil {
-		return nil
-	} else {
-		// ctr requires fully qualified names, unlike docker tag.
-		// Retry with docker.io prefix, mirroring removeCRIImage fallback.
-		// See https://github.com/kubernetes/minikube/issues/23659
-		normSource := AddDockerIO(source)
-		normTarget := AddDockerIO(target)
-		if normSource != source || normTarget != target {
-			c = exec.Command("sudo", "ctr", "-n=k8s.io", "images", "tag", normSource, normTarget)
-			if _, err2 := r.Runner.RunCmd(c); err2 == nil {
-				return nil
-			}
-		}
+	if _, err := r.Runner.RunCmd(c); err != nil {
 		return fmt.Errorf("ctr images tag: %w", err)
 	}
+	return nil
 }
 
 func gitClone(cr CommandRunner, src string) (string, error) {
