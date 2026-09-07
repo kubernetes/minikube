@@ -435,6 +435,45 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		}
 	})
 
+	// docs: Make sure image tagging works with partial names without requiring docker daemon (https://github.com/kubernetes/minikube/issues/23668)
+	t.Run("ImageTagPartial", func(t *testing.T) {
+		// Uses only `minikube image` commands (pull/save/load from tar) so it
+		// can run on all platforms without depending on non-free programs.
+		// Currently fails on containerd runtime since `ctr images tag`
+		// does not resolve partial names.
+		baseImage := "docker.io/library/busybox:latest"
+		tmpDir := t.TempDir()
+		tarPath := filepath.Join(tmpDir, "busybox-partial.tar")
+
+		// Pull without docker daemon, then round-trip via tar to prove tar-load path.
+		pullImage(ctx, t, profile, baseImage)
+		t.Cleanup(func() { silentRemoveImage(ctx, t, profile, baseImage) })
+		saveImageToTarfile(ctx, t, profile, baseImage, tarPath)
+		removeImage(ctx, t, profile, baseImage)
+		loadImageFromTarfile(ctx, t, profile, tarPath)
+		checkImageExists(ctx, t, profile, baseImage)
+
+		tests := []struct {
+			name   string
+			source string
+			target string
+		}{
+			// no namespace: busybox:latest should resolve to library/busybox:latest
+			{"NoNamespace", "busybox:latest", fmt.Sprintf("docker.io/library/busybox:test-nonamespace-%s", profile)},
+			// no registry: library/busybox:latest should resolve to docker.io/library/busybox:latest
+			{"NoRegistry", "library/busybox:latest", fmt.Sprintf("docker.io/library/busybox:test-noregistry-%s", profile)},
+			// no tag: docker.io/library/busybox should default to :latest
+			{"NoTag", "docker.io/library/busybox", fmt.Sprintf("docker.io/library/busybox:test-notag-%s", profile)},
+		}
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				t.Cleanup(func() { silentRemoveImage(ctx, t, profile, tc.target) })
+				tagImage(ctx, t, profile, tc.source, tc.target)
+				checkImageExists(ctx, t, profile, tc.target)
+			})
+		}
+	})
+
 	// docs(skip): Make sure a new updated tag works by `minikube image load --daemon`, requires a local docker daemon
 	t.Run("ImageTagAndLoadDaemon", func(t *testing.T) {
 		requireDockerDaemon(t)
