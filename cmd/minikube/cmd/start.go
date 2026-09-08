@@ -210,6 +210,15 @@ func runStart(cmd *cobra.Command, _ []string) {
 	}
 
 	if cmd.Flags().Changed(nodeOS) {
+		if runtime.GOOS != "windows" {
+			exit.Message(reason.Usage, "--node-os currently requires a Windows host with Hyper-V")
+		}
+		if err := validMultiNodeOS(viper.GetStringSlice(nodeOS)); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+		if viper.GetInt(nodes) != 2 {
+			exit.Message(reason.Usage, "The --nodes flag must be set to 2 when using --node-os")
+		}
 		applyMixedOSDefaults(cmd, existing)
 	}
 
@@ -1386,16 +1395,6 @@ func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 		validateCNI(cmd, viper.GetString(containerRuntime))
 	}
 
-	if cmd.Flags().Changed(nodeOS) {
-		if err := validMultiNodeOS(viper.GetString(nodeOS)); err != nil {
-			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
-		}
-
-		if viper.GetInt(nodes) != 2 {
-			exit.Message(reason.Usage, "The --nodes flag must be set to 2 when using --node-os")
-		}
-	}
-
 	if cmd.Flags().Changed(windowsVhdURL) {
 		if viper.GetString(windowsVhdURL) == "" {
 			// set a default URL if the user has not specified one
@@ -1528,20 +1527,20 @@ func validateDiskSize(diskSize string) error {
 	return nil
 }
 
-// validateMultiNodeOS validates the supplied OS for multiple nodes
-func validMultiNodeOS(osString string) error {
-	if !strings.HasPrefix(osString, "[") || !strings.HasSuffix(osString, "]") {
-		return fmt.Errorf("invalid OS string format: must be enclosed in [ ]")
+// validMultiNodeOS validates the supplied --node-os values for a mixed-OS
+// cluster. Only a single linux control-plane node plus a single windows
+// worker node is currently supported, so exactly two values must be given
+// and they must be "linux" then "windows" (case- and whitespace-insensitive).
+func validMultiNodeOS(osValues []string) error {
+	if len(osValues) != 2 {
+		return fmt.Errorf("invalid --node-os value: must specify exactly 2 comma-separated OS values, e.g. linux,windows")
 	}
 
-	osString = strings.TrimPrefix(osString, "[")
-	osString = strings.TrimSuffix(osString, "]")
-	osString = strings.ReplaceAll(osString, " ", "")
+	first := strings.ToLower(strings.TrimSpace(osValues[0]))
+	second := strings.ToLower(strings.TrimSpace(osValues[1]))
 
-	osValues := strings.Split(osString, ",")
-
-	if len(osValues) != 2 || osValues[0] != "linux" || osValues[1] != "windows" {
-		return fmt.Errorf("invalid OS string format: must be [linux,windows]")
+	if first != "linux" || second != "windows" {
+		return fmt.Errorf("invalid --node-os value: must be linux,windows")
 	}
 
 	return nil
