@@ -1050,6 +1050,10 @@ update-volcano-version:
 update-kong-version:
 	cd hack && go run update/kong_version/kong_version.go
 
+.PHONY: update-traefik-version
+update-traefik-version:
+	cd hack && go run update/traefik_version/traefik_version.go
+
 .PHONY: update-kong-ingress-controller-version
 update-kong-ingress-controller-version:
 	cd hack && go run update/kong_ingress_controller_version/kong_ingress_controller_version.go

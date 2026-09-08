@@ -78,6 +78,7 @@ var dependencies = map[string]dependency{
 	"registry":                {addonsFile, `registry:(.*)@`},
 	"runc":                    {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
 	"debian":                  {dockerfile, `debian:bookworm-(.*)-slim`},
+	"traefik":                 {addonsFile, `Version:\s*"(.*)", // traefik-version`},
 	"volcano":                 {addonsFile, `volcanosh/vc-webhook-manager:(.*)@`},
 	"yakd":                    {addonsFile, `manusa/yakd:(.*)@`},
 }
