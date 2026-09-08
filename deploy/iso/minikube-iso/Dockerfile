@@ -36,7 +36,7 @@ RUN apt-get update \
 		cmake \
 		dumb-init \
 		libpcre3-dev \
-		mkisofs \
+		xorriso \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /app
