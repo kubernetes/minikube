@@ -24,7 +24,7 @@ require (
 	github.com/elazarl/goproxy v1.9.1
 	github.com/gofrs/flock v0.13.0
 	github.com/google/go-cmp v0.7.0
-	github.com/google/go-containerregistry v0.22.0
+	github.com/google/go-containerregistry v0.22.1
 	github.com/google/go-github/v85 v85.0.0
 	github.com/google/slowjam v1.1.2
 	github.com/google/uuid v1.6.0
