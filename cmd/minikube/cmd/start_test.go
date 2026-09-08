@@ -473,48 +473,61 @@ func TestValidateRuntime(t *testing.T) {
 
 func TestValidMultiNodeOS(t *testing.T) {
 	var tests = []struct {
-		osString string
-		errorMsg string
+		description string
+		osValues    []string
+		errorMsg    string
 	}{
 		{
-			osString: "[linux,windows]",
-			errorMsg: "",
+			description: "valid",
+			osValues:    []string{"linux", "windows"},
+			errorMsg:    "",
 		},
 		{
-			osString: "[linux, windows]",
-			errorMsg: "",
+			description: "valid with whitespace",
+			osValues:    []string{" linux", "windows "},
+			errorMsg:    "",
 		},
 		{
-			osString: "[windows,linux]",
-			errorMsg: "invalid OS string format: must be [linux,windows]",
+			description: "valid with mixed case",
+			osValues:    []string{"Linux", "WINDOWS"},
+			errorMsg:    "",
 		},
 		{
-			osString: "[linux]",
-			errorMsg: "invalid OS string format: must be [linux,windows]",
+			description: "wrong order",
+			osValues:    []string{"windows", "linux"},
+			errorMsg:    "invalid --node-os value: must be linux,windows",
 		},
 		{
-			osString: "[linux,windows,mac]",
-			errorMsg: "invalid OS string format: must be [linux,windows]",
+			description: "only one value",
+			osValues:    []string{"linux"},
+			errorMsg:    "invalid --node-os value: must specify exactly 2 comma-separated OS values, e.g. linux,windows",
 		},
 		{
-			osString: "linux,windows",
-			errorMsg: "invalid OS string format: must be enclosed in [ ]",
+			description: "three values",
+			osValues:    []string{"linux", "windows", "mac"},
+			errorMsg:    "invalid --node-os value: must specify exactly 2 comma-separated OS values, e.g. linux,windows",
 		},
 		{
-			osString: "[[linux,windows]]",
-			errorMsg: "invalid OS string format: must be [linux,windows]",
+			description: "no values",
+			osValues:    nil,
+			errorMsg:    "invalid --node-os value: must specify exactly 2 comma-separated OS values, e.g. linux,windows",
+		},
+		{
+			description: "old bracket syntax is rejected - StringSlice splits '[linux,windows]' on the comma, leaving stray brackets",
+			osValues:    []string{"[linux", "windows]"},
+			errorMsg:    "invalid --node-os value: must be linux,windows",
 		},
 	}
 
 	for _, test := range tests {
-		t.Run(test.osString, func(t *testing.T) {
-			got := validMultiNodeOS(test.osString)
+		t.Run(test.description, func(t *testing.T) {
+			got := validMultiNodeOS(test.osValues)
 			gotError := ""
 			if got != nil {
 				gotError = got.Error()
 			}
 			if gotError != test.errorMsg {
-				t.Errorf("validMultiNodeOS(osString=%v): got %v, expected %v", test.osString, gotError, test.errorMsg)
+				t.Errorf("validMultiNodeOS(osValues=%v): got %v, expected %v", test.osValues, gotError, test.errorMsg)
 			}
 		})
 	}

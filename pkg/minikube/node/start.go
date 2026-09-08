@@ -984,7 +984,7 @@ func applyWindowsManifest(content string) error {
 // requested via the --node-os flag (config.ClusterConfig.NodeOS is only
 // populated when that flag was explicitly passed).
 func isMixedOSCluster(cc config.ClusterConfig) bool {
-	return cc.NodeOS != ""
+	return len(cc.NodeOS) > 0
 }
 
 // prepareLinuxNodeForWindowsFlannel enables bridged traffic to be seen by
