@@ -314,10 +314,7 @@ func GetState(sts []*Status, profile string, cc *config.ClusterConfig) State {
 				transientCode = exitCode
 			}
 
-			for _, n := range cs.Nodes {
-				n.StatusCode = transientCode
-				n.StatusName = codeNames[n.StatusCode]
-			}
+			applyTransientCodeToNodes(cs.Nodes, transientCode)
 
 			klog.Infof("transient code %d (%q) for step: %+v", transientCode, codeNames[transientCode], data)
 		}
@@ -350,6 +347,14 @@ func GetState(sts []*Status, profile string, cc *config.ClusterConfig) State {
 	cs.StatusDetail = codeDetails[cs.StatusCode]
 
 	return cs
+}
+
+// applyTransientCodeToNodes updates node status in place (range copies structs).
+func applyTransientCodeToNodes(nodes []NodeState, code int) {
+	for i := range nodes {
+		nodes[i].StatusCode = code
+		nodes[i].StatusName = codeNames[nodes[i].StatusCode]
+	}
 }
 
 // NodeStatus looks up the status of a node
