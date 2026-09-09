@@ -16,7 +16,7 @@ ii  ca-certificates                 20250419                             all    
 ii  catatonit                       0.2.1-2+b13                          amd64        init process for containers
 ii  conmon                          2.1.12-4                             amd64        OCI container runtime monitor
 ii  conntrack                       1:1.4.8-2                            amd64        Program to modify the conntrack tables
-ii  containerd.io                   2.3.4-2~debian.13~trixie             amd64        An open and reliable container runtime
+ii  containerd.io                   2.3.5-1~debian.13~trixie             amd64        An open and reliable container runtime
 ii  containernetworking-plugins     1.1.1+ds1-3+b17                      amd64        standard networking plugins - binaries
 ii  coreutils                       9.7-3                                amd64        GNU core utilities
 ii  cri-o                           1.35.8-1.1                           amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
