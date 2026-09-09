@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"sync"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -110,10 +111,18 @@ func Driver(name string) DriverDef {
 
 // Available returns a list of available drivers in the global registry
 func Available(vm bool, options *run.CommandOptions) []DriverState {
-	sts := []DriverState{}
 	klog.Infof("Querying for installed drivers using PATH=%s", os.Getenv("PATH"))
 
-	for _, d := range globalRegistry.List() {
+	type probeResult struct {
+		driver DriverDef
+		state  State
+	}
+
+	drivers := globalRegistry.List()
+	results := make(chan probeResult, len(drivers))
+	var wg sync.WaitGroup
+
+	for _, d := range drivers {
 		if vm && !IsVM(d.Name) {
 			continue
 		}
@@ -121,17 +130,20 @@ func Available(vm bool, options *run.CommandOptions) []DriverState {
 			klog.Errorf("%q does not implement Status", d.Name)
 			continue
 		}
-		stateChannel := make(chan State, 1)
-		timeoutChannel := time.After(20 * time.Second)
-		go func() {
-			stateChannel <- d.Status(options)
-		}()
-		s := State{}
-		select {
-		case <-timeoutChannel:
-			klog.Infof("%s status check timeout!", d.Name)
-		case s = <-stateChannel:
-		}
+		wg.Add(1)
+		go func(d DriverDef) {
+			defer wg.Done()
+			results <- probeResult{driver: d, state: probe(d, options)}
+		}(d)
+	}
+
+	wg.Wait()
+	close(results)
+
+	sts := make([]DriverState, 0, len(drivers))
+	for r := range results {
+		s := r.state
+		d := r.driver
 		klog.Infof("%s default: %v priority: %d, state: %+v", d.Name, d.Default, d.Priority, s)
 
 		preference := d.Priority
@@ -147,6 +159,26 @@ func Available(vm bool, options *run.CommandOptions) []DriverState {
 		return cmp.Compare(b.Priority, a.Priority)
 	})
 	return sts
+}
+
+// probe runs a driver's Status check with an independent timeout so Available
+// can query every driver at once. Wall-clock time is therefore about the
+// slowest probe, not the sum of all probes.
+func probe(d DriverDef, options *run.CommandOptions) State {
+	timeout := d.ProbeTimeout
+
+	stateChannel := make(chan State, 1)
+	go func() {
+		stateChannel <- d.Status(options)
+	}()
+
+	select {
+	case <-time.After(timeout):
+		klog.Infof("%s status check timeout!", d.Name)
+		return State{}
+	case s := <-stateChannel:
+		return s
+	}
 }
 
 // Status returns the state of a driver within the global registry
