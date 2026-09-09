@@ -23,7 +23,7 @@ ARG KICBASE_IMAGE="debian:trixie-20260824-slim"
 # for a kubernetes node image, it doesn't contain much we don't need.
 FROM ${KICBASE_IMAGE} AS kicbase
 
-ARG BUILDKIT_VERSION="v0.32.2"
+ARG BUILDKIT_VERSION="v0.33.0"
 ARG CRIO_VERSION="v1.35"
 ARG CRICTL_VERSION="v1.35.0"
 ARG CRI_DOCKERD_VERSION="v0.4.3"
