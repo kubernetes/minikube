@@ -314,9 +314,9 @@ func GetState(sts []*Status, profile string, cc *config.ClusterConfig) State {
 				transientCode = exitCode
 			}
 
-			for _, n := range cs.Nodes {
-				n.StatusCode = transientCode
-				n.StatusName = codeNames[n.StatusCode]
+			for i := range cs.Nodes {
+				cs.Nodes[i].StatusCode = transientCode
+				cs.Nodes[i].StatusName = codeNames[cs.Nodes[i].StatusCode]
 			}
 
 			klog.Infof("transient code %d (%q) for step: %+v", transientCode, codeNames[transientCode], data)
