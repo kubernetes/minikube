@@ -21,6 +21,7 @@ import (
 	"maps"
 	"slices"
 	"sync"
+	"time"
 
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
@@ -116,6 +117,9 @@ type DriverDef struct {
 	// parallel. When false (default) all profiles using this driver are
 	// serialized.
 	Parallel bool
+
+	// ProbeTimeout holds the timeout value to probe the driver.
+	ProbeTimeout time.Duration
 }
 
 // Empty returns true if the driver is nil
