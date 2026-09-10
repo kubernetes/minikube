@@ -44,7 +44,7 @@ jobs:
           - name: qemu-containerd-ubuntu-24.04-x86
             driver: qemu
             os: ubuntu-24.04
-            start_flags: --force --container-runtime=containerd
+            start_flags: --network builtin --force --container-runtime=containerd
             sudo: ""
           - name: vfkit-containerd-macos-15-x86
             driver: vfkit
@@ -105,9 +105,15 @@ jobs:
         if: matrix.driver == 'qemu'
         run: |
           sudo apt-get update
-          sudo apt-get install -y qemu-system-x86 qemu-utils ovmf
-          # ubuntu 24.04 ships OVMF_CODE_4M.fd but the qemu driver checks /usr/share/OVMF/OVMF_CODE.fd
-          sudo ln -sf /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd
+          sudo apt-get install -y qemu-system-x86 qemu-utils
+          # GitHub hosted runners expose /dev/kvm but the runner user
+          # lacks rw permission (660 root:kvm). qemu -accel kvm then fails
+          # with "Could not access KVM kernel module: Permission denied".
+          # chmod is immediate for ephemeral CI runners; usermod -aG kvm
+          # would require re-login and does not take effect in the same job.
+          ls -l /dev/kvm || true
+          sudo chmod 666 /dev/kvm
+          ls -l /dev/kvm
       - name: Inspect host before test (macos)
         timeout-minutes: 1
         if: contains(matrix.os, 'macos')
