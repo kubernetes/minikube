@@ -41,6 +41,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: qemu-containerd-ubuntu-24.04-x86
+            driver: qemu
+            os: ubuntu-24.04
+            start_flags: --force --container-runtime=containerd
+            sudo: ""
           - name: vfkit-containerd-macos-15-x86
             driver: vfkit
             os: macos-15-intel
@@ -95,6 +100,14 @@ jobs:
         run: |
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
+      - name: Install qemu (ubuntu)
+        timeout-minutes: 5
+        if: matrix.driver == 'qemu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 qemu-utils ovmf
+          # ubuntu 24.04 ships OVMF_CODE_4M.fd but the qemu driver checks /usr/share/OVMF/OVMF_CODE.fd
+          sudo ln -sf /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd
       - name: Inspect host before test (macos)
         timeout-minutes: 1
         if: contains(matrix.os, 'macos')
