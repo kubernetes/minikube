@@ -105,7 +105,16 @@ jobs:
         if: matrix.driver == 'qemu'
         run: |
           sudo apt-get update
-          sudo apt-get install -y qemu-system-x86 qemu-utils
+          sudo apt-get install -y qemu-system-x86 qemu-utils ovmf
+          # The qemu2 driver health check stats this exact path on amd64
+          # (pkg/minikube/registry/drvs/qemu2/qemu2.go: qemuFirmwarePath +
+          # status) and minikube start refuses with PROVIDER_QEMU2_NOT_FOUND
+          # without it — even though BIOS boot never passes it to qemu.
+          # Ubuntu 24.04's ovmf package ships only OVMF_CODE_4M.fd, so link
+          # the legacy name the driver looks up. Long-term fix: teach the
+          # driver to look up both filenames instead of this symlink.
+          sudo ln -sf /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd
+          ls -l /usr/share/OVMF/ || true
           # GitHub hosted runners expose /dev/kvm but the runner user
           # lacks rw permission (660 root:kvm). qemu -accel kvm then fails
           # with "Could not access KVM kernel module: Permission denied".
