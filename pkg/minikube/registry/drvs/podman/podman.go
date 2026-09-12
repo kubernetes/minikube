@@ -80,8 +80,11 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 
 	extraArgs := []string{}
 
-	for _, port := range cc.ExposedPorts {
-		extraArgs = append(extraArgs, "-p", port)
+	// --ports is cluster-wide config but can only bind once on the host.
+	if len(cc.Nodes) == 0 || n.Name == cc.Nodes[0].Name {
+		for _, port := range cc.ExposedPorts {
+			extraArgs = append(extraArgs, "-p", port)
+		}
 	}
 
 	return kic.NewDriver(kic.Config{
