@@ -178,4 +178,8 @@ var (
 	// Kubetail assets for kubetail addon
 	//go:embed kubetail/*.yaml kubetail/*.tmpl
 	KubetailAssets embed.FS
+
+	// NrcAssets assets for nrc addon
+	//go:embed nrc/crds.yaml nrc/nrc.yaml.tmpl
+	NrcAssets embed.FS
 )
