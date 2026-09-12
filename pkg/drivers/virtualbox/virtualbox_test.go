@@ -650,6 +650,39 @@ func TestCreateVMWithoutAccelerate3D(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestCreateVMReturnsUpgradeHintOnAccelerate3DUnsupportedError(t *testing.T) {
+	var modifyVMcommand string
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		modifyVMcommand = "vbm modifyvm default --chipset armv8virtual --firmware efi64 --graphicscontroller qemuramfb --firmware-logo-fade-in off --firmware-logo-fade-out off --firmware-logo-display-time 0 --firmware-boot-menu disabled --ostype Linux_arm64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtc-use-utc on --natdnshostresolver1 off --natdnsproxy1 on --cpu-hotplug off --accelerate-3d off --boot1 dvd"
+	} else {
+		modifyVMcommand = "vbm modifyvm default --firmware bios --bioslogofadein off --bioslogofadeout off --bioslogodisplaytime 0 --biosbootmenu disabled --ostype Linux26_64 --cpus 1 --memory 1024 --acpi on --ioapic on --rtcuseutc on --natdnshostresolver1 off --natdnsproxy1 on --cpuhotplug off --pae on --hpet on --hwvirtex on --nestedpaging on --largepages on --vtxvpid on --accelerate3d off --boot1 dvd"
+		if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
+			modifyVMcommand += " --longmode on"
+		}
+	}
+
+	unsupportedErr := errors.New("VBoxManage modifyvm ... failed:\n" +
+		"VBoxManage: error: The graphics controller does not support the given feature\n" +
+		"VBoxManage: error: Details: code VBOX_E_NOT_SUPPORTED (0x80bb0009), component GraphicsAdapterWrap, interface IGraphicsAdapter, callee nsISupports")
+
+	driver := NewDriver("default", "path")
+	mockCalls(t, driver, []Call{
+		{"CopyIsoToMachineDir path default http://b2d.org", "", nil},
+		{"Generate path/machines/default/id_rsa", "", nil},
+		{"Create 20000 path/machines/default/id_rsa.pub path/machines/default/disk.vmdk", "", nil},
+		{"vbm createvm --basefolder path/machines/default --name default --register", "", nil},
+		{modifyVMcommand, "", unsupportedErr},
+	})
+
+	err := driver.CreateVM()
+
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "upgrade to VirtualBox 7.1.2 or later")
+		assert.ErrorIs(t, err, unsupportedErr)
+		assert.NotContains(t, err.Error(), "--virtualbox-no-accelerate3d-off")
+	}
+}
+
 func TestStart(t *testing.T) {
 	driver := NewDriver("default", "path")
 
