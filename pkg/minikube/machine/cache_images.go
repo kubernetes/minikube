@@ -593,7 +593,18 @@ func removeImages(crMgr cruntime.Manager, imgs []string) error {
 
 	for _, img := range imgs {
 		g.Go(func() error {
-			return crMgr.RemoveImage(img)
+			err := crMgr.RemoveImage(img)
+			if err == nil {
+				return nil
+			}
+			// A removal that leaves no image behind is a no-op, not a failure, so
+			// removing an image that was never there keeps exiting zero. Only an
+			// image that survived the attempt is a real removal failure.
+			if !crMgr.ImageExists(img, "") {
+				klog.Infof("image %q is not present after %v, nothing to remove", img, err)
+				return nil
+			}
+			return err
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -658,6 +669,13 @@ func RemoveImages(images []string, profile *config.Profile, options *run.Command
 
 	klog.Infof("succeeded removing from: %s", strings.Join(succeeded, " "))
 	klog.Infof("failed removing from: %s", strings.Join(failed, " "))
+
+	// Every node is attempted before reporting, so a partial failure still removes
+	// what it can. Returning the error is what gives the command a non-zero exit,
+	// without which scripts and CI cannot tell a failed removal from a successful one.
+	if len(failed) > 0 {
+		return fmt.Errorf("failed to remove images from: %s", strings.Join(failed, " "))
+	}
 	return nil
 }
 
