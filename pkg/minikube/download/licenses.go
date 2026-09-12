@@ -29,12 +29,16 @@ import (
 
 // licensesTarballURL returns the URL for the licenses tarball,
 // with a fallback to Google Cloud Storage.
-func licensesTarballURL() string {
-	githubURL := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/%s/licenses.tar.gz", version.GetVersion())
-	gcsURL := fmt.Sprintf("https://storage.googleapis.com/minikube/releases/%s/licenses.tar.gz", version.GetVersion())
+var (
+	httpHead = http.Head
+	httpGet  = http.Get
+)
 
-	// Try GitHub first. (check if the URL is reachable without downloading the file)
-	resp, err := http.Head(githubURL)
+func licensesTarballURLForVersion(ver string) string {
+	githubURL := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/%s/licenses.tar.gz", ver)
+	gcsURL := fmt.Sprintf("https://storage.googleapis.com/minikube/releases/%s/licenses.tar.gz", ver)
+
+	resp, err := httpHead(githubURL)
 	if err == nil && resp.StatusCode == http.StatusOK {
 		return githubURL
 	}
@@ -44,11 +48,14 @@ func licensesTarballURL() string {
 	return gcsURL
 }
 
-// Licenses downloads the licenses tarball and extracts its contents to the specified directory.
-func Licenses(dir string) error {
-	url := licensesTarballURL()
+// licensesTarballURL returns the URL for the licenses tarball,
+// with a fallback to Google Cloud Storage.
+func licensesTarballURL() string {
+	return licensesTarballURLForVersion(version.GetVersion())
+}
 
-	resp, err := http.Get(url)
+func downloadAndExtractLicenses(url, dir string) error {
+	resp, err := httpGet(url)
 	if err != nil {
 		return fmt.Errorf("failed to download licenses from %s: %v", url, err)
 	}
@@ -91,4 +98,9 @@ func Licenses(dir string) error {
 	}
 
 	return nil
+}
+
+// Licenses downloads the licenses tarball and extracts its contents to the specified directory.
+func Licenses(dir string) error {
+	return downloadAndExtractLicenses(licensesTarballURL(), dir)
 }
