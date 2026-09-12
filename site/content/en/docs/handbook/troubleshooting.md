@@ -78,6 +78,17 @@ To view more detailed information about a pod, use:
 kubectl describe pod <name> -n <namespace>
 ```
 
+## Cluster and node status
+
+```shell
+minikube status
+minikube profile list
+minikube ssh -- journalctl -u kubelet -n 50 --no-pager
+```
+
+`minikube status` is also the first thing to run after a `docker system prune`
+if you used the docker driver: the cluster container may be gone.
+
 ## Debugging hung start-up
 
 minikube will wait ~8 minutes before giving up on a Kubernetes deployment. If you want to see startup fails more immediately, consider using:
