@@ -54,14 +54,15 @@ var supportedArchictures = []string{"amd64"}
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.KVM2,
-		Alias:    []string{driver.AliasKVM},
-		Init:     func(_ *run.CommandOptions) drivers.Driver { return kvm.NewDriver("", "") },
-		Config:   configure,
-		Status:   status,
-		Default:  true,
-		Priority: registry.Preferred,
-		Parallel: true,
+		Name:         driver.KVM2,
+		Alias:        []string{driver.AliasKVM},
+		Init:         func(_ *run.CommandOptions) drivers.Driver { return kvm.NewDriver("", "") },
+		Config:       configure,
+		Status:       status,
+		Default:      true,
+		Priority:     registry.Preferred,
+		Parallel:     true,
+		ProbeTimeout: 6 * time.Second,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
@@ -152,7 +153,8 @@ func status(_ *run.CommandOptions) registry.State {
 	}
 
 	// Allow no more than 6 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	timeout := registry.Driver(driver.KVM2).ProbeTimeout
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	path, err := exec.LookPath("virsh")

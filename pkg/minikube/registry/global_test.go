@@ -18,6 +18,7 @@ package registry
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/run"
@@ -111,6 +112,50 @@ func TestGlobalAvailable(t *testing.T) {
 
 	if diff := cmp.Diff(Available(false, &run.CommandOptions{}), expected); diff != "" {
 		t.Errorf("available mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGlobalAvailableMaxTimeout(t *testing.T) {
+	globalRegistry = newRegistry()
+
+	var bar DriverDef
+	bar = DriverDef{
+		Name:         "healthy-bar",
+		Default:      true,
+		Priority:     Default,
+		ProbeTimeout: 10 * time.Millisecond,
+		Status: func(_ *run.CommandOptions) State {
+			time.Sleep(bar.ProbeTimeout)
+			return State{Healthy: true}
+		},
+	}
+	if err := Register(bar); err != nil {
+		t.Errorf("register returned error: %v", err)
+	}
+
+	var foo DriverDef
+	foo = DriverDef{
+		Name:         "unhealthy-foo",
+		Default:      true,
+		Priority:     Default,
+		ProbeTimeout: 5 * time.Millisecond,
+		Status: func(_ *run.CommandOptions) State {
+			time.Sleep(foo.ProbeTimeout)
+			return State{Healthy: false}
+		},
+	}
+	if err := Register(foo); err != nil {
+		t.Errorf("register returned error: %v", err)
+	}
+
+	start := time.Now()
+	_ = Available(false, &run.CommandOptions{})
+	duration := time.Since(start)
+	tolerance := 2 * time.Millisecond
+	minAllowed := bar.ProbeTimeout
+	maxAllowed := minAllowed + tolerance
+	if duration > maxAllowed {
+		t.Errorf("available took more time than expected (-want %d +got %d)", maxAllowed, duration)
 	}
 }
 

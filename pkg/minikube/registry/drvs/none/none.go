@@ -42,6 +42,7 @@ func init() {
 		Status:   status,
 		Default:  false, // no isolation
 		Priority: registry.Discouraged,
+		ProbeTimeout: 1 * time.Second
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
