@@ -154,7 +154,7 @@ func running(name string, first bool, options *run.CommandOptions) []ClusterCont
 		hostname, ip, port, err := driver.ControlPlaneEndpoint(cc, &cp, hostInfo.DriverName)
 		if err != nil {
 			if last {
-				exit.Message(reason.DrvCPEndpoint, `Unable to get control-plane node {{.name}} endpoint: {{.err}}`, out.V{"name": machineName, "err": err})
+				exit.Message(reason.DrvCPEndpoint, `Unable to get control-plane node {{.name}} endpoint: {{.err}}`, out.V{"name": machineName, "err": err, "profileArg": fmt.Sprintf("--profile=%s", cc.Name)})
 			}
 			out.WarningT(`Unable to get control-plane node {{.name}} endpoint (will try others): {{.err}}`, out.V{"name": machineName, "err": err})
 			continue
