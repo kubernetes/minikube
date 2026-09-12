@@ -35,6 +35,7 @@ The `minikube start` command supports 5 additional KVM specific flags:
 * `unable to set user and group to '65534:992` when `dynamic ownership = 1` in `qemu.conf` [#4467](https://github.com/kubernetes/minikube/issues/4467)
 * KVM VM's cannot be used simultaneously with VirtualBox  [#4913](https://github.com/kubernetes/minikube/issues/4913)
 * On some distributions, libvirt bridge networking may fail until the host reboots
+* Network connectivity lost after installing Docker [#23589](https://github.com/kubernetes/minikube/issues/23589)
 
 Also see [co/kvm2-driver open issues](https://github.com/kubernetes/minikube/labels/co%2Fkvm2-driver).
 
@@ -121,3 +122,94 @@ where:
 4.  Run `sudo systemctl restart libvirtd` or `sudo systemctl restart libvirt` (depending on your OS/distro) to restart the libvirt daemon.
 
 Hopefully, by now you have libvirt network operational, and you will be successfully running minikube again.
+
+### Network connectivity lost after installing Docker
+
+#### Symptoms
+
+When starting a minikube cluster with the `kvm2` driver on a host with Docker installed, minikube may display a connectivity warning:
+
+```shell
+❗  Failing to connect to https://registry.k8s.io/ from inside the minikube VM
+💡  To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/
+```
+
+Inside the VM, external network connectivity and DNS lookups fail:
+
+```shell
+$ minikube ssh -- ping -c 3 8.8.8.8
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+--- 8.8.8.8 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2048ms
+
+$ minikube ssh -- nslookup kubernetes.io
+;; connection timed out; no servers could be reached
+```
+
+#### Root Cause
+
+When the Docker daemon starts on the host, it modifies the host firewall by setting the default policy of the `FORWARD` chain to `DROP`. Because minikube's `kvm2` driver relies on libvirt virtual bridges (such as `virbr0` and `virbr1`), traffic forwarded across these bridges is blocked by Docker's default drop policy unless explicitly permitted.
+
+#### How to Detect
+
+Check the host's `FORWARD` and `DOCKER-USER` firewall chains:
+
+```shell
+$ sudo iptables -S FORWARD
+-P FORWARD DROP
+-A FORWARD -j DOCKER-USER
+-A FORWARD -j DOCKER-ISOLATION-STAGE-1
+...
+
+$ sudo iptables -S DOCKER-USER
+-N DOCKER-USER
+-A DOCKER-USER -j RETURN
+```
+
+If the `FORWARD` policy is `-P FORWARD DROP` and `DOCKER-USER` only contains `-j RETURN` without explicit rules allowing traffic on `virbr+` interfaces, Docker is blocking forwarded packets from the VM.
+
+#### Immediate Fix
+
+To allow forwarded traffic across libvirt bridges, add rules to Docker's custom `DOCKER-USER` chain (which Docker evaluates before its own rules):
+
+```shell
+sudo iptables -I DOCKER-USER -i virbr+ -j ACCEPT
+sudo iptables -I DOCKER-USER -o virbr+ -j ACCEPT
+```
+
+{{% alert title="Note" color="primary" %}}
+The `virbr+` wildcard interface syntax matches any libvirt bridge (such as `virbr0`, `virbr1`, etc.). On modern Linux distributions using `nftables`, the `iptables` command transparently interacts with `iptables-nft`.
+{{% /alert %}}
+
+#### Persistent Fix (Libvirt Network Hook)
+
+Because Docker recreates its chains upon restart, you can persist these rules across reboots and libvirt network state changes by creating a libvirt network hook script.
+
+Create `/etc/libvirt/hooks/network` with root privileges:
+
+```bash
+#!/bin/bash
+if [ "${2}" = "started" ] || [ "${2}" = "reloaded" ]; then
+    iptables -I DOCKER-USER -i virbr+ -j ACCEPT
+    iptables -I DOCKER-USER -o virbr+ -j ACCEPT
+elif [ "${2}" = "stopped" ]; then
+    iptables -D DOCKER-USER -i virbr+ -j ACCEPT
+    iptables -D DOCKER-USER -o virbr+ -j ACCEPT
+fi
+```
+
+Make the script executable:
+
+```shell
+sudo chmod +x /etc/libvirt/hooks/network
+```
+
+#### Alternative: Firewalld Configuration
+
+If your distribution uses `firewalld` (such as Fedora, RHEL, or CentOS), ensure that the libvirt bridge is assigned to the `libvirt` or `trusted` zone, and enable forwarding policies:
+
+```shell
+sudo firewall-cmd --zone=libvirt --add-interface=virbr0 --permanent
+sudo firewall-cmd --reload
+```
+
