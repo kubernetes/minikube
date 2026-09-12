@@ -1,0 +1,13 @@
+name: "octopus-review"
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  review:
+    if: github.repository == 'kubernetes/minikube'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: octopusreview/action@c7156c0dc465c20e8b06da84b92b64f9ae8c7c36 # v1
