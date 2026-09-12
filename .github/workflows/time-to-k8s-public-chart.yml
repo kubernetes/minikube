@@ -6,7 +6,6 @@ on:
     - cron: "0 2,14 * * *"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.26.5'
 permissions:
   contents: read
 
@@ -22,7 +21,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
-          go-version: ${{env.GO_VERSION}}
+          go-version-file: go.mod
       - name: Benchmark time-to-k8s for Docker driver with Docker runtime
         run: |
           ./hack/benchmark/time-to-k8s/public-chart/public-chart.sh docker docker
@@ -46,7 +45,7 @@ jobs:
           kubectl version --client=true
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
-          go-version: ${{env.GO_VERSION}}
+          go-version-file: go.mod
       - name: Disable firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
