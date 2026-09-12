@@ -286,6 +286,12 @@ jobs:
       - name: Install kubectl
         timeout-minutes: 1
         uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
+      - name: Install qemu and socket_vmnet (macos)
+        if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
+        timeout-minutes: 1
+        run: |
+          brew install qemu socket_vmnet
+          HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
       - name: Install vfkit and vmnet_helper (macos)
         if: matrix.driver == 'vfkit'
         timeout-minutes: 1
