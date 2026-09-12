@@ -47,6 +47,8 @@ instructions below.
 minikube start --driver krunkit
 ```
 
+{{% vmnet-pinning driver="krunkit" %}}
+
 ### Vmnet offloading
 
 The `--vmnet-offloading` flag enables vmnet checksum and TSO offloading,
