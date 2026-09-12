@@ -63,6 +63,7 @@ minikube start [flags]
       --host-dns-resolver                 Enable host resolver for NAT DNS requests (virtualbox driver only) (default true)
       --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.59.1/24")
       --host-only-nic-type string         NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
+      --https                             Install a trusted TLS certificate in the cluster and add the CA to the browser trust store. Enables HTTPS access to minikube services without security warnings.
       --hyperkit-vpnkit-sock string       Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock (hyperkit driver only)
       --hyperkit-vsock-ports strings      List of guest VSock ports that should be exposed as sockets on the host (hyperkit driver only)
       --hyperv-external-adapter string    External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)

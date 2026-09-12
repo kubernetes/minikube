@@ -40,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/libmachine"
+	minikubehttps "k8s.io/minikube/pkg/minikube/certs/https"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -331,6 +332,7 @@ func deleteProfileTimeout(profile *config.Profile, options *run.CommandOptions) 
 func deleteProfile(ctx context.Context, profile *config.Profile, options *run.CommandOptions) error {
 	klog.Infof("Deleting %s", profile.Name)
 	register.Reg.SetStep(register.Deleting)
+	_ = minikubehttps.CleanupHTTPS(profile.Name)
 
 	viper.Set(config.ProfileName, profile.Name)
 	if profile.Config != nil {
