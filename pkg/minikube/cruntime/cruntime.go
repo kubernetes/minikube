@@ -19,6 +19,7 @@ package cruntime
 
 import (
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 
@@ -99,7 +100,9 @@ type Manager interface {
 	// SocketPath returns the path to the socket file for a given runtime
 	SocketPath() string
 
-	// Load an image idempotently into the runtime on a host
+	// Load an image idempotently into the runtime on a host.
+	// Runtimes whose load command also accepts the image on stdin implement
+	// StreamLoader, letting callers skip the copy into the guest entirely.
 	LoadImage(string) error
 	// Pull an image to the runtime from the container registry
 	PullImage(string) error
@@ -138,6 +141,20 @@ type Manager interface {
 	Preload(config.ClusterConfig) error
 	// ImagesPreloaded returns true if all images have been preloaded
 	ImagesPreloaded([]string) bool
+}
+
+// StreamLoader is implemented by runtimes whose load command reads the image
+// from stdin. A caller that already holds the image on the host can then pipe
+// it straight in, rather than copying it into the guest and loading it from a
+// path there, which puts a second full copy of the image on the node's disk for
+// the duration of the load.
+//
+// It is deliberately kept out of Manager: a runtime that cannot stream stays
+// correct by simply not implementing it, and callers choose the path with a
+// type assertion.
+type StreamLoader interface {
+	// LoadImageStream loads an image into the runtime, reading it from r.
+	LoadImageStream(r io.Reader) error
 }
 
 // Config is runtime configuration

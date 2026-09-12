@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 	"testing"
@@ -192,7 +193,11 @@ const (
 
 // FakeRunner is a command runner that isn't very smart.
 type FakeRunner struct {
-	cmds       []string
+	cmds []string
+	// stdin is what the last RunCmd was handed on stdin. A command that loads an
+	// image from a stream carries the entire payload here, so asserting on cmds
+	// alone would not notice the image itself failing to arrive.
+	stdin      string
 	services   map[string]serviceState
 	containers map[string]string
 	images     map[string]string
@@ -229,6 +234,13 @@ func buffer(s string, err error) (*command.RunResult, error) {
 func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 	xargs := cmd.Args
 	f.cmds = append(f.cmds, xargs...)
+	if cmd.Stdin != nil {
+		b, err := io.ReadAll(cmd.Stdin)
+		if err != nil {
+			return nil, fmt.Errorf("reading stdin: %w", err)
+		}
+		f.stdin = string(b)
+	}
 	root := false
 	bin, args := xargs[0], xargs[1:]
 	f.t.Logf("bin=%s args=%v", bin, args)
