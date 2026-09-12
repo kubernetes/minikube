@@ -17,6 +17,8 @@ limitations under the License.
 package addons
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -173,3 +175,159 @@ func TestStartWithAllAddonsDisabled(t *testing.T) {
 		}
 	}
 }
+
+func TestInvokeFailFast(t *testing.T) {
+	secondCalled := false
+	expectedErr := fmt.Errorf("first callback failed")
+
+	firstFn := func(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
+		return expectedErr
+	}
+	secondFn := func(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
+		secondCalled = true
+		return nil
+	}
+
+	fns := []setFn{firstFn, secondFn}
+	err := invoke(nil, "test", "true", fns, nil)
+
+	if !errors.Is(err, expectedErr) {
+		t.Errorf("expected error %v, got %v", expectedErr, err)
+	}
+	if secondCalled {
+		t.Errorf("expected second callback NOT to be called after first callback failed")
+	}
+}
+
+func TestInvokeAll(t *testing.T) {
+	secondCalled := false
+	err1 := fmt.Errorf("first callback failed")
+	err2 := fmt.Errorf("second callback failed")
+
+	firstFn := func(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
+		return err1
+	}
+	secondFn := func(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
+		secondCalled = true
+		return err2
+	}
+
+	fns := []setFn{firstFn, secondFn}
+	err := invokeAll(nil, "test", "false", fns, nil)
+
+	if err == nil {
+		t.Errorf("expected error, got nil")
+	}
+	if !secondCalled {
+		t.Errorf("expected second callback to be called despite first callback failure")
+	}
+}
+
+func TestInvokeAllSkipAddon(t *testing.T) {
+	secondCalled := false
+
+	firstFn := func(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
+		return ErrSkipThisAddon
+	}
+	secondFn := func(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
+		secondCalled = true
+		return nil
+	}
+
+	fns := []setFn{firstFn, secondFn}
+	err := invokeAll(nil, "test", "false", fns, nil)
+
+	if !errors.Is(err, ErrSkipThisAddon) {
+		t.Errorf("expected ErrSkipThisAddon, got %v", err)
+	}
+	if secondCalled {
+		t.Errorf("expected second callback NOT to be called after ErrSkipThisAddon")
+	}
+}
+
+func TestRunCallbacksMultiCallback(t *testing.T) {
+	firstErr := fmt.Errorf("first callback failed")
+	secondErr := fmt.Errorf("second callback failed")
+
+	var firstCalled, secondCalled bool
+	testAddon := &Addon{
+		name: "test-multicallback-addon",
+		callbacks: []setFn{
+			func(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
+				firstCalled = true
+				return firstErr
+			},
+			func(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
+				secondCalled = true
+				return secondErr
+			},
+		},
+	}
+
+	Addons = append(Addons, testAddon)
+	defer func() {
+		Addons = Addons[:len(Addons)-1]
+	}()
+
+	cc := &config.ClusterConfig{Name: "test-profile"}
+
+	t.Run("enable fails fast on first callback error", func(t *testing.T) {
+		firstCalled = false
+		secondCalled = false
+
+		err := RunCallbacks(cc, testAddon.name, "true", nil)
+		if err == nil {
+			t.Fatalf("expected error, got nil")
+		}
+		if !firstCalled {
+			t.Errorf("expected first callback to be called")
+		}
+		if secondCalled {
+			t.Errorf("expected second callback NOT to be called on enable failure")
+		}
+		if !errors.Is(err, firstErr) {
+			t.Errorf("expected error %v to wrap %v", err, firstErr)
+		}
+	})
+
+	t.Run("disable runs all callbacks despite errors", func(t *testing.T) {
+		firstCalled = false
+		secondCalled = false
+
+		err := RunCallbacks(cc, testAddon.name, "false", nil)
+		if err == nil {
+			t.Fatalf("expected error, got nil")
+		}
+		if !firstCalled {
+			t.Errorf("expected first callback to be called")
+		}
+		if !secondCalled {
+			t.Errorf("expected second callback to be called on disable failure")
+		}
+	})
+
+	t.Run("enable with ErrSkipThisAddon returns sentinel unwrapped", func(t *testing.T) {
+		skipAddon := &Addon{
+			name: "test-skip-addon",
+			callbacks: []setFn{
+				func(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
+					return ErrSkipThisAddon
+				},
+				func(cc *config.ClusterConfig, name string, value string, options *run.CommandOptions) error {
+					t.Errorf("expected second callback NOT to be called after ErrSkipThisAddon")
+					return nil
+				},
+			},
+		}
+		Addons = append(Addons, skipAddon)
+		defer func() {
+			Addons = Addons[:len(Addons)-1]
+		}()
+
+		err := RunCallbacks(cc, skipAddon.name, "true", nil)
+		if !errors.Is(err, ErrSkipThisAddon) {
+			t.Errorf("expected ErrSkipThisAddon, got %v", err)
+		}
+	})
+}
+

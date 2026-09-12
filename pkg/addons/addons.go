@@ -74,8 +74,13 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string, options *
 		return fmt.Errorf("%s is not a valid addon", name)
 	}
 
+	run := invoke
+	if value != "true" {
+		run = invokeAll
+	}
+
 	// Run any additional validations for this property
-	if err := invoke(cc, name, value, a.validations, options); err != nil {
+	if err := run(cc, name, value, a.validations, options); err != nil {
 		if errors.Is(err, ErrSkipThisAddon) {
 			return err
 		}
@@ -85,7 +90,7 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string, options *
 	preStartMessages(name, value)
 
 	// Run any callbacks for this property
-	if err := invoke(cc, name, value, a.callbacks, options); err != nil {
+	if err := run(cc, name, value, a.callbacks, options); err != nil {
 		if errors.Is(err, ErrSkipThisAddon) {
 			return err
 		}
@@ -211,12 +216,21 @@ func SetAndSave(profile string, name string, value string, options *run.CommandO
 	return config.Write(profile, cc)
 }
 
-// Runs all the validation or callback functions and collects errors
+// invoke runs validation or callback functions and returns on the first error encountered, failing fast
 func invoke(cc *config.ClusterConfig, name string, value string, fns []setFn, options *run.CommandOptions) error {
+	for _, fn := range fns {
+		if err := fn(cc, name, value, options); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// invokeAll runs all validation or callback functions, accumulating errors so cleanup can proceed
+func invokeAll(cc *config.ClusterConfig, name string, value string, fns []setFn, options *run.CommandOptions) error {
 	var errs []error
 	for _, fn := range fns {
-		err := fn(cc, name, value, options)
-		if err != nil {
+		if err := fn(cc, name, value, options); err != nil {
 			if errors.Is(err, ErrSkipThisAddon) {
 				return ErrSkipThisAddon
 			}
