@@ -388,9 +388,8 @@ Alternatively, you can try upgrading to the latest hyperkit version, or using an
 		Kind: Kind{
 			ID:       "PR_HYPERV_AS_ADMIN",
 			ExitCode: ExProviderPermission,
-			Advice:   "Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode.",
-			URL:      "https://rominirani.com/docker-machine-windows-10-hyper-v-troubleshooting-tips-367c1ea73c24",
-			Issues:   []int{4511},
+			Advice:   "Please open a new terminal with Administrator (or Hyper-V Administrator) rights and retry.",
+			Issues:   []int{4511, 9589},
 		},
 		Regexp: re(`Hyper-v commands have to be run as an Administrator`),
 		GOOS:   []string{"windows"},
