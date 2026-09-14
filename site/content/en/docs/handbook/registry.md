@@ -47,7 +47,7 @@ with TLS certificates. Because the default service cluster IP is known to be ava
 deployed inside the cluster by creating the cluster with `minikube start --insecure-registry "10.0.0.0/24"`. Ensure the cluster
 is deleted using `minikube delete` before starting with the `--insecure-registry` flag.
 
-### docker on macOS
+### Docker on macOS
 
 Quick guide for configuring minikube and docker on macOS, enabling docker to push images to minikube's registry.
 
@@ -63,17 +63,18 @@ When enabled, the registry addon exposes its port 5000 on the minikube's virtual
 In order to make docker accept pushing images to this registry, we have to redirect port 5000 on the docker virtual machine over to port 5000 on the minikube machine. We can (ab)use docker's network configuration to instantiate a container on the docker's host, and run socat there:
 
 ```shell
-docker run --rm -it --network=host alpine ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000"
+docker run --rm -d --name=minikube-registry-socat --network=host alpine \
+    ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000"
 ```
 
 Once socat is running it's possible to push images to the minikube registry:
 
 ```shell
-docker tag my/image localhost:5000/myimage
+docker tag myimage localhost:5000/myimage
 docker push localhost:5000/myimage
 ```
 
-After the image is pushed, refer to it by `localhost:5000/{name}` in kubectl specs.
+After the image is pushed, refer to it by `localhost:5000/myimage` in kubectl specs.
 
 ### Docker on Windows
 
