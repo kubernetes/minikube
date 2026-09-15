@@ -18,6 +18,7 @@ package oci
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -139,6 +140,24 @@ func TestDaemonHost(t *testing.T) {
 		}
 		if v := DaemonHost(test.driver); v != test.expectedAddr {
 			t.Errorf("invalid oci daemon host. got: %v, want: %v", v, test.expectedAddr)
+		}
+	}
+}
+
+func TestNvidiaDriverCapabilities(t *testing.T) {
+	if nvidiaDriverCapabilities == "all" {
+		t.Fatal(`"all" includes display and needs /dev/nvidia-modeset`)
+	}
+	got := map[string]bool{}
+	for _, c := range strings.Split(nvidiaDriverCapabilities, ",") {
+		if c == "display" {
+			t.Fatalf("display requires /dev/nvidia-modeset: %q", nvidiaDriverCapabilities)
+		}
+		got[c] = true
+	}
+	for _, need := range []string{"compute", "utility", "graphics"} {
+		if !got[need] {
+			t.Errorf("missing %s in %q", need, nvidiaDriverCapabilities)
 		}
 	}
 }
