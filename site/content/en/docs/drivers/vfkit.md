@@ -73,6 +73,8 @@ brew update
 brew upgrade vfkit
 ```
 
+{{< readfile file="/docs/drivers/includes/vmnet_troubleshooting.inc" >}}
+
 ### Troubleshooting the vmnet-shared network
 
 Check for errors in vmnet-helper log:
