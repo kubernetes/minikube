@@ -33,8 +33,11 @@ func TestGetStatePropagatesErrorEventToNodes(t *testing.T) {
 	t.Setenv(localpath.MinikubeHome, t.TempDir())
 
 	register.SetOutputFile(io.Discard)
-	defer register.SetOutputFile(os.Stdout)
+	t.Cleanup(func() { register.SetOutputFile(os.Stdout) })
+
 	register.SetEventLogPath(localpath.EventLog(profile))
+	t.Cleanup(register.CloseEventLog)
+
 	register.PrintErrorExitCode("not enough storage", reason.ExInsufficientStorage)
 
 	got := GetState([]*Status{
