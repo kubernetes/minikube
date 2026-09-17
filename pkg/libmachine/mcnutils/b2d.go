@@ -134,6 +134,9 @@ func (*b2dReleaseGetter) getReleaseTag(apiURL string) (string, error) {
 		return "", err
 	}
 	defer rsp.Body.Close()
+	if rsp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected HTTP status %s from GitHub API (are you getting rate limited?)", rsp.Status)
+	}
 
 	// If we call the API endpoint
 	// "/repos/boot2docker/boot2docker/releases" without specifying
@@ -229,6 +232,10 @@ func (*b2dReleaseGetter) download(dir, file, isoURL string) error {
 		s, err := client.Get(isoURL)
 		if err != nil {
 			return err
+		}
+		if s.StatusCode != http.StatusOK {
+			s.Body.Close()
+			return fmt.Errorf("downloading %s: unexpected HTTP status %s", isoURL, s.Status)
 		}
 
 		src = &ReaderWithProgress{
