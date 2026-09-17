@@ -38,15 +38,24 @@ func TestReleaseArchURL(t *testing.T) {
 		{"arm64", "https://storage.googleapis.com/gvisor/releases/release/latest/aarch64/"},
 	}
 	for _, tc := range tests {
-		if got := releaseArchURL(tc.goarch); got != tc.want {
+		got, err := releaseArchURL(tc.goarch)
+		if err != nil {
+			t.Errorf("releaseArchURL(%q) error = %v, want nil", tc.goarch, err)
+			continue
+		}
+		if got != tc.want {
 			t.Errorf("releaseArchURL(%q) = %q, want %q", tc.goarch, got, tc.want)
 		}
 	}
-	if !strings.HasSuffix(gvisorTarballURL(), "gvisor.tar.bz2") {
-		t.Errorf("gvisorTarballURL() = %q, want suffix gvisor.tar.bz2 (individual binaries no longer published, see #23709)", gvisorTarballURL())
+	tarball, err := gvisorTarballURL()
+	if err != nil {
+		t.Fatalf("gvisorTarballURL() error = %v", err)
 	}
-	if strings.HasSuffix(gvisorTarballURL(), "containerd-shim-runsc-v1") || strings.HasSuffix(gvisorTarballURL(), "/runsc") {
-		t.Errorf("gvisorTarballURL() = %q, must not point at removed individual binaries", gvisorTarballURL())
+	if !strings.HasSuffix(tarball, "gvisor.tar.bz2") {
+		t.Errorf("gvisorTarballURL() = %q, want suffix gvisor.tar.bz2 (individual binaries no longer published, see #23709)", tarball)
+	}
+	if strings.HasSuffix(tarball, "containerd-shim-runsc-v1") || strings.HasSuffix(tarball, "/runsc") {
+		t.Errorf("gvisorTarballURL() = %q, must not point at removed individual binaries", tarball)
 	}
 	for _, tc := range []struct {
 		goarch string
@@ -55,9 +64,22 @@ func TestReleaseArchURL(t *testing.T) {
 		{"amd64", "x86_64"},
 		{"arm64", "aarch64"},
 	} {
-		url := releaseArchURL(tc.goarch) + "gvisor.tar.bz2"
+		base, err := releaseArchURL(tc.goarch)
+		if err != nil {
+			t.Errorf("releaseArchURL(%q) error = %v", tc.goarch, err)
+			continue
+		}
+		url := base + "gvisor.tar.bz2"
 		if !strings.Contains(url, "/"+tc.arch+"/") {
 			t.Errorf("tarball url for %q = %q, want arch path %q", tc.goarch, url, tc.arch)
+		}
+	}
+}
+
+func TestReleaseArchURLUnsupported(t *testing.T) {
+	for _, goarch := range []string{"386", "arm", "riscv64", "ppc64le", "s390x", ""} {
+		if url, err := releaseArchURL(goarch); err == nil {
+			t.Errorf("releaseArchURL(%q) = %q, want error for unsupported arch", goarch, url)
 		}
 	}
 }
@@ -284,5 +306,147 @@ func TestDownloadBinariesFromEndToEnd(t *testing.T) {
 		if fi.Mode().Perm()&0o111 == 0 {
 			t.Errorf("%s not executable: %v", name, fi.Mode())
 		}
+	}
+}
+
+func TestHasGvisorStanza(t *testing.T) {
+	if !hasGvisorStanza(configFragment) {
+		t.Errorf("hasGvisorStanza(configFragment) = false, want true")
+	}
+	if hasGvisorStanza("version = 2\n[plugins]\n") {
+		t.Errorf("hasGvisorStanza(plain config) = true, want false")
+	}
+}
+
+func writeTestConfig(t *testing.T, root, content string) string {
+	t.Helper()
+	dir := filepath.Join(root, "etc/containerd")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	p := filepath.Join(dir, "config.toml")
+	if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+func TestConfigureAtIdempotent(t *testing.T) {
+	root := t.TempDir()
+	const pristine = "version = 2\n"
+	configPath := writeTestConfig(t, root, pristine)
+
+	if err := configureAt(root); err != nil {
+		t.Fatalf("configureAt() first run = %v", err)
+	}
+	if err := configureAt(root); err != nil {
+		t.Fatalf("configureAt() second run = %v", err)
+	}
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := strings.Count(string(data), "runtimes.runsc"); n != 1 {
+		t.Errorf("stanza appears %d times after two enables, want exactly 1", n)
+	}
+	backup, err := os.ReadFile(filepath.Join(root, containerdConfigBackupPath))
+	if err != nil {
+		t.Fatalf("expected backup at %s: %v", containerdConfigBackupPath, err)
+	}
+	if string(backup) != pristine {
+		t.Errorf("backup = %q, want pristine %q (backup must never hold patched content)", backup, pristine)
+	}
+}
+
+func TestRestoreConfigRoundTrip(t *testing.T) {
+	root := t.TempDir()
+	const pristine = "version = 2\n"
+	configPath := writeTestConfig(t, root, pristine)
+	if err := configureAt(root); err != nil {
+		t.Fatal(err)
+	}
+	if err := restoreConfig(root); err != nil {
+		t.Fatalf("restoreConfig() = %v", err)
+	}
+	restored, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(restored) != pristine {
+		t.Errorf("restored = %q, want pristine %q", restored, pristine)
+	}
+}
+
+func TestRestoreConfigMissingBackupFailsSafe(t *testing.T) {
+	root := t.TempDir()
+	const pristine = "version = 2\n"
+	configPath := writeTestConfig(t, root, pristine)
+	if err := restoreConfig(root); err == nil {
+		t.Fatal("restoreConfig() without backup = nil, want error (must not delete live config)")
+	}
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != pristine {
+		t.Errorf("live config changed on failed restore = %q, want untouched %q", data, pristine)
+	}
+}
+
+func TestRestoreConfigLegacyBackup(t *testing.T) {
+	root := t.TempDir()
+	const pristine = "version = 2\n"
+	configPath := writeTestConfig(t, root, pristine+"stale = true\n")
+	legacyDir := filepath.Join(root, filepath.Dir(legacyContainerdConfigBackupPath))
+	if err := os.MkdirAll(legacyDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	legacy := filepath.Join(root, legacyContainerdConfigBackupPath)
+	if err := os.WriteFile(legacy, []byte(pristine), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := restoreConfig(root); err != nil {
+		t.Fatalf("restoreConfig() with legacy backup = %v", err)
+	}
+	restored, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(restored) != pristine {
+		t.Errorf("restored = %q, want legacy backup %q", restored, pristine)
+	}
+}
+
+func TestRemoveGvisorFiles(t *testing.T) {
+	root := t.TempDir()
+	binDir := filepath.Join(root, "usr/bin")
+	for _, p := range []string{
+		filepath.Join(binDir, "runsc"),
+		filepath.Join(binDir, "gvisor-bin/gvisor_sentry"),
+		filepath.Join(root, "run/containerd/runsc"),
+	} {
+		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte("x"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := removeGvisorFiles(root); err != nil {
+		t.Fatalf("removeGvisorFiles() = %v", err)
+	}
+	for _, p := range []string{
+		filepath.Join(binDir, "runsc"),
+		filepath.Join(binDir, "containerd-shim-runsc-v1"),
+		filepath.Join(binDir, "gvisor-bin"),
+		filepath.Join(root, "run/containerd/runsc"),
+		filepath.Join(root, "tmp/runsc"),
+	} {
+		if _, err := os.Stat(p); !os.IsNotExist(err) {
+			t.Errorf("%s still exists after removeGvisorFiles", p)
+		}
+	}
+	if err := removeGvisorFiles(root); err != nil {
+		t.Errorf("removeGvisorFiles() second run = %v, want nil (idempotent disable)", err)
 	}
 }

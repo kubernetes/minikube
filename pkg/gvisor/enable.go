@@ -37,9 +37,14 @@ import (
 )
 
 const (
-	nodeDir                    = "/node"
-	containerdConfigPath       = "/etc/containerd/config.toml"
-	containerdConfigBackupPath = "/tmp/containerd-config.toml.bak"
+	nodeDir              = "/node"
+	containerdConfigPath = "/etc/containerd/config.toml"
+	// containerdConfigBackupPath lives next to the config on persistent disk,
+	// so a reboot (which clears /tmp) can't orphan it.
+	containerdConfigBackupPath = "/etc/containerd/config.toml.gvisor-bak"
+	// legacyContainerdConfigBackupPath is where older releases stored the
+	// backup. Disable() still honors it so upgraded clusters roll back cleanly.
+	legacyContainerdConfigBackupPath = "/tmp/containerd-config.toml.bak"
 
 	configFragment = `
 [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runsc]
@@ -48,23 +53,29 @@ const (
 `
 )
 
-func gvisorTarballURL() string {
-	return releaseURL() + "gvisor.tar.bz2"
+func gvisorTarballURL() (string, error) {
+	base, err := releaseURL()
+	if err != nil {
+		return "", err
+	}
+	return base + "gvisor.tar.bz2", nil
 }
 
-func releaseURL() string {
+func releaseURL() (string, error) {
 	return releaseArchURL(runtime.GOARCH)
 }
 
-func releaseArchURL(goarch string) string {
+func releaseArchURL(goarch string) (string, error) {
 	arch := goarch
 	switch arch {
 	case "amd64":
 		arch = "x86_64"
 	case "arm64":
 		arch = "aarch64"
+	default:
+		return "", fmt.Errorf("unsupported architecture %q: gvisor only ships x86_64 and aarch64 releases", goarch)
 	}
-	return fmt.Sprintf("https://storage.googleapis.com/gvisor/releases/release/latest/%s/", arch)
+	return fmt.Sprintf("https://storage.googleapis.com/gvisor/releases/release/latest/%s/", arch), nil
 }
 
 // Enable follows these steps for enabling gvisor in minikube:
@@ -119,7 +130,11 @@ func makeGvisorDirs() error {
 }
 
 func downloadBinaries() error {
-	return downloadBinariesFrom(gvisorTarballURL(), filepath.Join(nodeDir, "usr/bin"))
+	url, err := gvisorTarballURL()
+	if err != nil {
+		return err
+	}
+	return downloadBinariesFrom(url, filepath.Join(nodeDir, "usr/bin"))
 }
 
 func downloadBinariesFrom(url, binDir string) error {
@@ -293,25 +308,60 @@ func writeExecutable(src io.Reader, dest string) error {
 	return nil
 }
 
+// stanzaMarker identifies the runsc runtime block configure() manages, so a
+// second Enable stays idempotent instead of appending a duplicate table.
+const stanzaMarker = "runtimes.runsc"
+
 // configure changes containerd `config.toml` file to include runsc runtime. A
-// copy of the original file is stored under `/tmp` to be restored when this
+// copy of the original file is stored next to it to be restored when this
 // plug in is disabled.
 func configure() error {
-	log.Printf("Storing default config.toml at %s", containerdConfigBackupPath)
-	configPath := filepath.Join(nodeDir, containerdConfigPath)
-	if err := mcnutils.CopyFile(configPath, filepath.Join(nodeDir, containerdConfigBackupPath)); err != nil {
-		return fmt.Errorf("copying default config.toml: %w", err)
+	return configureAt(nodeDir)
+}
+
+func configureAt(root string) error {
+	configPath := filepath.Join(root, containerdConfigPath)
+	backupPath := filepath.Join(root, containerdConfigBackupPath)
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", configPath, err)
+	}
+	if hasGvisorStanza(string(data)) {
+		log.Print("runsc stanza already present, skipping containerd config change")
+		return nil
+	}
+	// Back up once: never overwrite an existing backup with patched content.
+	if _, err := os.Stat(backupPath); os.IsNotExist(err) {
+		log.Printf("Storing default config.toml at %s", containerdConfigBackupPath)
+		if err := mcnutils.CopyFile(configPath, backupPath); err != nil {
+			return fmt.Errorf("copying default config.toml: %w", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("checking backup %s: %w", backupPath, err)
 	}
 
-	// Append runsc configuration to contained config.
+	// Append runsc configuration to containerd config.
 	config, err := os.OpenFile(configPath, os.O_WRONLY|os.O_APPEND, 0)
 	if err != nil {
-		return err
+		return fmt.Errorf("opening %s: %w", configPath, err)
 	}
 	if _, err := config.WriteString(configFragment); err != nil {
+		config.Close()
 		return fmt.Errorf("changing config.toml: %w", err)
 	}
+	if err := config.Sync(); err != nil {
+		config.Close()
+		return fmt.Errorf("syncing config.toml: %w", err)
+	}
+	if err := config.Close(); err != nil {
+		return fmt.Errorf("closing config.toml: %w", err)
+	}
 	return nil
+}
+
+func hasGvisorStanza(content string) bool {
+	return strings.Contains(content, stanzaMarker)
 }
 
 func restartContainerd() error {
