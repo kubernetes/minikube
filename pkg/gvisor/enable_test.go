@@ -450,3 +450,33 @@ func TestRemoveGvisorFiles(t *testing.T) {
 		t.Errorf("removeGvisorFiles() second run = %v, want nil (idempotent disable)", err)
 	}
 }
+
+// TestGvisorTarballLiveDownload hits the real gvisor release bucket, so it
+// fails exactly when real users break (see #23709). It downloads ~150MB and
+// takes about a minute, so it is skipped with -short.
+func TestGvisorTarballLiveDownload(t *testing.T) {
+	if testing.Short() {
+		t.Skip("needs network: downloads the real gvisor tarball")
+	}
+	url, err := gvisorTarballURL()
+	if err != nil {
+		t.Skipf("host arch has no gvisor release: %v", err)
+	}
+	dir := t.TempDir()
+	if err := downloadBinariesFrom(url, dir); err != nil {
+		t.Fatalf("downloadBinariesFrom(live %s) = %v", url, err)
+	}
+	for _, name := range []string{"runsc", "containerd-shim-runsc-v1"} {
+		fi, err := os.Stat(filepath.Join(dir, name))
+		if err != nil {
+			t.Errorf("live tarball missing %s: %v", name, err)
+			continue
+		}
+		if fi.Size() == 0 {
+			t.Errorf("live tarball installed empty %s", name)
+		}
+		if fi.Mode().Perm()&0o111 == 0 {
+			t.Errorf("live tarball %s not executable: %v", name, fi.Mode())
+		}
+	}
+}
