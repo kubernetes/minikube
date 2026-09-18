@@ -17,6 +17,7 @@ limitations under the License.
 package lock
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -221,4 +222,77 @@ func TestLockDirectoryStructure(t *testing.T) {
 		t.Errorf("Expected to be able to write to %s: %v", lockDir, err)
 	}
 	os.Remove(testFile)
+}
+
+func TestWriteFile(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "config.json")
+
+	if err := WriteFile(path, []byte("first"), 0600); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read written file: %v", err)
+	}
+	if string(got) != "first" {
+		t.Errorf("expected contents %q, got %q", "first", got)
+	}
+
+	if err := WriteFile(path, []byte("second"), 0600); err != nil {
+		t.Fatalf("WriteFile overwrite failed: %v", err)
+	}
+
+	got, err = os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read overwritten file: %v", err)
+	}
+	if string(got) != "second" {
+		t.Errorf("expected overwritten contents %q, got %q", "second", got)
+	}
+}
+
+func TestWriteFileInvalidPath(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "missing-dir", "config.json")
+
+	if err := WriteFile(path, []byte("data"), 0600); err == nil {
+		t.Fatal("expected an error writing to a nonexistent directory, got nil")
+	}
+}
+
+func TestAppendToFile(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "audit.json")
+
+	if err := AppendToFile(path, []byte("line1\n"), 0600); err != nil {
+		t.Fatalf("AppendToFile on new file failed: %v", err)
+	}
+
+	if err := AppendToFile(path, []byte("line2\n"), 0600); err != nil {
+		t.Fatalf("AppendToFile on existing file failed: %v", err)
+	}
+
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read appended file: %v", err)
+	}
+	want := "line1\nline2\n"
+	if string(got) != want {
+		t.Errorf("expected contents %q, got %q", want, got)
+	}
+}
+
+func TestAppendToFileInvalidPath(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "missing-dir", "audit.json")
+
+	err := AppendToFile(path, []byte("data"), 0600)
+	if err == nil {
+		t.Fatal("expected an error appending to a file in a nonexistent directory, got nil")
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("expected a not-exist error, got %v", err)
+	}
 }
