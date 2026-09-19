@@ -37,6 +37,8 @@ minikube config set driver docker
 - Cgroup v2 delegation, see https://rootlesscontaine.rs/getting-started/common/cgroup2/
 - Kernel 5.11 or later (5.13 or later is recommended when SELinux is enabled), see https://rootlesscontaine.rs/how-it-works/overlayfs/
 
+{{% readfile file="/docs/drivers/includes/rootless.inc" %}}
+
 ## Usage
 
 Start a cluster using the rootless docker driver:
