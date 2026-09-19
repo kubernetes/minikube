@@ -521,7 +521,11 @@ func validateQemuNetwork(n string) string {
 			exit.Message(reason.Usage, "The socket_vmnet network is only supported on macOS")
 		}
 		if !detect.SocketVMNetInstalled() {
-			exit.Message(reason.NotFoundSocketVMNet, "\n\n")
+			profileArg := ""
+			if cn := ClusterFlagValue(); cn != constants.DefaultClusterName {
+				profileArg = fmt.Sprintf(" -p %s", cn)
+			}
+			exit.Message(reason.NotFoundSocketVMNet, "\n\n", out.V{"profile": profileArg})
 		}
 	case "":
 		if detect.SocketVMNetInstalled() {
