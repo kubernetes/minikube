@@ -15,6 +15,25 @@ The podman driver is an alternative container runtime to the [Docker]({{< ref "/
 
 {{% readfile file="/docs/drivers/includes/podman_usage.inc" %}}
 
+## Rootless Podman
+
+On Ubuntu 24.04, Rootless Podman requires subordinate user and group IDs to be configured for the user running Minikube.
+
+Configure the current user with:
+
+```shell
+$ sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 $USER
+$ podman system migrate
+```
+
+Log out and log back in after configuring the subordinate IDs so the changes take effect.
+
+Then start Minikube with:
+
+```shell
+$ minikube start --driver=podman --rootless
+```
+
 ## Known Issues
 
 - On Linux, Podman requires passwordless running of sudo. If you run into an error about sudo, do the following:
