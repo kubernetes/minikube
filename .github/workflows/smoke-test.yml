@@ -41,6 +41,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: qemu-containerd-ubuntu-24.04-x86
+            driver: qemu
+            os: ubuntu-24.04
+            start_flags: --network builtin --force --container-runtime=containerd
+            sudo: ""
           - name: vfkit-containerd-macos-15-x86
             driver: vfkit
             os: macos-15-intel
@@ -95,6 +100,22 @@ jobs:
         run: |
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
+      - name: Install qemu (ubuntu)
+        timeout-minutes: 5
+        if: matrix.driver == 'qemu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 qemu-utils
+          # The qemu driver looks up both OVMF_CODE.fd and OVMF_CODE_4M.fd
+          # itself (see #23690), so no ovmf package or symlink is needed.
+          # GitHub hosted runners expose /dev/kvm but the runner user
+          # lacks rw permission (660 root:kvm). qemu -accel kvm then fails
+          # with "Could not access KVM kernel module: Permission denied".
+          # chmod is immediate for ephemeral CI runners; usermod -aG kvm
+          # would require re-login and does not take effect in the same job.
+          ls -l /dev/kvm || true
+          sudo chmod 666 /dev/kvm
+          ls -l /dev/kvm
       - name: Inspect host before test (macos)
         timeout-minutes: 1
         if: contains(matrix.os, 'macos')
