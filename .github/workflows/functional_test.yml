@@ -129,6 +129,14 @@ jobs:
             os: ubuntu-24.04-arm
             arch: arm64
             test-timeout: 22m
+          - name: podman-containerd-rootless-ubuntu-24.04-arm
+            driver: podman
+            cruntime: containerd
+            extra-start-args: --container-runtime=containerd --rootless
+            rootless: true
+            os: ubuntu-24.04-arm
+            arch: arm64
+            test-timeout: 22m
           - name: baremetal-docker-ubuntu-24.04-x86
             driver: none
             cruntime: docker
