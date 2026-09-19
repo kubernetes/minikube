@@ -110,6 +110,8 @@ func TestPropertyWithNameArg(t *testing.T) {
 		{Profile, "Profile"},
 		{ClientCert, "ClientCert"},
 		{ClientKey, "ClientKey"},
+		{EventLog, "EventLog"},
+		{PID, "PID"},
 	}
 	miniPath := MiniPath()
 	mockedName := "foo"
@@ -135,12 +137,55 @@ func TestPropertyWithoutNameArg(t *testing.T) {
 	}{
 		{ConfigFile, "ConfigFile"},
 		{CACert, "CACert"},
+		{AuditLog, "AuditLog"},
+		{LastStartLog, "LastStartLog"},
 	}
 	miniPath := MiniPath()
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if !strings.Contains(tc.propertyFunc(), MiniPath()) {
 				t.Errorf("Property %s(%v) doesn't contain expected miniPath %v", tc.name, tc.propertyFunc, miniPath)
+			}
+		})
+	}
+}
+
+func TestSanitizeCacheDir(t *testing.T) {
+	var testCases = []struct {
+		image string
+		want  string
+	}{
+		{"gcr.io/k8s-minikube/kicbase:v0.0.42", "gcr.io/k8s-minikube/kicbase_v0.0.42"},
+		{"registry.k8s.io/pause:3.9", "registry.k8s.io/pause_3.9"},
+		{"busybox", "busybox"},
+		{"my.registry:5000/app:latest", "my.registry_5000/app_latest"},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.image, func(t *testing.T) {
+			if got := SanitizeCacheDir(tc.image); got != tc.want {
+				t.Errorf("SanitizeCacheDir(%q) = %q, want %q", tc.image, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestDstPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("DstPath only rewrites drive letters on windows")
+	}
+
+	var testCases = []string{
+		"/tmp/minikube/kicbase.tar",
+		"relative/path/image.tar",
+	}
+	for _, tc := range testCases {
+		t.Run(tc, func(t *testing.T) {
+			got, err := DstPath(tc)
+			if err != nil {
+				t.Fatalf("DstPath(%q) returned error: %v", tc, err)
+			}
+			if got != tc {
+				t.Errorf("DstPath(%q) = %q, want unchanged %q", tc, got, tc)
 			}
 		})
 	}
