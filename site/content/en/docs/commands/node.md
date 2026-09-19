@@ -228,12 +228,6 @@ minikube node start NODE_NAME [flags]
 minikube node start m02
 ```
 
-### Options
-
-```
-      --delete-on-failure   If set, delete the current cluster if start fails and try again. Defaults to false.
-```
-
 ### Options inherited from parent commands
 
 ```
