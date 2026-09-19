@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	units "github.com/docker/go-units"
+	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -137,6 +138,20 @@ func IsValidCIDR(_, cidr string) error {
 		return fmt.Errorf("invalid CIDR: %v", err)
 	}
 	return nil
+}
+
+// IsValidVmnetAddress validates a vmnet start/end address for `config set`. It
+// runs only the per-value IPv4 + RFC 1918 checks; the cross-field (same-subnet,
+// ordering) and all-or-none checks are enforced at `minikube start`, where the
+// full assembled config is visible (a setFn sees only one key's value).
+func IsValidVmnetAddress(_, val string) error {
+	return vmnet.IsValidVmnetAddress("vmnet-address", val)
+}
+
+// IsValidVmnetSubnetMask validates a vmnet subnet mask for `config set`. It runs
+// only the per-value IPv4 + contiguous-mask checks.
+func IsValidVmnetSubnetMask(_, val string) error {
+	return vmnet.IsValidVmnetSubnetMask("vmnet-subnet-mask", val)
 }
 
 // IsValidPath checks if a string is a valid path

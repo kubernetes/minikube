@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	"net/netip"
 	"strconv"
 	"strings"
 
@@ -54,6 +55,19 @@ func findSetting(name string) (Setting, error) {
 // SetString sets a string value
 func SetString(m config.MinikubeConfig, name string, val string) error {
 	m[name] = val
+	return nil
+}
+
+// SetIPAddr sets an IP address value from its string form, storing the
+// canonical spelling so the value is normalized once at the config boundary.
+// The value must be a valid non-empty IP address; use a per-key validation
+// (e.g. IsValidVmnetAddress) for option-specific rules and messages.
+func SetIPAddr(m config.MinikubeConfig, name string, val string) error {
+	addr, err := netip.ParseAddr(val)
+	if err != nil {
+		return err
+	}
+	m[name] = addr.String()
 	return nil
 }
 

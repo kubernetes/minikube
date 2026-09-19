@@ -85,8 +85,11 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		MACAddress:     macAddr,
 		VirtiofsMounts: mounts,
 		VmnetHelper: vmnet.Helper{
-			MachineDir: filepath.Join(storePath, "machines", machineName),
-			Offloading: cfg.VmnetOffloading,
+			MachineDir:   filepath.Join(storePath, "machines", machineName),
+			Offloading:   cfg.VmnetOffloading,
+			StartAddress: vmnet.AddrOrZero(cfg.VmnetStartAddress),
+			EndAddress:   vmnet.AddrOrZero(cfg.VmnetEndAddress),
+			SubnetMask:   vmnet.AddrOrZero(cfg.VmnetSubnetMask),
 		},
 	}, nil
 }
