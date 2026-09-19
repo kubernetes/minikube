@@ -129,6 +129,14 @@ jobs:
             os: ubuntu-24.04-arm
             arch: arm64
             test-timeout: 22m
+          - name: podman-containerd-rootless-ubuntu-24.04-x86
+            driver: podman
+            cruntime: containerd
+            extra-start-args: --container-runtime=containerd --rootless
+            rootless: true
+            os: ubuntu-24.04
+            arch: amd64
+            test-timeout: 22m
           - name: baremetal-docker-ubuntu-24.04-x86
             driver: none
             cruntime: docker
@@ -182,8 +190,15 @@ jobs:
           Delegate=cpu cpuset io memory pids
           EOF
           sudo systemctl daemon-reload
+      - name: Set up Rootless Podman (rootless)
+        if: ${{ matrix.rootless && matrix.driver == 'podman' }}
+        timeout-minutes: 1
+        run: |
+          sudo usermod --add-subuids 100000-165535 $USER
+          sudo usermod --add-subgids 100000-165535 $USER
+          podman system migrate
       - name: Set up Rootless Docker (rootless)
-        if: ${{ matrix.rootless }}
+        if: ${{ matrix.rootless && matrix.driver == 'docker' }}
         timeout-minutes: 3
         run: |
           sudo apt-get remove moby-engine-*
