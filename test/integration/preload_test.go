@@ -100,9 +100,9 @@ func TestPreload(t *testing.T) {
 			kubernetesVersion string // using versions that are not used in the test to make sure they dont pre-exist
 			wantLog           string
 		}{
-			{"gcs", "gcs", "v1.34.0-rc.1", "Downloading preload from https://storage.googleapis.com"},
-			{"github", "github", "v1.34.0-rc.2", "Downloading preload from https://github.com"},
-			{"gcs-cached", "gcs", "v1.34.0-rc.2", "in cache, skipping download"},
+			{"gcs", "gcs", "v1.36.0-rc.0", "Downloading preload from https://storage.googleapis.com"},
+			{"github", "github", "v1.36.0-rc.1", "Downloading preload from https://github.com"},
+			{"gcs-cached", "gcs", "v1.36.0-rc.1", "in cache, skipping download"},
 		}
 
 		for _, tc := range tests {
