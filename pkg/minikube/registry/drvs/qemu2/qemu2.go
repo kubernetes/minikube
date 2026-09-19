@@ -100,12 +100,29 @@ func qemuFirmwarePath(customPath string) (string, error) {
 
 	switch arch {
 	case "amd64":
-		return "/usr/share/OVMF/OVMF_CODE.fd", nil
+		// Ubuntu 24.04's ovmf package ships only OVMF_CODE_4M.fd while
+		// older releases ship OVMF_CODE.fd (see #23628).
+		return firstExistingFirmware(
+			"/usr/share/OVMF/OVMF_CODE.fd",
+			"/usr/share/OVMF/OVMF_CODE_4M.fd",
+		), nil
 	case "arm64":
 		return "/usr/share/AAVMF/AAVMF_CODE.fd", nil
 	default:
 		return "", fmt.Errorf("unknown arch: %s", arch)
 	}
+}
+
+// firstExistingFirmware returns the first firmware path that exists on
+// disk, or the preferred path when none exists so the provider status
+// check still reports a useful path.
+func firstExistingFirmware(paths ...string) string {
+	for _, p := range paths {
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	return paths[0]
 }
 
 func qemuVersion() (semver.Version, error) {
