@@ -1,3 +1,17 @@
+### Increase inotify limits
+
+When using a rootless driver, increasing the host inotify limits may be required
+for workloads running multiple containers:
+
+```shell
+sudo tee /etc/sysctl.d/99-minikube-rootless.conf <<EOF
+fs.inotify.max_user_watches = 524288
+fs.inotify.max_user_instances = 512
+EOF
+
+sudo sysctl --system
+```
+
 ### Allow binding to privileged ports
 
 When using a rootless driver, workloads that need to bind to privileged ports
