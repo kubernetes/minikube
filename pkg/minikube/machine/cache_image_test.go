@@ -17,10 +17,13 @@ limitations under the License.
 package machine
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
@@ -255,5 +258,38 @@ func TestMergeImageLists(t *testing.T) {
 		if ok := reflect.DeepEqual(got, tc.expected); !ok {
 			t.Errorf("%s:\nmergeImageLists() = %+v;\nwant %+v", tc.description, got, tc.expected)
 		}
+	}
+}
+
+// TestDoLoadImages_ReturnsError verifies that DoLoadImages returns an error
+// when a machine record exists but cannot be loaded (prevents silent success).
+// from #23471
+func TestDoLoadImages_ReturnsError(t *testing.T) {
+	home := filepath.Join(t.TempDir(), ".minikube")
+	t.Setenv("MINIKUBE_HOME", home)
+
+	cc := config.ClusterConfig{
+		Name:             "pinprofile",
+		KubernetesConfig: config.KubernetesConfig{ContainerRuntime: "docker"},
+		Nodes:            []config.Node{{Name: "", ControlPlane: true}},
+	}
+	if err := config.SaveProfile("pinprofile", &cc, home); err != nil {
+		t.Fatalf("SaveProfile: %v", err)
+	}
+
+	// A machine record that exists but cannot be loaded, so Status() errors.
+	md := filepath.Join(home, "machines", "pinprofile")
+	if err := os.MkdirAll(md, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(md, "config.json"), []byte("{not json"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := DoLoadImages([]string{filepath.Join(home, "nope.tar")},
+		[]*config.Profile{{Name: "pinprofile", Config: &cc}},
+		"", false, nil)
+	if err == nil {
+		t.Fatal("expected DoLoadImages to return an error when a machine could not be reached, got nil")
 	}
 }
