@@ -34,10 +34,11 @@ RPM_VERSION ?= $(DEB_VERSION)
 RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh, see also BUILD_IMAGE below
-# update this only by running `make update-golang-version`
-GO_VERSION ?= 1.26.5
-# set GOTOOLCHAIN to GO_VERSION to override any toolchain version specified in
-# go.mod (ref: https://go.dev/doc/toolchain#GOTOOLCHAIN)
+# the toolchain directive in go.mod is the single source of the Go version,
+# update it only by running `make update-golang-version`
+GO_VERSION ?= $(shell sed -n -e 's/^toolchain go//p' go.mod)
+# set GOTOOLCHAIN to GO_VERSION so the build does not silently pick up a newer
+# locally installed toolchain (ref: https://go.dev/doc/toolchain#GOTOOLCHAIN)
 export GOTOOLCHAIN := go$(GO_VERSION)
 # update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.37.0

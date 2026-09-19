@@ -29,22 +29,19 @@ import (
 )
 
 var (
-	workflowReplace = update.Item{
-		Replace: map[string]string{
-			`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-		},
-	}
-
 	schema = map[string]update.Item{
+		// go.mod is the single source of the Go version: the "go" directive is the
+		// minimum language version, the "toolchain" directive is the exact version
+		// used to build and test. Everything else reads it from here, either via
+		// setup-go's go-version-file or via the Makefile's GO_VERSION.
 		"go.mod": {
 			Replace: map[string]string{
-				`go 1\.\d+\.\d+`: `go {{.MajorMinor}}`, // Match and replace only the major.minor Go version
+				`go 1\.\d+\.\d+`:          `go {{.MajorMinor}}`, // Match and replace only the major.minor Go version
+				`toolchain go1\.\d+\.\d+`: `toolchain go{{.StableVersion}}`,
 			},
 		},
 		"Makefile": {
 			Replace: map[string]string{
-				// searching for 1.* so it does NOT match "KVM_GO_VERSION ?= $(GO_VERSION:.0=)" in the Makefile
-				`GO_VERSION \?= 1.*`:             `GO_VERSION ?= {{.StableVersion}}`,
 				`GO_K8S_VERSION_PREFIX \?= v1.*`: `GO_K8S_VERSION_PREFIX ?= {{.K8SVersion}}`,
 			},
 		},
@@ -84,8 +81,6 @@ type Data struct {
 }
 
 func main() {
-	addGitHubWorkflowFiles()
-
 	// get Golang stable version
 	stable, k8sVersion, err := goVersions()
 	if err != nil || stable == "" {
@@ -163,15 +158,4 @@ func updateGoHashFile(version string) error {
 		}
 	}
 	return nil
-}
-
-func addGitHubWorkflowFiles() {
-	files, err := os.ReadDir("../.github/workflows")
-	if err != nil {
-		klog.Fatalf("failed to read workflows dir: %v", err)
-	}
-	for _, f := range files {
-		filename := ".github/workflows/" + f.Name()
-		schema[filename] = workflowReplace
-	}
 }

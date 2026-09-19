@@ -11,7 +11,6 @@ on:
         default: "update-buildkit-version,update-cni-plugins-version,update-crun-version,update-docker-version,update-golang-version,update-runc-version,update-debian-version"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.26.5'
 permissions:
   contents: read
 jobs:
@@ -23,7 +22,7 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         timeout-minutes: 2
         with:
-          go-version: ${{env.GO_VERSION}}
+          go-version-file: go.mod
       - name: Bump versions
         timeout-minutes: 2
         id: bumpVersions
