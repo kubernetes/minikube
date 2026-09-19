@@ -410,11 +410,8 @@ func inspect(ociBin string, containerNameOrID, format string) ([]string, error) 
 	cmd := exec.Command(ociBin, "container", "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
-	var buff bytes.Buffer
-	cmd.Stdout = &buff
-	cmd.Stderr = &buff
-	_, err := runCmd(cmd)
-	scanner := bufio.NewScanner(&buff)
+	rr, err := runCmd(cmd)
+	scanner := bufio.NewScanner(&rr.Stdout)
 	var lines []string
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
