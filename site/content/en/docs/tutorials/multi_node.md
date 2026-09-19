@@ -18,6 +18,41 @@ date: 2019-11-24
 
 Default [host-path volume provisioner]({{< ref "/docs/handbook/persistent_volumes" >}}) doesn't support multi-node clusters ([#12360](https://github.com/kubernetes/minikube/issues/12360)). To be able to provision or claim volumes in multi-node clusters, you could use [CSI Hostpath Driver]({{< ref "/docs/tutorials/volume_snapshots_and_csi" >}}) addon.
 
+## Rootless Docker
+
+When using Minikube with the Rootless Docker driver and more than 3 nodes, additional host configuration may be required.
+
+### Increase inotify limits
+
+Rootless containers running multiple Kubernetes nodes may require higher inotify limits. Configure the host with:
+
+```shell
+sudo tee /etc/sysctl.d/99-minikube-rootless.conf <<EOF
+fs.inotify.max_user_watches = 524288
+fs.inotify.max_user_instances = 512
+EOF
+
+sudo sysctl --system
+```
+
+### Allow binding to privileged ports
+
+If workloads in the cluster need to bind to privileged ports such as ports 80 or 443, allow unprivileged users to bind to ports starting at 80:
+
+```shell
+sudo tee /etc/sysctl.d/99-minikube-rootless-ports.conf <<EOF
+net.ipv4.ip_unprivileged_port_start=80
+EOF
+
+sudo sysctl --system
+```
+
+After applying these host-level settings, start the multi-node cluster using the Rootless Docker driver:
+
+```shell
+minikube start --driver=docker --rootless --nodes 4
+```
+
 ## Tutorial
 
 - Start a cluster with 2 nodes in the driver of your choice:
