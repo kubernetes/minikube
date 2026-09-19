@@ -31,6 +31,10 @@ data:
       podman-socketpath: /run/podman/podman.sock
       gadget-namespace: gadget
       daemon-log-level: info
+      multi-tenancy: false
+      multi-tenancy-scope-api-group: ""
+      multi-tenancy-scope-resource: pods
+      multi-tenancy-scope-verb: create
       operator:
         kubemanager:
           fallback-podinformer: true
@@ -59,7 +63,7 @@ metadata:
     k8s-app: gadget
 rules:
   - apiGroups: [""]
-    resources: ["nodes/proxy"]
+    resources: ["nodes/configz"]
     verbs: ["get"]
   - apiGroups: [""]
     resources: ["namespaces", "nodes", "pods"]
