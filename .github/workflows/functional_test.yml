@@ -190,13 +190,6 @@ jobs:
           Delegate=cpu cpuset io memory pids
           EOF
           sudo systemctl daemon-reload
-      - name: Set up Rootless Podman (rootless)
-        if: ${{ matrix.rootless && matrix.driver == 'podman' }}
-        timeout-minutes: 1
-        run: |
-          sudo usermod --add-subuids 100000-165535 $USER
-          sudo usermod --add-subgids 100000-165535 $USER
-          podman system migrate
       - name: Set up Rootless Docker (rootless)
         if: ${{ matrix.rootless && matrix.driver == 'docker' }}
         timeout-minutes: 3
@@ -305,6 +298,13 @@ jobs:
           podman system info --format='{{json .}}' || true
           echo "=== podman ps ==="
           podman ps || true
+      - name: Set up Rootless Podman (rootless)
+        if: ${{ matrix.rootless && matrix.driver == 'podman' }}
+        timeout-minutes: 1
+        run: |
+          sudo usermod --add-subuids 100000-165535 $USER
+          sudo usermod --add-subgids 100000-165535 $USER
+          podman system migrate
       - name: Install kubectl
         timeout-minutes: 1
         uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
