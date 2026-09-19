@@ -48,6 +48,9 @@ const (
 `
 )
 
+// gvisorTarballURL points at the bz2 release archive. bz2 (not zstd) is
+// deliberate: the stdlib decompresses it with no new dependencies, and the
+// addon image has no zstd binary to shell out to.
 func gvisorTarballURL() string {
 	return releaseURL() + "gvisor.tar.bz2"
 }
