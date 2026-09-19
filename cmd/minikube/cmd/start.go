@@ -57,7 +57,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -87,13 +86,6 @@ import (
 	"k8s.io/minikube/pkg/version"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
-
-type versionJSON struct {
-	IsoVersion      string `json:"iso_version"`
-	KicbaseVersion  string `json:"kicbase_version"`
-	MinikubeVersion string `json:"minikube_version"`
-	Commit          string `json:"commit"`
-}
 
 var (
 	// ErrKubernetesPatchNotFound is when a patch was not found for the given <major>.<minor> version
@@ -277,8 +269,6 @@ func runStart(cmd *cobra.Command, _ []string) {
 		}
 	}
 
-	validateBuiltImageVersion(starter.Runner, ds.Name)
-
 	if existing != nil && driver.IsKIC(existing.Driver) && viper.GetString(mountString) != "" {
 		old := ""
 		if len(existing.ContainerVolumeMounts) > 0 {
@@ -443,51 +433,6 @@ func hyperkitDeprecationWarning(driverName string) {
     https://minikube.sigs.k8s.io/docs/drivers/qemu/
     https://minikube.sigs.k8s.io/docs/drivers/docker/
 	`)
-}
-
-func validateBuiltImageVersion(r command.Runner, driverName string) {
-	if driver.IsNone(driverName) {
-		return
-	}
-	res, err := r.RunCmd(exec.Command("cat", "/version.json"))
-	if err != nil {
-		klog.Warningf("Unable to open version.json: %s", err)
-		return
-	}
-
-	var versionDetails versionJSON
-	if err := json.Unmarshal(res.Stdout.Bytes(), &versionDetails); err != nil {
-		out.WarningT("Unable to parse version.json: {{.error}}, json: {{.json}}", out.V{"error": err, "json": res.Stdout.String()})
-		return
-	}
-
-	if !imageMatchesBinaryVersion(versionDetails.MinikubeVersion, version.GetVersion()) {
-		out.WarningT("Image was not built for the current minikube version. To resolve this you can delete and recreate your minikube cluster using the latest images. Expected minikube version: {{.imageMinikubeVersion}} -> Actual minikube version: {{.minikubeVersion}}", out.V{"imageMinikubeVersion": versionDetails.MinikubeVersion, "minikubeVersion": version.GetVersion()})
-	}
-}
-
-func imageMatchesBinaryVersion(imageVersion, binaryVersion string) bool {
-	if binaryVersion == imageVersion {
-		return true
-	}
-
-	// the map below is used to map the binary version to the version the image expects
-	// this is usually done when a patch version is released but a new ISO/Kicbase is not needed
-	// that way a version mismatch warning won't be thrown
-	//
-	// ex.
-	// the v1.31.0 and v1.31.1 minikube binaries both use v1.31.0 ISO & Kicbase
-	// to prevent the v1.31.1 binary from throwing a version mismatch warning we use the map to change the binary version used in the comparison
-
-	mappedVersions := map[string]string{
-		"v1.31.1": "v1.31.0",
-		"v1.31.2": "v1.31.0",
-		// v1.38.1 minikube binary uses v1.38.0 ISO
-		"v1.38.1": "v1.38.0",
-	}
-	binaryVersion, ok := mappedVersions[binaryVersion]
-
-	return ok && binaryVersion == imageVersion
 }
 
 func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.ClusterConfig, options *run.CommandOptions) (*kubeconfig.Settings, error) {
