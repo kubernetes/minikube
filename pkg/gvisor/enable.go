@@ -319,6 +319,11 @@ func configure() error {
 	return configureAt(nodeDir)
 }
 
+// configureAt appends the runsc stanza to the containerd config under root,
+// keeping a pristine backup for Disable. It is safe to run repeatedly: when
+// the stanza is already present (ours or the user's own runsc block) the
+// config is left untouched, and an existing backup is never overwritten with
+// patched content.
 func configureAt(root string) error {
 	configPath := filepath.Join(root, containerdConfigPath)
 	backupPath := filepath.Join(root, containerdConfigBackupPath)
@@ -360,6 +365,10 @@ func configureAt(root string) error {
 	return nil
 }
 
+// hasGvisorStanza reports whether a runsc runtime block is already
+// configured. It matches the "runtimes.runsc" table name as a substring, so a
+// user-supplied runsc block also counts: appending a second table would
+// produce invalid TOML, so the user's block wins and ours is skipped.
 func hasGvisorStanza(content string) bool {
 	return strings.Contains(content, stanzaMarker)
 }

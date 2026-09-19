@@ -38,6 +38,9 @@ func Disable() error {
 	return nil
 }
 
+// disableAt reverts everything configureAt and the binary install changed,
+// and is safe to retry: restoreConfig never deletes the live config first,
+// and removeGvisorFiles tolerates already-absent paths.
 func disableAt(root string) error {
 	if err := restoreConfig(root); err != nil {
 		return err
