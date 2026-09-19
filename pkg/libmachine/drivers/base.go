@@ -19,6 +19,8 @@ package drivers
 import (
 	"errors"
 	"path/filepath"
+
+	"k8s.io/minikube/pkg/minikube/runtimedir"
 )
 
 const (
@@ -39,6 +41,11 @@ type BaseDriver struct {
 	SwarmMaster    bool
 	SwarmHost      string
 	SwarmDiscovery string
+
+	// socketDir is the per-machine socket directory, resolved and created on
+	// first use. It is not persisted: the runtime directory may not survive a
+	// reboot.
+	socketDir string
 }
 
 // DriverName returns the name of the driver
@@ -92,6 +99,30 @@ func (d *BaseDriver) PreCreateCheck() error {
 // ResolveStorePath returns the store path where the machine is
 func (d *BaseDriver) ResolveStorePath(file string) string {
 	return filepath.Join(d.StorePath, "machines", d.MachineName, file)
+}
+
+// SocketDir returns the directory holding the AF_UNIX sockets of the machine,
+// creating it on first use. Sockets cannot live in the store path, since it
+// may be too long for sockaddr_un.sun_path. See pkg/minikube/runtimedir.
+func (d *BaseDriver) SocketDir() (string, error) {
+	if d.socketDir == "" {
+		dir, err := runtimedir.EnsureSocketDir(d.MachineName)
+		if err != nil {
+			return "", err
+		}
+		d.socketDir = dir
+	}
+	return d.socketDir, nil
+}
+
+// ResolveSocketPath returns the path of a machine socket, creating the socket
+// directory on first use. This is the ResolveStorePath of AF_UNIX sockets.
+func (d *BaseDriver) ResolveSocketPath(file string) (string, error) {
+	dir, err := d.SocketDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, file), nil
 }
 
 // SetSwarmConfigFromFlags configures the driver for swarm
