@@ -49,7 +49,10 @@ func init() {
 }
 
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := parallels.NewDriver(config.MachineName(cfg, n), localpath.MiniPath()).(*parallels.Driver)
+	d, ok := parallels.NewDriver(config.MachineName(cfg, n), localpath.MiniPath()).(*parallels.Driver)
+	if !ok {
+		return nil, fmt.Errorf("failed to create parallels driver")
+	}
 	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
 	d.Memory = cfg.Memory
 	d.CPU = cfg.CPUs

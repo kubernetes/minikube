@@ -24,8 +24,7 @@ import (
 )
 
 func main() {
-	if err := gvisor.Enable(); err != nil {
-		log.Print(err)
-		os.Exit(1)
-	}
+	err := gvisor.Enable()
+	log.Print(err)
+	os.Exit(1)
 }
