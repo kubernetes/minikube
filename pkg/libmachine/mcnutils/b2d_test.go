@@ -130,12 +130,10 @@ func TestDownloadISO404FailsFast(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	tmpDir, err := ioutil.TempDir("", "machine-test-")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	b := NewB2dUtils("/tmp/artifacts")
-	err = b.DownloadISO(tmpDir, "test.iso", ts.URL+"/missing.iso")
+	err := b.DownloadISO(tmpDir, "test.iso", ts.URL+"/missing.iso")
 
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "404")
