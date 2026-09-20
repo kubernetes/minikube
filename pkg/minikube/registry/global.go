@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"sync"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -108,12 +109,23 @@ func Driver(name string) DriverDef {
 	return globalRegistry.Driver(name)
 }
 
-// Available returns a list of available drivers in the global registry
+// Available returns a list of available drivers in the global registry.
+// Drivers are probed in parallel (one goroutine each), so wall-clock time is
+// about the slowest Status check, not the sum of all checks. Each driver's
+// status is responsible for respecting DriverDef.ProbeTimeout.
 func Available(vm bool, options *run.CommandOptions) []DriverState {
-	sts := []DriverState{}
 	klog.Infof("Querying for installed drivers using PATH=%s", os.Getenv("PATH"))
 
-	for _, d := range globalRegistry.List() {
+	type probeResult struct {
+		driver DriverDef
+		state  State
+	}
+
+	drivers := globalRegistry.List()
+	results := make(chan probeResult, len(drivers))
+	var wg sync.WaitGroup
+
+	for _, d := range drivers {
 		if vm && !IsVM(d.Name) {
 			continue
 		}
@@ -121,18 +133,21 @@ func Available(vm bool, options *run.CommandOptions) []DriverState {
 			klog.Errorf("%q does not implement Status", d.Name)
 			continue
 		}
-		stateChannel := make(chan State, 1)
-		timeoutChannel := time.After(20 * time.Second)
-		go func() {
-			stateChannel <- d.Status(options)
-		}()
-		s := State{}
-		select {
-		case <-timeoutChannel:
-			klog.Infof("%s status check timeout!", d.Name)
-		case s = <-stateChannel:
-		}
-		klog.Infof("%s default: %v priority: %d, state: %+v", d.Name, d.Default, d.Priority, s)
+		wg.Go(func() {
+			start := time.Now()
+			s := d.Status(options)
+			klog.Infof("%s probed in %v: default: %v priority: %d, state: %+v", d.Name, time.Since(start), d.Default, d.Priority, s)
+			results <- probeResult{driver: d, state: s}
+		})
+	}
+
+	wg.Wait()
+	close(results)
+
+	sts := make([]DriverState, 0, len(drivers))
+	for r := range results {
+		s := r.state
+		d := r.driver
 
 		preference := d.Priority
 		priority := d.Priority

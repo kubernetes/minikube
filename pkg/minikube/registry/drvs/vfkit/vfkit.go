@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/drivers"
@@ -53,11 +54,12 @@ func init() {
 		Init: func(options *run.CommandOptions) drivers.Driver {
 			return vfkit.NewDriver("", "", options)
 		},
-		Config:   configure,
-		Status:   status,
-		Default:  true,
-		Priority: priority,
-		Parallel: true,
+		Config:       configure,
+		Status:       status,
+		Default:      true,
+		Priority:     priority,
+		Parallel:     true,
+		ProbeTimeout: 1 * time.Second,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
