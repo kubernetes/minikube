@@ -827,6 +827,69 @@ func TestRemoveStopped(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestStopGraceful(t *testing.T) {
+	driver := NewDriver("default", "path")
+	mockCalls(t, driver, []Call{
+		{"vbm showvminfo default --machinereadable", `VMState="running"`, nil},
+		{"vbm controlvm default acpipowerbutton", "", nil},
+		{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
+	})
+
+	err := driver.Stop()
+
+	assert.NoError(t, err)
+}
+
+func TestStopUnresponsiveGuest(t *testing.T) {
+	oldShort := stopWaitShort
+	stopWaitShort = 3
+	defer func() { stopWaitShort = oldShort }()
+
+	driver := NewDriver("default", "path")
+	mockCalls(t, driver, []Call{
+		{"vbm showvminfo default --machinereadable", `VMState="running"`, nil},
+		{"vbm controlvm default acpipowerbutton", "", nil},
+		{"vbm showvminfo default --machinereadable", `VMState="running"`, nil},
+		{"Sleep 1s", "", nil},
+		{"vbm showvminfo default --machinereadable", `VMState="running"`, nil},
+		{"Sleep 1s", "", nil},
+		{"vbm showvminfo default --machinereadable", `VMState="running"`, nil},
+		{"Sleep 1s", "", nil},
+		// No poweroff here: Stop only initiates the shutdown and returns,
+		// the caller force-stops with Kill.
+	})
+
+	err := driver.Stop()
+
+	assert.NoError(t, err)
+}
+
+func TestWaitForStoppedKills(t *testing.T) {
+	driver := NewDriver("default", "path")
+	mockCalls(t, driver, []Call{
+		{"vbm showvminfo default --machinereadable", `VMState="running"`, nil},
+		{"Sleep 1s", "", nil},
+		{"vbm showvminfo default --machinereadable", `VMState="running"`, nil},
+		{"Sleep 1s", "", nil},
+		{"vbm controlvm default poweroff", "", nil},
+	})
+
+	err := driver.waitForStopped(2)
+
+	assert.NoError(t, err)
+}
+
+func TestWaitForStoppedAlreadyStopped(t *testing.T) {
+	driver := NewDriver("default", "path")
+	mockCalls(t, driver, []Call{
+		{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
+	})
+
+	err := driver.waitForStopped(2)
+
+	assert.NoError(t, err)
+}
+
 func TestRemoveStarted(t *testing.T) {
 	driver := NewDriver("default", "path")
 	mockCalls(t, driver, []Call{
