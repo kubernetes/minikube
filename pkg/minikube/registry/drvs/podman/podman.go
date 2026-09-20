@@ -56,13 +56,14 @@ func init() {
 	// - Windows (podman-remote)
 
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.Podman,
-		Config:   configure,
-		Init:     func(_ *run.CommandOptions) drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Podman}) },
-		Status:   status,
-		Default:  true,
-		Priority: priority,
-		Parallel: true,
+		Name:         driver.Podman,
+		Config:       configure,
+		Init:         func(_ *run.CommandOptions) drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Podman}) },
+		Status:       status,
+		Default:      true,
+		Priority:     priority,
+		Parallel:     true,
+		ProbeTimeout: 6 * time.Second,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
@@ -108,7 +109,8 @@ func status(_ *run.CommandOptions) registry.State {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Podman", Doc: docURL}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	timeout := registry.Driver(driver.Podman).ProbeTimeout
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	// Quickly returns an error code if service is not running
