@@ -298,3 +298,43 @@ func TestDockerClientVersion(t *testing.T) {
 		}
 	}
 }
+
+func TestInstallDockerGeneric(t *testing.T) {
+	baseURL := "https://get.docker.com"
+
+	expectedCommand := fmt.Sprintf(
+		"if ! type docker >/dev/null 2>&1; then curl -fsSL -o /tmp/install-docker.sh %s && sh /tmp/install-docker.sh && rm -f /tmp/install-docker.sh; fi",
+		baseURL,
+	)
+
+	p := &fakeProvisioner{
+		GenericProvisioner{
+			Driver: &fakedriver.Driver{},
+		},
+	}
+
+	p.SSHCommander = &provisiontest.FakeSSHCommander{
+		Responses: map[string]string{
+			expectedCommand: "",
+		},
+	}
+
+	err := installDockerGeneric(p, baseURL)
+	assert.NoError(t, err)
+}
+
+func TestInstallDockerGenericSSHCommandError(t *testing.T) {
+	p := &fakeProvisioner{
+		GenericProvisioner{
+			Driver: &fakedriver.Driver{},
+		},
+	}
+
+	p.SSHCommander = &provisiontest.FakeSSHCommander{
+		Responses: map[string]string{},
+	}
+
+	err := installDockerGeneric(p, "https://get.docker.com")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error installing docker")
+}
