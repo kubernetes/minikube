@@ -155,7 +155,7 @@ func TestNvidiaDriverCapabilities(t *testing.T) {
 		}
 		got[c] = true
 	}
-	for _, need := range []string{"compute", "utility", "graphics"} {
+	for _, need := range []string{"compute", "utility", "graphics", "video", "compat32"} {
 		if !got[need] {
 			t.Errorf("missing %s in %q", need, nvidiaDriverCapabilities)
 		}
