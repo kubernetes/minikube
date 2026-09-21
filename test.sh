@@ -23,7 +23,7 @@ exitcode=0
 if [[ "$TESTSUITE" = "lint" ]] || [[ "$TESTSUITE" = "all" ]] || [[ "$TESTSUITE" = "lintall" ]]
 then
     echo "= make lint ============================================================="
-    make -s lint-ci && echo ok || ((exitcode += 4))
+    make -s lint && echo ok || ((exitcode += 4))
     echo "= go mod ================================================================"
     go mod download 2>&1 | grep -v "go: finding" || true
     if [[ "$CI" = "true" ]]
