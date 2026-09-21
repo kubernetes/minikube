@@ -1,4 +1,4 @@
-name: Lint
+name: Test
 on:
   workflow_dispatch:
   pull_request:
@@ -20,7 +20,8 @@ env:
 permissions:
   contents: read
 jobs:
-    Lint:
+    lint:
+        name: Lint
         runs-on: ubuntu-latest
         steps:
         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -30,23 +31,19 @@ jobs:
           with:
             go-version: ${{env.GO_VERSION}}
             cache: true      
-        - name: Download Dependencies
-          timeout-minutes: 1
-          run: go mod download
         # needed because pkg/drivers/kvm/domain.go:28:2:
         - name: Install libvirt (Linux)
           timeout-minutes: 2
           if: runner.os == 'Linux'
           run: |
-              sudo apt-get update              
+              sudo apt-get update
               sudo apt-get install -y libvirt-dev
         - name: Lint
-          timeout-minutes: 13
-          env:
-            TESTSUITE: lint
-          run: make test
+          timeout-minutes: 10
+          run: make lint
           continue-on-error: false
-    Boilerplate:
+    boilerplate:
+        name: Boilerplate
         runs-on: ubuntu-latest
         steps:
         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -62,9 +59,10 @@ jobs:
             TESTSUITE: boilerplate
           run: make test
           continue-on-error: false
-    Housekeeping:
-       runs-on: ubuntu-latest
-       steps:
+    housekeeping:
+        name: Housekeeping
+        runs-on: ubuntu-latest
+        steps:
         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
           timeout-minutes: 1
         - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
