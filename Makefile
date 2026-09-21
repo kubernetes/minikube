@@ -76,10 +76,6 @@ GOLINT_VERSION ?= v2.12.2
 GOLINT_CONFIG ?= .golangci.yaml
 # Set this to --verbose to see details about the linters and formatters used
 GOLINT_VERBOSE ?=
-# Limit number of default jobs, to avoid the CI builds running out of memory
-GOLINT_JOBS ?= 4
-# see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
-GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
 GOLINT_OPTIONS = \
 	  --max-issues-per-linter 0 --max-same-issues 0 \
@@ -525,12 +521,6 @@ endif
 .PHONY: lint-max
 lint-max: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
 	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} --config .golangci.max.yaml ./...
-
-# lint-ci is slower version of lint and is meant to be used in ci (travis) to avoid out of memory leaks.
-.PHONY: lint-ci
-lint-ci: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint-ci
-	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint-$(GOLINT_VERSION) run \
-	--concurrency ${GOLINT_JOBS} ${GOLINT_OPTIONS} ./...
 
 .PHONY: reportcard
 reportcard: ## Run goreportcard for minikube
