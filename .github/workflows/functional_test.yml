@@ -1,6 +1,7 @@
 # Functional Test is a subset of minikube integration test, testing the most essential features of minikube.
 name: Functional Test
 on:
+  workflow_call:
   workflow_dispatch:
   pull_request:
     paths:
@@ -31,47 +32,8 @@ env:
 permissions:
   contents: read
 jobs:
-  # build-test-binaries job runs before all other jobs and produces binaries/test-data per arch to be shared by all following jobs
-  build-test-binaries:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: build-test-binaries-x86
-            arch: amd64
-            runs-on: ubuntu-24.04
-            make-targets: e2e-linux-amd64
-          - name: build-test-binaries-arm
-            arch: arm64
-            runs-on: ubuntu-24.04-arm
-            make-targets: e2e-linux-arm64
-    runs-on: ${{ matrix.runs-on }}
-    name: ${{ matrix.name }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        timeout-minutes: 1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
-        timeout-minutes: 2
-        with:
-          go-version: ${{env.GO_VERSION}}
-          cache: true      
-      - name: Download Dependencies
-        timeout-minutes: 1
-        run: go mod download
-      - name: Build minikube and e2e test binaries
-        timeout-minutes: 7
-        run: |
-          make ${{ matrix.make-targets }}
-          cp -r test/integration/testdata ./out
-      - name: Upload Test Binaries
-        timeout-minutes: 1
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: binaries-${{ matrix.arch }}
-          path: out
   functional-test:
     name: ${{ matrix.name }}
-    needs: build-test-binaries
     runs-on: ${{ matrix.os }}
     permissions:
       contents: none
@@ -313,11 +275,35 @@ jobs:
         run: |
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
-      - name: Download Test Binaries
+      - name: Download minikube binaries
         timeout-minutes: 1
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        uses: actions/download-artifact@d7d2b6b31ede9d1091053d87d2c74921a1f0ddecfc
         with:
-          name: binaries-${{ matrix.arch }}
+          pattern: minikube-*
+          path: out
+          merge-multiple: true
+      - name: Download e2e binaries
+        timeout-minutes: 1
+        uses: actions/download-artifact@d7d2b6b31ede9d1091053d87d2c74921a1f0ddecfc
+        with:
+          pattern: e2e-*
+          path: out
+          merge-multiple: true
+      - name: Prepare binaries
+        timeout-minutes: 1
+        run: |
+          ls -lh out/ || true
+          find out -type f | head -n 20 || true
+          chmod +x out/minikube-* out/e2e-* 2>/dev/null || true
+          cp -r out/minikube-* out/e2e-* . 2>/dev/null || true
+          chmod +x ./minikube-* ./e2e-* 2>/dev/null || true
+          # ensure testdata is at expected location
+          if [ -d out/testdata ] && [ ! -d test/integration/testdata ]; then
+            mkdir -p test/integration
+            cp -r out/testdata test/integration/testdata || true
+          fi
+          ls -lh out/
+          ls -lh ./minikube-* ./e2e-* 2>/dev/null | head -n 20 || true
       - name: Disable AppArmor for MySQL
         if: runner.os == 'Linux'
         timeout-minutes: 1

@@ -1,6 +1,8 @@
 # Boot Smoke Test only tests Bare VM (start,stop,delete) and not any minikube/kubernetes functionality.
 name: Smoke Test
 on:
+  workflow_call:
+  workflow_dispatch:
   push:
     branches: [ master ]
     paths:
@@ -21,7 +23,6 @@ on:
       - "!site/**"
       - "!**.md"
       - "!**.json"
-  workflow_dispatch:
 env:
   GOPROXY: https://proxy.golang.org
   LOG_ARGS: --v=8 --alsologtostderr
@@ -71,16 +72,29 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         timeout-minutes: 1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
-        timeout-minutes: 8
+        timeout-minutes: 1
         with:
           go-version-file: go.mod
           cache: true
-      - name: Download Golang Dependencies
+      - name: Download minikube binaries
+        uses: actions/download-artifact@d7d2b6b31ede9d1091053d87d2c74921a1f0ddecfc
         timeout-minutes: 2
-        run: go mod download
-      - name: Build Binaries
-        timeout-minutes: 8
-        run: make
+        with:
+          pattern: minikube-*
+          path: out
+          merge-multiple: true
+      - name: Prepare binary
+        timeout-minutes: 1
+        run: |
+          ls -lh out/ || true
+          find out -type f | head -n 20 || true
+          chmod +x out/minikube-* 2>/dev/null || true
+          BIN="out/minikube-$(go env GOOS)-$(go env GOARCH)"
+          if [ ! -f "$BIN" ]; then BIN=$(ls out/minikube-* | head -n1); fi
+          echo "Using $BIN -> out/minikube"
+          cp -f "$BIN" out/minikube
+          chmod +x out/minikube
+          ./out/minikube version
       - name: Update brew (macos)
         timeout-minutes: 5
         if: contains(matrix.os, 'macos')
