@@ -1,0 +1,49 @@
+name: build-minikube
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: '1.26.5'
+
+jobs:
+  build:
+    name: build (${{ matrix.goos }}-${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+        exclude:
+          - goos: windows
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        timeout-minutes: 1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        timeout-minutes: 2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Build minikube
+        timeout-minutes: 8
+        run: |
+          make out/minikube-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}
+          ls -lh out/
+          cp -r test/integration/testdata out/testdata 2>/dev/null || cp -r test/integration/testdata ./out/ 2>/dev/null || true
+          ls -lh out/
+      - name: Upload minikube binary
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        timeout-minutes: 2
+        with:
+          name: minikube-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            out/minikube-*
+            out/testdata
+          if-no-files-found: error
+          retention-days: 7
