@@ -9,7 +9,7 @@ require (
 	github.com/Xuanwo/go-locale v1.1.3
 	github.com/aregm/cpuid v0.0.0-20181003105527-1a4a6f06a1c6
 	github.com/blang/semver/v4 v4.0.0
-	github.com/box-cli-maker/box-cli-maker/v3 v3.0.0
+	github.com/box-cli-maker/box-cli-maker/v3 v3.1.0
 	github.com/briandowns/spinner v1.23.2
 	github.com/cenkalti/backoff/v7 v7.0.0
 	github.com/cheggaaa/pb/v3 v3.2.1
@@ -174,7 +174,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.24.0 // indirect
 	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.72 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.19.2 // indirect
