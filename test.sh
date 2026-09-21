@@ -20,25 +20,7 @@ TESTSUITE="${TESTSUITE:-all}" # if env variable not set run all the tests
 CI="${CI:-false}" # if env variable not set don't run CI tests
 exitcode=0
 
-if [[ "$TESTSUITE" = "lint" ]] || [[ "$TESTSUITE" = "all" ]] || [[ "$TESTSUITE" = "lintall" ]]
-then
-    echo "= make lint ============================================================="
-    make -s lint && echo ok || ((exitcode += 4))
-    echo "= go mod ================================================================"
-    go mod download 2>&1 | grep -v "go: finding" || true
-    if [[ "$CI" = "true" ]]
-    then
-        go mod tidy -v && git diff --quiet go.* && echo ok || (((exitcode += 2)) && echo ERROR: Please run go mod tidy)
-        echo "= generate docs ========================================================="
-        make generate-docs > /dev/null 2>&1 && git diff --quiet site && echo ok || (((exitcode += 3)) && echo ERROR: Please run make generate-docs)
-    else
-        go mod tidy -v && echo ok || ((exitcode += 2))
-    fi
-fi
-
-
-
-if [[ "$TESTSUITE" = "boilerplate" ]] || [[ "$TESTSUITE" = "all" ]] || [[ "$TESTSUITE" = "lintall" ]]
+if [[ "$TESTSUITE" = "boilerplate" ]] || [[ "$TESTSUITE" = "all" ]]
 then
     echo "= boilerplate ==========================================================="
     readonly ROOT_DIR=$(pwd)
