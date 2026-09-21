@@ -59,6 +59,49 @@ jobs:
             TESTSUITE: boilerplate
           run: make test
           continue-on-error: false
+    tidy:
+        name: Tidy
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          timeout-minutes: 1
+        - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+          timeout-minutes: 1
+          with:
+            go-version: ${{env.GO_VERSION}}
+            cache: true
+        - name: Verify go mod tidy
+          timeout-minutes: 3
+          run: |
+            make gomodtidy
+            if ! git diff-index --quiet HEAD; then
+              git --no-pager diff
+              echo "::notice::Please run 'make gomodtidy' and commit the changes"
+              exit 1
+            fi
+    generate-docs:
+        name: Generate docs
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          timeout-minutes: 1
+        - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+          timeout-minutes: 1
+          with:
+            go-version: ${{env.GO_VERSION}}
+            cache: true
+        # This job builds minikube because "make generate-docs" runs the
+        # minikube binary to walk the command tree. Once we build every target
+        # once in a shared workflow (#23745), it can use that binary instead.
+        - name: Verify make generate-docs
+          timeout-minutes: 7
+          run: |
+            make generate-docs
+            if [ -n "$(git status --porcelain)" ]; then
+              git --no-pager diff
+              echo "::notice::Please run 'make generate-docs' and commit the changes"
+              exit 1
+            fi
     housekeeping:
         name: Housekeeping
         runs-on: ubuntu-latest
@@ -73,15 +116,6 @@ jobs:
         - name: Install goimports
           timeout-minutes: 1
           run: go install golang.org/x/tools/cmd/goimports@latest
-        - name: Verify go mod tidy
-          timeout-minutes: 1
-          run: |
-            make gomodtidy
-            if ! git diff-index --quiet HEAD; then
-              git --no-pager diff
-              echo "::notice::Please run 'make gomodtidy' and commit the changes"
-              exit 1
-            fi
         - name: Verify make fmt
           timeout-minutes: 1
           run: |
