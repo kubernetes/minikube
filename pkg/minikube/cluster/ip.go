@@ -120,6 +120,14 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 
 		return net.ParseIP(ip), nil
 	case driver.HyperKit, driver.VFKit, driver.Krunkit:
+		// TODO: check why we need this and test with:
+		// - vfkkit+nat
+		// - vfkit+vmnet-shared
+		// - krunkit+vmnet-shared
+		// NOTE: deriving the gateway as subnet .1 from the VM IP is a
+		// best-effort guess. vmnet-helper can configure the gateway
+		// (start-address) to any address and auto-selects the subnet when
+		// address options are omitted, so this assumption can be wrong.
 		vmIPString, err := hostInfo.Driver.GetIP()
 		if err != nil {
 			return nil, fmt.Errorf("getting VM IP address: %w", err)
