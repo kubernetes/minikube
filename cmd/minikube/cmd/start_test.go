@@ -66,14 +66,19 @@ func TestGetKubernetesVersion(t *testing.T) {
 			cfg:             &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{KubernetesVersion: "v1.15.0"}},
 		},
 		{
-			description:     "kubernetes-version without patch version",
-			expectedVersion: "v1.16.15",
-			paramVersion:    "v1.16",
+			description:     "oldest supported kubernetes-version without patch version",
+			expectedVersion: "v1.35.8",
+			paramVersion:    "v1.35",
 		},
 		{
-			description:     "kubernetes-version without patch version",
-			expectedVersion: "v1.16.15",
-			paramVersion:    "1.16",
+			description:     "oldest supported kubernetes-version without patch version and v prefix",
+			expectedVersion: "v1.35.8",
+			paramVersion:    "1.35",
+		},
+		{
+			description:     "most recent EOL kubernetes-version without patch version",
+			expectedVersion: "v1.34.11",
+			paramVersion:    "1.34",
 		},
 		{
 			description:     "kubernetes-version given as 'stable', no config",

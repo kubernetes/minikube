@@ -93,22 +93,31 @@ func tagFromKubeadm(v, name string) (string, error) {
 	return "", fmt.Errorf("failed to find %q image in kubeadm image list", name)
 }
 
-// tagFromLastMinor finds the last matching minor version in the kubeadm images map and uses its image version
+// tagFromLastMinor uses the latest known release in the kubeadm images map for the requested minor.
 func tagFromLastMinor(v semver.Version, name, lastKnownGood string) string {
-	majorMinor := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
-	var latestMinorVer string
-	for _, existingVer := range constants.ValidKubernetesVersions {
+	majorMinor := fmt.Sprintf("v%d.%d.", v.Major, v.Minor)
+	var latestMinorVer semver.Version
+	var latestTag string
+	found := false
+	for existingVer, images := range constants.KubeadmImages {
 		if !strings.HasPrefix(existingVer, majorMinor) {
 			continue
 		}
-		latestMinorVer = existingVer
-		break
+		parsed, err := semver.Parse(strings.TrimPrefix(existingVer, version.VersionPrefix))
+		if err != nil {
+			continue
+		}
+		tag, ok := images[name]
+		if ok && (!found || parsed.GT(latestMinorVer)) {
+			latestMinorVer = parsed
+			latestTag = tag
+			found = true
+		}
 	}
-	tag, ok := constants.KubeadmImages[latestMinorVer][name]
-	if !ok {
-		return lastKnownGood
+	if found {
+		return latestTag
 	}
-	return tag
+	return lastKnownGood
 }
 
 // coreDNS returns the images used for CoreDNS
