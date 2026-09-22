@@ -67,7 +67,6 @@ func NewDriver(hostName, storePath string) *Driver {
 		DiskSize:             defaultDiskSize,
 		MemSize:              defaultMemory,
 		CPU:                  defaultCPU,
-		WindowsVHDUrl:        mcnutils.ConfigGuest.GetVHDUrl(),
 		DisableDynamicMemory: defaultDisableDynamicMemory,
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: hostName,
