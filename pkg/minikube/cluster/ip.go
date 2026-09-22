@@ -120,13 +120,15 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 
 		return net.ParseIP(ip), nil
 	case driver.HyperKit, driver.VFKit, driver.Krunkit:
-		// TODO: check why we need this and test with:
-		// - vfkkit+nat
-		// - vfkit+vmnet-shared
-		// - krunkit+vmnet-shared
-		vmIPString, _ := hostInfo.Driver.GetIP()
-		gatewayIPString := vmIPString[:strings.LastIndex(vmIPString, ".")+1] + "1"
-		return net.ParseIP(gatewayIPString), nil
+		vmIPString, err := hostInfo.Driver.GetIP()
+		if err != nil {
+			return nil, fmt.Errorf("getting VM IP address: %w", err)
+		}
+		vmIP := net.ParseIP(vmIPString).To4()
+		if vmIP == nil {
+			return nil, fmt.Errorf("converting VM IP address %q to IPv4 address", vmIPString)
+		}
+		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
 	case driver.VMware:
 		vmIPString, err := hostInfo.Driver.GetIP()
 		if err != nil {
