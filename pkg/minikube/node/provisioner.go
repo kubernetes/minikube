@@ -36,7 +36,8 @@ type Provisioner interface {
 	// Linux: Executes kubeadm join with exponential backoff retry. On failure, runs kubeadm reset
 	// to clean up state before retrying. Recovery mechanism is synchronous and fast.
 	//
-	// Windows: Executes kubeadm join similarly but does not perform kubeadm reset on failure.
+	// Windows: Executes one bounded kubeadm join with an explicit CA path,
+	// without certificate relocation, automatic rejoining or kubeadm reset on failure.
 	// Windows nodes require additional API server registration time (handled by retry in LabelAndUntaint).
 	Join() error
 

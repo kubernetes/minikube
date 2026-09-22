@@ -39,57 +39,25 @@ type windowsProvisioner struct {
 var _ Provisioner = (*windowsProvisioner)(nil)
 
 func (p *windowsProvisioner) Join() error {
-	joinCmd, err := p.controlplane.GenerateTokenWindows(*p.starter.Cfg, *p.starter.Node)
+	joinConfig, err := p.controlplane.GenerateJoinConfigWindows(*p.starter.Cfg, *p.starter.Node)
 	if err != nil {
-		return fmt.Errorf("error generating join token: %w", err)
+		return fmt.Errorf("generating Windows join configuration: %w", err)
 	}
 
-	join := func() error {
-		klog.Infof("trying to join %s node %q to cluster: %+v", p.starter.Node.Role(), p.starter.Node.Name, p.starter.Node)
-
-		driverIP, err := p.starter.Host.Driver.GetIP()
-		if err != nil {
-			klog.Errorf("Unable to get driver IP: %v", err)
-		}
-		klog.Infof("Driver IP: %s", driverIP)
-
-		// Allow enough time for kubeadm join to complete on a Windows node.
-		// The initial 20s was too short; Windows kubeadm join takes longer.
-		timeout := 1 * time.Minute
-
-		if commandResult, err := p.worker.JoinClusterWindows(p.starter.Host, *p.starter.Cfg, *p.starter.Node, joinCmd, timeout); err != nil {
-			klog.Infof("%s node failed to join cluster, will retry: %v", p.starter.Node.Role(), err)
-			klog.Infof("command result: %s", commandResult)
-
-			// sort out the certificates issues
-			cmd, certErr := p.worker.SetupMinikubeCert(p.starter.Host)
-			if certErr != nil {
-				return fmt.Errorf("error setting minikube cert: %w", certErr)
-			}
-			klog.Infof("command result: %s", cmd)
-			// retry the join command
-			if commandResult, err := p.worker.JoinClusterWindows(p.starter.Host, *p.starter.Cfg, *p.starter.Node, joinCmd, 0); err != nil {
-				klog.Errorf("error retrying join command: %v, command result: %s", err, commandResult)
-				return err
-			}
-		}
-
-		// Apply Windows networking config after a successful join regardless
-		// of which join path was taken (first attempt or cert-fix retry).
-		if err := prepareWindowsNodeFlannel(); err != nil {
-			klog.Errorf("error preparing windows node flannel: %v", err)
-		}
-
-		if err := prepareWindowsNodeKubeProxy(); err != nil {
-			klog.Errorf("error preparing windows node kube-proxy: %v", err)
-		}
-
-		return nil
+	// Kubeadm owns the discovery, kubelet-health and TLS-bootstrap deadlines.
+	// Never replay join while a previous attempt could still be modifying kubelet.
+	klog.Infof("Joining Windows node %q with a single kubeadm join (native phase timeouts)", p.starter.Node.Name)
+	output, err := p.worker.JoinClusterWindows(p.starter.Host, joinConfig)
+	if err != nil {
+		return fmt.Errorf("joining Windows node %q: %w\n%s", p.starter.Node.Name, err, output)
 	}
-	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
-		return fmt.Errorf("error joining %s node %q to cluster: %w", p.starter.Node.Role(), p.starter.Node.Name, err)
+	klog.Infof("Windows kubeadm join completed: %s", output)
+	if err := prepareWindowsNodeFlannel(); err != nil {
+		return fmt.Errorf("preparing Windows flannel: %w", err)
 	}
-
+	if err := prepareWindowsNodeKubeProxy(); err != nil {
+		return fmt.Errorf("preparing Windows kube-proxy: %w", err)
+	}
 	return nil
 }
 

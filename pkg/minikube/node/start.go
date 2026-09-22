@@ -1001,7 +1001,7 @@ func prepareLinuxNodeForWindowsFlannel(runner command.Runner) error {
 // manifest bundled in the minikube binary (pkg/minikube/cni/flannel-windows.yaml)
 func prepareWindowsNodeFlannel() error {
 	if err := applyWindowsManifest(cni.FlannelWindowsManifest()); err != nil {
-		klog.Errorf("failed to apply flannel-windows: %v", err)
+		return fmt.Errorf("apply flannel-windows: %w", err)
 	}
 	klog.Infof("Successfully applied flannel Windows configuration.")
 	return nil
@@ -1011,7 +1011,7 @@ func prepareWindowsNodeFlannel() error {
 // the manifest bundled in the minikube binary (pkg/minikube/cni/kube-proxy-windows.yaml)
 func prepareWindowsNodeKubeProxy() error {
 	if err := applyWindowsManifest(cni.KubeProxyWindowsManifest()); err != nil {
-		klog.Errorf("failed to apply kube-proxy-windows: %v", err)
+		return fmt.Errorf("apply kube-proxy-windows: %w", err)
 	}
 	klog.Infof("Successfully applied kube-proxy Windows configuration.")
 	return nil

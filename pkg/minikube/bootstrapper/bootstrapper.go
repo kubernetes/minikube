@@ -43,11 +43,10 @@ type Bootstrapper interface {
 	UpdateCluster(config.ClusterConfig) error
 	DeleteCluster(config.KubernetesConfig) error
 	WaitForNode(config.ClusterConfig, config.Node, time.Duration) error
-	SetupMinikubeCert(*host.Host) (string, error)
-	JoinClusterWindows(*host.Host, config.ClusterConfig, config.Node, string, time.Duration) (string, error)
+	JoinClusterWindows(*host.Host, string) (string, error)
 	JoinCluster(config.ClusterConfig, config.Node, string) error
 	UpdateNode(config.ClusterConfig, config.Node, cruntime.Manager) error
-	GenerateTokenWindows(config.ClusterConfig, config.Node) (string, error)
+	GenerateJoinConfigWindows(config.ClusterConfig, config.Node) (string, error)
 	GenerateToken(config.ClusterConfig) (string, error)
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(config.ClusterConfig, LogOptions) map[string]string
