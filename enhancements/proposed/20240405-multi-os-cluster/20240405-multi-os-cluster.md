@@ -41,13 +41,21 @@ Our step-by-step process involves:
 
 It is also worth noting that SIG Windows group exploring to bring Windows nodes on non-Windows host using KVM2 to create the nodes and as the minikube driver.  
 
- Users will be able to start multi-os clusters by specifying a windows flag as in the example below, 
+### Current experimental command
 
-minikube start –windows-node-version=2022 or minikube start -windows-node-version=2019 {windows-osversion}
+The current implementation in [kubernetes/minikube#22503](https://github.com/kubernetes/minikube/pull/22503)
+starts a mixed-OS cluster with:
 
-Users will be able to add multiple versions of Windows node through separate `node add` commands, e.g.
+```powershell
+minikube start -n 2 --node-os=linux,windows
+```
 
-minikube node add --os=windows –windows-node-version=2022 --nodes=2
+This requires a Windows host with Hyper-V and a new cluster profile. It creates one Linux control-plane node
+and one Windows worker node. The `--node-os` value is comma-separated, without brackets; `--nodes=2` is required.
+
+Adding Windows nodes to existing clusters and supporting multiple Windows workers remain follow-up goals,
+not capabilities of the current command. The longer-term CLI design is under discussion in
+[kubernetes/minikube#23209](https://github.com/kubernetes/minikube/issues/23209).
 
 ## Alternatives Considered
 
