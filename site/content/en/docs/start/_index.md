@@ -706,10 +706,10 @@ Browse the catalog of easily installed Kubernetes services:
 minikube addons list
 ```
 
-Create a second cluster running an older Kubernetes release:
+Create a second cluster running an older Kubernetes release (must be one of the 3 latest minor versions):
 
 ```shell
-minikube start -p aged --kubernetes-version=v1.34.0
+minikube start -p aged --kubernetes-version=<k8sversion>
 ```
 
 Delete all of the minikube clusters:
