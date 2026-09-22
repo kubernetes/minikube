@@ -57,6 +57,13 @@ func init() {
 
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	d := hyperv.NewDriver(config.MachineName(cfg, n), localpath.MiniPath())
+	if n.Guest.IsWindows() {
+		if strings.TrimSpace(n.Guest.URL) == "" {
+			return nil, fmt.Errorf("Windows node %q has an empty VHD source; set --windows-vhd-url", d.MachineName)
+		}
+		// DefineGuest runs after driver configuration; use this node, not global guest state.
+		d.WindowsVHDUrl = n.Guest.URL
+	}
 	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
 	d.VSwitch = cfg.HypervVirtualSwitch
 	if d.VSwitch == "" && cfg.HypervUseExternalSwitch {
