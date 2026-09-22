@@ -198,7 +198,10 @@ func (client *NativeClient) session() (*ssh.Client, *ssh.Session, error) {
 func (client *NativeClient) Output(command string) (string, error) {
 	conn, session, err := client.session()
 	if err != nil {
-		return "", nil
+		if conn != nil {
+			closeConn(conn)
+		}
+		return "", err
 	}
 	defer closeConn(conn)
 	defer session.Close()
