@@ -469,19 +469,15 @@ func (b *B2dUtils) UpdateVHDCache(defaultVHDUrl string) error {
 	exists := b.hasVHD()
 
 	if !exists {
-		log.Info("No default Windows Server VHD found locally, downloading the latest release...")
+		log.Info("No cached Windows Server VHD found locally, acquiring the configured image...")
 
 		filePath := filepath.Join(b.imgCachePath, defaultServerImageFilename)
 
-		fmt.Printf("\n")
-		fmt.Printf("    * Downloading and caching Windows Server VHD image...\n")
-		fmt.Printf("    * This may take a while...\n")
 		err := DownloadVHDX(defaultVHDUrl, filePath, 16, 1) // Download using 16 parts
 
 		if err != nil {
-			return fmt.Errorf("Error: %v", err)
+			return fmt.Errorf("acquire Windows Server VHD: %w", err)
 		}
-		log.Info("Windows Server VHD downloaded successfully")
 	}
 
 	return nil
