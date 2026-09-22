@@ -19,6 +19,8 @@ package kubeadm
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -26,6 +28,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -35,6 +38,7 @@ import (
 	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
 
 	"github.com/blang/semver/v4"
+	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -63,6 +67,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/run"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -78,6 +83,26 @@ type Bootstrapper struct {
 	c           command.Runner
 	k8sClient   *kubernetes.Clientset // Kubernetes client used to verify pods inside cluster
 	contextName string
+}
+
+var windowsJoinCommandPattern = regexp.MustCompile(`^kubeadm join (\S+) --token ([a-z0-9]{6}\.[a-z0-9]{16}) --discovery-token-ca-cert-hash (sha256:[a-f0-9]{64})$`)
+
+type windowsJoinConfiguration struct {
+	APIVersion       string `json:"apiVersion"`
+	Kind             string `json:"kind"`
+	CACertPath       string `json:"caCertPath"`
+	NodeRegistration struct {
+		Name                  string   `json:"name"`
+		CRISocket             string   `json:"criSocket"`
+		IgnorePreflightErrors []string `json:"ignorePreflightErrors"`
+	} `json:"nodeRegistration"`
+	Discovery struct {
+		BootstrapToken struct {
+			APIServerEndpoint string   `json:"apiServerEndpoint"`
+			Token             string   `json:"token"`
+			CACertHashes      []string `json:"caCertHashes"`
+		} `json:"bootstrapToken"`
+	} `json:"discovery"`
 }
 
 // NewBootstrapper creates a new kubeadm.Bootstrapper
@@ -752,78 +777,6 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 	return nil
 }
 
-//
-//
-
-func (k *Bootstrapper) SetupMinikubeCert(host *host.Host) (string, error) {
-	out.Step(style.Provisioning, "Setting up minikube certificates folder...")
-
-	certsDir := `C:\var\lib\minikube\certs`
-	k8sPkiDir := `C:\etc\kubernetes\pki`
-	caCert := `ca.crt`
-
-	script := fmt.Sprintf(
-		`mkdir %s; `+
-			`Copy-Item %s\%s -Destination %s; `+
-			`Remove-Item %s\%s`,
-		certsDir, k8sPkiDir, caCert, certsDir, k8sPkiDir, caCert,
-	)
-
-	script = strings.ReplaceAll(script, `"`, `\"`)
-
-	command := fmt.Sprintf("powershell -NoProfile -NonInteractive -Command \"%s\"", script)
-	klog.Infof("[executing] : %v", command)
-
-	host.RunSSHCommand(command)
-
-	return "", nil
-}
-
-func (k *Bootstrapper) JoinClusterWindows(host *host.Host, cc config.ClusterConfig, n config.Node, joinCmd string, timeout time.Duration) (string, error) {
-	setLocationPath := `Set-Location -Path "C:\k"`
-
-	psScript := fmt.Sprintf("%s; %s", setLocationPath, joinCmd)
-
-	psScript = strings.ReplaceAll(psScript, `"`, `\"`)
-
-	command := fmt.Sprintf("powershell -NoProfile -NonInteractive -Command \"%s\"", psScript)
-	klog.Infof("[executing] : %v", command)
-
-	// TODO: Explore how to make this better; channels for result and errors for now exist
-	resultChan := make(chan string, 1)
-	errorChan := make(chan error, 1)
-
-	go func() {
-		output, err := host.RunSSHCommand(command)
-		if err != nil {
-			errorChan <- err
-			return
-		}
-
-		resultChan <- output
-	}()
-
-	if timeout > 0 {
-		// If timeout is set, enforce it
-		select {
-		case result := <-resultChan:
-			return result, nil
-		case err := <-errorChan:
-			return "", err
-		case <-time.After(timeout):
-			return "", fmt.Errorf("operation timed out after %s", timeout)
-		}
-	} else {
-		// If no timeout is set, just wait for result or error
-		select {
-		case result := <-resultChan:
-			return result, nil
-		case err := <-errorChan:
-			return "", err
-		}
-	}
-}
-
 // JoinCluster adds new node to an existing cluster.
 func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinCmd string) error {
 	// Join the control plane by specifying its token
@@ -851,43 +804,85 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	return nil
 }
 
-// GenerateTokenWindows creates a token and returns the appropriate kubeadm join command to run, or the already existing token
-func (k *Bootstrapper) GenerateTokenWindows(cc config.ClusterConfig, n config.Node) (string, error) {
-	tokenCmd := exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion)))
-	r, err := k.c.RunCmd(tokenCmd)
+func (k *Bootstrapper) JoinClusterWindows(h *host.Host, joinConfig string) (string, error) {
+	client, err := sshutil.NewSSHClient(h.Driver)
 	if err != nil {
-		return "", fmt.Errorf("generating join command: %w", err)
+		return "", fmt.Errorf("Windows join SSH connection: %w", err)
 	}
+	defer client.Close()
 
-	joinCmd := r.Stdout.String()
-	// log the join command for debugging purposes
-	klog.Infof("Generated join command ===: %s", joinCmd)
-	joinCmd = strings.Replace(joinCmd, "kubeadm", ".\\kubeadm.exe", 1)
-	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
-
-	// set the node name explicitly so it matches the minikube machine name
-	// (the Windows VHD hostname may differ from the expected <profile>-m02 name)
-	joinCmd = fmt.Sprintf("%s --node-name %s", joinCmd, config.MachineName(cc, n))
-
-	// append the cri-socket flag to the join command for windows
-	joinCmd = fmt.Sprintf("%s --cri-socket \"npipe:////./pipe/containerd-containerd\"", joinCmd)
-
-	// append --v=5 to the join command for windows
-	joinCmd = fmt.Sprintf("%s --v=5", joinCmd)
-
-	return joinCmd, nil
+	name := "minikube-join-" + strings.ToLower(rand.Text()) + ".json"
+	return runWindowsJoin(client, h.RunSSHCommand, joinConfig, name)
 }
 
-// GenerateToken creates a token and returns the appropriate kubeadm join command to run, or the already existing token
-func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
-	// Take that generated token and use it to get a kubeadm join command
-	tokenCmd := exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion)))
+func runWindowsJoin(client *ssh.Client, run func(string) (string, error), joinConfig, name string) (output string, err error) {
+	const powershellPrefix = `powershell.exe -NoProfile -NonInteractive -Command "$ErrorActionPreference = 'Stop'; `
+	tempDir, err := run(powershellPrefix + `[System.IO.Path]::GetTempPath()"`)
+	if err != nil {
+		return "", fmt.Errorf("resolving Windows temporary directory: %w", err)
+	}
+	tempDir = strings.TrimSpace(tempDir)
+	// These characters could be reinterpreted by the SSH command shell.
+	if tempDir == "" || strings.ContainsAny(tempDir, "\"%\r\n\x00") {
+		return "", fmt.Errorf("unsupported Windows temporary directory: %q", tempDir)
+	}
+	configPath := strings.TrimRight(tempDir, `\/`) + `\` + name
+	literalPath := "'" + strings.ReplaceAll(configPath, "'", "''") + "'"
+	defer func() {
+		cleanup := fmt.Sprintf(powershellPrefix+`if (Test-Path -LiteralPath %[1]s) { Remove-Item -LiteralPath %[1]s -Force }"`, literalPath)
+		result, cleanupErr := run(cleanup)
+		if cleanupErr == nil && strings.TrimSpace(result) != "" {
+			cleanupErr = fmt.Errorf("unexpected cleanup output: %s", result)
+		}
+		if cleanupErr != nil {
+			err = errors.Join(err, fmt.Errorf("removing Windows join configuration %s: %w", configPath, cleanupErr))
+		}
+	}()
+
+	// SCP carries the credential in the SSH stream, never in command arguments.
+	copyDeadline := time.AfterFunc(30*time.Second, func() { _ = client.Close() })
+	defer copyDeadline.Stop()
+	session, err := client.NewSession()
+	if err != nil {
+		return "", fmt.Errorf("Windows configuration SSH session: %w", err)
+	}
+	defer session.Close()
+	session.Stdin = strings.NewReader(fmt.Sprintf("C0600 %d %s\n%s\x00", len(joinConfig), name, joinConfig))
+	reply, copyErr := session.CombinedOutput(`scp.exe -t "` + configPath + `"`)
+	copyDeadline.Stop()
+	if copyErr != nil {
+		return "", fmt.Errorf("copying Windows join configuration: %w: %s", copyErr, strings.Trim(string(reply), "\x00\r\n"))
+	}
+	if string(reply) != "\x00\x00\x00" {
+		return "", fmt.Errorf("copying Windows join configuration: unexpected SCP acknowledgements (%d bytes)", len(reply))
+	}
+
+	// kubeadm creates the CA parent directory when writing the discovered CA.
+	command := powershellPrefix + `& 'C:\k\kubeadm.exe' join --config ` + literalPath + ` --v=5; exit $LASTEXITCODE"`
+	output, err = run(command)
+	if err != nil {
+		return output, fmt.Errorf("Windows kubeadm join: %w", err)
+	}
+	return output, nil
+}
+
+// createJoinCommand returns unmodified kubeadm output for platform-specific preparation.
+func (k *Bootstrapper) createJoinCommand(cc config.ClusterConfig, ttl string) (string, error) {
+	tokenCmd := exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=%s", bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion), ttl))
 	r, err := k.c.RunCmd(tokenCmd)
+	if err != nil {
+		return "", err
+	}
+	return r.Stdout.String(), nil
+}
+
+// GenerateToken creates a bootstrap token and prepares the Linux join command.
+func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
+	joinCmd, err := k.createJoinCommand(cc, "0")
 	if err != nil {
 		return "", fmt.Errorf("generating join command: %w", err)
 	}
 
-	joinCmd := r.Stdout.String()
 	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion), 1)
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
 
@@ -912,6 +907,49 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 	joinCmd = fmt.Sprintf("%s --cri-socket %s", joinCmd, sp)
 
 	return joinCmd, nil
+}
+
+// GenerateJoinConfigWindows retains normal CA-pinned discovery and kubelet TLS
+// bootstrap, but writes the discovered CA where minikube's kubelet expects it.
+func (k *Bootstrapper) GenerateJoinConfigWindows(cc config.ClusterConfig, n config.Node) (string, error) {
+	joinCommand, err := k.createJoinCommand(cc, "10m")
+	if err != nil {
+		return "", fmt.Errorf("generating Windows bootstrap token: %w", err)
+	}
+	return windowsJoinConfig(cc, n, joinCommand)
+}
+
+func windowsJoinConfig(cc config.ClusterConfig, n config.Node, joinCommand string) (string, error) {
+	// Do not include malformed command output in errors: it contains a bootstrap credential.
+	fields := windowsJoinCommandPattern.FindStringSubmatch(strings.TrimSpace(joinCommand))
+	if fields == nil {
+		return "", fmt.Errorf("unexpected kubeadm token command output: expected endpoint, bootstrap token and CA hash")
+	}
+	version, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return "", fmt.Errorf("Windows join Kubernetes version: %w", err)
+	}
+	apiVersion := "kubeadm.k8s.io/v1beta3"
+	if version.Major > 1 || (version.Major == 1 && version.Minor >= 31) {
+		apiVersion = "kubeadm.k8s.io/v1beta4"
+	}
+	cfg := windowsJoinConfiguration{
+		APIVersion: apiVersion,
+		Kind:       "JoinConfiguration",
+		CACertPath: "C:" + path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
+	}
+	cfg.NodeRegistration.Name = config.MachineName(cc, n)
+	cfg.NodeRegistration.CRISocket = "npipe:////./pipe/containerd-containerd"
+	// Preserve the existing Windows preflight policy, including rejoining saved VMs.
+	cfg.NodeRegistration.IgnorePreflightErrors = []string{"all"}
+	cfg.Discovery.BootstrapToken.APIServerEndpoint = fields[1]
+	cfg.Discovery.BootstrapToken.Token = fields[2]
+	cfg.Discovery.BootstrapToken.CACertHashes = []string{fields[3]}
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return "", fmt.Errorf("marshal Windows join configuration: %w", err)
+	}
+	return string(data), nil
 }
 
 // StopKubernetes attempts to stop existing kubernetes.
