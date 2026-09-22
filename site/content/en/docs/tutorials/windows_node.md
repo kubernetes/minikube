@@ -30,8 +30,9 @@ for contributors who do not have a Windows machine available to test on their ow
 ## Caveats
 
 - **Experimental**: This feature may change between releases. It is not yet enabled on a default cluster profile.
-- Only the **Hyper-V** driver is supported. Running `minikube start --node-os='[linux,windows]'` automatically
+- Only the **Hyper-V** driver is supported. Running `minikube start -n 2 --node-os=linux,windows` automatically
   sets `--driver=hyperv`, `--cni=flannel`, and `--container-runtime=containerd`.
+- `--node-os` takes comma-separated OS names (`linux,windows`), not a bracketed list.
 - The `--nodes` flag **must** be set to `2`. Clusters with more than one Windows worker are not yet supported.
 - The Windows VHD (`hybrid-minikube-windows-server.vhdx`, ~22 GB) is downloaded automatically on first use and
   cached. Subsequent starts reuse the cache but still copy the file to the VM's machine directory, which takes
@@ -49,7 +50,7 @@ for contributors who do not have a Windows machine available to test on their ow
 ### 1. Start the cluster
 
 ```shell
-minikube start -n 2 --node-os='[linux,windows]' --kubernetes-version=v1.34.0
+minikube start -n 2 --node-os=linux,windows --kubernetes-version=v1.34.0
 ```
 
 minikube automatically selects the Hyper-V driver and flannel CNI. The Windows VHD is downloaded and copied
@@ -206,7 +207,7 @@ own image — for example to use a different Windows version, include custom sof
 Once you have your own VHD hosted somewhere accessible, pass its URL at cluster creation time:
 
 ```shell
-minikube start -n 2 --node-os='[linux,windows]' --windows-vhd-url=https://your-storage/your-image.vhdx
+minikube start -n 2 --node-os=linux,windows --windows-vhd-url=https://your-storage/your-image.vhdx
 ```
 
 ## Troubleshooting
