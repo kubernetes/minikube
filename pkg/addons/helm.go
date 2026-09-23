@@ -60,7 +60,7 @@ func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 }
 
 // runs a helm uninstall based on the contents of chart *assets.HelmChart
-func uninstalllHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
+func uninstallHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 	args := []string{
 		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"helm", "uninstall", chart.Name,
@@ -76,7 +76,7 @@ func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable
 	if enable {
 		return installHelmChart(ctx, chart)
 	}
-	return uninstalllHelmChart(ctx, chart)
+	return uninstallHelmChart(ctx, chart)
 }
 
 // HelmOptions contains options for installing Helm.
