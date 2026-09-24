@@ -23,8 +23,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/google/go-github/v85/github"
-	"golang.org/x/oauth2"
+	"github.com/google/go-github/v92/github"
 )
 
 // Client provides the context and client with necessary auth
@@ -38,15 +37,11 @@ type Client struct {
 
 // NewClient returns a github client with the necessary auth
 func NewClient(ctx context.Context, owner, repo string) *Client {
-	githubToken := os.Getenv(GithubAccessTokenEnvVar)
-	// Setup the token for github authentication
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: githubToken},
-	)
-	tc := oauth2.NewClient(context.Background(), ts)
-
-	// Return a client instance from github
-	client := github.NewClient(tc)
+	var opts []github.ClientOptionsFunc
+	if githubToken := os.Getenv(GithubAccessTokenEnvVar); githubToken != "" {
+		opts = append(opts, github.WithAuthToken(githubToken))
+	}
+	client, _ := github.NewClient(opts...)
 	return &Client{
 		ctx:    ctx,
 		Client: client,
