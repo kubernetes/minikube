@@ -38,7 +38,7 @@ func TestName(t *testing.T) {
 		runtime string
 		want    string
 	}{
-		{"", "Docker"},
+		{"", "Docker"}, // pre-2022 stored empty; not the product default
 		{"docker", "Docker"},
 		{"crio", "CRI-O"},
 		{"cri-o", "CRI-O"},

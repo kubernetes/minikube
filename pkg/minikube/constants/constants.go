@@ -36,10 +36,10 @@ var (
 
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
-	DefaultKubernetesVersion = "v1.36.4"
+	DefaultKubernetesVersion = "v1.37.0"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.37.0-rc.1"
+	NewestKubernetesVersion = "v1.37.0"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	// TODO: upodate to 6 releases before from DefaultKubernetesVersion
 	OldestKubernetesVersion = "v1.28.0"
@@ -69,8 +69,6 @@ const (
 	Docker = "docker"
 	// DefaultContainerRuntime is our default container runtime
 	DefaultContainerRuntime = ""
-	// DefaultContainerRuntimeChangeWarning is shown when the default runtime will change.
-	DefaultContainerRuntimeChangeWarning = `Starting v1.39.0, minikube will default to "containerd" container runtime. See #21973 for more info.`
 
 	// cgroup drivers
 	DefaultCgroupDriver  = "systemd"

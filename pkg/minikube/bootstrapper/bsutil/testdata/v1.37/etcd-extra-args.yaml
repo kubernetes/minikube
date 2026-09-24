@@ -50,7 +50,7 @@ etcd:
     extraArgs:
       - name: "listen-metrics-urls"
         value: "http://0.0.0.0:2381"
-kubernetesVersion: v1.37.0-rc.1
+kubernetesVersion: v1.37.0
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16"

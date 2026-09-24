@@ -422,7 +422,7 @@ func (d *Driver) PreCreateCheck() error {
 		return err
 	}
 
-	log.Debugf("Found Parallels Desktop version: %d, edition: %s", ver, edit)
+	log.Debugf("Found Parallels Desktop version: %s, edition: %s", ver, edit)
 
 	switch edit {
 	case "pro", "business":

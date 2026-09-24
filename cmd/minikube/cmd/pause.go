@@ -99,9 +99,9 @@ func runPause(_ *cobra.Command, _ []string) {
 
 	register.Reg.SetStep(register.Done)
 	if namespaces == nil {
-		out.Step(style.Unpause, "Paused {{.count}} containers", out.V{"count": len(ids)})
+		out.Step(style.Pause, "Paused {{.count}} containers", out.V{"count": len(ids)})
 	} else {
-		out.Step(style.Unpause, "Paused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+		out.Step(style.Pause, "Paused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
 	}
 }
 

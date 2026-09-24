@@ -27,8 +27,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-
-	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // stderrAllow are regular expressions acceptable to find in normal stderr
@@ -54,8 +52,6 @@ var stderrAllow = []string{
 	// Warning of issues with specific Kubernetes versions
 	`Kubernetes .* has a known `,
 	`For more information, see`,
-	// warning about upcoming default container runtime change
-	regexp.QuoteMeta(constants.DefaultContainerRuntimeChangeWarning),
 	// registry connectivity warning from inside the container
 	`Failing to connect to https://registry.k8s.io/`,
 	`you may need to configure a proxy`,

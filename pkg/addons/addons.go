@@ -459,17 +459,6 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 	}
 
 	if addon.HelmChart != nil {
-		// Install helm if we don't have a usable helm executable. This can
-		// happen if helm is missing, corrupted, or returns an invalid version.
-		if v, err := HelmVersion(runner); err != nil {
-			klog.Info(err)
-			if err := InstallHelm(runner, HelmOptions{}); err != nil {
-				return err
-			}
-		} else {
-			klog.Infof("using helm %s", v)
-		}
-
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 		cmd := helmUninstallOrInstall(ctx, addon.HelmChart, enable)

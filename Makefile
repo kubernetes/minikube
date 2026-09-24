@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 38
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 39
+VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.38.0-1787519808-23544
+ISO_VERSION ?= v1.39.0-1790420785-23807
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -76,10 +76,6 @@ GOLINT_VERSION ?= v2.12.2
 GOLINT_CONFIG ?= .golangci.yaml
 # Set this to --verbose to see details about the linters and formatters used
 GOLINT_VERBOSE ?=
-# Limit number of default jobs, to avoid the CI builds running out of memory
-GOLINT_JOBS ?= 4
-# see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
-GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
 GOLINT_OPTIONS = \
 	  --max-issues-per-linter 0 --max-same-issues 0 \
@@ -526,12 +522,6 @@ endif
 lint-max: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
 	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} --config .golangci.max.yaml ./...
 
-# lint-ci is slower version of lint and is meant to be used in ci (travis) to avoid out of memory leaks.
-.PHONY: lint-ci
-lint-ci: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint-ci
-	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint-$(GOLINT_VERSION) run \
-	--concurrency ${GOLINT_JOBS} ${GOLINT_OPTIONS} ./...
-
 .PHONY: reportcard
 reportcard: ## Run goreportcard for minikube
 	goreportcard-cli -v
@@ -644,8 +634,8 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
 
 .PHONY: check-release
-check-release: ## Execute go test
-	go test -timeout 42m -v ./deploy/minikube/release_sanity_test.go
+check-release: ## Verify release checksums for $(VERSION) in releases JSON
+	go test -v ./deploy/minikube/release_sanity_test.go -run '//$(subst .,\.,$(VERSION))$$'
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile

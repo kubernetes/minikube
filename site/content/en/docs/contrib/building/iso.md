@@ -57,7 +57,6 @@ sudo apt-get install \
     build-essential \
     cpio \
     gcc-multilib \
-    genisoimage \
     git \
     gnupg2 \
     libtool \
@@ -66,6 +65,7 @@ sudo apt-get install \
     python2 \
     unzip \
     wget \
+    xorriso
 ```
 
 Install Go using these instructions:

@@ -28,12 +28,12 @@ mkdir -p root/EFI/BOOT
 cp efi-part/EFI/BOOT/* root/EFI/BOOT/
 cp efiboot.img root/EFI/BOOT/
 
-mkisofs \
+xorriso -as mkisofs \
    -o boot.iso \
    -R -J -v -d -N \
    -hide-rr-moved \
    -no-emul-boot \
-   -eltorito-platform=efi \
+   -eltorito-platform efi \
    -eltorito-boot EFI/BOOT/efiboot.img \
    -V "EFIBOOTISO" \
    -A "EFI Boot ISO" \

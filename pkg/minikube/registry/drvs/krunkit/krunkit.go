@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/drivers"
@@ -50,11 +51,12 @@ func init() {
 		Init: func(options *run.CommandOptions) drivers.Driver {
 			return krunkit.NewDriver("", "", options)
 		},
-		Config:   configure,
-		Status:   status,
-		Default:  true,
-		Priority: registry.Experimental,
-		Parallel: true,
+		Config:       configure,
+		Status:       status,
+		Default:      true,
+		Priority:     registry.Experimental,
+		Parallel:     true,
+		ProbeTimeout: 1 * time.Second,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
@@ -100,8 +102,11 @@ func status(options *run.CommandOptions) registry.State {
 		return registry.State{Error: err, Fix: "Run 'brew tap slp/krunkit && brew install krunkit'", Doc: docURL}
 	}
 	if err := vmnet.ValidateHelper(options); err != nil {
-		vmnetErr := err.(*vmnet.Error)
-		return registry.State{Error: vmnetErr.Err, Fix: "Install and configure vment-helper", Doc: docURL}
+		var vmnetErr *vmnet.Error
+		if errors.As(err, &vmnetErr) {
+			err = vmnetErr.Err
+		}
+		return registry.State{Error: err, Fix: "Install and configure vment-helper", Doc: docURL}
 	}
 	return registry.State{Installed: true, Healthy: true, Running: true}
 }

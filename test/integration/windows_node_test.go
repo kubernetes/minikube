@@ -145,8 +145,8 @@ func validateWindowsNodeStart(ctx context.Context, t *testing.T, profile string)
 
 	args := []string{
 		"start", "-p", profile,
-		"--nodes=2",
-		"--node-os=[linux,windows]",
+		"--node=role=control-plane",
+		"--node=role=worker,os=windows",
 		"--kubernetes-version=v1.35.0",
 		"--driver=hyperv",
 		"--wait=true",

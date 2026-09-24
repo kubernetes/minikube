@@ -29,6 +29,11 @@ pygmentsStyle = "tango"
  # First one is picked as the Twitter card image if not set on page.
  #images = ["images/project-illustration.png"]
 
+# Hugo >= 0.162.0 blocks text/html content files by default.
+# Our site uses .html content files (landing page, leaderboards), so allow them.
+[security]
+allowContent = ['.*']
+
 [markup]
   [markup.highlight]
     codeFences = true
@@ -66,6 +71,8 @@ id = "G-JPP6RFM2BP"
 [languages.en]
 title = "minikube"
 languageName = "English"
+# Hugo >= 0.158.0 uses 'label' instead of 'languageName'
+label = "English"
 weight = 1
 [languages.en.params]
 description = "minikube is local Kubernetes"

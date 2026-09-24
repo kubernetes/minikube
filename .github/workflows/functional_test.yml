@@ -82,12 +82,14 @@ jobs:
           - name: docker-docker-ubuntu24.04-x86
             driver: docker
             cruntime: docker
+            extra-start-args: --container-runtime=docker
             os: ubuntu-24.04
             arch: amd64
             test-timeout: 18m
           - name: docker-docker-ubuntu24.04-arm
             driver: docker
             cruntime: docker
+            extra-start-args: --container-runtime=docker
             os: ubuntu-24.04-arm
             arch: arm64
             test-timeout: 18m 
@@ -113,21 +115,45 @@ jobs:
             rootless: true
             arch: amd64
             test-timeout: 18m 
-          - name: podman-docker-ubuntu-24.04-x86
+          - name: podman-crio-ubuntu-24.04-x86
             driver: podman
-            cruntime: docker
+            cruntime: crio
+            extra-start-args: --container-runtime=crio
             os: ubuntu-24.04
             arch: amd64
+            test-timeout: 22m
+          - name: podman-crio-ubuntu-24.04-arm
+            driver: podman
+            cruntime: crio
+            extra-start-args: --container-runtime=crio
+            os: ubuntu-24.04-arm
+            arch: arm64
+            test-timeout: 22m
+          - name: podman-containerd-ubuntu-24.04-x86
+            driver: podman
+            cruntime: containerd
+            extra-start-args: --container-runtime=containerd
+            os: ubuntu-24.04
+            arch: amd64
+            test-timeout: 22m
+          - name: podman-containerd-ubuntu-24.04-arm
+            driver: podman
+            cruntime: containerd
+            extra-start-args: --container-runtime=containerd
+            os: ubuntu-24.04-arm
+            arch: arm64
             test-timeout: 22m
           - name: baremetal-docker-ubuntu-24.04-x86
             driver: none
             cruntime: docker
+            extra-start-args: --container-runtime=docker
             os: ubuntu-24.04
             arch: amd64
             test-timeout: 10m
           - name: baremetal-docker-ubuntu-24.04-arm
             driver: none
             cruntime: docker
+            extra-start-args: --container-runtime=docker
             os: ubuntu-24.04-arm
             arch: arm64
             test-timeout: 10m
@@ -281,12 +307,6 @@ jobs:
       - name: Install kubectl
         timeout-minutes: 1
         uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
-      - name: Install qemu and socket_vmnet (macos)
-        if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
-        timeout-minutes: 1
-        run: |
-          brew install qemu socket_vmnet
-          HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
       - name: Install vfkit and vmnet_helper (macos)
         if: matrix.driver == 'vfkit'
         timeout-minutes: 1

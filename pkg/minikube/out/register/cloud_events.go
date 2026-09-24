@@ -48,6 +48,8 @@ func SetOutputFile(w io.Writer) {
 
 // SetEventLogPath sets the path of an event log file
 func SetEventLogPath(path string) {
+	CloseEventLog()
+
 	if _, err := os.Stat(filepath.Dir(path)); err != nil {
 		if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
 			klog.Errorf("Error creating profile directory: %v", err)
@@ -61,6 +63,17 @@ func SetEventLogPath(path string) {
 		return
 	}
 	eventFile = f
+}
+
+// CloseEventLog closes the profile event log file, if open.
+func CloseEventLog() {
+	if eventFile == nil {
+		return
+	}
+	if err := eventFile.Close(); err != nil {
+		klog.Warningf("close event log: %v", err)
+	}
+	eventFile = nil
 }
 
 // CloudEvent creates a CloudEvent from a log object & associated data

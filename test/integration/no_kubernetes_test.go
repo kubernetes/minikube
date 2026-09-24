@@ -42,7 +42,7 @@ func TestNoKubernetes(t *testing.T) {
 	}
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("NoKubernetes")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer Cleanup(t, profile, cancel)
 
 	// Serial tests
@@ -67,6 +67,9 @@ func TestNoKubernetes(t *testing.T) {
 
 			if ctx.Err() == context.DeadlineExceeded {
 				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+			if t.Failed() {
+				t.Fatalf("Previous test failed, not running dependent tests")
 			}
 
 			t.Run(tc.name, func(t *testing.T) {
@@ -210,9 +213,6 @@ func validateProfileListNoK8S(ctx context.Context, t *testing.T, profile string)
 // validateStartNoArgs validates that minikube start with no args works.
 func validateStartNoArgs(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-	if KVMDriver() {
-		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23154")
-	}
 
 	args := append([]string{"start", "-p", profile}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))

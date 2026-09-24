@@ -65,9 +65,14 @@ Start the cluster using your built minikube with:
 ./out/minikube start
 ```
 
-## Unit Test and lint
+## Unit Test
 ```shell
 make test
+```
+
+## Lint
+```shell
+make lint
 ```
 
 ## clean and go mod tidy

@@ -26,12 +26,12 @@ Glossary:
 
 ## Comparison table for different methods
 
-The best method to push your image to minikube depends on the container-runtime you built your cluster with (the default is docker).
+The best method to push your image to minikube depends on the container-runtime you built your cluster with (the default is containerd).
 Here is a comparison table to help you choose:
 
 | Method | Supported Runtimes | Performance | Load | Build |
 |--- |--- |--- |--- |--- |--- |--- |
-|  [docker-env command](/docs/handbook/pushing/#1-pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   docker & containerd |  good  | yes | yes |
+|  [docker-env command](/docs/handbook/pushing/#1-pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   docker; containerd (experimental) |  good  | yes | yes |
 |  [cache command](/docs/handbook/pushing/#2-push-images-using-cache-command) |  all  |  ok  | yes | no |
 |  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-cri-o-podman-env) |   only cri-o |  good  | yes | yes |
 |  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  | yes | no |
@@ -40,7 +40,7 @@ Here is a comparison table to help you choose:
 |  [image load command](/docs/handbook/pushing/#7-loading-directly-to-in-cluster-container-runtime)  |  all  |  ok  | yes | no |
 |  [image build command](/docs/handbook/pushing/#8-building-images-to-in-cluster-container-runtime)  |  all  |  ok  | no | yes |
 
-* Note 1: The default container-runtime on minikube is `docker`.
+* Note 1: The default container-runtime on minikube is `containerd`. Method 1 (docker-env) against the in-cluster Docker daemon requires `--container-runtime=docker`.
 * Note 2: The `none` driver (bare metal) does not need pushing image to the cluster, as any image on your system is already available to the Kubernetes cluster.
 * Note 3: When using ssh to run the commands, the files to load or build must already be available on the node (not only on the client host).
 
@@ -49,6 +49,7 @@ Here is a comparison table to help you choose:
 ## 1. Pushing directly to the in-cluster Docker daemon (docker-env)
 
 This is similar to podman-env but only for Docker runtime.
+Start the cluster with `--container-runtime=docker`; the default runtime is containerd.
 When using a container or VM driver (all drivers except none), you can reuse the Docker daemon inside minikube cluster.
 This means you don't have to build on your host machine and push the image into a docker registry. You can just build inside the same docker daemon as minikube which speeds up local experiments.
 

@@ -203,23 +203,18 @@ func runStart(cmd *cobra.Command, _ []string) {
 		exit.Message(kind, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
+	nodeDefinitions, err := resolveNodes(cmd, existing, viper.GetViper())
+	if err != nil {
+		exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+	}
+	if err := applyNodeDefaults(cmd, existing, nodeDefinitions, runtime.GOOS, viper.GetViper()); err != nil {
+		exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+	}
+
 	if existing != nil {
 		upgradeExistingConfig(cmd, existing)
 	} else {
 		validateProfileName()
-	}
-
-	if cmd.Flags().Changed(nodeOS) {
-		if runtime.GOOS != "windows" {
-			exit.Message(reason.Usage, "--node-os currently requires a Windows host with Hyper-V")
-		}
-		if err := validMultiNodeOS(viper.GetStringSlice(nodeOS)); err != nil {
-			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
-		}
-		if viper.GetInt(nodes) != 2 {
-			exit.Message(reason.Usage, "The --nodes flag must be set to 2 when using --node-os")
-		}
-		applyMixedOSDefaults(cmd, existing)
 	}
 
 	validateSpecifiedDriver(existing, options)
@@ -250,7 +245,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 
 	useForce := viper.GetBool(force)
 
-	starter, err := provisionWithDriver(cmd, ds, existing, options)
+	starter, err := provisionWithDriver(cmd, ds, existing, options, nodeDefinitions)
 	if err != nil {
 		node.ExitIfFatal(err, useForce)
 		machine.MaybeDisplayAdvice(err, ds.Name)
@@ -277,7 +272,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
-				starter, err = provisionWithDriver(cmd, ds, existing, options)
+				starter, err = provisionWithDriver(cmd, ds, existing, options, nodeDefinitions)
 				if err != nil {
 					continue
 				}
@@ -324,7 +319,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, options *run.CommandOptions) (node.Starter, error) {
+func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, options *run.CommandOptions, nodeDefinitions []config.Node) (node.Starter, error) {
 	driverName := ds.Name
 	klog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
@@ -335,7 +330,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 
 	virtualBoxMacOS13PlusWarning(driverName)
 	hyperkitDeprecationWarning(driverName)
-	validateFlags(cmd, driverName)
+	validateFlags(cmd, driverName, existing)
 	validateUser(driverName)
 	if driverName == oci.Docker {
 		validateDockerStorageDriver(driverName)
@@ -365,14 +360,13 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		stopk8s = true
 	}
 
-	rtime := getContainerRuntime(existing)
-	if rtime == constants.Docker && (existing == nil || viper.IsSet(containerRuntime)) {
-		// TODO: remove this warning in minikube v1.40
-		out.WarningT(constants.DefaultContainerRuntimeChangeWarning)
-	}
-	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName, options)
+	crName := getContainerRuntime(existing)
+	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, crName, driverName, options)
 	if err != nil {
 		return node.Starter{}, fmt.Errorf("Failed to generate cluster config: %w", err)
+	}
+	if existing == nil && len(nodeDefinitions) > 0 {
+		cc.Nodes = configureNodeSpecs(nodeDefinitions, n)
 	}
 	klog.Infof("cluster config:\n%+v", cc)
 
@@ -516,17 +510,16 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		if err != nil {
 			return nil, err
 		}
+		if cmd.Flags().Changed(nodeSpec) {
+			// --node saves the complete topology upfront; the retry already started its workers.
+			pause.RemovePausedFile(starter.Runner)
+			return configInfo, nil
+		}
 	}
 
 	// target total and number of control-plane nodes
 	numCPNodes := 1
 	numNodes := viper.GetInt(nodes)
-	// if we have -node-os flag set, then nodes flag will be set to 2
-	//  it means one of the nodes is a control-plane node and the other is a windows worker node
-	// so we need to reduce the numNodes by 1
-	if cmd.Flags().Changed(nodeOS) {
-		numNodes--
-	}
 
 	if existing != nil {
 		numCPNodes = 0
@@ -545,6 +538,8 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		var n config.Node
 		if existing != nil {
 			n = existing.Nodes[i]
+		} else if cmd.Flags().Changed(nodeSpec) {
+			n = starter.Cfg.Nodes[i]
 		} else {
 			nodeName := node.Name(i + 1)
 			n = config.Node{
@@ -562,29 +557,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		out.Ln("") // extra newline for clarity on the command line
 		// 1st call
 		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
-			return nil, fmt.Errorf("adding linux node: %w", err)
-		}
-	}
-
-	// start windows node, triggered if --node-os is set at the time of minikube start
-	if cmd.Flags().Changed(nodeOS) {
-		nodeName := node.Name(numNodes + 1)
-		n := config.Node{
-			Name:              nodeName,
-			Port:              starter.Cfg.APIServerPort,
-			KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
-			ContainerRuntime:  starter.Cfg.KubernetesConfig.ContainerRuntime,
-			Worker:            true,
-			Guest: config.Guest{
-				Name:    "windows",
-				Version: constants.DefaultWindowsNodeVersion,
-				URL:     viper.GetString(windowsVhdURL),
-			},
-		}
-
-		out.Ln("") // extra newline for clarity on the command line
-		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
-			return nil, fmt.Errorf("adding windows node: %w", err)
+			return nil, fmt.Errorf("starting node %q: %w", config.MachineName(*starter.Cfg, n), err)
 		}
 	}
 
@@ -634,14 +607,14 @@ func displayEnviron(env []string) {
 	}
 }
 
-func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, rtime, machineName string) error {
+func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, crName, machineName string) error {
 	if k8sVersion == constants.NoKubernetesVersion {
 		register.Reg.SetStep(register.Done)
 		out.Step(style.Ready, "Done! minikube is ready without Kubernetes!")
 
 		// Runtime message.
 		boxConfig := box.NewBox().Padding(4, 1).Style(box.Round).Color(box.Green)
-		switch rtime {
+		switch crName {
 		case constants.Docker:
 			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
 - "minikube docker-env" to point your docker-cli to the docker inside minikube.
@@ -1340,7 +1313,7 @@ func validateCPUCount(drvName string) {
 }
 
 // validateFlags validates the supplied flags against known bad combinations
-func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
+func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterConfig) { //nolint:gocyclo
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		err := validateDiskSize(viper.GetString(humanReadableDiskSize))
 		if err != nil {
@@ -1387,27 +1360,25 @@ func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 		}
 	}
 
-	if cmd.Flags().Changed(containerRuntime) {
-		err := validateRuntime(viper.GetString(containerRuntime))
-		if err != nil {
-			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
-		}
-		validateCNI(cmd, viper.GetString(containerRuntime))
+	// Always validate: viper includes config and MINIKUBE_CONTAINER_RUNTIME,
+	// not only --container-runtime. Empty is the auto sentinel and is valid.
+	if err := validateRuntime(viper.GetString(containerRuntime)); err != nil {
+		exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 	}
+
+	validateCNI(cmd, getContainerRuntime(existing))
 
 	if cmd.Flags().Changed(windowsVhdURL) {
 		if viper.GetString(windowsVhdURL) == "" {
-			// set a default URL if the user has not specified one
 			viper.Set(windowsVhdURL, constants.DefaultWindowsVhdURL)
 			exit.Message(reason.Usage, "The --windows-vhd-url flag must be set to a valid URL")
 		}
 
-		// add validation logic for the windows vhd URL
 		url := viper.GetString(windowsVhdURL)
 		if !strings.HasSuffix(url, ".vhd") && !strings.HasSuffix(url, ".vhdx") {
 			exit.Message(reason.Usage, "The --windows-vhd-url flag must point to a valid VHD or VHDX file")
 		}
-	} ////
+	}
 
 	if cmd.Flags().Changed(staticIP) {
 		if err := validateStaticIP(viper.GetString(staticIP), drvName, viper.GetString(subnet)); err != nil {
@@ -1416,7 +1387,7 @@ func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 	}
 
 	if cmd.Flags().Changed(gpus) {
-		if err := validateGPUs(viper.GetString(gpus), drvName, viper.GetString(containerRuntime)); err != nil {
+		if err := validateGPUs(viper.GetString(gpus), drvName, getContainerRuntime(existing)); err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 	}
@@ -1466,7 +1437,7 @@ func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 		exit.Message(reason.Usage, "Sorry, please set the --output flag to one of the following valid options: [text,json]")
 	}
 
-	validateBareMetal(drvName)
+	validateBareMetal(drvName, getContainerRuntime(existing))
 	validateRegistryMirror()
 	validateInsecureRegistry()
 }
@@ -1527,105 +1498,41 @@ func validateDiskSize(diskSize string) error {
 	return nil
 }
 
-// validMultiNodeOS validates the supplied --node-os values for a mixed-OS
-// cluster. Only a single linux control-plane node plus a single windows
-// worker node is currently supported, so exactly two values must be given
-// and they must be "linux" then "windows" (case- and whitespace-insensitive).
-func validMultiNodeOS(osValues []string) error {
-	if len(osValues) != 2 {
-		return fmt.Errorf("invalid --node-os value: must specify exactly 2 comma-separated OS values, e.g. linux,windows")
-	}
-
-	first := strings.ToLower(strings.TrimSpace(osValues[0]))
-	second := strings.ToLower(strings.TrimSpace(osValues[1]))
-
-	if first != "linux" || second != "windows" {
-		return fmt.Errorf("invalid --node-os value: must be linux,windows")
-	}
-
-	return nil
-}
-
-// applyMixedOSDefaults fills in the driver/cni/container-runtime a mixed-OS
-// cluster requires, but only for a brand-new profile: converting an existing
-// profile to mixed-OS isn't supported yet (its persisted runtime/CNI could
-// silently drift from what --node-os requires, since updateExistingConfigFromFlags
-// only touches fields for flags the user actually passed), so require a fresh
-// profile instead.
-func applyMixedOSDefaults(cmd *cobra.Command, existing *config.ClusterConfig) {
-	if existing != nil {
-		exit.Message(reason.Usage, "--node-os cannot be used with an existing profile; delete it first with 'minikube delete -p {{.profile}}' or start a new profile with --profile", out.V{"profile": ClusterFlagValue()})
-	}
-
-	required := []struct {
-		flagName, want, label string
-	}{
-		{"driver", driver.HyperV, "driver"},
-		{cniFlag, "flannel", "CNI"},
-		{containerRuntime, constants.Containerd, "container runtime"},
-	}
-
-	for _, r := range required {
-		changed := cmd.Flags().Changed(r.flagName)
-		got := viper.GetString(r.flagName)
-		if err := mixedOSFlagConflict(changed, got, r.want, r.flagName, r.label); err != nil {
-			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
-		}
-		if !changed {
-			viper.Set(r.flagName, r.want)
-			out.Infof("--node-os: automatically selecting {{.want}} as the {{.label}}", out.V{"want": r.want, "label": r.label})
-		}
-	}
-}
-
-// mixedOSFlagConflict reports a usage error if the user explicitly passed
-// flagName with a value other than want. want is only ever applied as a
-// default (by the caller) when the flag was not explicitly changed - an
-// explicit, conflicting value must be rejected rather than silently
-// overridden, since viper.Set() takes precedence over an explicit flag and
-// would otherwise discard the user's choice without telling them.
-func mixedOSFlagConflict(changed bool, got, want, flagName, label string) error {
-	if changed && got != want {
-		return fmt.Errorf("--node-os requires the %s %s, but --%s=%s was specified", want, label, flagName, got)
-	}
-	return nil
-}
-
 // validateRuntime validates the supplied runtime
-func validateRuntime(rtime string) error {
+func validateRuntime(crName string) error {
 	validOptions := cruntime.ValidRuntimes()
 	// `crio` is accepted as an alternative spelling to `cri-o`
 	validOptions = append(validOptions, constants.CRIO)
 
-	if rtime == constants.DefaultContainerRuntime {
+	if crName == constants.DefaultContainerRuntime {
 		return nil
 	}
 
 	var validRuntime bool
 	for _, option := range validOptions {
-		if rtime == option {
+		if crName == option {
 			validRuntime = true
 		}
 
 		// Convert `cri-o` to `crio` as the K8s config uses the `crio` spelling
-		if rtime == "cri-o" {
+		if crName == "cri-o" {
 			viper.Set(containerRuntime, constants.CRIO)
 		}
 
 	}
 
-	if (rtime == "crio" || rtime == "cri-o") && strings.HasPrefix(runtime.GOARCH, "ppc64") {
-		return fmt.Errorf("The %s runtime is not compatible with the %s architecture. See https://github.com/cri-o/cri-o/issues/2467 for more details", rtime, runtime.GOARCH)
+	if (crName == "crio" || crName == "cri-o") && strings.HasPrefix(runtime.GOARCH, "ppc64") {
+		return fmt.Errorf("The %s runtime is not compatible with the %s architecture. See https://github.com/cri-o/cri-o/issues/2467 for more details", crName, runtime.GOARCH)
 	}
 
 	if !validRuntime {
-		return fmt.Errorf("Invalid Container Runtime: %s. Valid runtimes are: %s", rtime, cruntime.ValidRuntimes())
+		return fmt.Errorf("Invalid Container Runtime: %s. Valid runtimes are: %s", crName, cruntime.ValidRuntimes())
 	}
 	return nil
 }
 
 // validateGPUs validates that a valid option was given, and if so, can it be used with the given configuration
-func validateGPUs(value, drvName, rtime string) error {
+func validateGPUs(value, drvName, crName string) error {
 	if value == "" {
 		return nil
 	}
@@ -1635,7 +1542,7 @@ func validateGPUs(value, drvName, rtime string) error {
 	if value != "nvidia" && value != "all" && value != "amd" && value != "nvidia.com" {
 		return errors.New(`The gpus flag must be passed a value of "nvidia", "nvidia.com", "amd" or "all"`)
 	}
-	if drvName == constants.Docker && (rtime == constants.Docker || rtime == constants.DefaultContainerRuntime) {
+	if drvName == constants.Docker && crName == constants.Docker {
 		return nil
 	}
 	return errors.New("The gpus flag can only be used with the docker driver and docker container-runtime")
@@ -1657,36 +1564,39 @@ func validateAutoPauseInterval(interval time.Duration) error {
 }
 
 func getContainerRuntime(old *config.ClusterConfig) string {
-	paramRuntime := viper.GetString(containerRuntime)
-
-	// try to load the old version first if the user didn't specify anything
-	if paramRuntime == constants.DefaultContainerRuntime && old != nil {
-		paramRuntime = old.KubernetesConfig.ContainerRuntime
+	userValue := viper.GetString(containerRuntime)
+	if userValue == constants.DefaultContainerRuntime {
+		// Use value from old cluster config.
+		if old != nil {
+			if old.KubernetesConfig.ContainerRuntime == "" {
+				// Pre-2022 profiles stored "" to mean docker (the then-default).
+				// Do not map that to defaultRuntime() or those clusters would
+				// switch to containerd.
+				return constants.Docker
+			}
+			return old.KubernetesConfig.ContainerRuntime
+		}
+		return defaultRuntime()
 	}
-
-	if paramRuntime == constants.DefaultContainerRuntime {
-		paramRuntime = defaultRuntime()
-	}
-
-	return paramRuntime
+	return userValue
 }
 
-// defaultRuntime returns the default container runtime
+// defaultRuntime returns the default container runtime.
+// Keep in sync with test/integration.ContainerRuntime.
 func defaultRuntime() string {
-	// minikube default
-	return constants.Docker
+	return constants.Containerd
 }
 
 // if container runtime is not docker, check that cni is not disabled
-func validateCNI(cmd *cobra.Command, runtimeName string) {
-	if runtimeName == constants.Docker {
+func validateCNI(cmd *cobra.Command, crName string) {
+	if crName == constants.Docker {
 		return
 	}
 	if cmd.Flags().Changed(cniFlag) && strings.ToLower(viper.GetString(cniFlag)) == "false" {
 		if viper.GetBool(force) {
-			out.WarnReason(reason.Usage, "You have chosen to disable the CNI but the \"{{.name}}\" container runtime requires CNI", out.V{"name": runtimeName})
+			out.WarnReason(reason.Usage, "You have chosen to disable the CNI but the \"{{.name}}\" container runtime requires CNI", out.V{"name": crName})
 		} else {
-			exit.Message(reason.Usage, "The \"{{.name}}\" container runtime requires CNI", out.V{"name": runtimeName})
+			exit.Message(reason.Usage, "The \"{{.name}}\" container runtime requires CNI", out.V{"name": crName})
 		}
 	}
 }
@@ -1853,14 +1763,14 @@ func configureNodes(cc config.ClusterConfig, existing *config.ClusterConfig) (co
 	if err != nil {
 		return cc, config.Node{}, fmt.Errorf("failed getting kubernetes version: %w", err)
 	}
-	cr := getContainerRuntime(&cc)
+	crName := getContainerRuntime(&cc)
 
 	// create the initial node, which will necessarily be primary control-plane node
 	if existing == nil {
 		pcp := config.Node{
 			Port:              cc.APIServerPort,
 			KubernetesVersion: kv,
-			ContainerRuntime:  cr,
+			ContainerRuntime:  crName,
 			ControlPlane:      true,
 			Worker:            true,
 		}
@@ -1873,7 +1783,7 @@ func configureNodes(cc config.ClusterConfig, existing *config.ClusterConfig) (co
 	nodes := []config.Node{}
 	for _, n := range existing.Nodes {
 		n.KubernetesVersion = kv
-		n.ContainerRuntime = cr
+		n.ContainerRuntime = crName
 		nodes = append(nodes, n)
 	}
 	cc.Nodes = nodes
@@ -1883,7 +1793,7 @@ func configureNodes(cc config.ClusterConfig, existing *config.ClusterConfig) (co
 		return cc, config.Node{}, fmt.Errorf("failed getting control-plane node: %w", err)
 	}
 	pcp.KubernetesVersion = kv
-	pcp.ContainerRuntime = cr
+	pcp.ContainerRuntime = crName
 
 	return cc, pcp, nil
 }
@@ -2144,7 +2054,7 @@ func validateStaticIP(staticIP, drvName, subnet string) error {
 	return nil
 }
 
-func validateBareMetal(drvName string) {
+func validateBareMetal(drvName, crName string) {
 	if !driver.BareMetal(drvName) {
 		return
 	}
@@ -2157,10 +2067,8 @@ func validateBareMetal(drvName string) {
 		exit.Message(reason.DrvUnsupportedProfile, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
 	}
 
-	// default container runtime varies, starting with Kubernetes 1.24 - assume that only the default container runtime has been tested
-	rtime := viper.GetString(containerRuntime)
-	if rtime != constants.DefaultContainerRuntime && rtime != defaultRuntime() {
-		out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": rtime})
+	if crName != constants.Docker {
+		out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": crName})
 	}
 
 	// conntrack is required starting with Kubernetes 1.18, include the release candidates for completion

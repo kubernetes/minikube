@@ -1,6 +1,6 @@
 version: "2"
 run:
-  timeout: 7m
+  timeout: 20m
 linters:
   enable:
     - dogsled

@@ -83,6 +83,8 @@ and verify that this flag works for your workload before relying on it.
 
 Run `minikube start --driver krunkit --alsologtostderr -v=7` to debug crashes
 
+{{< readfile file="/docs/drivers/includes/vmnet_troubleshooting.inc" >}}
+
 ### Troubleshooting vmnet-helper
 
 Check for errors in vmnet-helper log:

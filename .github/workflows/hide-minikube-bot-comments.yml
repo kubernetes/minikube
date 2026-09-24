@@ -6,7 +6,7 @@ permissions:
 jobs:
   hide-comments:
     if: ${{ github.event.issue.pull_request }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: spowelljr/hide-minikube-bot-comments@6ef419ab40a17cf0bdc1f98f2442bf19b72d911d
         timeout-minutes: 1

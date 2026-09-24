@@ -60,7 +60,7 @@ source ./hack/jenkins/installers/check_install_linux_crons.sh
 
 # Make sure all required packages are installed
 sudo apt-get update
-sudo apt-get -y install build-essential unzip rsync bc python3 p7zip-full cmake
+sudo apt-get -y install build-essential unzip rsync bc python3 p7zip-full cmake xorriso
 
 # Log Cmake version
 CMAKE_VERSION=$(cmake --version | head -n1 | awk '{print $3}')

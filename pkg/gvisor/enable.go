@@ -146,6 +146,9 @@ func downloadFileToDest(url, dest string) error {
 		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("downloading %s: unexpected HTTP status %s", url, resp.Status)
+	}
 	if _, err := os.Stat(dest); err == nil {
 		if err := os.Remove(dest); err != nil {
 			return fmt.Errorf("removing %s for overwrite: %w", dest, err)

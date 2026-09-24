@@ -22,9 +22,10 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/minikube/hack/update"
-
+	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
+
+	"k8s.io/minikube/hack/update"
 )
 
 var schema = map[string]update.Item{
@@ -48,7 +49,7 @@ func main() {
 	if err != nil {
 		klog.Fatalf("Unable to get stable version: %v", err)
 	}
-	version := strings.TrimPrefix(stable.Tag, "v")
+	version := strings.TrimPrefix(semver.Major(stable.Tag), "v")
 	sha, err := update.GetImageSHA(fmt.Sprintf("docker.io/kong:%s", version))
 	if err != nil {
 		klog.Fatalf("failed to get image SHA: %v", err)
