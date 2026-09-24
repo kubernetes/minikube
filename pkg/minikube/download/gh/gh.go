@@ -20,12 +20,10 @@ package gh
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 
-	"github.com/google/go-github/v85/github"
-	"golang.org/x/oauth2"
+	"github.com/google/go-github/v92/github"
 )
 
 // ReleaseAssets retrieves a GitHub release by tag from org/project.
@@ -33,8 +31,14 @@ import (
 func ReleaseAssets(org, project, tag string) ([]*github.ReleaseAsset, error) {
 	ctx := context.Background()
 	// Use an authenticated client when GITHUB_TOKEN is set to avoid low rate limits.
-	httpClient := oauthClient(ctx, os.Getenv("GITHUB_TOKEN"))
-	ghc := github.NewClient(httpClient)
+	var opts []github.ClientOptionsFunc
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		opts = append(opts, github.WithAuthToken(token))
+	}
+	ghc, err := github.NewClient(opts...)
+	if err != nil {
+		return nil, err
+	}
 
 	rel, _, err := ghc.Repositories.GetReleaseByTag(ctx, org, project, tag)
 	if err != nil {
@@ -60,12 +64,4 @@ func AssetSHA256(assetName string, assets []*github.ReleaseAsset) ([]byte, error
 		return []byte(d), nil
 	}
 	return []byte(""), fmt.Errorf("asset %q not found", assetName)
-}
-
-func oauthClient(ctx context.Context, token string) *http.Client {
-	if token == "" {
-		return nil // unauthenticated client (lower rate limit)
-	}
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	return oauth2.NewClient(ctx, ts)
 }
