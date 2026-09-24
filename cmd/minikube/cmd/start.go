@@ -203,23 +203,18 @@ func runStart(cmd *cobra.Command, _ []string) {
 		exit.Message(kind, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
+	nodeDefinitions, err := resolveNodes(cmd, existing, viper.GetViper())
+	if err != nil {
+		exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+	}
+	if err := applyNodeDefaults(cmd, existing, nodeDefinitions, runtime.GOOS, viper.GetViper()); err != nil {
+		exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+	}
+
 	if existing != nil {
 		upgradeExistingConfig(cmd, existing)
 	} else {
 		validateProfileName()
-	}
-
-	if cmd.Flags().Changed(nodeOS) {
-		if runtime.GOOS != "windows" {
-			exit.Message(reason.Usage, "--node-os currently requires a Windows host with Hyper-V")
-		}
-		if err := validMultiNodeOS(viper.GetStringSlice(nodeOS)); err != nil {
-			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
-		}
-		if viper.GetInt(nodes) != 2 {
-			exit.Message(reason.Usage, "The --nodes flag must be set to 2 when using --node-os")
-		}
-		applyMixedOSDefaults(cmd, existing)
 	}
 
 	validateSpecifiedDriver(existing, options)
@@ -250,7 +245,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 
 	useForce := viper.GetBool(force)
 
-	starter, err := provisionWithDriver(cmd, ds, existing, options)
+	starter, err := provisionWithDriver(cmd, ds, existing, options, nodeDefinitions)
 	if err != nil {
 		node.ExitIfFatal(err, useForce)
 		machine.MaybeDisplayAdvice(err, ds.Name)
@@ -277,7 +272,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
-				starter, err = provisionWithDriver(cmd, ds, existing, options)
+				starter, err = provisionWithDriver(cmd, ds, existing, options, nodeDefinitions)
 				if err != nil {
 					continue
 				}
@@ -324,7 +319,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, options *run.CommandOptions) (node.Starter, error) {
+func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, options *run.CommandOptions, nodeDefinitions []config.Node) (node.Starter, error) {
 	driverName := ds.Name
 	klog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
@@ -373,6 +368,9 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName, options)
 	if err != nil {
 		return node.Starter{}, fmt.Errorf("Failed to generate cluster config: %w", err)
+	}
+	if existing == nil && len(nodeDefinitions) > 0 {
+		cc.Nodes = configureNodeSpecs(nodeDefinitions, n)
 	}
 	klog.Infof("cluster config:\n%+v", cc)
 
@@ -516,17 +514,16 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		if err != nil {
 			return nil, err
 		}
+		if cmd.Flags().Changed(nodeSpec) {
+			// --node saves the complete topology upfront; the retry already started its workers.
+			pause.RemovePausedFile(starter.Runner)
+			return configInfo, nil
+		}
 	}
 
 	// target total and number of control-plane nodes
 	numCPNodes := 1
 	numNodes := viper.GetInt(nodes)
-	// if we have -node-os flag set, then nodes flag will be set to 2
-	//  it means one of the nodes is a control-plane node and the other is a windows worker node
-	// so we need to reduce the numNodes by 1
-	if cmd.Flags().Changed(nodeOS) {
-		numNodes--
-	}
 
 	if existing != nil {
 		numCPNodes = 0
@@ -545,6 +542,8 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		var n config.Node
 		if existing != nil {
 			n = existing.Nodes[i]
+		} else if cmd.Flags().Changed(nodeSpec) {
+			n = starter.Cfg.Nodes[i]
 		} else {
 			nodeName := node.Name(i + 1)
 			n = config.Node{
@@ -562,29 +561,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		out.Ln("") // extra newline for clarity on the command line
 		// 1st call
 		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
-			return nil, fmt.Errorf("adding linux node: %w", err)
-		}
-	}
-
-	// start windows node, triggered if --node-os is set at the time of minikube start
-	if cmd.Flags().Changed(nodeOS) {
-		nodeName := node.Name(numNodes + 1)
-		n := config.Node{
-			Name:              nodeName,
-			Port:              starter.Cfg.APIServerPort,
-			KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
-			ContainerRuntime:  starter.Cfg.KubernetesConfig.ContainerRuntime,
-			Worker:            true,
-			Guest: config.Guest{
-				Name:    "windows",
-				Version: constants.DefaultWindowsNodeVersion,
-				URL:     viper.GetString(windowsVhdURL),
-			},
-		}
-
-		out.Ln("") // extra newline for clarity on the command line
-		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
-			return nil, fmt.Errorf("adding windows node: %w", err)
+			return nil, fmt.Errorf("starting node %q: %w", config.MachineName(*starter.Cfg, n), err)
 		}
 	}
 
@@ -1523,70 +1500,6 @@ func validateDiskSize(diskSize string) error {
 	}
 	if diskSizeMB < minimumDiskSize {
 		return fmt.Errorf("Requested disk size %v is less than minimum of %v", diskSizeMB, minimumDiskSize)
-	}
-	return nil
-}
-
-// validMultiNodeOS validates the supplied --node-os values for a mixed-OS
-// cluster. Only a single linux control-plane node plus a single windows
-// worker node is currently supported, so exactly two values must be given
-// and they must be "linux" then "windows" (case- and whitespace-insensitive).
-func validMultiNodeOS(osValues []string) error {
-	if len(osValues) != 2 {
-		return fmt.Errorf("invalid --node-os value: must specify exactly 2 comma-separated OS values, e.g. linux,windows")
-	}
-
-	first := strings.ToLower(strings.TrimSpace(osValues[0]))
-	second := strings.ToLower(strings.TrimSpace(osValues[1]))
-
-	if first != "linux" || second != "windows" {
-		return fmt.Errorf("invalid --node-os value: must be linux,windows")
-	}
-
-	return nil
-}
-
-// applyMixedOSDefaults fills in the driver/cni/container-runtime a mixed-OS
-// cluster requires, but only for a brand-new profile: converting an existing
-// profile to mixed-OS isn't supported yet (its persisted runtime/CNI could
-// silently drift from what --node-os requires, since updateExistingConfigFromFlags
-// only touches fields for flags the user actually passed), so require a fresh
-// profile instead.
-func applyMixedOSDefaults(cmd *cobra.Command, existing *config.ClusterConfig) {
-	if existing != nil {
-		exit.Message(reason.Usage, "--node-os cannot be used with an existing profile; delete it first with 'minikube delete -p {{.profile}}' or start a new profile with --profile", out.V{"profile": ClusterFlagValue()})
-	}
-
-	required := []struct {
-		flagName, want, label string
-	}{
-		{"driver", driver.HyperV, "driver"},
-		{cniFlag, "flannel", "CNI"},
-		{containerRuntime, constants.Containerd, "container runtime"},
-	}
-
-	for _, r := range required {
-		changed := cmd.Flags().Changed(r.flagName)
-		got := viper.GetString(r.flagName)
-		if err := mixedOSFlagConflict(changed, got, r.want, r.flagName, r.label); err != nil {
-			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
-		}
-		if !changed {
-			viper.Set(r.flagName, r.want)
-			out.Infof("--node-os: automatically selecting {{.want}} as the {{.label}}", out.V{"want": r.want, "label": r.label})
-		}
-	}
-}
-
-// mixedOSFlagConflict reports a usage error if the user explicitly passed
-// flagName with a value other than want. want is only ever applied as a
-// default (by the caller) when the flag was not explicitly changed - an
-// explicit, conflicting value must be rejected rather than silently
-// overridden, since viper.Set() takes precedence over an explicit flag and
-// would otherwise discard the user's choice without telling them.
-func mixedOSFlagConflict(changed bool, got, want, flagName, label string) error {
-	if changed && got != want {
-		return fmt.Errorf("--node-os requires the %s %s, but --%s=%s was specified", want, label, flagName, got)
 	}
 	return nil
 }

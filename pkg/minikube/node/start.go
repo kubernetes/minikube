@@ -135,7 +135,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 
 		showVersionInfo(starter.Node.KubernetesVersion, cr)
 
-		if isMixedOSCluster(*starter.Cfg) {
+		if config.HasWindowsNodes(starter.Cfg.Nodes) {
 			if err := prepareLinuxNodeForWindowsFlannel(starter.Runner); err != nil {
 				klog.Errorf("error preparing linux node %q for windows flannel: %v", starter.Node.Name, err)
 			}
@@ -978,13 +978,6 @@ func applyWindowsManifest(content string) error {
 		return fmt.Errorf("kubectl apply -f %s: %w: %s", f.Name(), err, strings.TrimSpace(stderr.String()))
 	}
 	return nil
-}
-
-// isMixedOSCluster reports whether a mixed Linux/Windows cluster was
-// requested via the --node-os flag (config.ClusterConfig.NodeOS is only
-// populated when that flag was explicitly passed).
-func isMixedOSCluster(cc config.ClusterConfig) bool {
-	return len(cc.NodeOS) > 0
 }
 
 // prepareLinuxNodeForWindowsFlannel enables bridged traffic to be seen by

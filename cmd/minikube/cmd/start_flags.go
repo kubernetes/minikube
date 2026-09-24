@@ -150,7 +150,7 @@ const (
 	staticIP                = "static-ip"
 	gpus                    = "gpus"
 	autoPauseInterval       = "auto-pause-interval"
-	nodeOS                  = "node-os"
+	nodeSpec                = "node"
 	windowsVhdURL           = "windows-vhd-url"
 	preloadSrc              = "preload-source"
 	rosetta                 = "rosetta"
@@ -223,7 +223,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
 	startCmd.Flags().StringP(gpus, "g", "", "Allow pods to use your GPUs. Options include: [all,nvidia,amd] (Docker driver with Docker container-runtime only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
-	startCmd.Flags().StringSlice(nodeOS, nil, "The OS to use for each node in a mixed-OS cluster, e.g. linux,windows. Requires --nodes=2 and a Windows host with Hyper-V. Currently only a single linux control-plane node plus a single windows worker node is supported.")
+	startCmd.Flags().StringArray(nodeSpec, nil, "Describe a node with role=control-plane|worker,os=linux|windows (role is required; OS defaults to linux). Repeat for each node; currently requires one Linux control plane and cannot combine with --nodes or --ha. Windows support is experimental and limited to one Windows worker on Hyper-V.")
 	startCmd.Flags().String(windowsVhdURL, constants.DefaultWindowsVhdURL, "The VHD URL to use for the windows node on a multi-node cluster. If not set, it will be set to the default Windows Server 2025 VHD URL.")
 
 	startCmd.Flags().String(preloadSrc, "auto", "Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try github first, then gcs as failover).")
@@ -744,7 +744,6 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		SocketVMnetClientPath:   detect.SocketVMNetClientPath(),
 		SocketVMnetPath:         detect.SocketVMNetPath(),
 		StaticIP:                viper.GetString(staticIP),
-		NodeOS:                  viper.GetStringSlice(nodeOS),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -1000,7 +999,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.SocketVMnetClientPath, socketVMnetClientPath)
 	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 	updateDurationFromFlag(cmd, &cc.AutoPauseInterval, autoPauseInterval)
-	updateStringSliceFromFlag(cmd, &cc.NodeOS, nodeOS)
 	updateBoolFromFlag(cmd, &cc.Rosetta, rosetta)
 	updateBoolFromFlag(cmd, &cc.VmnetOffloading, vmnetOffloading)
 
