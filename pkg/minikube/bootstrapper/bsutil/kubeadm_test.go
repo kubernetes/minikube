@@ -131,7 +131,7 @@ This test case has only 1 thing to test and that is the
 networking/dnsDomain value
 */
 func TestGenerateKubeadmYAMLDNS(t *testing.T) {
-	versions, err := recentReleases(6)
+	versions, err := recentReleases(3)
 	if err != nil {
 		t.Errorf("versions: %v", err)
 	}
@@ -201,8 +201,8 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 func TestGenerateKubeadmYAML(t *testing.T) {
 	extraOpts := getExtraOpts()
 	extraOptsPodCidr := getExtraOptsPodCidr()
-	// test the 6 most recent releases
-	versions, err := recentReleases(6)
+	// test the 3 most recent releases
+	versions, err := recentReleases(3)
 	if err != nil {
 		t.Errorf("versions: %v", err)
 	}

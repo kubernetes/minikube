@@ -9,14 +9,13 @@ description: >
 
 ## Can I run an older Kubernetes version with minikube? Do I have to downgrade my minikube version?
 
-You do not need to download an older minikube to run an older kubernetes version.
-You can create a Kubernetes cluster with any version you desire using `--kubernetes-version` flag.
-
-Example:
+minikube supports the latest 3 minor Kubernetes releases. You can select any supported version using the `--kubernetes-version` flag:
 
 ```bash
-minikube start --kubernetes-version=v1.34.0
+minikube start --kubernetes-version=<k8sversion>
 ```
+
+To run older, unsupported Kubernetes versions, you can pass the `--force` flag or use an older minikube release.
 
 ## How can I create more than one cluster with minikube?
 
