@@ -127,6 +127,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{
+		name:      "nrc",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:        "nvidia-driver-installer",
 		set:         SetBool,
 		validations: []setFn{isKVMDriverForNVIDIA},
