@@ -13,16 +13,6 @@ on:
       - "!site/**"
       - "!**.md"
       - "!**.json"
-  pull_request:
-    paths:
-      - "go.mod"
-      - "**.go"
-      - "Makefile"
-      - ".github/workflows/smoke-test.yml"
-      - "!hack/**"
-      - "!site/**"
-      - "!**.md"
-      - "!**.json"
 env:
   GOPROXY: https://proxy.golang.org
   LOG_ARGS: --v=8 --alsologtostderr
@@ -45,16 +35,22 @@ jobs:
           - name: vfkit-containerd-macos-15-x86
             driver: vfkit
             os: macos-15-intel
+            goos: darwin
+            goarch: amd64
             start_flags: --network vmnet-shared --force --container-runtime=containerd
             sudo: "sudo"
           - name: docker-containerd-ubuntu-24.04-x86
             driver: docker
             os: ubuntu-24.04
+            goos: linux
+            goarch: amd64
             start_flags: --container-runtime=containerd
             sudo: ""
           - name: docker-containerd-ubuntu-24.04-arm
             driver: docker
             os: ubuntu-24.04-arm
+            goos: linux
+            goarch: arm64
             start_flags: --container-runtime=containerd
             sudo: ""
     steps:
@@ -72,27 +68,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         timeout-minutes: 1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
-        timeout-minutes: 1
+        timeout-minutes: 8
         with:
           go-version-file: go.mod
           cache: true
-      - name: Download minikube binaries
-        uses: actions/download-artifact@d7d2b6b31ede9d1091053d87d2c74921a1f0ddecfc
+      - name: Download minikube binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         timeout-minutes: 2
         with:
-          pattern: minikube-*
+          name: minikube-${{ matrix.goos }}-${{ matrix.goarch }}
           path: out
-          merge-multiple: true
       - name: Prepare binary
         timeout-minutes: 1
         run: |
-          ls -lh out/ || true
-          find out -type f | head -n 20 || true
-          chmod +x out/minikube-* 2>/dev/null || true
-          BIN="out/minikube-$(go env GOOS)-$(go env GOARCH)"
-          if [ ! -f "$BIN" ]; then BIN=$(ls out/minikube-* | head -n1); fi
-          echo "Using $BIN -> out/minikube"
-          cp -f "$BIN" out/minikube
           chmod +x out/minikube
           ./out/minikube version
       - name: Update brew (macos)

@@ -19,9 +19,6 @@ jobs:
       matrix:
         goos: [linux, windows, darwin]
         goarch: [amd64, arm64]
-        exclude:
-          - goos: windows
-            goarch: arm64
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         timeout-minutes: 1
@@ -32,18 +29,15 @@ jobs:
           cache: true
       - name: Build minikube
         timeout-minutes: 8
-        run: |
-          make out/minikube-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}
-          ls -lh out/
-          cp -r test/integration/testdata out/testdata 2>/dev/null || cp -r test/integration/testdata ./out/ 2>/dev/null || true
-          ls -lh out/
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: make
       - name: Upload minikube binary
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         timeout-minutes: 2
         with:
           name: minikube-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: |
-            out/minikube-*
-            out/testdata
+          path: out/minikube${{ matrix.goos == 'windows' && '.exe' || '' }}
           if-no-files-found: error
           retention-days: 7
