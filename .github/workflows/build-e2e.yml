@@ -42,6 +42,6 @@ jobs:
         timeout-minutes: 2
         with:
           name: e2e-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: out/e2e-*
+          path: out/e2e-${{ matrix.goos }}-${{ matrix.goarch }}
           if-no-files-found: error
           retention-days: 7
