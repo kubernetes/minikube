@@ -51,7 +51,11 @@ func init() {
 }
 
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := parallels.NewDriver(config.MachineName(cfg, n), localpath.MiniPath()).(*parallels.Driver)
+	drv := parallels.NewDriver(config.MachineName(cfg, n), localpath.MiniPath())
+	d, ok := drv.(*parallels.Driver)
+	if !ok {
+		return nil, fmt.Errorf("unexpected driver type %T", drv)
+	}
 	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
 	d.Memory = cfg.Memory
 	d.CPU = cfg.CPUs
