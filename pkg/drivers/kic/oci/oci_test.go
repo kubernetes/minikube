@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -110,6 +111,37 @@ func TestPointToHostPodman(t *testing.T) {
 		if v := os.Getenv(exp.key); v != exp.value {
 			t.Errorf("invalid %v env variable. got: %v, want: %v", exp.value, v, exp.value)
 		}
+	}
+}
+
+// fakeOCIEnv makes the test binary act as a fake OCI binary, see TestMain.
+const fakeOCIEnv = "MINIKUBE_TEST_FAKE_OCI"
+
+func TestMain(m *testing.M) {
+	if os.Getenv(fakeOCIEnv) == "1" {
+		// Emulate podman printing a warning to stderr, see
+		// https://github.com/kubernetes/minikube/issues/22537
+		fmt.Println("192.168.49.2")
+		fmt.Fprintln(os.Stderr, "WARN[0000] The BoltDB backend is deprecated")
+		os.Exit(0)
+	}
+	os.Exit(m.Run())
+}
+
+func TestInspectIgnoresStderr(t *testing.T) {
+	fakeOCI, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv(fakeOCIEnv, "1")
+
+	lines, err := inspect(fakeOCI, "test-container", "{{.NetworkSettings.IPAddress}}")
+	if err != nil {
+		t.Fatalf("inspect failed: %v", err)
+	}
+
+	if len(lines) != 1 || lines[0] != "192.168.49.2" {
+		t.Errorf("inspect returned %v, want [\"192.168.49.2\"]", lines)
 	}
 }
 
