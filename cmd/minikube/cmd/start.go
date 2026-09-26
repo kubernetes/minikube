@@ -51,12 +51,14 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/ssh"
 
+	"k8s.io/minikube/pkg/kapi"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	minikubehttps "k8s.io/minikube/pkg/minikube/certs/https"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -302,6 +304,16 @@ func runStart(cmd *cobra.Command, _ []string) {
 	if starter.Cfg.VerifyComponents[kverify.ExtraKey] {
 		if err := kverify.WaitExtra(ClusterFlagValue(), kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
 			exit.Message(reason.GuestStart, "extra waiting: {{.error}}", out.V{"error": err})
+		}
+	}
+
+	if starter.Cfg.HTTPS {
+		client, err := kapi.Client(starter.Cfg.Name)
+		if err != nil {
+			klog.Warningf("Failed to get k8s client for HTTPS setup: %v", err)
+		}
+		if err := minikubehttps.SetupHTTPS(starter.Cfg.Name, net.ParseIP(starter.Node.IP), client); err != nil {
+			out.WarningT("Failed to setup HTTPS: {{.error}}", out.V{"error": err})
 		}
 	}
 

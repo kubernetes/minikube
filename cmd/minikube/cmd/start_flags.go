@@ -55,6 +55,7 @@ import (
 )
 
 const (
+	httpsFlag               = "https"
 	isoURL                  = "iso-url"
 	memory                  = "memory"
 	cpus                    = "cpus"
@@ -220,6 +221,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().StringP(gpus, "g", "", "Allow pods to use your GPUs. Options include: [all,nvidia,amd] (Docker driver with Docker container-runtime only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
 	startCmd.Flags().String(preloadSrc, "auto", "Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try github first, then gcs as failover).")
+	startCmd.Flags().Bool(httpsFlag, false, "Install a trusted TLS certificate in the cluster and add the CA to the browser trust store. Enables HTTPS access to minikube services without security warnings.")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -675,6 +677,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, crName st
 
 	cc = config.ClusterConfig{
 		Name:                    ClusterFlagValue(),
+		HTTPS:                   viper.GetBool(httpsFlag),
 		KeepContext:             viper.GetBool(keepContext),
 		EmbedCerts:              viper.GetBool(embedCerts),
 		MinikubeISO:             viper.GetString(isoURL),
@@ -936,6 +939,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	updateBoolFromFlag(cmd, &cc.KeepContext, keepContext)
+	updateBoolFromFlag(cmd, &cc.HTTPS, httpsFlag)
 	updateBoolFromFlag(cmd, &cc.EmbedCerts, embedCerts)
 	updateStringFromFlag(cmd, &cc.MinikubeISO, isoURL)
 	updateStringFromFlag(cmd, &cc.KicBaseImage, kicBaseImage)
