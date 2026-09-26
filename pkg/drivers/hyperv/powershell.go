@@ -52,7 +52,13 @@ func cmdOut(args ...string) (string, error) {
 	err := cmd.Run()
 	log.Debugf("[stdout =====>] : %s", stdout.String())
 	log.Debugf("[stderr =====>] : %s", stderr.String())
-	return stdout.String(), err
+	if err != nil {
+		if stderr.Len() > 0 {
+			return stdout.String(), fmt.Errorf("%s: %w", strings.TrimSpace(stderr.String()), err)
+		}
+		return stdout.String(), err
+	}
+	return stdout.String(), nil
 }
 
 func cmd(args ...string) error {
