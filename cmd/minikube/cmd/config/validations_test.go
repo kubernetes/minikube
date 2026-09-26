@@ -138,6 +138,10 @@ func TestIsURLExists(t *testing.T) {
 		Scheme: "file",
 		Path:   filepath.ToSlash(self),
 	}).String()
+	dir := (&url.URL{
+		Scheme: "file",
+		Path:   filepath.ToSlash(t.TempDir()),
+	}).String()
 
 	tests := []validationTest{
 		{
@@ -148,9 +152,31 @@ func TestIsURLExists(t *testing.T) {
 			value:     u + "/subpath-of-file",
 			shouldErr: true,
 		},
+		{
+			value:     dir,
+			shouldErr: true,
+		},
+		{
+			value:     "file://%",
+			shouldErr: true,
+		},
 	}
 
 	runValidations(t, tests, "url", IsURLExists)
+}
+
+func TestIsURLExistsEscapedPath(t *testing.T) {
+	for _, name := range []string{"iso image.iso", "iso#image.iso", "iso%image.iso"} {
+		path := filepath.Join(t.TempDir(), name)
+		if err := os.WriteFile(path, nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+
+		location := (&url.URL{Scheme: "file", Path: filepath.ToSlash(path)}).String()
+		if err := IsURLExists("url", location); err != nil {
+			t.Errorf("IsURLExists(%q) returned error: %v", location, err)
+		}
+	}
 }
 
 func TestIsValidCPUs(t *testing.T) {
