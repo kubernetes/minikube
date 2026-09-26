@@ -1,0 +1,58 @@
+name: PR
+on:
+  pull_request:
+    paths:
+      - "go.mod"
+      - "**.go"
+      - "Makefile"
+      - ".github/workflows/**"
+      - "!site/**"
+      - "!**.md"
+      - "!**.json"
+
+# Cancel in-progress when PR updated, like vmnet-helper/test.yaml
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-minikube:
+    uses: ./.github/workflows/build-minikube.yml
+
+  build-e2e:
+    uses: ./.github/workflows/build-e2e.yml
+
+  smoke-test:
+    needs: build-minikube
+    uses: ./.github/workflows/smoke-test.yml
+
+  functional-test:
+    needs: [build-minikube, build-e2e]
+    uses: ./.github/workflows/functional_test.yml
+
+  test-generate-docs:
+    name: Test / Generate docs
+    needs: build-minikube
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        timeout-minutes: 1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        timeout-minutes: 2
+        with:
+          go-version-file: go.mod
+      - name: Download minikube binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        timeout-minutes: 1
+        with:
+          name: minikube-linux-amd64
+          path: out
+      - name: Test generated docs
+        timeout-minutes: 7
+        run: |
+          chmod +x out/minikube
+          make generate-docs
+          git diff --exit-code

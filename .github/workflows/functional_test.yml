@@ -1,16 +1,8 @@
 # Functional Test is a subset of minikube integration test, testing the most essential features of minikube.
 name: Functional Test
 on:
+  workflow_call:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "go.mod"
-      - "**.go"
-      - "Makefile"
-      - .github/workflows/functional_test.yml
-      - "!site/**"
-      - "!**.md"
-      - "!**.json"
   push:
     branches: [ master ]
     paths:
@@ -31,47 +23,8 @@ env:
 permissions:
   contents: read
 jobs:
-  # build-test-binaries job runs before all other jobs and produces binaries/test-data per arch to be shared by all following jobs
-  build-test-binaries:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: build-test-binaries-x86
-            arch: amd64
-            runs-on: ubuntu-24.04
-            make-targets: e2e-linux-amd64
-          - name: build-test-binaries-arm
-            arch: arm64
-            runs-on: ubuntu-24.04-arm
-            make-targets: e2e-linux-arm64
-    runs-on: ${{ matrix.runs-on }}
-    name: ${{ matrix.name }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        timeout-minutes: 1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
-        timeout-minutes: 2
-        with:
-          go-version: ${{env.GO_VERSION}}
-          cache: true      
-      - name: Download Dependencies
-        timeout-minutes: 1
-        run: go mod download
-      - name: Build minikube and e2e test binaries
-        timeout-minutes: 7
-        run: |
-          make ${{ matrix.make-targets }}
-          cp -r test/integration/testdata ./out
-      - name: Upload Test Binaries
-        timeout-minutes: 1
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: binaries-${{ matrix.arch }}
-          path: out
   functional-test:
     name: ${{ matrix.name }}
-    needs: build-test-binaries
     runs-on: ${{ matrix.os }}
     permissions:
       contents: none
@@ -92,29 +45,29 @@ jobs:
             extra-start-args: --container-runtime=docker
             os: ubuntu-24.04-arm
             arch: arm64
-            test-timeout: 18m 
+            test-timeout: 18m
           - name: docker-containerd-ubuntu-24.04-x86
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 18m 
+            test-timeout: 18m
           - name: docker-containerd-ubuntu-24.04-arm
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04-arm
             arch: arm64
-            test-timeout: 18m 
+            test-timeout: 18m
           - name: docker-containerd-rootless-ubuntu-24.04-x86
             driver: docker
             cruntime: containerd
-            os: ubuntu-24.04            
+            os: ubuntu-24.04
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
             arch: amd64
-            test-timeout: 18m 
+            test-timeout: 18m
           - name: podman-crio-ubuntu-24.04-x86
             driver: podman
             cruntime: crio
@@ -182,7 +135,7 @@ jobs:
         timeout-minutes: 2
         with:
           go-version: ${{env.GO_VERSION}}
-          cache: true      
+          cache: true
       - name: Install gopogh
         timeout-minutes: 1
         uses: ./.github/actions/install-gopogh
@@ -247,7 +200,7 @@ jobs:
         shell: bash
         if: matrix.driver == 'none'
         timeout-minutes: 1
-        run: sudo apt-get -qq -y install socat        
+        run: sudo apt-get -qq -y install socat
       - name: Install container networking plugins (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
@@ -313,11 +266,21 @@ jobs:
         run: |
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
-      - name: Download Test Binaries
+      - name: Download minikube binary
         timeout-minutes: 1
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
-          name: binaries-${{ matrix.arch }}
+          name: minikube-linux-${{ matrix.arch }}
+          path: out
+      - name: Download e2e binary
+        timeout-minutes: 1
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: e2e-linux-${{ matrix.arch }}
+          path: out
+      - name: Prepare binaries
+        timeout-minutes: 1
+        run: chmod +x out/minikube out/e2e-linux-${{ matrix.arch }}
       - name: Disable AppArmor for MySQL
         if: runner.os == 'Linux'
         timeout-minutes: 1
@@ -342,18 +305,16 @@ jobs:
         run: |
           set -x
           mkdir -p report
-          chmod a+x ./e2e-*
-          chmod a+x ./minikube-*
-          ./minikube-$(go env GOOS)-$(go env GOARCH) delete --all --purge
+          ./out/minikube delete --all --purge
           START_TIME=$(date -u +%s)
           # -test.timeout=0 disables the go test timeout; the step timeout-minutes above enforces the actual deadline
-          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr"  -test.run TestFunctional -test.timeout=0 -test.v -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt
+          ./out/e2e-linux-${{ matrix.arch }} -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr" -test.run TestFunctional -test.timeout=0 -test.v -binary=./out/minikube 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          # make variables available for next step 
+          # make variables available for next step
           echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Convert Test Output to JSON
         if: always()

@@ -1,0 +1,47 @@
+name: build-e2e
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: '1.26.5'
+
+jobs:
+  build:
+    name: build e2e (${{ matrix.goos }}-${{ matrix.goarch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            runner: ubuntu-24.04
+          - goos: linux
+            goarch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        timeout-minutes: 1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        timeout-minutes: 2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Build e2e binary
+        timeout-minutes: 8
+        run: |
+          make e2e-${{ matrix.goos }}-${{ matrix.goarch }}
+          ls -lh out/
+      - name: Upload e2e binary
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        timeout-minutes: 2
+        with:
+          name: e2e-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: out/e2e-${{ matrix.goos }}-${{ matrix.goarch }}
+          if-no-files-found: error
+          retention-days: 7
