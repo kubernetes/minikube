@@ -187,10 +187,15 @@ func TestTagFromLastMinor(t *testing.T) {
 		imageName   string
 		expectedTag string
 	}{
+		// Exact older versions can still be forced, so this fallback must use KubeadmImages.
 		{"1.16.50", "coredns", "1.6.2"},
 		{"1.16.50", "etcd", "3.3.15-0"},
 		{"1.16.50", "pause", "3.1"},
 		{"1.16.50", "fake", "default"},
+		{"1.36.50", "coredns/coredns", "v1.14.2"},
+		{"1.36.50", "etcd", "3.6.8-0"},
+		{"1.36.50", "pause", "3.10.2"},
+		{"1.36.50", "fake", "default"},
 	}
 
 	for _, tc := range tests {
