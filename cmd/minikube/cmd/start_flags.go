@@ -114,6 +114,8 @@ const (
 	nativeSSH               = "native-ssh"
 	minUsableMem            = 1800 // Kubernetes (kubeadm) will not start with less
 	minRecommendedMem       = 1900 // Warn at no lower than existing configurations
+	minVMUsableMem          = 2500 // VM drivers fail to boot reliably below this limit. See #23317.
+	minVMRecommendedMem     = 3072 // Warn VM users below the tested default allocation. See #23317.
 	minimumCPUS             = 2
 	minimumDiskSize         = 2000
 	autoUpdate              = "auto-update-drivers"
