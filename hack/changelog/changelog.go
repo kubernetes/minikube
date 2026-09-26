@@ -22,14 +22,12 @@ import (
 	"fmt"
 	"log"
 	"maps"
-	"net/http"
 	"os"
 	"slices"
 	"sort"
 	"strings"
 
-	"github.com/google/go-github/v85/github"
-	"golang.org/x/oauth2"
+	"github.com/google/go-github/v92/github"
 )
 
 // Config holds knobs for filtering and grouping pull requests when generating
@@ -113,13 +111,15 @@ func main() {
 // newGitHubClient constructs a GitHub client. If GITHUB_TOKEN is set the client
 // uses it for authentication to avoid strict rate limits.
 func newGitHubClient(ctx context.Context) *github.Client {
-	token := os.Getenv("GITHUB_TOKEN")
-	httpClient := http.DefaultClient
-	if token != "" {
-		ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-		httpClient = oauth2.NewClient(ctx, ts)
+	var opts []github.ClientOptionsFunc
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		opts = append(opts, github.WithAuthToken(token))
 	}
-	return github.NewClient(httpClient)
+	client, err := github.NewClient(opts...)
+	if err != nil {
+		log.Fatalf("failed to create github client: %v", err)
+	}
+	return client
 }
 
 // resolveStartRef returns the starting git reference. When start is empty the

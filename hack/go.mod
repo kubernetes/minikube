@@ -7,7 +7,7 @@ require (
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.7
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.57.0
 	github.com/cenkalti/backoff/v7 v7.0.0
-	github.com/google/go-github/v85 v85.0.0
+	github.com/google/go-github/v92 v92.0.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/olekukonko/tablewriter v1.1.4
 	github.com/spf13/cobra v1.10.2
@@ -15,7 +15,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.46.0
 	go.opentelemetry.io/otel/sdk/metric v1.46.0
 	golang.org/x/mod v0.41.0
-	golang.org/x/oauth2 v0.37.0
 	gonum.org/v1/plot v0.16.0
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/minikube v1.36.0
@@ -217,6 +216,7 @@ require (
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/image v0.41.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/term v0.46.0 // indirect

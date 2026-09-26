@@ -24,7 +24,7 @@ import (
 
 	"golang.org/x/mod/semver"
 
-	"github.com/google/go-github/v85/github"
+	"github.com/google/go-github/v92/github"
 )
 
 const (
@@ -111,9 +111,10 @@ func StableVersion(ctx context.Context, owner, repo string) (string, error) {
 
 // GHClient returns a GitHub client regardless of whether the GITHUB_TOKEN is set or not.
 func GHClient() *github.Client {
-	if os.Getenv("GITHUB_TOKEN") == "" {
-		return github.NewClient(nil)
+	var opts []github.ClientOptionsFunc
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		opts = append(opts, github.WithAuthToken(token))
 	}
-	return github.NewClient(nil).WithAuthToken(os.Getenv("GITHUB_TOKEN"))
-
+	client, _ := github.NewClient(opts...)
+	return client
 }
