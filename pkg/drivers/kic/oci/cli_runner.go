@@ -182,29 +182,34 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	cmd.Stderr = errb
 
 	start := time.Now()
-	err := cmd.Run()
-	elapsed := time.Since(start)
+	// Warn while the command is still running. Waiting until cmd.Run()
+	// returns hid the message when docker/podman hung until the kill timeout.
 	if warn && !out.JSON && !suppressDockerMessage() {
-		if elapsed > warnTime {
+		binName := cmd.Args[0]
+		cmdStr := rr.Command()
+		timer := time.AfterFunc(warnTime, func() {
 			warnLock.Lock()
-			_, ok := alreadyWarnedCmds[rr.Command()]
+			_, ok := alreadyWarnedCmds[cmdStr]
 			if !ok {
-				alreadyWarnedCmds[rr.Command()] = true
+				alreadyWarnedCmds[cmdStr] = true
 			}
 			warnLock.Unlock()
-
-			if !ok {
-				out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": rr.Command(), "duration": elapsed})
-				// Don't show any restarting hint, when running podman locally (on linux, with sudo). Only when having a service.
-				if cmd.Args[0] != "sudo" {
-					out.ErrT(style.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": cmd.Args[0]})
-				}
+			if ok {
+				return
 			}
-		}
+			out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": cmdStr, "duration": time.Since(start)})
+			// Don't show any restarting hint, when running podman locally (on linux, with sudo). Only when having a service.
+			if binName != "sudo" {
+				out.ErrT(style.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": binName})
+			}
+		})
+		defer timer.Stop()
+	}
 
-		if ctx.Err() == context.DeadlineExceeded {
-			return rr, context.DeadlineExceeded
-		}
+	err := cmd.Run()
+	elapsed := time.Since(start)
+	if warn && ctx.Err() == context.DeadlineExceeded {
+		return rr, context.DeadlineExceeded
 	}
 
 	if ex, ok := err.(*exec.ExitError); ok {
