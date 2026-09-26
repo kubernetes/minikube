@@ -21,12 +21,51 @@ package integration
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/download"
 )
+
+// uncachedPreloadVersions returns up to count stable, supported Kubernetes versions that are not in the given
+// minikube home’s preload cache, starting with the oldest version.
+func uncachedPreloadVersions(t *testing.T, minikubeHome, containerRuntime string, count int) []string {
+	t.Helper()
+	oldest := semver.MustParse(strings.TrimPrefix(constants.OldestKubernetesVersion, "v"))
+	newest := semver.MustParse(strings.TrimPrefix(constants.NewestKubernetesVersion, "v"))
+	versions := make([]string, 0, count)
+	for i := len(constants.ValidKubernetesVersions) - 1; i >= 0; i-- {
+		k8sVersion := constants.ValidKubernetesVersions[i]
+		// ParseTolerant normalizes historical shortened entries like v0.4 so the supported-range check can skip them.
+		parsed, err := semver.ParseTolerant(k8sVersion)
+		if err != nil {
+			t.Fatalf("invalid Kubernetes version %q: %v", k8sVersion, err)
+		}
+		if len(parsed.Pre) != 0 || parsed.LT(oldest) || parsed.GT(newest) {
+			continue
+		}
+		cacheDir := filepath.Join(minikubeHome, "cache", "preloaded-tarball")
+		tarballPath := filepath.Join(cacheDir, download.TarballName(k8sVersion, containerRuntime))
+		info, err := os.Stat(tarballPath)
+		if err == nil {
+			if info.Size() > 0 {
+				continue
+			}
+		} else if !os.IsNotExist(err) {
+			t.Fatalf("failed to inspect preload cache for %s: %v", k8sVersion, err)
+		}
+		versions = append(versions, k8sVersion)
+		if len(versions) == count {
+			return versions
+		}
+	}
+	return versions
+}
 
 // TestPreload verifies that disabling the initial preload, pulling a specific image,
 // and restarting the cluster preserves the image across restarts.
@@ -90,19 +129,25 @@ func TestPreload(t *testing.T) {
 		})
 	}
 
-	// PreloadSrc verifies that downloading preload from github and gcs works using --preload-src and --download-only
+	// PreloadSrc verifies that downloading preload from GitHub and GCS works using --preload-source and --download-only.
 	// "auto" is the default preload source (tries both gcs and github); here we explicitly verify each source
 	t.Run("PreloadSrc", func(t *testing.T) {
 		MaybeParallel(t)
+		// Use a private cache so other tests and the developer's existing cache cannot affect these source checks.
+		minikubeHome := filepath.Join(t.TempDir(), ".minikube")
+		versions := uncachedPreloadVersions(t, minikubeHome, ContainerRuntime(), 2)
+		if len(versions) < 2 {
+			t.Skipf("need two uncached supported preload versions to test download sources, found %d", len(versions))
+		}
 		tests := []struct {
 			name              string
 			source            string
-			kubernetesVersion string // using versions that are not used in the test to make sure they dont pre-exist
+			kubernetesVersion string
 			wantLog           string
 		}{
-			{"gcs", "gcs", "v1.34.0-rc.1", "Downloading preload from https://storage.googleapis.com"},
-			{"github", "github", "v1.34.0-rc.2", "Downloading preload from https://github.com"},
-			{"gcs-cached", "gcs", "v1.34.0-rc.2", "in cache, skipping download"},
+			{"gcs", "gcs", versions[0], "Downloading preload from https://storage.googleapis.com"},
+			{"github", "github", versions[1], "Downloading preload from https://github.com"},
+			{"gcs-cached", "gcs", versions[1], "in cache, skipping download"},
 		}
 
 		for _, tc := range tests {
@@ -112,12 +157,14 @@ func TestPreload(t *testing.T) {
 				}
 				profile := UniqueProfileName("test-preload-dl-" + tc.name)
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
-				defer CleanupWithLogs(t, profile, cancel)
+				defer cancel()
 
 				startArgs := []string{"start", "-p", profile, "--download-only", "--kubernetes-version", tc.kubernetesVersion, fmt.Sprintf("--preload-source=%s", tc.source), "--alsologtostderr", "--v=1"}
 				startArgs = append(startArgs, StartArgs()...)
 
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+				cmd := exec.CommandContext(ctx, Target(), startArgs...)
+				cmd.Env = append(os.Environ(), "MINIKUBE_HOME="+minikubeHome)
+				rr, err := Run(t, cmd)
 				if err != nil {
 					t.Fatalf("%s failed: %v", rr.Command(), err)
 				}
