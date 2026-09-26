@@ -26,7 +26,7 @@ No.5-9: Auto Paused CPU usage with sample(nginx) deployment
  
 ```
 cd <Top of minikube directory>
-make cpu-benchmark-benchmark-autopause
+make cpu-benchmark-autopause
 ```
 
 After running `make cpu-benchmark-autopause`, the png file of the bar chart graph will be generated.  
