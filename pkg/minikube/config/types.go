@@ -153,6 +153,7 @@ type Node struct {
 	ContainerRuntime  string
 	ControlPlane      bool
 	Worker            bool
+	Guest             Guest
 }
 
 // Role returns the node role string for logging and error messages.
@@ -194,3 +195,14 @@ type ScheduledStopConfig struct {
 	InitiationTime int64
 	Duration       time.Duration
 }
+
+// GuestOSWindows is the Guest.Name value for Windows nodes.
+const GuestOSWindows = "windows"
+
+// Guest describes the node's operating system. An empty Name represents Linux.
+type Guest struct {
+	Name string
+}
+
+// IsWindows reports whether the guest is a Windows node.
+func (g Guest) IsWindows() bool { return g.Name == GuestOSWindows }

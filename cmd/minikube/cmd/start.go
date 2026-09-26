@@ -202,6 +202,11 @@ func runStart(cmd *cobra.Command, _ []string) {
 		exit.Message(kind, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
+	nodeDefinitions, err := applyNodeSpecs(cmd, existing, viper.GetViper())
+	if err != nil {
+		exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+	}
+
 	if existing != nil {
 		upgradeExistingConfig(cmd, existing)
 	} else {
@@ -236,7 +241,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 
 	useForce := viper.GetBool(force)
 
-	starter, err := provisionWithDriver(cmd, ds, existing, options)
+	starter, err := provisionWithDriver(cmd, ds, existing, options, nodeDefinitions)
 	if err != nil {
 		node.ExitIfFatal(err, useForce)
 		machine.MaybeDisplayAdvice(err, ds.Name)
@@ -263,7 +268,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
-				starter, err = provisionWithDriver(cmd, ds, existing, options)
+				starter, err = provisionWithDriver(cmd, ds, existing, options, nodeDefinitions)
 				if err != nil {
 					continue
 				}
@@ -310,7 +315,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, options *run.CommandOptions) (node.Starter, error) {
+func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, options *run.CommandOptions, nodeDefinitions []config.Node) (node.Starter, error) {
 	driverName := ds.Name
 	klog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
@@ -355,6 +360,9 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, crName, driverName, options)
 	if err != nil {
 		return node.Starter{}, fmt.Errorf("Failed to generate cluster config: %w", err)
+	}
+	if existing == nil && nodeDefinitions != nil {
+		cc.Nodes = configureNodeSpecs(nodeDefinitions, n)
 	}
 	klog.Infof("cluster config:\n%+v", cc)
 
@@ -498,6 +506,11 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		if err != nil {
 			return nil, err
 		}
+		if cmd.Flags().Changed(nodeSpec) {
+			// The retry already started the complete topology saved by --node.
+			pause.RemovePausedFile(starter.Runner)
+			return configInfo, nil
+		}
 	}
 
 	// target total and number of control-plane nodes
@@ -520,6 +533,8 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		var n config.Node
 		if existing != nil {
 			n = existing.Nodes[i]
+		} else if cmd.Flags().Changed(nodeSpec) {
+			n = starter.Cfg.Nodes[i]
 		} else {
 			nodeName := node.Name(i + 1)
 			n = config.Node{
