@@ -15,8 +15,6 @@ body:
       label: ログファイルを添付
       description: |
         ヒント: `minikube logs --file=log.txt` を実行し、ブラウザに `log.txt` ファイルをドラッグ＆ドロップしてください。
-        **警告:** HyperKit ドライバーを使用している場合は、ログを確認し、機密情報（アクセストークンやシークレットなど）が含まれる環境変数を削除してください。
-        minikube バージョン `1.26.0` 以降では、すべての環境変数が自動的に削除されますが、それ以前のバージョンでは手動で削除する必要があります。
     validations:
       required: true
   - type: dropdown
@@ -41,7 +39,6 @@ body:
         - N/A
         - Docker
         - Podman
-        - HyperKit
         - Hyper-V
         - KVM2
         - VirtualBox

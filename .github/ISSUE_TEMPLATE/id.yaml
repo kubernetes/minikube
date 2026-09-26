@@ -15,8 +15,6 @@ body:
       label: Lampirkan file log
       description: |
         Tips: Jalankan `minikube logs --file=log.txt` lalu seret dan jatuhkan file `log.txt` ke peramban.
-        **PERINGATAN:** Jika Anda menggunakan driver HyperKit, harap periksa log Anda dan hapus variabel lingkungan apa pun yang mungkin berisi informasi sensitif (misalnya token akses atau rahasia).
-        Semua variabel lingkungan akan dihapus secara otomatis mulai dari versi `1.26.0` minikube, tetapi pada versi sebelumnya harus dihapus secara manual.
     validations:
       required: true
   - type: dropdown
@@ -41,7 +39,6 @@ body:
         - N/A
         - Docker
         - Podman
-        - HyperKit
         - Hyper-V
         - KVM2
         - VirtualBox
