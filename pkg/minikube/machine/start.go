@@ -344,15 +344,17 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 // acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
 func acquireMachinesLock(name string, drv string) (lock.Releaser, error) {
 	lockPath := filepath.Join(localpath.MiniPath(), "machines", drv)
-	// With KIC, it's safe to provision multiple hosts simultaneously
-	if driver.IsKIC(drv) {
+	// Drivers that support per-profile locking allow parallel creation of
+	// multiple profiles without serialization.
+	parallel := registry.Driver(drv).Parallel
+	if parallel {
 		lockPath = filepath.Join(localpath.MiniPath(), "machines", drv, name)
 	}
 	spec := lock.PathMutexSpec(lockPath)
 	// NOTE: Provisioning generally completes within 60 seconds
 	// however in parallel integration testing it might take longer
 	spec.Timeout = 13 * time.Minute
-	if driver.IsKIC(drv) {
+	if parallel {
 		spec.Timeout = 10 * time.Minute
 	}
 

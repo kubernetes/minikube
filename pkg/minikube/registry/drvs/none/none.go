@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os/exec"
 	"os/user"
+	"time"
 
 	"k8s.io/minikube/pkg/drivers/none"
 	"k8s.io/minikube/pkg/libmachine/drivers"
@@ -35,13 +36,14 @@ import (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.None,
-		Alias:    []string{driver.AliasNative},
-		Config:   configure,
-		Init:     func(_ *run.CommandOptions) drivers.Driver { return none.NewDriver(none.Config{}) },
-		Status:   status,
-		Default:  false, // no isolation
-		Priority: registry.Discouraged,
+		Name:         driver.None,
+		Alias:        []string{driver.AliasNative},
+		Config:       configure,
+		Init:         func(_ *run.CommandOptions) drivers.Driver { return none.NewDriver(none.Config{}) },
+		Status:       status,
+		Default:      false, // no isolation
+		Priority:     registry.Discouraged,
+		ProbeTimeout: 1 * time.Second,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}

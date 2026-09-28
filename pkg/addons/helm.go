@@ -23,7 +23,6 @@ import (
 	"path"
 
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -53,7 +52,7 @@ func installHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 }
 
 // runs a helm uninstall based on the contents of chart *assets.HelmChart
-func uninstalllHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
+func uninstallHelmChart(ctx context.Context, chart *assets.HelmChart) *exec.Cmd {
 	args := []string{
 		fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"helm", "uninstall", chart.Name,
@@ -69,30 +68,5 @@ func helmUninstallOrInstall(ctx context.Context, chart *assets.HelmChart, enable
 	if enable {
 		return installHelmChart(ctx, chart)
 	}
-	return uninstalllHelmChart(ctx, chart)
-}
-
-func helmInstallBinary(_ *assets.Addon, runner command.Runner) error {
-	_, err := runner.RunCmd(exec.Command("test", "-f", "/usr/bin/helm"))
-	if err != nil {
-		_, err = runner.RunCmd(exec.Command("test", "-d", "/usr/local/bin"))
-		if err != nil {
-			_, err = runner.RunCmd(exec.Command("sudo", "mkdir", "-p", "/usr/local/bin"))
-			if err != nil {
-				return fmt.Errorf("creating /usr/local/bin: %w", err)
-			}
-		}
-
-		installCmd := "curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh"
-		_, err = runner.RunCmd(exec.Command("sudo", "bash", "-c", installCmd))
-		if err != nil {
-			return fmt.Errorf("downloading helm: %w", err)
-		}
-		// we copy the binary from /usr/local/bin to /usr/bin because /usr/local/bin is not in PATH in both iso and kicbase
-		_, err = runner.RunCmd(exec.Command("sudo", "mv", "/usr/local/bin/helm", "/usr/bin/helm"))
-		if err != nil {
-			return fmt.Errorf("installing helm: %w", err)
-		}
-	}
-	return err
+	return uninstallHelmChart(ctx, chart)
 }

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: traefik-nginx
+  labels:
+    run: traefik-nginx
+spec:
+  containers:
+  - name: nginx
+    image: public.ecr.aws/nginx/nginx:alpine
+    command:
+    - /bin/sh
+    - -e
+    - -c
+    - |
+      mkdir -p /usr/share/nginx/html/test
+      echo "it works" > /usr/share/nginx/html/test/index.html
+      exec nginx -g 'daemon off;'
+    ports:
+    - containerPort: 80

@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -86,33 +87,32 @@ const (
 
 var (
 	exitCodeToHTTPCode = map[int]int{
-		// exit code 26 corresponds to insufficient storage
-		26: 507,
+		reason.ExInsufficientStorage: InsufficientStorage,
 	}
 
 	codeNames = map[int]string{
-		100: "Starting",
-		101: "Pausing",
-		102: "Unpausing",
-		110: "Stopping",
-		103: "Deleting",
+		Starting:  "Starting",
+		Pausing:   "Pausing",
+		Unpausing: "Unpausing",
+		Stopping:  "Stopping",
+		Deleting:  "Deleting",
 
-		200: "OK",
-		201: "HAppy",
-		203: "Warning",
-		204: "Degraded",
+		OK:       "OK",
+		HAppy:    "HAppy",
+		Warning:  "Warning",
+		Degraded: "Degraded",
 
-		404: "NotFound",
-		405: "Stopped",
-		418: "Paused",
+		NotFound: "NotFound",
+		Stopped:  "Stopped",
+		Paused:   "Paused",
 
-		500: "Error",
-		507: "InsufficientStorage",
-		520: "Unknown",
+		Error:               "Error",
+		InsufficientStorage: "InsufficientStorage",
+		Unknown:             "Unknown",
 	}
 
 	codeDetails = map[int]string{
-		507: "/var is almost out of disk space",
+		InsufficientStorage: "/var is almost out of disk space",
 	}
 )
 
@@ -314,9 +314,9 @@ func GetState(sts []*Status, profile string, cc *config.ClusterConfig) State {
 				transientCode = exitCode
 			}
 
-			for _, n := range cs.Nodes {
-				n.StatusCode = transientCode
-				n.StatusName = codeNames[n.StatusCode]
+			for i := range cs.Nodes {
+				cs.Nodes[i].StatusCode = transientCode
+				cs.Nodes[i].StatusName = codeNames[cs.Nodes[i].StatusCode]
 			}
 
 			klog.Infof("transient code %d (%q) for step: %+v", transientCode, codeNames[transientCode], data)

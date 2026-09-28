@@ -229,6 +229,14 @@ div.code-toolbar > .toolbar {
     top: -.3em !important;
 }
 
+// Prism paints the copy button with a translucent background so code can show
+// through it. Use Prism's solid fallback color instead so the label stays
+// readable when long lines sit under the button.
+// https://github.com/PrismJS/prism/blob/293dce42ff8911b508cb904a6f7a6b3283e1e85c/plugins/toolbar/prism-toolbar.css#L51
+div.code-toolbar > .toolbar > .toolbar-item > button {
+    background: #f5f2f0 !important;
+}
+
 .option-button {
     border-radius: 0.2rem !important;
     margin-right: 0.2rem;

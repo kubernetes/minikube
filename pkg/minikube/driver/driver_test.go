@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -121,10 +122,11 @@ func TestSuggest(t *testing.T) {
 	}{
 		{
 			def: registry.DriverDef{
-				Name:     "unhealthy",
-				Default:  true,
-				Priority: registry.Default,
-				Status:   func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: false} },
+				Name:         "unhealthy",
+				Default:      true,
+				ProbeTimeout: 1 * time.Millisecond,
+				Priority:     registry.Default,
+				Status:       func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: false} },
 			},
 			choices: []string{"unhealthy"},
 			pick:    "",
@@ -133,10 +135,11 @@ func TestSuggest(t *testing.T) {
 		},
 		{
 			def: registry.DriverDef{
-				Name:     "discouraged",
-				Default:  false,
-				Priority: registry.Discouraged,
-				Status:   func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: true} },
+				Name:         "discouraged",
+				Default:      false,
+				ProbeTimeout: 1 * time.Millisecond,
+				Priority:     registry.Discouraged,
+				Status:       func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
 			choices: []string{"discouraged", "unhealthy"},
 			pick:    "",
@@ -145,10 +148,11 @@ func TestSuggest(t *testing.T) {
 		},
 		{
 			def: registry.DriverDef{
-				Name:     "default",
-				Default:  true,
-				Priority: registry.Default,
-				Status:   func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: true} },
+				Name:         "default",
+				Default:      true,
+				ProbeTimeout: 1 * time.Millisecond,
+				Priority:     registry.Default,
+				Status:       func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
 			choices: []string{"default", "discouraged", "unhealthy"},
 			pick:    "default",
@@ -157,10 +161,11 @@ func TestSuggest(t *testing.T) {
 		},
 		{
 			def: registry.DriverDef{
-				Name:     "preferred",
-				Default:  true,
-				Priority: registry.Preferred,
-				Status:   func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: true} },
+				Name:         "preferred",
+				Default:      true,
+				ProbeTimeout: 1 * time.Millisecond,
+				Priority:     registry.Preferred,
+				Status:       func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
 			choices: []string{"preferred", "default", "discouraged", "unhealthy"},
 			pick:    "preferred",

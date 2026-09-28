@@ -46,12 +46,13 @@ const (
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:     driver.VirtualBox,
-		Config:   configure,
-		Status:   status,
-		Default:  true,
-		Priority: registry.Fallback,
-		Init:     func(_ *run.CommandOptions) drivers.Driver { return virtualbox.NewDriver("", "") },
+		Name:         driver.VirtualBox,
+		Config:       configure,
+		Status:       status,
+		Default:      true,
+		Priority:     registry.Fallback,
+		Init:         func(_ *run.CommandOptions) drivers.Driver { return virtualbox.NewDriver("", "") },
+		ProbeTimeout: 4 * time.Second,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
@@ -91,8 +92,9 @@ func status(_ *run.CommandOptions) registry.State {
 		}
 	}
 
-	// Allow no more than 4 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	// Allow no more than probe timeout for querying state
+	timeout := registry.Driver(driver.VirtualBox).ProbeTimeout
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	version := ""

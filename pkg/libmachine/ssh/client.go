@@ -79,6 +79,8 @@ const (
 var (
 	baseSSHArgs = []string{
 		"-F", "/dev/null",
+		// Prefer hardware-accelerated AES-GCM over ChaCha20 (https://github.com/kubernetes/minikube/issues/23121)
+		"-o", "Ciphers=^aes128-gcm@openssh.com,aes256-gcm@openssh.com",
 		"-o", "ConnectionAttempts=3", // retry 3 times if SSH connection fails
 		"-o", "ConnectTimeout=10", // timeout after 10 seconds
 		"-o", "ControlMaster=no", // disable ssh multiplexing

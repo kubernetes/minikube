@@ -1,0 +1,4 @@
+config BR2_PACKAGE_HELM_BIN
+	bool "helm-bin"
+	default y
+	depends on BR2_x86_64

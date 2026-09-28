@@ -77,7 +77,7 @@ var dependencies = map[string]dependency{
 	"portainer":               {addonsFile, `portainer/portainer-ce:(.*)@`},
 	"registry":                {addonsFile, `registry:(.*)@`},
 	"runc":                    {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
-	"debian":                  {dockerfile, `debian:bookworm-(.*)-slim`},
+	"debian":                  {dockerfile, `debian:trixie-(.*)-slim`},
 	"volcano":                 {addonsFile, `volcanosh/vc-webhook-manager:(.*)@`},
 	"yakd":                    {addonsFile, `manusa/yakd:(.*)@`},
 }

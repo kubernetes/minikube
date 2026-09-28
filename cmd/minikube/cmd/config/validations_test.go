@@ -103,7 +103,8 @@ func TestValidCIDR(t *testing.T) {
 func TestValidRuntime(t *testing.T) {
 	var tests = []validationTest{
 		{
-			value:     "", // default
+			// "" is accepted: cruntime.New maps it to docker for pre-2022 profiles.
+			value:     "",
 			shouldErr: false,
 		},
 		{

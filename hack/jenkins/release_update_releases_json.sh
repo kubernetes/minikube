@@ -33,7 +33,7 @@ export TAGNAME=v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 
 # Update releases.json w/ new release in gcs and github
 git config user.name "minikube-bot"
-git config user.email "minikube-bot@google.com"
+git config user.email "20374350+minikube-bot@users.noreply.github.com"
 
 git checkout -b "jenkins-releases.json-${TAGNAME}"
 

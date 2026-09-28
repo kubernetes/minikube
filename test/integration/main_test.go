@@ -189,7 +189,8 @@ func VFKitDriver() bool {
 	return matchDriverFlag("vfkit")
 }
 
-// ContainerRuntime returns the name of a specific container runtime if it was specified
+// ContainerRuntime returns the name of a specific container runtime if it was specified.
+// When the flag is omitted, this copies cmd.defaultRuntime; keep them in sync.
 func ContainerRuntime() string {
 	flag := "--container-runtime="
 	for _, s := range StartArgs() {
@@ -197,7 +198,7 @@ func ContainerRuntime() string {
 			return strings.TrimPrefix(s, flag)
 		}
 	}
-	return constants.Docker
+	return constants.Containerd
 }
 
 // arm64Platform returns true if running on arm64/* platform

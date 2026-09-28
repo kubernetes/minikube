@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -332,7 +333,7 @@ func ClusterFlagValue() string {
 }
 
 // generateClusterConfig generate a config.ClusterConfig based on flags or existing cluster config
-func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, rtime string, drvName string, options *run.CommandOptions) (config.ClusterConfig, config.Node, error) {
+func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, crName string, drvName string, options *run.CommandOptions) (config.ClusterConfig, config.Node, error) {
 	var cc config.ClusterConfig
 	if existing != nil {
 		cc = updateExistingConfigFromFlags(cmd, existing)
@@ -343,7 +344,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 	} else {
 		klog.Info("no existing cluster config was found, will generate one from the flags ")
-		cc = generateNewConfigFromFlags(cmd, k8sVersion, rtime, drvName, options)
+		cc = generateNewConfigFromFlags(cmd, k8sVersion, crName, drvName, options)
 
 		cnm, err := cni.New(&cc)
 		if err != nil {
@@ -643,10 +644,7 @@ func getDNSServers(cmd *cobra.Command, driverName string) []netip.Addr {
 // systemd-resolved is not applicable.
 func getMDNS(cmd *cobra.Command, driverName string) bool {
 	enabled := viper.GetBool(mdns)
-	if !enabled {
-		return false
-	}
-	if !driver.IsVM(driverName) || driver.IsSSH(driverName) {
+	if enabled && (!driver.IsVM(driverName) || driver.IsSSH(driverName)) {
 		if cmd.Flags().Changed(mdns) {
 			out.WarningT("--mdns flag is only valid with VM drivers, it will be ignored")
 		}
@@ -656,7 +654,7 @@ func getMDNS(cmd *cobra.Command, driverName string) bool {
 }
 
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
-func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string, options *run.CommandOptions) config.ClusterConfig {
+func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, crName string, drvName string, options *run.CommandOptions) config.ClusterConfig {
 	var cc config.ClusterConfig
 
 	// networkPlugin cni deprecation warning
@@ -747,7 +745,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 			APIServerIPs:           apiServerIPs,
 			DNSDomain:              viper.GetString(dnsDomain),
 			FeatureGates:           viper.GetString(featureGates),
-			ContainerRuntime:       rtime,
+			ContainerRuntime:       crName,
 			CRISocket:              viper.GetString(criSocket),
 			NetworkPlugin:          chosenNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
@@ -895,7 +893,7 @@ func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig) {
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
 // skipping updating existing docker env, docker opt, InsecureRegistry, registryMirror, extra-config, apiserver-ips
 func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig { //nolint to suppress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
-	validateFlags(cmd, existing.Driver)
+	validateFlags(cmd, existing.Driver, existing)
 
 	cc := *existing
 
@@ -972,7 +970,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringSliceFromFlag(cmd, &cc.KubernetesConfig.APIServerNames, "apiserver-names")
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.DNSDomain, dnsDomain)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.FeatureGates, featureGates)
-	updateStringFromFlag(cmd, &cc.KubernetesConfig.ContainerRuntime, containerRuntime)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.CRISocket, criSocket)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.NetworkPlugin, networkPlugin)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDR, serviceCIDR)
@@ -1129,14 +1126,7 @@ func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
 	supportedDrivers := []string{driver.HyperKit, driver.KVM2, driver.QEMU2, driver.VFKit, driver.Krunkit}
 
 	if cmd.Flags().Changed(extraDisks) {
-		supported := false
-		for _, d := range supportedDrivers {
-			if driverName == d {
-				supported = true
-				break
-			}
-		}
-		if !supported {
+		if !slices.Contains(supportedDrivers, driverName) {
 			out.WarningT("Specifying extra disks is currently only supported for the following drivers: {{.supported_drivers}}. If you can contribute to add this feature, please create a PR.", out.V{"supported_drivers": supportedDrivers})
 		}
 	}

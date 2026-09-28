@@ -18,8 +18,10 @@ package registry
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func TestRegister(t *testing.T) {
@@ -30,6 +32,22 @@ func TestRegister(t *testing.T) {
 	}
 	if err := r.Register(foo); err == nil {
 		t.Errorf("Register = nil, expected duplicate err")
+	}
+}
+
+func TestRegisterRequiresProbeTimeout(t *testing.T) {
+	r := newRegistry()
+	foo := DriverDef{
+		Name:   "foo",
+		Status: func(_ *run.CommandOptions) State { return State{} },
+	}
+	if err := r.Register(foo); err == nil {
+		t.Errorf("Register = nil, expected ProbeTimeout err")
+	}
+
+	foo.ProbeTimeout = time.Second
+	if err := r.Register(foo); err != nil {
+		t.Errorf("Register = %v, expected nil", err)
 	}
 }
 

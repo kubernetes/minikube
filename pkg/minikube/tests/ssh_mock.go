@@ -18,222 +18,223 @@ package tests
 
 import (
 	"bytes"
+	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/rsa"
+	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
+	"maps"
 	"net"
-	"strconv"
-	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 )
 
-// SSHServer provides a mock SSH Server for testing. Commands are stored, not executed.
-type SSHServer struct {
-	Config *ssh.ServerConfig
-	// Commands stores the raw commands executed against the server.
-	Commands  map[string]int
-	Connected bool
-	Transfers *bytes.Buffer
-	// Only access this with atomic ops
-	hadASessionRequested int32
-	// commandToOutput can be used to mock what the SSHServer returns for a given command
-	// Only access this with atomic ops
-	commandToOutput atomic.Value
+// CommandResult defines the mock response for a command.
+type CommandResult struct {
+	Stdout   string
+	Stderr   string
+	ExitCode int
+}
 
-	quit     bool
+// SSHServer is a test SSH server returning preconfigured responses.
+// Runs one session at a time, matching minikube's SSHRunner.
+type SSHServer struct {
+	Config    *ssh.ServerConfig
+	ClientKey ssh.Signer
+
+	commands map[string]CommandResult
+	quit     atomic.Bool
+	port     int
 	listener net.Listener
 	t        *testing.T
 }
 
-// NewSSHServer returns a NewSSHServer instance, ready for use.
-func NewSSHServer(t *testing.T) (*SSHServer, error) {
+// NewSSHServer returns a new SSHServer instance with ed25519 key auth
+// and the given command responses.
+func NewSSHServer(t *testing.T, commands map[string]CommandResult) (*SSHServer, error) {
 	t.Helper()
-	s := &SSHServer{
-		Transfers: &bytes.Buffer{},
-		Config:    &ssh.ServerConfig{NoClientAuth: true},
-		Commands:  map[string]int{},
-		t:         t,
+
+	_, clientKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate client key: %w", err)
+	}
+	clientSigner, err := ssh.NewSignerFromKey(clientKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client signer: %w", err)
+	}
+	clientPub := clientSigner.PublicKey()
+
+	_, hostKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate host key: %w", err)
+	}
+	hostSigner, err := ssh.NewSignerFromKey(hostKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create host signer: %w", err)
 	}
 
-	private, err := rsa.GenerateKey(rand.Reader, 2014)
-	if err != nil {
-		return nil, fmt.Errorf("Error generating RSA key: %w", err)
+	config := &ssh.ServerConfig{
+		PublicKeyCallback: func(c ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
+			if bytes.Equal(key.Marshal(), clientPub.Marshal()) {
+				return nil, nil
+			}
+			return nil, errors.New("unknown key")
+		},
 	}
-	signer, err := ssh.NewSignerFromKey(private)
-	if err != nil {
-		return nil, fmt.Errorf("Error creating signer from key: %w", err)
-	}
-	s.Config.AddHostKey(signer)
-	s.SetSessionRequested(false)
-	s.SetCommandToOutput(map[string]string{})
-	return s, nil
+	config.AddHostKey(hostSigner)
+
+	return &SSHServer{
+		Config:    config,
+		ClientKey: clientSigner,
+		commands:  maps.Clone(commands),
+		t:         t,
+	}, nil
 }
+
+// Start the SSH server on a random port.
+func (s *SSHServer) Start() error {
+	if s.port != 0 {
+		return errors.New("server already started")
+	}
+	l, err := net.ListenTCP("tcp", &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1)})
+	if err != nil {
+		return fmt.Errorf("failed to listen: %w", err)
+	}
+	s.listener = l
+	s.port = l.Addr().(*net.TCPAddr).Port
+	s.t.Logf("Listening on 127.0.0.1:%d", s.port)
+	go s.serve()
+	return nil
+}
+
+// Dial connects to the server using the client key. Returns an ssh.Client.
+func (s *SSHServer) Dial() (*ssh.Client, error) {
+	if s.port == 0 {
+		return nil, errors.New("server not started")
+	}
+	addr := fmt.Sprintf("127.0.0.1:%d", s.port)
+	return ssh.Dial("tcp", addr, &ssh.ClientConfig{
+		Auth:            []ssh.AuthMethod{ssh.PublicKeys(s.ClientKey)},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         5 * time.Second,
+	})
+}
+
+// Stop the SSH server. Safe to call multiple times.
+func (s *SSHServer) Stop() {
+	if s.quit.Swap(true) {
+		return
+	}
+	s.t.Logf("Stopping")
+	s.listener.Close()
+}
+
+// Private implementation below.
 
 type execRequest struct {
 	Command string
 }
 
-// Serve loop, listen for connections and store the commands.
 func (s *SSHServer) serve() {
-	s.t.Logf("Serving ...")
-	loop := 0
 	for {
-		loop++
-		s.t.Logf("[loop %d] Accepting for %v...", loop, s)
 		c, err := s.listener.Accept()
-		if s.quit {
+		if s.quit.Load() {
 			return
 		}
 		if err != nil {
-			s.t.Errorf("Listener: %v", err)
+			s.t.Errorf("Failed to accept: %v", err)
 			return
 		}
-		go s.handleIncomingConnection(c)
+		s.handleConnection(c)
 	}
 }
 
-// handle an incoming ssh connection
-func (s *SSHServer) handleIncomingConnection(c net.Conn) {
-	var wg sync.WaitGroup
-
+func (s *SSHServer) handleConnection(c net.Conn) {
 	_, chans, reqs, err := ssh.NewServerConn(c, s.Config)
 	if err != nil {
-		s.t.Logf("newserverconn error: %v", err)
+		s.t.Logf("NewServerConn: %v", err)
 		return
 	}
-	// The incoming Request channel must be serviced.
-	wg.Go(func() {
-		ssh.DiscardRequests(reqs)
-	})
+	go ssh.DiscardRequests(reqs)
 
-	// Service the incoming Channel channel.
 	for newChannel := range chans {
-		if newChannel.ChannelType() == "session" {
-			s.SetSessionRequested(true)
-		}
 		channel, requests, err := newChannel.Accept()
 		if err != nil {
-			s.t.Logf("ch accept err: %v", err)
+			s.t.Logf("channel accept: %v", err)
 			return
 		}
-		s.Connected = true
 		for req := range requests {
-			s.handleRequest(channel, req, &wg)
+			s.handleRequest(channel, req)
 		}
 	}
-	wg.Wait()
 }
 
-func (s *SSHServer) handleRequest(channel ssh.Channel, req *ssh.Request, wg *sync.WaitGroup) {
-	wg.Go(func() {
-		// Explicitly copy buffer contents to avoid data race
-		b := s.Transfers.Bytes()
-		if _, err := io.Copy(bytes.NewBuffer(b), channel); err != nil {
-			s.t.Errorf("copy failed: %v", err)
-		}
-		channel.Close()
-	})
-
+func (s *SSHServer) handleRequest(channel ssh.Channel, req *ssh.Request) {
 	switch req.Type {
 	case "exec":
-		s.t.Logf("exec request received: %+v", req)
-		if err := req.Reply(true, nil); err != nil {
-			s.t.Errorf("reply failed: %v", err)
-		}
-
-		// Note: string(req.Payload) adds additional characters to start of input.
-		var cmd execRequest
-		if err := ssh.Unmarshal(req.Payload, &cmd); err != nil {
-			s.t.Errorf("unmarshal failed: %v", err)
-		}
-		s.Commands[cmd.Command] = 1
-
-		s.t.Logf("returning output for %s ...", cmd.Command)
-		// Write specified command output as mocked ssh output
-		if val, err := s.GetCommandToOutput(cmd.Command); err == nil {
-			if _, err := channel.Write([]byte(val)); err != nil {
-				s.t.Errorf("Write failed: %v", err)
-			}
-		}
-
-		s.t.Logf("setting exit-status for %s ...", cmd.Command)
-		if _, err := channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0}); err != nil {
-			s.t.Errorf("SendRequest failed: %v", err)
-		}
-
+		s.doExec(channel, req)
 	case "pty-req":
-		s.t.Logf("pty request received: %+v", req)
-		if err := req.Reply(true, nil); err != nil {
-			s.t.Errorf("Reply failed: %v", err)
-		}
-
-		if _, err := channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0}); err != nil {
-			s.t.Errorf("SendRequest failed: %v", err)
-		}
+		s.doPtyReq(req)
+	default:
+		s.doUnknown(channel, req)
 	}
 }
 
-// Start the mock SSH Server
-func (s *SSHServer) Start() (int, error) {
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return 0, fmt.Errorf("Error creating tcp listener for ssh server: %w", err)
+func (s *SSHServer) doExec(channel ssh.Channel, req *ssh.Request) {
+	defer channel.Close()
+
+	if err := req.Reply(true, nil); err != nil {
+		s.t.Errorf("Failed to reply: %v", err)
+		return
 	}
-	s.listener = l
-	s.t.Logf("Listening on %s", s.listener.Addr())
-	go s.serve()
 
-	_, p, err := net.SplitHostPort(s.listener.Addr().String())
-	if err != nil {
-		return 0, fmt.Errorf("Error splitting host port: %w", err)
+	var cmd execRequest
+	if err := ssh.Unmarshal(req.Payload, &cmd); err != nil {
+		s.t.Errorf("Failed to unmarshal: %v", err)
+		return
 	}
-	port, err := strconv.Atoi(p)
-	if err != nil {
-		return 0, fmt.Errorf("Error converting port string to integer: %w", err)
-	}
-	return port, nil
-}
 
-// Stop the mock SSH server
-func (s *SSHServer) Stop() {
-	s.t.Logf("Stopping")
-	s.quit = true
-	s.listener.Close()
-}
-
-// SetCommandToOutput sets command to output
-func (s *SSHServer) SetCommandToOutput(cmdToOutput map[string]string) {
-	s.commandToOutput.Store(cmdToOutput)
-}
-
-// GetCommandToOutput gets command to output
-func (s *SSHServer) GetCommandToOutput(cmd string) (string, error) {
-	cmdMap, ok := s.commandToOutput.Load().(map[string]string)
+	result, ok := s.commands[cmd.Command]
 	if !ok {
-		return "", errors.New("commandToOutput map has unexpected type")
+		result = CommandResult{
+			Stderr:   fmt.Sprintf("%s: command not found", cmd.Command),
+			ExitCode: 127,
+		}
 	}
-	val, ok := cmdMap[cmd]
-	if !ok {
-		return "", fmt.Errorf("unavailable command %s", cmd)
+
+	if result.Stdout != "" {
+		if _, err := channel.Write([]byte(result.Stdout)); err != nil {
+			s.t.Errorf("Failed to write stdout: %v", err)
+			return
+		}
 	}
-	return val, nil
+	if result.Stderr != "" {
+		if _, err := channel.Stderr().Write([]byte(result.Stderr)); err != nil {
+			s.t.Errorf("Failed to write stderr: %v", err)
+			return
+		}
+	}
+
+	exitBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(exitBytes, uint32(result.ExitCode))
+	if _, err := channel.SendRequest("exit-status", false, exitBytes); err != nil {
+		s.t.Errorf("Failed to send exit-status: %v", err)
+	}
 }
 
-// SetSessionRequested sets session requested
-func (s *SSHServer) SetSessionRequested(b bool) {
-	var i int32
-	if b {
-		i = 1
+func (s *SSHServer) doPtyReq(req *ssh.Request) {
+	if err := req.Reply(true, nil); err != nil {
+		s.t.Errorf("Failed to reply: %v", err)
 	}
-	atomic.StoreInt32(&s.hadASessionRequested, i)
 }
 
-// IsSessionRequested gcode ets session requested
-func (s *SSHServer) IsSessionRequested() bool {
-	return atomic.LoadInt32(&s.hadASessionRequested) != 0
+func (s *SSHServer) doUnknown(channel ssh.Channel, req *ssh.Request) {
+	s.t.Errorf("Unexpected request type: %s", req.Type)
+	if req.WantReply {
+		req.Reply(false, nil)
+	}
+	channel.Close()
 }

@@ -123,10 +123,7 @@ func WaitFor(f func() bool) error {
 // was way overkill to include the whole module, so we just have these bits
 // that we're using here.
 func TruncateID(id string) string {
-	shortLen := 12
-	if len(id) < shortLen {
-		shortLen = len(id)
-	}
+	shortLen := min(len(id), 12)
 	return id[:shortLen]
 }
 

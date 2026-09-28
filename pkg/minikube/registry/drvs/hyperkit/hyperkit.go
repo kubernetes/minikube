@@ -48,11 +48,12 @@ var (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.HyperKit,
-		Config:   configure,
-		Status:   status,
-		Default:  true,
-		Priority: registry.Deprecated,
+		Name:         driver.HyperKit,
+		Config:       configure,
+		Status:       status,
+		Default:      true,
+		Priority:     registry.Deprecated,
+		ProbeTimeout: 2 * time.Second,
 	}); err != nil {
 		panic(fmt.Sprintf("register: %v", err))
 	}
@@ -91,7 +92,8 @@ func status(_ *run.CommandOptions) registry.State {
 	}
 
 	// Allow no more than 2 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	timeout := registry.Driver(driver.HyperKit).ProbeTimeout
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, path, "-v")

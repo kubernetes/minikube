@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -81,10 +82,14 @@ var nodeAddCmd = &cobra.Command{
 			KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 		}
 
-		// Make sure to decrease the default amount of memory we use per VM if this is the first worker node
 		if len(cc.Nodes) == 1 {
 			if viper.GetString(memory) == "" {
-				cc.Memory = 2200
+				sysLimit, containerLimit, err := memoryLimits(cc.Driver)
+				if err != nil {
+					klog.Warningf("Unable to query memory limits: %v", err)
+				}
+				totalNodes := len(cc.Nodes) + 1
+				cc.Memory = suggestMemoryAllocation(sysLimit, containerLimit, totalNodes)
 			}
 
 			if !cc.MultiNodeRequested && cni.IsDisabled(*cc) {

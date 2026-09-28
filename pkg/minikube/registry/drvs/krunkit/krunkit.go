@@ -24,10 +24,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"time"
 
-	"github.com/google/uuid"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
+	"k8s.io/minikube/pkg/drivers/common/mac"
 	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/krunkit"
@@ -49,10 +51,12 @@ func init() {
 		Init: func(options *run.CommandOptions) drivers.Driver {
 			return krunkit.NewDriver("", "", options)
 		},
-		Config:   configure,
-		Status:   status,
-		Default:  true,
-		Priority: registry.Experimental,
+		Config:       configure,
+		Status:       status,
+		Default:      true,
+		Priority:     registry.Experimental,
+		Parallel:     true,
+		ProbeTimeout: 1 * time.Second,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
@@ -61,13 +65,8 @@ func init() {
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	machineName := config.MachineName(cfg, n)
 	storePath := localpath.MiniPath()
-
-	// We generate a random UUID (or use a user provided one). vment-helper will
-	// obtain a mac address from the vmnet framework using the UUID.
-	u := cfg.UUID
-	if u == "" {
-		u = uuid.NewString()
-	}
+	macAddr := mac.FromName(machineName)
+	klog.Infof("Using mac address %s", macAddr)
 
 	mounts, err := virtiofs.ValidateMountString(cfg.MountString)
 	if err != nil {
@@ -85,11 +84,11 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		Memory:         cfg.Memory,
 		CPU:            cfg.CPUs,
 		ExtraDisks:     cfg.ExtraDisks,
+		MACAddress:     macAddr,
 		VirtiofsMounts: mounts,
 		VmnetHelper: vmnet.Helper{
-			MachineDir:  filepath.Join(storePath, "machines", machineName),
-			InterfaceID: u,
-			Offloading:  cfg.VmnetOffloading,
+			MachineDir: filepath.Join(storePath, "machines", machineName),
+			Offloading: cfg.VmnetOffloading,
 		},
 	}, nil
 }
@@ -103,8 +102,11 @@ func status(options *run.CommandOptions) registry.State {
 		return registry.State{Error: err, Fix: "Run 'brew tap slp/krunkit && brew install krunkit'", Doc: docURL}
 	}
 	if err := vmnet.ValidateHelper(options); err != nil {
-		vmnetErr := err.(*vmnet.Error)
-		return registry.State{Error: vmnetErr.Err, Fix: "Install and configure vment-helper", Doc: docURL}
+		var vmnetErr *vmnet.Error
+		if errors.As(err, &vmnetErr) {
+			err = vmnetErr.Err
+		}
+		return registry.State{Error: err, Fix: "Install and configure vment-helper", Doc: docURL}
 	}
 	return registry.State{Installed: true, Healthy: true, Running: true}
 }

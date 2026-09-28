@@ -99,3 +99,5 @@ When using the `builtin` network (default) the guest uses **only** the first `na
 ## Troubleshooting
 
 * Run `minikube start --alsologtostderr -v=4` to debug crashes
+
+{{< readfile file="/docs/drivers/includes/vmnet_troubleshooting.inc" >}}

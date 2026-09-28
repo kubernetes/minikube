@@ -36,30 +36,29 @@ var (
 	}
 )
 
-// Data holds latest Ubuntu jammy version in semver format.
+// Data holds the latest dated Debian slim tag.
 type Data struct {
 	LatestVersion string
 }
 
-// bookwormDateTag matches Debian bookworm slim tags that include an 8-digit
-// date stamp (for example, bookworm-20250929-slim).
-var bookwormDateTag = regexp.MustCompile(`^bookworm-\d{8}-slim$`)
+// dateTag matches the current Debian slim date-stamped tags
+// (for example, trixie-20260824-slim).
+var dateTag = regexp.MustCompile(`^trixie-\d{8}-slim$`)
 
-// latestBookwormSlimTag returns the newest bookworm slim tag that includes a
-// date suffix. The updater now requires a dated tag to be present so that the
-// resulting image digest remains stable and predictable between runs.
-func latestBookwormSlimTag(tags []string) (string, error) {
+// latestSlimTag returns the newest dated slim tag so the resulting
+// image digest stays stable between updater runs.
+func latestSlimTag(tags []string) (string, error) {
 	var newestDateTag string
 	for _, tag := range tags {
-		// Skip anything that isn't a bookworm slim tag to avoid matching other
+		// Skip anything that isn't a trixie slim tag to avoid matching other
 		// Debian variants.
-		if !strings.HasPrefix(tag, "bookworm-") || !strings.HasSuffix(tag, "-slim") {
+		if !strings.HasPrefix(tag, "trixie-") || !strings.HasSuffix(tag, "-slim") {
 			continue
 		}
 
 		// Track the lexicographically greatest dated tag, which corresponds to
 		// the most recent date stamp provided by Debian.
-		if bookwormDateTag.MatchString(tag) {
+		if dateTag.MatchString(tag) {
 			if newestDateTag == "" || tag > newestDateTag {
 				newestDateTag = tag
 			}
@@ -69,7 +68,7 @@ func latestBookwormSlimTag(tags []string) (string, error) {
 	if newestDateTag != "" {
 		return newestDateTag, nil
 	}
-	return "", fmt.Errorf("no dated tag found that matches: %s", bookwormDateTag.String())
+	return "", fmt.Errorf("no dated tag found that matches: %s", dateTag.String())
 }
 
 func main() {
@@ -77,7 +76,7 @@ func main() {
 	if err != nil {
 		klog.Fatal(err)
 	}
-	tag, err := latestBookwormSlimTag(tags)
+	tag, err := latestSlimTag(tags)
 	if err != nil {
 		klog.Fatal(err)
 	}

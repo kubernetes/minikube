@@ -21,6 +21,7 @@ package parallels
 import (
 	"fmt"
 	"os/exec"
+	"time"
 
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
@@ -35,12 +36,13 @@ import (
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:     driver.Parallels,
-		Config:   configure,
-		Status:   status,
-		Default:  true,
-		Priority: registry.Deprecated,
-		Init:     func(_ *run.CommandOptions) drivers.Driver { return parallels.NewDriver("", "") },
+		Name:         driver.Parallels,
+		Config:       configure,
+		Status:       status,
+		Default:      true,
+		Priority:     registry.Deprecated,
+		Init:         func(_ *run.CommandOptions) drivers.Driver { return parallels.NewDriver("", "") },
+		ProbeTimeout: 1 * time.Second,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
@@ -49,7 +51,11 @@ func init() {
 }
 
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := parallels.NewDriver(config.MachineName(cfg, n), localpath.MiniPath()).(*parallels.Driver)
+	drv := parallels.NewDriver(config.MachineName(cfg, n), localpath.MiniPath())
+	d, ok := drv.(*parallels.Driver)
+	if !ok {
+		return nil, fmt.Errorf("unexpected driver type %T", drv)
+	}
 	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
 	d.Memory = cfg.Memory
 	d.CPU = cfg.CPUs

@@ -2,6 +2,7 @@
 *.o
 *.a
 *.so
+__debug_bin*
 
 # Folders
 .cache
@@ -64,6 +65,7 @@ deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/version.json
 /site/resources
 /_gen
 /site/public
+.hugo_build.lock
 
 # gopogh filldb
 hack/legacy_fill_db/gopogh_filldb_log.txt

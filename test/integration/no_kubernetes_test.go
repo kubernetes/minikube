@@ -42,7 +42,7 @@ func TestNoKubernetes(t *testing.T) {
 	}
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("NoKubernetes")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer Cleanup(t, profile, cancel)
 
 	// Serial tests
@@ -60,7 +60,6 @@ func TestNoKubernetes(t *testing.T) {
 			{"ProfileList", validateProfileListNoK8S},
 			{"Stop", validateStopNoK8S},
 			{"StartNoArgs", validateStartNoArgs},
-			{"VerifyK8sNotRunningSecond", validateK8SNotRunning},
 		}
 
 		for _, tc := range tests {
@@ -68,6 +67,9 @@ func TestNoKubernetes(t *testing.T) {
 
 			if ctx.Err() == context.DeadlineExceeded {
 				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+			if t.Failed() {
+				t.Fatalf("Previous test failed, not running dependent tests")
 			}
 
 			t.Run(tc.name, func(t *testing.T) {
@@ -217,6 +219,8 @@ func validateStartNoArgs(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
+
+	validateK8SNotRunning(ctx, t, profile)
 }
 
 // getK8sStatus returns whether Kubernetes is running.

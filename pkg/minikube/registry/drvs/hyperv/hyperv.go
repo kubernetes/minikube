@@ -44,12 +44,13 @@ const (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.HyperV,
-		Init:     func(_ *run.CommandOptions) drivers.Driver { return hyperv.NewDriver("", "") },
-		Config:   configure,
-		Status:   status,
-		Default:  true,
-		Priority: registry.Preferred,
+		Name:         driver.HyperV,
+		Init:         func(_ *run.CommandOptions) drivers.Driver { return hyperv.NewDriver("", "") },
+		Config:       configure,
+		Status:       status,
+		Default:      true,
+		Priority:     registry.Preferred,
+		ProbeTimeout: 8 * time.Second,
 	}); err != nil {
 		panic(fmt.Sprintf("register: %v", err))
 	}
@@ -88,7 +89,8 @@ func status(_ *run.CommandOptions) registry.State {
 		return registry.State{Error: err}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	timeout := registry.Driver(driver.HyperV).ProbeTimeout
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", "@(Get-CimInstance Win32_ComputerSystem).HypervisorPresent")

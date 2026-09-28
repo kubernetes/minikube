@@ -1,0 +1,148 @@
+name: Test
+on:
+  workflow_dispatch:
+  pull_request:
+    paths-ignore:
+      - 'site/**'
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - 'site/**'
+
+# Limit one test job running per PR/Branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # For example, if you push multiple commits to a pull request in quick succession, only the latest workflow run will continue
+  cancel-in-progress: true
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: '1.26.5'
+permissions:
+  contents: read
+jobs:
+    lint:
+        name: Lint
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-24.04, macos-26, macos-26-intel]
+        runs-on: ${{ matrix.os }}
+        steps:
+        - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          timeout-minutes: 2
+        - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+          timeout-minutes: 9
+          with:
+            go-version: ${{env.GO_VERSION}}
+            cache: true      
+        # needed because pkg/drivers/kvm/domain.go:28:2:
+        - name: Install libvirt (Linux)
+          timeout-minutes: 1
+          if: startsWith( matrix.os, 'ubuntu-' )
+          run: |
+              sudo apt-get update
+              sudo apt-get install -y libvirt-dev
+        - name: Lint
+          timeout-minutes: 20
+          run: make lint
+          shell: bash
+          continue-on-error: false
+    boilerplate:
+        name: Boilerplate
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          timeout-minutes: 1
+        - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+          timeout-minutes: 1
+          with:
+            go-version: ${{env.GO_VERSION}}
+            cache: true  
+        - name: Boilerplate check
+          timeout-minutes: 1
+          env:
+            TESTSUITE: boilerplate
+          run: make test
+          continue-on-error: false
+    tidy:
+        name: Tidy
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          timeout-minutes: 1
+        - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+          timeout-minutes: 1
+          with:
+            go-version: ${{env.GO_VERSION}}
+            cache: true
+        - name: Verify go mod tidy
+          timeout-minutes: 3
+          run: |
+            make gomodtidy
+            if ! git diff-index --quiet HEAD; then
+              git --no-pager diff
+              echo "::notice::Please run 'make gomodtidy' and commit the changes"
+              exit 1
+            fi
+    generate-docs:
+        name: Generate docs
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          timeout-minutes: 1
+        - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+          timeout-minutes: 1
+          with:
+            go-version: ${{env.GO_VERSION}}
+            cache: true
+        # This job builds minikube because "make generate-docs" runs the
+        # minikube binary to walk the command tree. Once we build every target
+        # once in a shared workflow (#23745), it can use that binary instead.
+        - name: Verify make generate-docs
+          timeout-minutes: 7
+          run: |
+            make generate-docs
+            if [ -n "$(git status --porcelain)" ]; then
+              git --no-pager diff
+              echo "::notice::Please run 'make generate-docs' and commit the changes"
+              exit 1
+            fi
+    housekeeping:
+        name: Housekeeping
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+          timeout-minutes: 1
+        - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+          timeout-minutes: 1
+          with:
+            go-version: ${{env.GO_VERSION}}
+            cache: true
+        - name: Install goimports
+          timeout-minutes: 1
+          run: go install golang.org/x/tools/cmd/goimports@latest
+        - name: Verify make fmt
+          timeout-minutes: 1
+          run: |
+            make fmt
+            if ! git diff-index --quiet HEAD; then
+              git --no-pager diff
+              echo "::notice::Please run 'make fmt' and commit the changes"
+              exit 1
+            fi
+        - name: Verify make imports
+          timeout-minutes: 1
+          run: |
+            make imports
+            if ! git diff-index --quiet HEAD; then
+              git --no-pager diff
+              echo "::notice::Please run 'make imports' and commit the changes"
+              exit 1
+            fi
+        - name: Install markdownlint
+          timeout-minutes: 1
+          run: npm install -g markdownlint-cli
+        - name: Verify make mdlint
+          timeout-minutes: 1
+          run: make mdlint
+
