@@ -1,0 +1,117 @@
+name: kicbase
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to build and update"
+        type: string
+        required: true
+      repo:
+        description: "Override target image repository (e.g. docker.io/kicbase/build)"
+        type: string
+        required: false
+
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: "1.26.5"
+  PLATFORMS: "linux/amd64,linux/arm64,linux/s390x,linux/ppc64le"
+  # Configurable via GitHub Repo Settings -> Variables (vars.KICBASE_REPO & vars.KICBASE_REGISTRY)
+  KICBASE_REPO: ${{ inputs.repo || vars.KICBASE_REPO || 'docker.io/kicbase/build' }}
+  KICBASE_REGISTRY: ${{ vars.KICBASE_REGISTRY || 'docker.io' }}
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  build-kicbase:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.issue.pull_request != null &&
+        contains(github.event.comment.body, 'ok-to-build-image') &&
+        (
+          github.event.comment.user.login == 'minikube-bot' ||
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+        )
+      )
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository and PR branch
+        id: pr
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MINIKUBE_BOT_PAT || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up QEMU and Docker Buildx
+        uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Prepare PR branch and build metadata
+        id: prep
+        env:
+          GH_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT || secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ inputs.pr_number || github.event.issue.number }}
+        run: |
+          gh pr checkout "${PR_NUM}"
+
+          KV=$(grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
+          KIC_VERSION="${KV}-$(date +%s)-${PR_NUM}"
+
+          ./hack/jenkins/build_changelog.sh deploy/kicbase/CHANGELOG || touch deploy/kicbase/CHANGELOG
+          ./hack/build_auto_pause.sh "${PLATFORMS}" "${GITHUB_WORKSPACE}/deploy/kicbase"
+
+          echo "kic_version=${KIC_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "repo=${KICBASE_REPO}" >> "$GITHUB_OUTPUT"
+          echo "image=${KICBASE_REPO}:${KIC_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.KICBASE_REGISTRY }}
+          username: ${{ secrets.KICBASE_REGISTRY_USER || secrets.DOCKERHUB_USER || github.actor }}
+          password: ${{ secrets.KICBASE_REGISTRY_PASS || secrets.DOCKERHUB_PASS || secrets.GITHUB_TOKEN }}
+
+      - name: Build and push kicbase image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: deploy/kicbase
+          file: deploy/kicbase/Dockerfile
+          platforms: ${{ env.PLATFORMS }}
+          push: true
+          tags: ${{ steps.prep.outputs.image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update PR with new kicbase image
+        env:
+          GH_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT || secrets.GITHUB_TOKEN }}
+          KIC_VERSION: ${{ steps.prep.outputs.kic_version }}
+          REPO: ${{ steps.prep.outputs.repo }}
+          IMAGE: ${{ steps.prep.outputs.image }}
+          SHA: ${{ steps.build.outputs.digest }}
+        run: |
+          rm -f deploy/kicbase/auto-pause-* deploy/kicbase/CHANGELOG
+          DIGEST="${SHA#sha256:}"
+
+          sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${DIGEST}\"|;s|gcrRepo = .*|gcrRepo = \"${REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${REPO}\"|" pkg/drivers/kic/types.go
+
+          sudo apt-get update && sudo apt-get install -y libvirt-dev
+          make generate-docs
+          docker run --rm -t --platform linux/amd64 --entrypoint dpkg "${IMAGE}" -l --no-pager > hack/kicbase_version/os-package-list.txt
+
+          git config user.name "minikube-bot"
+          git config user.email "20374350+minikube-bot@users.noreply.github.com"
+          git commit -am "Updating kicbase image to ${KIC_VERSION}"
+          git push
