@@ -1,6 +1,6 @@
 module k8s.io/minikube/hack
 
-go 1.26.0
+go 1.27.0
 
 require (
 	cloud.google.com/go/storage v1.63.1
