@@ -202,6 +202,14 @@ func SetAndSave(profile string, name string, value string, options *run.CommandO
 		}
 		return fmt.Errorf("run callbacks: %w", err)
 	}
+	if name == "cluster-autoscaler" {
+		// The provider may already have added a worker while Helm was waiting
+		// for the deployment. Do not overwrite its updated node inventory.
+		cc, err = config.Load(profile)
+		if err != nil {
+			return fmt.Errorf("reloading profile after autoscaler lifecycle: %w", err)
+		}
+	}
 
 	if err := Set(cc, name, value, options); err != nil {
 		return fmt.Errorf("set: %w", err)

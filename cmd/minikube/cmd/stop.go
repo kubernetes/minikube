@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
+	"k8s.io/minikube/pkg/addons/autoscaler"
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/mcnerror"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -133,6 +134,17 @@ func stopProfile(profile string, options *run.CommandOptions) int {
 	// end new code
 	api, cc := mustload.Partial(profile, options)
 	defer api.Close()
+	if err := autoscaler.Stop(cc); err != nil {
+		exit.Error(reason.InternalAddonDisable, "stopping cluster-autoscaler", err)
+	}
+	if cc.ClusterAutoscaler != nil {
+		// A final worker operation may have completed while the provider stopped.
+		latest, err := config.Load(profile)
+		if err != nil {
+			exit.Error(reason.HostSaveProfile, "reloading profile after stopping cluster-autoscaler", err)
+		}
+		cc = latest
+	}
 
 	if err := killMountProcess(); err != nil {
 		out.WarningT("Unable to kill mount process: {{.error}}", out.V{"error": err})

@@ -17,6 +17,7 @@ limitations under the License.
 package addons
 
 import (
+	"k8s.io/minikube/pkg/addons/autoscaler"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/run"
 )
@@ -43,6 +44,11 @@ var addonPodLabels = map[string]string{
 
 // Addons is a list of all addons
 var Addons = []*Addon{
+	{
+		name:      "cluster-autoscaler",
+		set:       autoscaler.Set,
+		callbacks: []setFn{autoscaler.EnableOrDisable},
+	},
 	{
 		name:      "auto-pause",
 		set:       SetBool,
