@@ -1063,9 +1063,6 @@ func (k *Bootstrapper) labelAndUntaintNode(cfg config.ClusterConfig, n config.No
 		primaryLbl = "minikube.k8s.io/primary=true"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
-	defer cancel()
-
 	// node name is usually based on profile/cluster name, except for "none" driver where it assumes hostname
 	nodeName := config.MachineName(cfg, n)
 	if driver.IsNone(cfg.Driver) {
@@ -1074,28 +1071,45 @@ func (k *Bootstrapper) labelAndUntaintNode(cfg config.ClusterConfig, n config.No
 		}
 	}
 
-	// example:
-	// sudo /var/lib/minikube/binaries/<version>/kubectl --kubeconfig=/var/lib/minikube/kubeconfig label --overwrite nodes test-357 minikube.k8s.io/version=<version> minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700
-	cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg), fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
-		"label", "--overwrite", "nodes", nodeName, createdAtLbl, verLbl, commitLbl, profileNameLbl, primaryLbl)
-	if _, err := k.c.RunCmd(cmd); err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			return fmt.Errorf("timeout apply node labels: %w", err)
+	labelNode := func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
+		defer cancel()
+		// example:
+		// sudo /var/lib/minikube/binaries/<version>/kubectl --kubeconfig=/var/lib/minikube/kubeconfig label --overwrite nodes test-357 minikube.k8s.io/version=<version> minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700
+		cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg), fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
+			"label", "--overwrite", "nodes", nodeName, createdAtLbl, verLbl, commitLbl, profileNameLbl, primaryLbl)
+		if _, err := k.c.RunCmd(cmd); err != nil {
+			if ctx.Err() == context.DeadlineExceeded {
+				return fmt.Errorf("timeout apply node labels: %w", err)
+			}
+			return fmt.Errorf("apply node labels: %w", err)
 		}
-		return fmt.Errorf("apply node labels: %w", err)
+		return nil
+	}
+
+	if err := retry.Expo(labelNode, 100*time.Millisecond, 1*time.Minute); err != nil {
+		return err
 	}
 
 	// primary control-plane and worker nodes should be untainted by default
 	if n.ControlPlane && !config.IsPrimaryControlPlane(cfg, n) {
-		// example:
-		// sudo /var/lib/minikube/binaries/<version>/kubectl --kubeconfig=/var/lib/minikube/kubeconfig taint nodes test-357 node-role.kubernetes.io/control-plane:NoSchedule-
-		cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg), fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
-			"taint", "nodes", config.MachineName(cfg, n), "node-role.kubernetes.io/control-plane:NoSchedule-")
-		if _, err := k.c.RunCmd(cmd); err != nil {
-			if ctx.Err() == context.DeadlineExceeded {
-				return fmt.Errorf("timeout remove node taints: %w", err)
+		untaintNode := func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
+			defer cancel()
+			// example:
+			// sudo /var/lib/minikube/binaries/<version>/kubectl --kubeconfig=/var/lib/minikube/kubeconfig taint nodes test-357 node-role.kubernetes.io/control-plane:NoSchedule-
+			cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg), fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
+				"taint", "nodes", config.MachineName(cfg, n), "node-role.kubernetes.io/control-plane:NoSchedule-")
+			if _, err := k.c.RunCmd(cmd); err != nil {
+				if ctx.Err() == context.DeadlineExceeded {
+					return fmt.Errorf("timeout remove node taints: %w", err)
+				}
+				return fmt.Errorf("remove node taints: %w", err)
 			}
-			return fmt.Errorf("remove node taints: %w", err)
+			return nil
+		}
+		if err := retry.Expo(untaintNode, 100*time.Millisecond, 1*time.Minute); err != nil {
+			return err
 		}
 	}
 
