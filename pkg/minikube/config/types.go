@@ -77,9 +77,10 @@ type ClusterConfig struct {
 	KubernetesConfig        KubernetesConfig
 	Nodes                   []Node
 	Addons                  map[string]bool
-	CustomAddonImages       map[string]string // Maps image names to the image to use for addons. e.g. Dashboard -> registry.k8s.io/echoserver:1.4 makes dashboard addon use echoserver for its Dashboard deployment.
-	CustomAddonRegistries   map[string]string // Maps image names to the registry to use for addons. See CustomAddonImages for example.
-	VerifyComponents        map[string]bool   // map of components to verify and wait for after start.
+	ClusterAutoscaler       *ClusterAutoscalerConfig `json:",omitempty"`
+	CustomAddonImages       map[string]string        // Maps image names to the image to use for addons. e.g. Dashboard -> registry.k8s.io/echoserver:1.4 makes dashboard addon use echoserver for its Dashboard deployment.
+	CustomAddonRegistries   map[string]string        // Maps image names to the registry to use for addons. See CustomAddonImages for example.
+	VerifyComponents        map[string]bool          // map of components to verify and wait for after start.
 	StartHostTimeout        time.Duration
 	ScheduledStop           *ScheduledStopConfig
 	ExposedPorts            []string // Only used by the docker and podman driver
@@ -114,6 +115,15 @@ type ClusterConfig struct {
 	VmnetOffloading         bool          // Only used by krunkit driver
 	DNSServers              []netip.Addr  // Static DNS servers for the VM (VM drivers only)
 	MDNS                    bool          // Enable mDNS (.local) resolution via systemd-resolved
+}
+
+// ClusterAutoscalerConfig locates the separately installed autoscaler and its
+// profile-specific state. Credentials remain in StateDir, outside the profile.
+type ClusterAutoscalerConfig struct {
+	AddonPath string
+	StateDir  string
+	Binary    string
+	Image     string
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
