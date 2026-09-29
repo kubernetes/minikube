@@ -79,6 +79,10 @@ func TarballName(k8sVersion, containerRuntime string) string {
 	} else {
 		storageDriver = "overlay2"
 	}
+
+	if containerRuntime == "docker" {
+		containerRuntime = "containerd"
+	}
 	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, storageDriver, runtime.GOARCH)
 }
 
