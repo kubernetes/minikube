@@ -211,7 +211,7 @@ ii  podman                          5.4.2+ds1-2+b2                       amd64  
 ii  procps                          2:4.0.4-9                            amd64        /proc file system utilities
 ii  readline-common                 8.2-6                                all          GNU readline and history libraries, common files
 ii  rpcbind                         1.2.7-1                              amd64        converts RPC program numbers into universal addresses
-ii  rsync                           3.4.1+ds1-5+deb13u4                  amd64        fast, versatile, remote (and local) file-copying tool
+ii  rsync                           3.5.0+ds1-0+deb13u1                  amd64        fast, versatile, remote (and local) file-copying tool
 ii  runit-helper                    2.16.4                               all          dh-runit implementation detail
 ii  sed                             4.9-2+deb13u1                        amd64        GNU stream editor for filtering/transforming text
 ii  sensible-utils                  0.0.25                               all          Utilities for sensible alternative selection
