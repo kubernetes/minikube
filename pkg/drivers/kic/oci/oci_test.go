@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -113,6 +114,47 @@ func TestPointToHostPodman(t *testing.T) {
 	}
 }
 
+// fakeOCIEnv makes the test binary act as a fake OCI binary, see TestMain.
+const fakeOCIEnv = "MINIKUBE_TEST_FAKE_OCI"
+
+func TestMain(m *testing.M) {
+	switch os.Getenv(fakeOCIEnv) {
+	case "1":
+		// inspect must run "<oci> container inspect -f <format> <container>".
+		if len(os.Args) != 6 || os.Args[1] != "container" || os.Args[2] != "inspect" || os.Args[3] != "-f" {
+			fmt.Fprintf(os.Stderr, "unexpected arguments: %v\n", os.Args[1:])
+			os.Exit(2)
+		}
+		// Emulate podman printing a warning to stderr, see
+		// https://github.com/kubernetes/minikube/issues/22537
+		fmt.Println("192.168.49.2")
+		fmt.Fprintln(os.Stderr, "WARN[0000] The BoltDB backend is deprecated")
+		os.Exit(0)
+	case "fail":
+		fmt.Println("partial output")
+		fmt.Fprintln(os.Stderr, "Error: no such container")
+		os.Exit(1)
+	}
+	os.Exit(m.Run())
+}
+
+func TestInspectIgnoresStderr(t *testing.T) {
+	fakeOCI, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv(fakeOCIEnv, "1")
+
+	lines, err := inspect(fakeOCI, "test-container", "{{.NetworkSettings.IPAddress}}")
+	if err != nil {
+		t.Fatalf("inspect failed: %v", err)
+	}
+
+	if len(lines) != 1 || lines[0] != "192.168.49.2" {
+		t.Errorf("inspect returned %v, want [\"192.168.49.2\"]", lines)
+	}
+}
+
 func TestDaemonHost(t *testing.T) {
 	tests := []struct {
 		driver           string
@@ -140,5 +182,21 @@ func TestDaemonHost(t *testing.T) {
 		if v := DaemonHost(test.driver); v != test.expectedAddr {
 			t.Errorf("invalid oci daemon host. got: %v, want: %v", v, test.expectedAddr)
 		}
+	}
+}
+
+func TestInspectReturnsNoLinesOnError(t *testing.T) {
+	fakeOCI, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv(fakeOCIEnv, "fail")
+
+	lines, err := inspect(fakeOCI, "missing-container", "{{.NetworkSettings.IPAddress}}")
+	if err == nil {
+		t.Fatal("inspect succeeded, want an error")
+	}
+	if lines != nil {
+		t.Errorf("inspect returned %v alongside the error, want no lines", lines)
 	}
 }
