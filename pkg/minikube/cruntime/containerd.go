@@ -341,7 +341,7 @@ func gitClone(cr CommandRunner, src string) (string, error) {
 	return tmp, nil
 }
 
-func downloadRemote(cr CommandRunner, src string) (string, error) {
+func downloadRemote(cr CommandRunner, src string) (dir string, err error) {
 	u, err := url.Parse(src)
 	if err != nil {
 		return "", err
@@ -359,7 +359,12 @@ func downloadRemote(cr CommandRunner, src string) (string, error) {
 		return "", err
 	}
 	dst := strings.TrimSpace(rr.Stdout.String())
-	cmd := exec.Command("curl", "-L", "-o", dst, src)
+	defer func() {
+		if _, cleanupErr := cr.RunCmd(exec.Command("rm", "-f", "--", dst)); cleanupErr != nil {
+			klog.Warningf("Remove downloaded build context %s: %v", dst, cleanupErr)
+		}
+	}()
+	cmd := exec.Command("curl", "-fSL", "-o", dst, src)
 	if _, err := cr.RunCmd(cmd); err != nil {
 		return "", err
 	}
@@ -370,6 +375,13 @@ func downloadRemote(cr CommandRunner, src string) (string, error) {
 		return "", err
 	}
 	tmp := strings.TrimSpace(rr.Stdout.String())
+	defer func() {
+		if err != nil {
+			if _, cleanupErr := cr.RunCmd(exec.Command("rm", "-rf", "--", tmp)); cleanupErr != nil {
+				klog.Warningf("Remove failed build context %s: %v", tmp, cleanupErr)
+			}
+		}
+	}()
 	cmd = exec.Command("tar", "-C", tmp, "-xf", dst)
 	if _, err := cr.RunCmd(cmd); err != nil {
 		return "", err
