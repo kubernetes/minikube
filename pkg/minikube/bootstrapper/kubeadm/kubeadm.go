@@ -636,17 +636,17 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		return fmt.Errorf("get primary control-plane node: %w", err)
 	}
 
-	host, _, port, err := driver.ControlPlaneEndpoint(&cfg, &pcp, cfg.Driver)
+	endpointHost, _, port, err := driver.ControlPlaneEndpoint(&cfg, &pcp, cfg.Driver)
 	if err != nil {
 		return fmt.Errorf("get primary control-plane endpoint: %w", err)
 	}
 
 	// Save the costly tax of reinstalling Kubernetes if the only issue is a missing kube context
-	if _, err := kubeconfig.UpdateEndpoint(cfg.Name, host, port, kubeconfig.PathFromEnv(), kubeconfig.NewExtension()); err != nil {
+	if _, err := kubeconfig.UpdateEndpoint(cfg.Name, endpointHost, port, kubeconfig.PathFromEnv(), kubeconfig.NewExtension()); err != nil {
 		klog.Warningf("unable to update kubeconfig (cluster will likely require a reset): %v", err)
 	}
 
-	client, err := k.client(host, port)
+	client, err := k.client(endpointHost, port)
 	if err != nil {
 		return fmt.Errorf("getting k8s client: %w", err)
 	}
@@ -657,7 +657,7 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 	// check whether or not the cluster needs to be reconfigured
 	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err == nil {
 		// DANGER: This log message is hard-coded in an integration test!
-		klog.Infof("The running cluster does not require reconfiguration: %s", host)
+		klog.Infof("The running cluster does not require reconfiguration: %s", endpointHost)
 		// taking a shortcut, as the cluster seems to be properly configured
 		// except for vm driver in non-ha (non-multi-control plane) cluster - fallback to old behaviour
 		// here we're making a tradeoff to avoid significant (10sec) waiting on restarting stopped non-ha (non-multi-control plane) cluster with vm driver
@@ -714,7 +714,7 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		return fmt.Errorf("apiserver healthz: %w", err)
 	}
 
-	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, time.Now(), host, port, kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, time.Now(), endpointHost, port, kconst.DefaultControlPlaneTimeout); err != nil {
 		return fmt.Errorf("apiserver health: %w", err)
 	}
 
@@ -815,9 +815,9 @@ func (k *Bootstrapper) JoinClusterWindows(h *host.Host, joinConfig string) (stri
 	return runWindowsJoin(client, h.RunSSHCommand, joinConfig, name)
 }
 
-func runWindowsJoin(client *ssh.Client, run func(string) (string, error), joinConfig, name string) (output string, err error) {
+func runWindowsJoin(client *ssh.Client, runCommand func(string) (string, error), joinConfig, name string) (output string, err error) {
 	const powershellPrefix = `powershell.exe -NoProfile -NonInteractive -Command "$ErrorActionPreference = 'Stop'; `
-	tempDir, err := run(powershellPrefix + `[System.IO.Path]::GetTempPath()"`)
+	tempDir, err := runCommand(powershellPrefix + `[System.IO.Path]::GetTempPath()"`)
 	if err != nil {
 		return "", fmt.Errorf("resolving Windows temporary directory: %w", err)
 	}
@@ -830,7 +830,7 @@ func runWindowsJoin(client *ssh.Client, run func(string) (string, error), joinCo
 	literalPath := "'" + strings.ReplaceAll(configPath, "'", "''") + "'"
 	defer func() {
 		cleanup := fmt.Sprintf(powershellPrefix+`if (Test-Path -LiteralPath %[1]s) { Remove-Item -LiteralPath %[1]s -Force }"`, literalPath)
-		result, cleanupErr := run(cleanup)
+		result, cleanupErr := runCommand(cleanup)
 		if cleanupErr == nil && strings.TrimSpace(result) != "" {
 			cleanupErr = fmt.Errorf("unexpected cleanup output: %s", result)
 		}
@@ -858,8 +858,8 @@ func runWindowsJoin(client *ssh.Client, run func(string) (string, error), joinCo
 	}
 
 	// kubeadm creates the CA parent directory when writing the discovered CA.
-	command := powershellPrefix + `& 'C:\k\kubeadm.exe' join --config ` + literalPath + ` --v=5; exit $LASTEXITCODE"`
-	output, err = run(command)
+	joinCommand := powershellPrefix + `& 'C:\k\kubeadm.exe' join --config ` + literalPath + ` --v=5; exit $LASTEXITCODE"`
+	output, err = runCommand(joinCommand)
 	if err != nil {
 		return output, fmt.Errorf("Windows kubeadm join: %w", err)
 	}
@@ -923,14 +923,14 @@ func windowsJoinConfig(cc config.ClusterConfig, n config.Node, joinCommand strin
 	// Do not include malformed command output in errors: it contains a bootstrap credential.
 	fields := windowsJoinCommandPattern.FindStringSubmatch(strings.TrimSpace(joinCommand))
 	if fields == nil {
-		return "", fmt.Errorf("unexpected kubeadm token command output: expected endpoint, bootstrap token and CA hash")
+		return "", errors.New("unexpected kubeadm token command output: expected endpoint, bootstrap token and CA hash")
 	}
-	version, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+	k8sVersion, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return "", fmt.Errorf("Windows join Kubernetes version: %w", err)
 	}
 	apiVersion := "kubeadm.k8s.io/v1beta3"
-	if version.Major > 1 || (version.Major == 1 && version.Minor >= 31) {
+	if k8sVersion.Major > 1 || (k8sVersion.Major == 1 && k8sVersion.Minor >= 31) {
 		apiVersion = "kubeadm.k8s.io/v1beta4"
 	}
 	cfg := windowsJoinConfiguration{

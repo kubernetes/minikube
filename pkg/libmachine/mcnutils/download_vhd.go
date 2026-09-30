@@ -218,7 +218,7 @@ func copyLocalFile(srcPath, dstPath string) error {
 // the shared progress lifecycle; failed acquisitions do not publish the part file.
 func DownloadPart(urlStr string, start, end int64, partFileName string, pw *ProgressWriter, retryLimit int) error {
 	if pw == nil || start < 0 || end < start || end >= pw.Total || retryLimit < 0 {
-		return fmt.Errorf("invalid VHD range or retry limit")
+		return errors.New("invalid VHD range or retry limit")
 	}
 	return writeVHD(partFileName, nil, "", func(dst *os.File) error {
 		return downloadVHDRange(context.Background(), urlStr, start, end, pw.Total, "", dst, pw, retryLimit)
@@ -331,7 +331,7 @@ func DownloadVHDX(urlStr, filePath string, numParts, retryLimit int) error {
 
 func downloadHTTPVHD(urlStr, filePath string, numParts, retryLimit int) error {
 	if numParts <= 0 || retryLimit < 0 {
-		return fmt.Errorf("VHD part count must be positive and retry limit must be nonnegative")
+		return errors.New("VHD part count must be positive and retry limit must be nonnegative")
 	}
 	req, err := http.NewRequest(http.MethodHead, urlStr, nil)
 	if err != nil {
@@ -374,9 +374,7 @@ func downloadHTTPVHD(urlStr, filePath string, numParts, retryLimit int) error {
 			if i == numParts-1 {
 				end = total - 1
 			}
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				err := downloadVHDRange(ctx, urlStr, start, end, total, validator, io.NewOffsetWriter(dst, start), pw, retryLimit)
 				if err != nil {
 					firstError.Do(func() {
@@ -384,7 +382,7 @@ func downloadHTTPVHD(urlStr, filePath string, numParts, retryLimit int) error {
 						cancel()
 					})
 				}
-			}()
+			})
 		}
 		wg.Wait()
 		return downloadErr

@@ -439,25 +439,25 @@ func addHostAliasCommand(name string, record string, sudo bool, destPath string)
 	return exec.Command("/bin/bash", "-c", script)
 }
 
-func AddHostAliasWindows(host *host.Host, controlPlaneIP string) (string, error) {
+func AddHostAliasWindows(h *host.Host, controlPlaneIP string) (string, error) {
 	out.Step(style.Provisioning, "Adding host alias for control plane ...")
 
-	path := "C:\\Windows\\System32\\drivers\\etc\\hosts"
+	hostsPath := "C:\\Windows\\System32\\drivers\\etc\\hosts"
 	entry := fmt.Sprintf("\t%s\tcontrol-plane.minikube.internal", controlPlaneIP)
 
 	psScript := fmt.Sprintf(
 		`$hostsContent = Get-Content -Path "%s" -Raw -ErrorAction SilentlyContinue; `+
 			`if ($hostsContent -notmatch [regex]::Escape("%s")) { `+
 			`Add-Content -Path "%s" -Value "%s" -Force | Out-Null }`,
-		path, entry, path, entry,
+		hostsPath, entry, hostsPath, entry,
 	)
 
 	psScript = strings.ReplaceAll(psScript, `"`, `\"`)
 
-	command := fmt.Sprintf("powershell -NoProfile -NonInteractive -Command \"%s\"", psScript)
-	klog.Infof("[executing] : %v", command)
+	sshCommand := fmt.Sprintf("powershell -NoProfile -NonInteractive -Command \"%s\"", psScript)
+	klog.Infof("[executing] : %v", sshCommand)
 
-	host.RunSSHCommand(command)
+	h.RunSSHCommand(sshCommand)
 
 	return "", nil
 }

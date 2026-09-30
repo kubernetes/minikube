@@ -31,18 +31,18 @@ import (
 
 type GuestUtil struct {
 	os     string
-	vhdUrl string
+	vhdURL string
 }
 
 // ConfigGuest is the package-level singleton for GuestUtil
 var ConfigGuest *GuestUtil
 
-func SetGuestUtil(guestOS, vhdUrl string) {
+func SetGuestUtil(guestOS, vhdURL string) {
 	ConfigGuest = &GuestUtil{
 		os:     guestOS,
-		vhdUrl: vhdUrl,
+		vhdURL: vhdURL,
 	}
-	log.Debugf("SetGuestUtil: os=%s, vhdUrl=%s", guestOS, vhdUrl)
+	log.Debugf("SetGuestUtil: os=%s, vhdUrl=%s", guestOS, vhdURL)
 }
 
 func (g *GuestUtil) GetGuestOS() string {
@@ -58,7 +58,7 @@ func (g *GuestUtil) GetVHDUrl() string {
 		log.Debugf("GuestUtil is not initialized")
 		return ""
 	}
-	return g.vhdUrl
+	return g.vhdURL
 }
 
 type MultiError struct {

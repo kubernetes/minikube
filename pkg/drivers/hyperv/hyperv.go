@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -254,7 +253,7 @@ func (d *Driver) PreCreateCheck() error {
 
 		diskNumber := strings.TrimSpace(diskNumOut)
 		if diskNumber == "" {
-			return fmt.Errorf("could not determine disk number for mounted VHDX")
+			return errors.New("could not determine disk number for mounted VHDX")
 		}
 
 		avail, err := cmdOut("-Command",
@@ -269,7 +268,7 @@ func (d *Driver) PreCreateCheck() error {
 
 		freeLetter := strings.TrimSpace(avail)
 		if freeLetter == "" {
-			return fmt.Errorf("no available drive letters to assign to VHDX")
+			return errors.New("no available drive letters to assign to VHDX")
 		}
 
 		if err := cmd("Set-Partition",
@@ -683,7 +682,7 @@ func writeSSHKeyToVHDX(vhdxPath, publicSSHKeyPath string) (retErr error) {
 		return fmt.Errorf("failed to create SSH directory: %w", err)
 	}
 
-	if err := ioutil.WriteFile(adminAuthKeys, pubKey, 0644); err != nil {
+	if err := os.WriteFile(adminAuthKeys, pubKey, 0644); err != nil {
 		return fmt.Errorf("failed to write public key: %w", err)
 	}
 

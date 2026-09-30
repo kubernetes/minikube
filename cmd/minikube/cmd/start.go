@@ -1374,8 +1374,8 @@ func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterC
 			exit.Message(reason.Usage, "The --windows-vhd-url flag must be set to a valid URL")
 		}
 
-		url := viper.GetString(windowsVhdURL)
-		if !strings.HasSuffix(url, ".vhd") && !strings.HasSuffix(url, ".vhdx") {
+		vhdURL := viper.GetString(windowsVhdURL)
+		if !strings.HasSuffix(vhdURL, ".vhd") && !strings.HasSuffix(vhdURL, ".vhdx") {
 			exit.Message(reason.Usage, "The --windows-vhd-url flag must point to a valid VHD or VHDX file")
 		}
 	}

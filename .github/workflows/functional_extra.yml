@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   # pull_request_target runs in the context of the base repo, allowing access to secrets
   # unlike pull_request which runs in the context of the merge commit
-  # every commit needs re-labeling "ok-to-extra-test" label by OWNERS
+  # every commit needs re-labeling "ok-to-extra-test" label by OWNERS 
   # that ensures unvetted code will not run this test
   pull_request_target:
     types: [labeled]
@@ -103,9 +103,9 @@ jobs:
           USER="minikubeadmin"
           
           # Copy binaries
-          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=100 ./out/minikube-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
-          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=100 ./out/e2e-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
-          sshpass -e scp -r -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=100 ./test/integration/testdata "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./out/minikube-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./out/e2e-windows-amd64.exe "$USER@$HOST:C:/Users/$USER/"
+          sshpass -e scp -r -o StrictHostKeyChecking=no -o PubkeyAuthentication=no ./test/integration/testdata "$USER@$HOST:C:/Users/$USER/"
 
       - name: Run Functional Test
         continue-on-error: true
@@ -131,7 +131,7 @@ jobs:
           
           echo "$CMD" > run_tests.ps1
           sshpass -e scp -o StrictHostKeyChecking=no -o PubkeyAuthentication=no run_tests.ps1 "$USER@$HOST:C:/Users/$USER/"
-          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=100 "$USER@$HOST" "powershell -File C:/Users/$USER/run_tests.ps1"
+          sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=60 -o ServerAliveCountMax=9 "$USER@$HOST" "powershell -File C:/Users/$USER/run_tests.ps1"
 
       - name: Copy results from inside the VM
         if: always() && steps.azlogin.outcome == 'success'

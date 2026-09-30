@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -33,7 +34,7 @@ import (
 // parseNodeSpecs parses each occurrence independently; commas separate fields, not nodes.
 func parseNodeSpecs(specs []string) ([]config.Node, error) {
 	if len(specs) == 0 {
-		return nil, fmt.Errorf("--node requires at least one node specification")
+		return nil, errors.New("--node requires at least one node specification")
 	}
 	var result []config.Node
 	for i, spec := range specs {
@@ -97,10 +98,10 @@ func resolveNodes(cmd *cobra.Command, existing *config.ClusterConfig, v *viper.V
 		return nil, nil
 	}
 	if cmd.Flags().Changed(nodes) || cmd.Flags().Changed(ha) {
-		return nil, fmt.Errorf("--node cannot be combined with --nodes/-n or --ha")
+		return nil, errors.New("--node cannot be combined with --nodes/-n or --ha")
 	}
 	if v.GetBool(ha) {
-		return nil, fmt.Errorf("--node requires HA to be disabled in the configuration or environment")
+		return nil, errors.New("--node requires HA to be disabled in the configuration or environment")
 	}
 	specs, err := cmd.Flags().GetStringArray(nodeSpec)
 	if err != nil {
@@ -134,22 +135,22 @@ func validateNodeTopology(ns []config.Node, hostOS string) error {
 		if n.ControlPlane {
 			controlPlanes++
 			if n.Guest.IsWindows() {
-				return fmt.Errorf("Windows control-plane nodes are not supported")
+				return errors.New("Windows control-plane nodes are not supported")
 			}
 		}
 	}
 	if controlPlanes == 0 {
-		return fmt.Errorf("node topology requires a Linux control-plane node")
+		return errors.New("node topology requires a Linux control-plane node")
 	}
 	if controlPlanes != 1 {
-		return fmt.Errorf("--node currently supports one Linux control-plane node; use --ha without --node for Linux HA clusters")
+		return errors.New("--node currently supports one Linux control-plane node; use --ha without --node for Linux HA clusters")
 	}
 	if config.HasWindowsNodes(ns) {
 		if hostOS != "windows" {
-			return fmt.Errorf("Windows nodes require a Windows host with Hyper-V")
+			return errors.New("Windows nodes require a Windows host with Hyper-V")
 		}
 		if len(ns) != 2 || controlPlanes != 1 {
-			return fmt.Errorf("mixed-OS clusters currently support one Linux control-plane node and one Windows worker")
+			return errors.New("mixed-OS clusters currently support one Linux control-plane node and one Windows worker")
 		}
 	}
 	return nil
@@ -173,7 +174,7 @@ func applyNodeDefaults(cmd *cobra.Command, existing *config.ClusterConfig, ns []
 	}
 	if config.HasWindowsNodes(ns) {
 		if v.GetBool(noKubernetes) {
-			return fmt.Errorf("--no-kubernetes is not supported for mixed-OS clusters")
+			return errors.New("--no-kubernetes is not supported for mixed-OS clusters")
 		}
 		if cmd.Flags().Changed("vm-driver") && v.GetString("vm-driver") != driver.HyperV {
 			return fmt.Errorf("Windows nodes require --driver=hyperv; conflicting --vm-driver=%s", v.GetString("vm-driver"))
