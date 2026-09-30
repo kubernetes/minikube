@@ -74,6 +74,13 @@ func TestContainerNetwork(t *testing.T) {
 			machineName: "minikube",
 		},
 		{
+			name:        "IPv6 gateway returns error",
+			gateway:     net.ParseIP("2001:db8::1"),
+			networkName: "minikube",
+			machineName: "minikube",
+			wantErr:     true,
+		},
+		{
 			name:        "too many machines",
 			gateway:     net.ParseIP("192.168.49.253"),
 			networkName: "minikube",

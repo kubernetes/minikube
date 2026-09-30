@@ -85,6 +85,9 @@ func containerNetwork(gateway net.IP, networkName, staticIP, machineName string)
 		return "", "", nil
 	}
 	ip := gateway.To4()
+	if ip == nil {
+		return "", "", fmt.Errorf("cannot calculate a container IP from non-IPv4 gateway %q", gateway)
+	}
 	// calculate the container IP based on guessing the machine index
 	index := driver.IndexFromMachineName(machineName)
 	if int(ip[3])+index > 253 { // reserve last client ip address for multi-control-plane loadbalancer vip address in ha cluster
