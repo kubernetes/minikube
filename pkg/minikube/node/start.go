@@ -17,6 +17,7 @@ limitations under the License.
 package node
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"os"
@@ -108,35 +109,66 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		return nil, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 	}
 
-	// wait for preloaded tarball to finish downloading before configuring runtimes
-	waitCacheRequiredImages(&cacheGroup)
+	// log starter.Node.OS here
+	klog.Infof("Node OS: %s", starter.Node.Guest.Name)
+	if !starter.Node.Guest.IsWindows() {
+		// wait for preloaded tarball to finish downloading before configuring runtimes
+		waitCacheRequiredImages(&cacheGroup)
+	}
 
 	sv, err := util.ParseKubernetesVersion(starter.Node.KubernetesVersion)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse Kubernetes version: %w", err)
 	}
+	klog.Infof("Kubernetes version: %s", sv)
 
-	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
+	var cr cruntime.Manager
+	if !starter.Node.Guest.IsWindows() {
+		// configure the runtime (docker, containerd, crio) only for windows nodes
+		cr = configureRuntimes(starter.Runner, *starter.Cfg, sv)
 
-	// check if installed runtime is compatible with current minikube code
-	if err = cruntime.CheckCompatibility(cr); err != nil {
-		return nil, err
+		// check if installed runtime is compatible with current minikube code
+		if err = cruntime.CheckCompatibility(cr); err != nil {
+			return nil, err
+		}
+
+		showVersionInfo(starter.Node.KubernetesVersion, cr)
+
+		if config.HasWindowsNodes(starter.Cfg.Nodes) {
+			if err := prepareLinuxNodeForWindowsFlannel(starter.Runner); err != nil {
+				klog.Errorf("error preparing linux node %q for windows flannel: %v", starter.Node.Name, err)
+			}
+		}
 	}
-
-	showVersionInfo(starter.Node.KubernetesVersion, cr)
+	klog.Infof("configureRuntimes done: cr=%v", cr)
 
 	// add "host.minikube.internal" dns alias (intentionally non-fatal)
 	hostIP, err := cluster.HostIP(starter.Host, starter.Cfg.Name)
 	if err != nil {
 		klog.Errorf("Unable to get host IP: %v", err)
-	} else if err := machine.AddHostAlias(starter.Runner, constants.HostAlias, hostIP); err != nil {
-		klog.Errorf("Unable to add minikube host alias: %v", err)
+	}
+
+	if !starter.Node.Guest.IsWindows() {
+		if err := machine.AddHostAlias(starter.Runner, constants.HostAlias, hostIP); err != nil {
+			klog.Warningf("Unable to add host alias: %v", err)
+		}
+	} else {
+		out.Step(style.Provisioning, "Configuring Windows node...")
+		if stdout, err := machine.AddHostAliasWindows(starter.Host, constants.MasterNodeIP); err != nil {
+			klog.Warningf("Unable to add host alias: %v", err)
+		} else {
+			klog.Infof("Host alias added: %s", stdout)
+		}
 	}
 
 	var kcs *kubeconfig.Settings
 	var bs bootstrapper.Bootstrapper
 	if config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
+		constants.MasterNodeIP, err = starter.Host.Driver.GetIP()
+		if err != nil {
+			klog.Errorf("Unable to get driver IP: %v", err)
+		}
+		klog.Infof("Driver IP: %s", constants.MasterNodeIP)
 		// [re]start primary control-plane node
 		kcs, bs, err = startPrimaryControlPlane(starter, cr, options)
 		if err != nil {
@@ -320,7 +352,7 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 		klog.Infof("successfully removed existing %s node %q from cluster: %+v", starter.Node.Role(), starter.Node.Name, starter.Node)
 	}
 
-	p := &linuxProvisioner{starter: starter, controlplane: cpBs, worker: bs}
+	p := newNodeProvisioner(starter, cpBs, bs)
 
 	if err := p.Join(); err != nil {
 		return err
@@ -643,6 +675,8 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	if err != nil {
 		return runner, preExists, m, hostInfo, fmt.Errorf("Failed to get command runner: %w", err)
 	}
+	// log that we managed to get a command runner
+	klog.Infof("CommandRunner returned: %v", runner)
 
 	configureDNS(runner, cfg.DNSServers)
 	configureMDNS(runner, cfg.MDNS)
@@ -651,6 +685,8 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	if err != nil {
 		return runner, preExists, m, hostInfo, fmt.Errorf("Failed to validate network: %w", err)
 	}
+	// log that we managed to validate the network
+	klog.Infof("validateNetwork returned: %v", ip)
 
 	if driver.IsQEMU(hostInfo.Driver.DriverName()) && network.IsBuiltinQEMU(cfg.Network) {
 		apiServerPort, err := getPort()
@@ -665,6 +701,12 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	if err != nil {
 		out.FailureT("Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
 	}
+
+	// log that we managed to exclude the IP from the proxy
+	klog.Infof("Excluded IP from proxy: %v", ip)
+
+	// log the result of the function
+	klog.Infof("startMachine returned: %v, %v, %v, %v", runner, preExists, m, hostInfo)
 
 	return runner, preExists, m, hostInfo, err
 }
@@ -907,6 +949,64 @@ func prepareNone() {
 	if err := util.MaybeChownDirRecursiveToMinikubeUser(localpath.MiniPath()); err != nil {
 		exit.Message(reason.HostHomeChown, "Failed to change permissions for {{.minikube_dir_path}}: {{.error}}", out.V{"minikube_dir_path": localpath.MiniPath(), "error": err})
 	}
+}
+
+// applyWindowsManifest writes content to a temp file then runs kubectl apply -f
+// against it. Using a file avoids stdin piping complexity.
+func applyWindowsManifest(content string) error {
+	f, err := os.CreateTemp("", "minikube-windows-*.yaml")
+	if err != nil {
+		return fmt.Errorf("create temp manifest: %w", err)
+	}
+	defer os.Remove(f.Name())
+	if _, err := f.WriteString(content); err != nil {
+		f.Close()
+		return fmt.Errorf("write temp manifest: %w", err)
+	}
+	f.Close()
+
+	c := exec.Command("kubectl", "apply", "-f", f.Name())
+	var stdout, stderr bytes.Buffer
+	c.Stdout = &stdout
+	c.Stderr = &stderr
+	klog.Infof("[executing ==>] : %v %v", c.Path, strings.Join(c.Args, " "))
+	err = c.Run()
+	klog.Infof("[stdout =====>] : %s", stdout.String())
+	klog.Infof("[stderr =====>] : %s", stderr.String())
+	if err != nil {
+		return fmt.Errorf("kubectl apply -f %s: %w: %s", f.Name(), err, strings.TrimSpace(stderr.String()))
+	}
+	return nil
+}
+
+// prepareLinuxNodeForWindowsFlannel enables bridged traffic to be seen by
+// iptables, required for flannel VXLAN to route between Linux and Windows
+// nodes in a mixed-OS cluster.
+func prepareLinuxNodeForWindowsFlannel(runner command.Runner) error {
+	if _, err := runner.RunCmd(exec.Command("sudo", "sysctl", "net.bridge.bridge-nf-call-iptables=1")); err != nil {
+		return fmt.Errorf("sysctl net.bridge.bridge-nf-call-iptables: %w", err)
+	}
+	return nil
+}
+
+// prepareWindowsNodeFlannel applies the Windows flannel DaemonSet from the
+// manifest bundled in the minikube binary (pkg/minikube/cni/flannel-windows.yaml)
+func prepareWindowsNodeFlannel() error {
+	if err := applyWindowsManifest(cni.FlannelWindowsManifest()); err != nil {
+		return fmt.Errorf("apply flannel-windows: %w", err)
+	}
+	klog.Infof("Successfully applied flannel Windows configuration.")
+	return nil
+}
+
+// prepareWindowsNodeKubeProxy applies the Windows kube-proxy DaemonSet from
+// the manifest bundled in the minikube binary (pkg/minikube/cni/kube-proxy-windows.yaml)
+func prepareWindowsNodeKubeProxy() error {
+	if err := applyWindowsManifest(cni.KubeProxyWindowsManifest()); err != nil {
+		return fmt.Errorf("apply kube-proxy-windows: %w", err)
+	}
+	klog.Infof("Successfully applied kube-proxy Windows configuration.")
+	return nil
 }
 
 // addCoreDNSEntry adds host name and IP record to the DNS by updating CoreDNS's ConfigMap.
