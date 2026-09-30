@@ -123,6 +123,39 @@ func TestDownloadISO(t *testing.T) {
 	assert.Equal(t, testData, string(data))
 }
 
+func TestDownloadISO404FailsFast(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `<?xml version='1.0'?><Error><Code>NoSuchKey</Code></Error>`)
+	}))
+	defer ts.Close()
+
+	tmpDir := t.TempDir()
+
+	b := NewB2dUtils("/tmp/artifacts")
+	err := b.DownloadISO(tmpDir, "test.iso", ts.URL+"/missing.iso")
+
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "404")
+	}
+	assert.NoFileExists(t, filepath.Join(tmpDir, "test.iso"))
+}
+
+func TestGetReleaseURL403NamesStatus(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, `{"message": "API rate limit exceeded."}`)
+	}))
+	defer ts.Close()
+
+	b := NewB2dUtils("/tmp/isos")
+	_, err := b.getReleaseURL(ts.URL + "/repos/org/repo/releases/latest")
+
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "403")
+	}
+}
+
 func TestGetRequest(t *testing.T) {
 	testCases := []struct {
 		token string
