@@ -411,18 +411,19 @@ func inspect(ociBin string, containerNameOrID, format string) ([]string, error) 
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
 	rr, err := runCmd(cmd)
+	if err != nil {
+		return nil, err
+	}
 	scanner := bufio.NewScanner(&rr.Stdout)
 	var lines []string
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	if scanErr := scanner.Err(); scanErr != nil {
-		klog.Warningf("failed to read output: %v", scanErr)
-		if err == nil {
-			err = scanErr
-		}
+	if err := scanner.Err(); err != nil {
+		klog.Warningf("failed to read output: %v", err)
+		return nil, err
 	}
-	return lines, err
+	return lines, nil
 }
 
 /*
