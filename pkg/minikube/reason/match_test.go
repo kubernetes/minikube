@@ -65,6 +65,7 @@ VBoxManage.exe: error: Details: code E_FAIL (0x80004005), component MachineWrap,
 		{8832, "macos", "PR_DOCKER_MOUNTS_EOF", `docker: Error response from daemon: Mounts denied: EOF.`},
 		{9165, "", "HOST_HOME_PERMISSION", `open /Users/conradwt/.minikube/profiles/gcloud-local-dev/config.json: permission denied`},
 		{9175, "", "GUEST_CONFIG_CORRUPT", " updating control plane: generating kubeadm cfg: generating extra component config for kubeadm: controlPlane configuration is corrupt: no name: {Name: IP: Port:8443 KubernetesVersion:v1.19.0 ControlPlane:true Worker:true}"},
+		{9914, "", "IF_SSH_TCP_RESET", `libmachine: Error dialing TCP: ssh: handshake failed: read tcp 127.0.0.1:60486->127.0.0.1:32779: read: connection reset by peer`},
 	}
 	for _, tc := range tests {
 		t.Run(tc.want, func(t *testing.T) {
