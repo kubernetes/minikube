@@ -260,7 +260,7 @@ asserts that all Kubernetes components are healthy
 NOTE: It expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag
 
 Steps:
-- Run `kubectl get po po -l tier=control-plane -n kube-system -o=json` to get all the Kubernetes conponents
+- Run `kubectl get po -l tier=control-plane -n kube-system -o=json` to get all the Kubernetes components
 - For each component, make sure the pod status is `Running`
 
 #### validateStatusCmd
@@ -593,7 +593,7 @@ verifies the docker/podman driver works with a custom subnet
 starts minikube with the static IP flag
 
 ## TestingKicBaseImage
-will return true if the integraiton test is running against a passed --base-image flag
+will return true if the integration test is running against a passed --base-image flag
 
 ## TestMinikubeProfile
 
