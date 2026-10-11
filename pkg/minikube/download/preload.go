@@ -48,6 +48,8 @@ const (
 	PreloadBucket     = "minikube-preloaded-volume-tarballs"
 	PreloadGitHubOrg  = "kubernetes-sigs"
 	PreloadGitHubRepo = "minikube-preloads"
+	// TestPreloadsEnv overrides the preload cache directory for integration tests only.
+	TestPreloadsEnv = "MINIKUBE_TEST_PRELOADS"
 )
 
 type preloadSource string
@@ -84,6 +86,9 @@ func TarballName(k8sVersion, containerRuntime string) string {
 
 // returns target dir for all cached items related to preloading
 func targetDir() string {
+	if dir := os.Getenv(TestPreloadsEnv); dir != "" {
+		return dir
+	}
 	return localpath.MakeMiniPath("cache", "preloaded-tarball")
 }
 
