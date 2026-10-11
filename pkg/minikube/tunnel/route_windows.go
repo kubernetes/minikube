@@ -107,13 +107,13 @@ func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, ove
 	stdInAndOut, err := command.CombinedOutput()
 	if err != nil {
 		err = fmt.Errorf("error running '%s': %s", command.Args, err)
-		return
+		return exists, conflict, overlaps, err
 	}
 	rt := router.parseTable(stdInAndOut)
 
 	exists, conflict, overlaps = rt.Check(route)
 
-	return
+	return exists, conflict, overlaps, nil
 }
 
 func (router *osRouter) Cleanup(route *Route) error {
