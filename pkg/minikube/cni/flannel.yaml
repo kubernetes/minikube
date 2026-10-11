@@ -71,7 +71,7 @@ data:
   cni-conf.json: |
     {
       "name": "cbr0",
-      "cniVersion": "0.3.1",
+      "cniVersion": "1.0.0",
       "plugins": [
         {
           "type": "flannel",
@@ -144,7 +144,7 @@ spec:
         - name: cni-plugin
           mountPath: /opt/cni/bin
       - name: install-cni
-        image: ghcr.io/flannel-io/flannel:v0.28.9
+        image: ghcr.io/flannel-io/flannel:v0.28.10
         command:
         - /opt/bin/install-conf
         args:
@@ -157,7 +157,7 @@ spec:
           mountPath: /etc/kube-flannel/
       containers:
       - name: kube-flannel
-        image: ghcr.io/flannel-io/flannel:v0.28.9
+        image: ghcr.io/flannel-io/flannel:v0.28.10
         command:
         - /opt/bin/flanneld
         args:
