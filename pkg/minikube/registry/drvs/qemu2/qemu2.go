@@ -17,6 +17,7 @@ limitations under the License.
 package qemu2
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -100,29 +101,12 @@ func qemuFirmwarePath(customPath string) (string, error) {
 
 	switch arch {
 	case "amd64":
-		// Ubuntu 24.04's ovmf package ships only OVMF_CODE_4M.fd while
-		// older releases ship OVMF_CODE.fd (see #23628).
-		return firstExistingFirmware(
-			"/usr/share/OVMF/OVMF_CODE.fd",
-			"/usr/share/OVMF/OVMF_CODE_4M.fd",
-		), nil
+		return "/usr/share/OVMF/OVMF_CODE.fd", nil
 	case "arm64":
 		return "/usr/share/AAVMF/AAVMF_CODE.fd", nil
 	default:
 		return "", fmt.Errorf("unknown arch: %s", arch)
 	}
-}
-
-// firstExistingFirmware returns the first firmware path that exists on
-// disk, or the preferred path when none exists so the provider status
-// check still reports a useful path.
-func firstExistingFirmware(paths ...string) string {
-	for _, p := range paths {
-		if _, err := os.Stat(p); err == nil {
-			return p
-		}
-	}
-	return paths[0]
 }
 
 func qemuVersion() (semver.Version, error) {
@@ -222,12 +206,26 @@ func status(_ *run.CommandOptions) registry.State {
 		return registry.State{Error: err, Fix: "Install qemu-system", Doc: docURL}
 	}
 
+	// On amd64 we always use BIOS (see configure BIOS field and
+	// qemu.Driver.Start which ignores Firmware when BIOS is true),
+	// so UEFI firmware is not required. Skip the firmware check here,
+	// otherwise Ubuntu 24.04 hosts fail with PROVIDER_QEMU2_NOT_FOUND
+	// because the ovmf package only ships OVMF_CODE_4M.fd (see #23628).
+	// If UEFI/OVMF is ever enabled on amd64, revisit this together
+	// with the hyperv driver.
+	if runtime.GOARCH != "arm64" {
+		return registry.State{Installed: true, Healthy: true, Running: true}
+	}
+
 	qemuFirmware, err := qemuFirmwarePath(viper.GetString("qemu-firmware-path"))
 	if err != nil {
 		return registry.State{Error: err, Doc: docURL}
 	}
 
 	if _, err := os.Stat(qemuFirmware); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return registry.State{Error: err, Doc: docURL}
+		}
 		return registry.State{Error: err, Fix: "Install uefi firmware", Doc: docURL}
 	}
 
