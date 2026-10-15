@@ -32,7 +32,7 @@ func getProcessEntry(pid int) (pe *syscall.ProcessEntry32, err error) {
 	if err != nil {
 		return nil, err
 	}
-	defer syscall.CloseHandle(syscall.Handle(snapshot))
+	defer syscall.CloseHandle(snapshot)
 
 	var processEntry syscall.ProcessEntry32
 	processEntry.Size = uint32(unsafe.Sizeof(processEntry))
@@ -44,7 +44,7 @@ func getProcessEntry(pid int) (pe *syscall.ProcessEntry32, err error) {
 	for {
 		if processEntry.ProcessID == uint32(pid) {
 			pe = &processEntry
-			return
+			return pe, nil
 		}
 
 		err = syscall.Process32Next(snapshot, &processEntry)
@@ -75,22 +75,24 @@ func Detect() (string, error) {
 		if err != nil {
 			return "cmd", err // defaulting to cmd
 		}
+
 		shellMapping := mapShell(shell)
 		if shellMapping != "" {
 			return shellMapping, nil
-		} else {
-			shell, _, err := getNameAndItsPpid(shellppid)
-			if err != nil {
-				return "cmd", err // defaulting to cmd
-			}
-			shellMapping = mapShell(shell)
-			if shellMapping != "" {
-				return shellMapping, nil
-			} else {
-				fmt.Printf("You can further specify your shell with either 'cmd' or 'powershell' with the --shell flag.\n\n")
-				return "cmd", nil // this could be either powershell or cmd, defaulting to cmd
-			}
 		}
+
+		shell, _, err = getNameAndItsPpid(shellppid)
+		if err != nil {
+			return "cmd", err
+		}
+
+		shellMapping = mapShell(shell)
+		if shellMapping != "" {
+			return shellMapping, nil
+		}
+
+		fmt.Print("You can further specify your shell with either 'cmd' or 'powershell' with the --shell flag.\n\n")
+		return "cmd", nil
 	}
 
 	if os.Getenv("__fish_bin_dir") != "" {

@@ -2,3 +2,4 @@
 **/testdata/**/*.yaml text eol=lf
 **/testdata/**/*.yml  text eol=lf
 **/testdata/**/*.json text eol=lf
+*.go text eol=lf
