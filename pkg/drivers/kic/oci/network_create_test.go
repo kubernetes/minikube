@@ -41,17 +41,33 @@ func TestDockerInspect(t *testing.T) {
 	}{
 		{
 			name:                  "withMTU",
-			dockerInspectResponse: `{"Name": "m2","Driver": "bridge","Subnet": "172.19.0.0/16","Gateway": "172.19.0.1","MTU": 9216, "ContainerIPs": []}`,
+			dockerInspectResponse: `{"Name": "m2","Driver": "bridge","Subnets": ["172.19.0.0/16"],"Gateways": ["172.19.0.1"],"MTU": 9216, "ContainerIPs": []}`,
 			gateway:               "172.19.0.1",
 			subnetIP:              "172.19.0.0",
 			mtu:                   9216,
 		},
 		{
 			name:                  "withoutMTU",
-			dockerInspectResponse: `{"Name": "m2","Driver": "bridge","Subnet": "172.19.0.0/16","Gateway": "172.19.0.1","MTU": 0, "ContainerIPs": []}`,
+			dockerInspectResponse: `{"Name": "m2","Driver": "bridge","Subnets": ["172.19.0.0/16"],"Gateways": ["172.19.0.1"],"MTU": 0, "ContainerIPs": []}`,
 			gateway:               "172.19.0.1",
 			subnetIP:              "172.19.0.0",
 			mtu:                   0,
+		},
+		{
+			// dual-stack network: both IPv4 and IPv6 IPAM configs — only IPv4 should be used (#21435)
+			name:                  "dualStackIPv4IPv6",
+			dockerInspectResponse: `{"Name": "m2","Driver": "bridge","Subnets": ["192.168.97.0/24","fd07:b51a:cc66::/64"],"Gateways": ["192.168.97.1","fd07:b51a:cc66::1"],"MTU": 1500, "ContainerIPs": []}`,
+			gateway:               "192.168.97.1",
+			subnetIP:              "192.168.97.0",
+			mtu:                   1500,
+		},
+		{
+			// IPv6-first ordering: IPv6 appears before IPv4 in the IPAM config list
+			name:                  "dualStackIPv6First",
+			dockerInspectResponse: `{"Name": "m2","Driver": "bridge","Subnets": ["fd07:b51a:cc66::/64","192.168.97.0/24"],"Gateways": ["fd07:b51a:cc66::1","192.168.97.1"],"MTU": 1500, "ContainerIPs": []}`,
+			gateway:               "192.168.97.1",
+			subnetIP:              "192.168.97.0",
+			mtu:                   1500,
 		},
 	}
 	for _, tc := range tests {
