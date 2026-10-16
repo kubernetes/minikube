@@ -911,3 +911,73 @@ func TestGetContainerRuntime(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateHAVIP(t *testing.T) {
+	tests := []struct {
+		vip      string
+		isHA     bool
+		expected string
+	}{
+		{"", false, ""},
+		{"", true, ""},
+		{"192.168.49.200", true, ""},
+		{"10.0.0.100", true, ""},
+		{"192.168.49.200", false, "--ha-vip requires --ha to be set"},
+		{"not-an-ip", true, `--ha-vip "not-an-ip" is not a valid IP address`},
+		{"999.999.999.999", true, `--ha-vip "999.999.999.999" is not a valid IP address`},
+	}
+
+	for _, tc := range tests {
+		err := validateHAVIP(tc.vip, tc.isHA)
+		errMsg := ""
+		if err != nil {
+			errMsg = err.Error()
+		}
+		if errMsg != tc.expected {
+			t.Errorf("validateHAVIP(%q, %v) = %q; want %q", tc.vip, tc.isHA, errMsg, tc.expected)
+		}
+	}
+}
+
+func TestGenerateClusterConfigHAVIP(t *testing.T) {
+	origHA := viper.GetBool(ha)
+	origVIP := viper.GetString(haVIP)
+	t.Cleanup(func() {
+		viper.Set(ha, origHA)
+		viper.Set(haVIP, origVIP)
+	})
+
+	k8sVersion := constants.NewestKubernetesVersion
+	crName := defaultRuntime()
+
+	t.Run("ha with custom vip", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		viper.Set(ha, true)
+		viper.Set(haVIP, "192.168.49.200")
+		viper.SetDefault(kvmNUMACount, 1)
+
+		cc, _, err := generateClusterConfig(cmd, nil, k8sVersion, crName, driver.Mock, &run.CommandOptions{})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cc.KubernetesConfig.APIServerHAVIP != "192.168.49.200" {
+			t.Errorf("expected APIServerHAVIP to be %q, got %q", "192.168.49.200", cc.KubernetesConfig.APIServerHAVIP)
+		}
+	})
+
+	t.Run("ha without custom vip", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		viper.Set(ha, true)
+		viper.Set(haVIP, "")
+		viper.SetDefault(kvmNUMACount, 1)
+
+		cc, _, err := generateClusterConfig(cmd, nil, k8sVersion, crName, driver.Mock, &run.CommandOptions{})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cc.KubernetesConfig.APIServerHAVIP != "" {
+			t.Errorf("expected APIServerHAVIP to be empty, got %q", cc.KubernetesConfig.APIServerHAVIP)
+		}
+	})
+}
+

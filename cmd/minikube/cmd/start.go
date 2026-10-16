@@ -2021,6 +2021,19 @@ func validateStaticIP(staticIP, drvName, subnet string) error {
 	return nil
 }
 
+func validateHAVIP(vip string, isHA bool) error {
+	if vip == "" {
+		return nil
+	}
+	if !isHA {
+		return errors.New("--ha-vip requires --ha to be set")
+	}
+	if net.ParseIP(vip) == nil {
+		return fmt.Errorf("--ha-vip %q is not a valid IP address", vip)
+	}
+	return nil
+}
+
 func validateBareMetal(drvName, crName string) {
 	if !driver.BareMetal(drvName) {
 		return

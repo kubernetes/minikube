@@ -120,6 +120,7 @@ const (
 	hostOnlyNicType         = "host-only-nic-type"
 	natNicType              = "nat-nic-type"
 	ha                      = "ha"
+	haVIP                   = "ha-vip"
 	nodes                   = "nodes"
 	preload                 = "preload"
 	deleteOnFailure         = "delete-on-failure"
@@ -202,6 +203,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 	startCmd.Flags().Bool(ha, false, "Create Highly Available Multi-Control Plane Cluster with a minimum of three control-plane nodes that will also be marked for work.")
+	startCmd.Flags().String(haVIP, "", "VIP address for the HA cluster API server (defaults to the last available IP from the node network subnet)")
 	startCmd.Flags().IntP(nodes, "n", 1, "The total number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 	startCmd.Flags().Bool(noKubernetes, false, "If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)")
@@ -668,6 +670,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, crName st
 	}
 
 	validateHANodeCount(cmd)
+	validateHAVIPFlag()
 
 	checkNumaCount(k8sVersion)
 
@@ -740,6 +743,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, crName st
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
 			Namespace:              viper.GetString(startNamespace),
+			APIServerHAVIP:         viper.GetString(haVIP),
 			APIServerName:          viper.GetString(apiServerName),
 			APIServerNames:         apiServerNames,
 			APIServerIPs:           apiServerIPs,
@@ -841,6 +845,14 @@ func validateHANodeCount(cmd *cobra.Command) {
 	}
 }
 
+// validateHAVIPFlag ensures correct HA VIP address configuration.
+func validateHAVIPFlag() {
+	vip := viper.GetString(haVIP)
+	if err := validateHAVIP(vip, viper.GetBool(ha)); err != nil {
+		exit.Message(reason.Usage, err.Error())
+	}
+}
+
 func checkNumaCount(k8sVersion string) {
 	if viper.GetInt(kvmNUMACount) < 1 || viper.GetInt(kvmNUMACount) > 8 {
 		exit.Message(reason.Usage, "--kvm-numa-count range is 1-8")
@@ -903,6 +915,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(ha) {
 		out.WarningT("Changing the HA (multi-control plane) mode of an existing minikube cluster is not currently supported. Please first delete the cluster and use 'minikube start --ha' to create new one.")
+	}
+
+	if cmd.Flags().Changed(haVIP) && viper.GetString(haVIP) != existing.KubernetesConfig.APIServerHAVIP {
+		out.WarningT("Changing the HA VIP address of an existing minikube cluster is not currently supported. Please first delete the cluster.")
 	}
 
 	if cmd.Flags().Changed(apiServerPort) && config.IsHA(*existing) {
