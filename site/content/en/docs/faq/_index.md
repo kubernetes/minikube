@@ -80,6 +80,66 @@ Alternatively, (b) Create a second cluster with a different profile name:
 minikube start -p p1 --driver=docker
 ```
 
+## How can I expose a NodePort service on a custom host port with the Docker driver?
+
+Pass a host port and the minikube node port to `--ports` when you create a new
+single-node cluster. The format is `host-port:node-port`; add a host IP as
+`host-ip:host-port:node-port` when you want to control the bind address.
+
+The following example maps host port `8080` to NodePort `30080`:
+
+```shell
+minikube start --driver=docker --ports=127.0.0.1:8080:30080
+
+kubectl apply -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app: hello
+    spec:
+      containers:
+      - name: hello
+        image: kicbase/echo-server:1.0
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+spec:
+  type: NodePort
+  selector:
+    app: hello
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30080
+EOF
+
+kubectl rollout status deployment/hello
+curl http://127.0.0.1:8080
+```
+
+The request travels from host port `8080`, through the minikube node's
+NodePort `30080`, to the pod's port `8080`. The port must be available on the
+host, and the service's `nodePort` must match the node port in `--ports`.
+Using `127.0.0.1` binds the published port to the local machine; omitting the
+host IP lets the container runtime choose its default bind address.
+
+`--ports` is applied when the cluster is created. To change the mapping for an
+existing profile, run `minikube delete` and then `minikube start` again with
+the new mapping.
+
 ## Does minikube support IPv6?
 
 minikube currently doesn't support IPv6. However, it is on the [roadmap]({{< ref "/docs/contrib/roadmap.en.md" >}}). You can also refer to the [open issue](https://github.com/kubernetes/minikube/issues/8535).
