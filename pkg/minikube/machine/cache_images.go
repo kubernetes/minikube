@@ -288,6 +288,14 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 		return err
 	}
 
+	// A runtime that can take the image on stdin gets it piped in over the
+	// connection we already have. Copying it to the guest first would put a
+	// second full copy of the image on the node's disk for the length of the
+	// load, on top of the one the runtime is about to unpack.
+	if sl, ok := r.(cruntime.StreamLoader); ok {
+		return streamAndLoadImage(sl, r, src, imgName)
+	}
+
 	dst := path.Join(loadRoot, filename)
 	f, err := assets.NewFileAsset(src, loadRoot, filename, "0644")
 	if err != nil {
@@ -306,16 +314,45 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 	loadImageLock.Lock()
 	defer loadImageLock.Unlock()
 
-	err = r.LoadImage(dst)
-	if err != nil {
-		if strings.Contains(err.Error(), "ctr: image might be filtered out") {
-			out.WarningT("The image '{{.imageName}}' does not match arch of the container runtime, use a multi-arch image instead", out.V{"imageName": imgName})
-		}
-		return fmt.Errorf("%s load %s: %w", r.Name(), dst, err)
+	if err := r.LoadImage(dst); err != nil {
+		return loadImageErr(r, imgName, dst, err)
 	}
 
 	klog.Infof("Transferred and loaded %s from cache", src)
 	return nil
+}
+
+// streamAndLoadImage pipes src into the runtime's load command, so the image is
+// never written to the guest's disk on the way in.
+func streamAndLoadImage(sl cruntime.StreamLoader, r cruntime.Manager, src string, imgName string) error {
+	f, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("opening image to stream: %w", err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			klog.Warningf("error closing the file %s: %v", src, err)
+		}
+	}()
+
+	loadImageLock.Lock()
+	defer loadImageLock.Unlock()
+
+	if err := sl.LoadImageStream(f); err != nil {
+		return loadImageErr(r, imgName, "stdin", err)
+	}
+
+	klog.Infof("Streamed and loaded %s from cache", src)
+	return nil
+}
+
+// loadImageErr wraps a failed load, translating the one runtime error that has a
+// cause a user can act on.
+func loadImageErr(r cruntime.Manager, imgName string, dst string, err error) error {
+	if strings.Contains(err.Error(), "ctr: image might be filtered out") {
+		out.WarningT("The image '{{.imageName}}' does not match arch of the container runtime, use a multi-arch image instead", out.V{"imageName": imgName})
+	}
+	return fmt.Errorf("%s load %s: %w", r.Name(), dst, err)
 }
 
 // SaveCachedImages saves from the container runtime to the cache
