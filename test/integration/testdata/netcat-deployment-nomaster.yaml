@@ -19,8 +19,8 @@ spec:
         - name: dnsutils
           # https://github.com/kubernetes/kubernetes/blob/master/test/images/agnhost/README.md
           image: registry.k8s.io/e2e-test-images/agnhost:2.40
-          command:
-            ["/bin/sh", "-c", "while true; do echo hello | nc -l -p 8080; done"]
+          # Trap TERM so delete does not wait out the 30s grace period.
+          command: ["/bin/sh", "-c", "trap exit TERM; while true; do echo hello | nc -l -p 8080 & wait; done"]
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

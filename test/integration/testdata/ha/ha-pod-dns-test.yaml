@@ -18,9 +18,8 @@ spec:
       - name: busybox
         # agnhost includes dig, which queries DNS and prints the address.
         image: registry.k8s.io/e2e-test-images/agnhost:2.40
-        command:
-          - sleep
-          - "3600"
+        # Trap TERM so delete does not wait out the 30s grace period.
+        command: ["sh", "-c", "trap exit TERM; sleep infinity & wait"]
         imagePullPolicy: IfNotPresent
         securityContext:
           capabilities:
