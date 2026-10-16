@@ -17,6 +17,7 @@ limitations under the License.
 package driver
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -112,7 +113,6 @@ func TestFlagDefaults(t *testing.T) {
 }
 
 func TestSuggest(t *testing.T) {
-
 	tests := []struct {
 		def     registry.DriverDef
 		choices []string
@@ -126,7 +126,9 @@ func TestSuggest(t *testing.T) {
 				Default:      true,
 				ProbeTimeout: 1 * time.Millisecond,
 				Priority:     registry.Default,
-				Status:       func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: false} },
+				Status: func(_ context.Context, _ *run.CommandOptions) registry.State {
+					return registry.State{Installed: true, Healthy: false}
+				},
 			},
 			choices: []string{"unhealthy"},
 			pick:    "",
@@ -139,7 +141,9 @@ func TestSuggest(t *testing.T) {
 				Default:      false,
 				ProbeTimeout: 1 * time.Millisecond,
 				Priority:     registry.Discouraged,
-				Status:       func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: true} },
+				Status: func(_ context.Context, _ *run.CommandOptions) registry.State {
+					return registry.State{Installed: true, Healthy: true}
+				},
 			},
 			choices: []string{"discouraged", "unhealthy"},
 			pick:    "",
@@ -152,7 +156,9 @@ func TestSuggest(t *testing.T) {
 				Default:      true,
 				ProbeTimeout: 1 * time.Millisecond,
 				Priority:     registry.Default,
-				Status:       func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: true} },
+				Status: func(_ context.Context, _ *run.CommandOptions) registry.State {
+					return registry.State{Installed: true, Healthy: true}
+				},
 			},
 			choices: []string{"default", "discouraged", "unhealthy"},
 			pick:    "default",
@@ -165,7 +171,9 @@ func TestSuggest(t *testing.T) {
 				Default:      true,
 				ProbeTimeout: 1 * time.Millisecond,
 				Priority:     registry.Preferred,
-				Status:       func(_ *run.CommandOptions) registry.State { return registry.State{Installed: true, Healthy: true} },
+				Status: func(_ context.Context, _ *run.CommandOptions) registry.State {
+					return registry.State{Installed: true, Healthy: true}
+				},
 			},
 			choices: []string{"preferred", "default", "discouraged", "unhealthy"},
 			pick:    "preferred",
@@ -211,7 +219,6 @@ func TestSuggest(t *testing.T) {
 			if diff := cmp.Diff(gotRejects, tc.rejects); diff != "" {
 				t.Errorf("rejects mismatch (-want +got):\n%s", diff)
 			}
-
 		})
 	}
 }
@@ -225,45 +232,55 @@ func TestIndexFromMachineName(t *testing.T) {
 		{
 			Name:        "default",
 			MachineName: "minikube",
-			Want:        1},
+			Want:        1,
+		},
 		{
 			Name:        "second-node",
 			MachineName: "minikube-m02",
-			Want:        2},
+			Want:        2,
+		},
 		{
 			Name:        "funny",
 			MachineName: "hahaha",
-			Want:        1},
+			Want:        1,
+		},
 
 		{
 			Name:        "dash-profile",
 			MachineName: "my-dashy-minikube",
-			Want:        1},
+			Want:        1,
+		},
 
 		{
 			Name:        "dash-profile-second-node",
 			MachineName: "my-dashy-minikube-m02",
-			Want:        2},
+			Want:        2,
+		},
 		{
 			Name:        "michivious-user",
 			MachineName: "michivious-user-m02-m03",
-			Want:        3},
+			Want:        3,
+		},
 		{
 			Name:        "third-node",
 			MachineName: "minikube-m3",
-			Want:        3},
+			Want:        3,
+		},
 		{
 			Name:        "agent-node",
 			MachineName: "minikube-m007",
-			Want:        7},
+			Want:        7,
+		},
 		{
 			Name:        "byte-0",
 			MachineName: "offline-docker-20210314040449-6655",
-			Want:        1},
+			Want:        1,
+		},
 		{
 			Name:        "byte-255",
 			MachineName: "offline-docker-20210314040449-6654",
-			Want:        1},
+			Want:        1,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -271,22 +288,20 @@ func TestIndexFromMachineName(t *testing.T) {
 			got := IndexFromMachineName(tc.MachineName)
 			if got != tc.Want {
 				t.Errorf("want order %d but got %d", tc.Want, got)
-
 			}
 		})
-
 	}
 }
 
 // test indexFroMachine against cluster config
 func TestIndexFromMachineNameClusterConfig(t *testing.T) {
-
 	testsCases := []struct {
 		ClusterConfig config.ClusterConfig
 		Want          int
 	}{
 		{
-			ClusterConfig: config.ClusterConfig{Name: "minikube",
+			ClusterConfig: config.ClusterConfig{
+				Name: "minikube",
 				Nodes: []config.Node{
 					{
 						Name:              "",
@@ -302,7 +317,8 @@ func TestIndexFromMachineNameClusterConfig(t *testing.T) {
 		},
 
 		{
-			ClusterConfig: config.ClusterConfig{Name: "p2",
+			ClusterConfig: config.ClusterConfig{
+				Name: "p2",
 				Nodes: []config.Node{
 					{
 						Name:              "",
@@ -326,7 +342,8 @@ func TestIndexFromMachineNameClusterConfig(t *testing.T) {
 		},
 
 		{
-			ClusterConfig: config.ClusterConfig{Name: "p3",
+			ClusterConfig: config.ClusterConfig{
+				Name: "p3",
 				Nodes: []config.Node{
 					{
 						Name:              "",
@@ -358,7 +375,8 @@ func TestIndexFromMachineNameClusterConfig(t *testing.T) {
 		},
 
 		{
-			ClusterConfig: config.ClusterConfig{Name: "offline-docker-20210314040449-6654",
+			ClusterConfig: config.ClusterConfig{
+				Name: "offline-docker-20210314040449-6654",
 				Nodes: []config.Node{
 					{
 						Name:              "",
@@ -374,7 +392,8 @@ func TestIndexFromMachineNameClusterConfig(t *testing.T) {
 		},
 
 		{
-			ClusterConfig: config.ClusterConfig{Name: "offline-docker-20210314040449-6655",
+			ClusterConfig: config.ClusterConfig{
+				Name: "offline-docker-20210314040449-6655",
 				Nodes: []config.Node{
 					{
 						Name:              "",

@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -39,7 +40,7 @@ func TestRegisterRequiresProbeTimeout(t *testing.T) {
 	r := newRegistry()
 	foo := DriverDef{
 		Name:   "foo",
-		Status: func(_ *run.CommandOptions) State { return State{} },
+		Status: func(_ context.Context, _ *run.CommandOptions) State { return State{} },
 	}
 	if err := r.Register(foo); err == nil {
 		t.Errorf("Register = nil, expected ProbeTimeout err")

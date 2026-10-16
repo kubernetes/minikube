@@ -79,7 +79,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return d, nil
 }
 
-func status(_ *run.CommandOptions) registry.State {
+func status(_ context.Context, _ *run.CommandOptions) registry.State {
 	// Reuse this function as it's particularly helpful for Windows
 	tryPath := driver.VBoxManagePath()
 	path, err := exec.LookPath(tryPath)

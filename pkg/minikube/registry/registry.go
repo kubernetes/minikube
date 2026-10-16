@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"slices"
@@ -75,7 +76,7 @@ type Loader func(*run.CommandOptions) drivers.Driver
 
 // StatusChecker checks if a driver is available. Implementations must return
 // within the driver's ProbeTimeout (e.g. via context.WithTimeout).
-type StatusChecker func(*run.CommandOptions) State
+type StatusChecker func(context context.Context, options *run.CommandOptions) State
 
 // State is the current state of the driver and its dependencies
 type State struct {

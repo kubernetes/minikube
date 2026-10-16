@@ -19,6 +19,7 @@ limitations under the License.
 package parallels
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"time"
@@ -47,7 +48,6 @@ func init() {
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
 	}
-
 }
 
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
@@ -63,7 +63,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	return d, nil
 }
 
-func status(_ *run.CommandOptions) registry.State {
+func status(_ context.Context, _ *run.CommandOptions) registry.State {
 	_, err := exec.LookPath("prlctl")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Install Parallels Desktop for Mac", Doc: "https://minikube.sigs.k8s.io/docs/drivers/parallels/"}

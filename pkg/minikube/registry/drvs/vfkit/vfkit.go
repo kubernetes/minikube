@@ -19,6 +19,7 @@ limitations under the License.
 package vfkit
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -107,7 +108,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func status(_ *run.CommandOptions) registry.State {
+func status(ctx context.Context, _ *run.CommandOptions) registry.State {
 	_, err := exec.LookPath("vfkit")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Run 'brew install vfkit'", Doc: docURL}

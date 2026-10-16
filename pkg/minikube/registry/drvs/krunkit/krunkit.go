@@ -19,6 +19,7 @@ limitations under the License.
 package krunkit
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -93,7 +94,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func status(options *run.CommandOptions) registry.State {
+func status(_ context.Context, options *run.CommandOptions) registry.State {
 	if runtime.GOOS != "darwin" && runtime.GOARCH != "arm64" {
 		err := errors.New("the krunkit driver is only supported on macOS arm64 machines")
 		return registry.State{Error: err, Fix: "Use another driver", Doc: docURL}

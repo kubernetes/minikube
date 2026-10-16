@@ -103,15 +103,11 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}), nil
 }
 
-func status(_ *run.CommandOptions) registry.State {
+func status(ctx context.Context, _ *run.CommandOptions) registry.State {
 	podman, err := exec.LookPath(oci.Podman)
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Podman", Doc: docURL}
 	}
-
-	timeout := registry.Driver(driver.Podman).ProbeTimeout
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 
 	// Quickly returns an error code if service is not running
 	cmd := exec.CommandContext(ctx, oci.Podman, "version", "--format", "{{.Server.Version}}")
