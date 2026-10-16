@@ -13,7 +13,7 @@ gVisor depends on the containerd runtime to run in minikube.
 When starting minikube, specify the following flags, along with any additional desired flags:
 
 ```shell
-$ minikube start --container-runtime=containerd  \
+minikube start --container-runtime=containerd  \
     --docker-opt containerd=/var/run/containerd/containerd.sock
 ```
 
@@ -21,14 +21,18 @@ $ minikube start --container-runtime=containerd  \
 To enable this addon, simply run:
 
 ```
-$ minikube addons enable gvisor
+minikube addons enable gvisor
 ```
 
-Within one minute, the addon manager should pick up the change and you should
-see the `gvisor` pod and `gvisor` [Runtime Class](https://kubernetes.io/docs/concepts/containers/runtime-class/):
+Within one minute, the addon manager should pick up the change.
+You can check with the following command:
 
+```shell
+kubectl get pod,runtimeclass gvisor -n kube-system
 ```
-$ kubectl get pod,runtimeclass gvisor -n kube-system
+You should see the `gvisor` pod and `gvisor` [Runtime Class](https://kubernetes.io/docs/concepts/containers/runtime-class/):
+
+```shell
 NAME         READY   STATUS    RESTARTS   AGE
 pod/gvisor   1/1     Running   0          2m52s
 
@@ -66,14 +70,19 @@ spec:
 To disable gVisor, run:
 
 ```
-$ minikube addons disable gvisor
+minikube addons disable gvisor
 ```
 
 Within one minute, the addon manager should pick up the change.
-Once the `gvisor` pod has status `Terminating`, or has been deleted, the gvisor addon should be disabled.
+You can check with the following command:
 
 ```
-$ kubectl get pod gvisor -n kube-system
+kubectl get pod gvisor -n kube-system
+```
+
+Once the `gvisor` pod has status `Terminating`, or has been deleted, the gvisor addon should be disabled.
+
+```shell
 NAME      READY     STATUS        RESTARTS   AGE
 gvisor    1/1       Terminating   0          5m
 ```
