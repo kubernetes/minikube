@@ -19,7 +19,6 @@ limitations under the License.
 package krunkit
 
 import (
-	"archive/tar"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -178,7 +177,7 @@ func (d *Driver) Create() error {
 	}
 
 	log.Info("Creating disk image...")
-	if err := d.generateDiskImage(d.DiskSize); err != nil {
+	if err := common.CreateRawDiskImage(d.publicSSHKeyPath(), d.diskPath(), d.DiskSize); err != nil {
 		return err
 	}
 
@@ -459,61 +458,6 @@ func (d *Driver) restfulURI() string {
 
 func (d *Driver) vmStateURI() string {
 	return "http://_/vm/state"
-}
-
-// generateDiskImage generates a boot2docker VM disk image.
-// TODO: duplicate from vfkit and qemu: https://github.com/kubernetes/minikube/issues/21090
-func (d *Driver) generateDiskImage(size int) error {
-	log.Debugf("Creating %d MB hard disk image...", size)
-
-	magicString := "boot2docker, please format-me"
-
-	buf := new(bytes.Buffer)
-	tw := tar.NewWriter(buf)
-
-	// magicString first so the automount script knows to format the disk
-	file := &tar.Header{Name: magicString, Size: int64(len(magicString))}
-	if err := tw.WriteHeader(file); err != nil {
-		return err
-	}
-	if _, err := tw.Write([]byte(magicString)); err != nil {
-		return err
-	}
-	// .ssh/key.pub => authorized_keys
-	file = &tar.Header{Name: ".ssh", Typeflag: tar.TypeDir, Mode: 0700}
-	if err := tw.WriteHeader(file); err != nil {
-		return err
-	}
-	pubKey, err := os.ReadFile(d.publicSSHKeyPath())
-	if err != nil {
-		return err
-	}
-	file = &tar.Header{Name: ".ssh/authorized_keys", Size: int64(len(pubKey)), Mode: 0644}
-	if err := tw.WriteHeader(file); err != nil {
-		return err
-	}
-	if _, err := tw.Write(pubKey); err != nil {
-		return err
-	}
-	file = &tar.Header{Name: ".ssh/authorized_keys2", Size: int64(len(pubKey)), Mode: 0644}
-	if err := tw.WriteHeader(file); err != nil {
-		return err
-	}
-	if _, err := tw.Write(pubKey); err != nil {
-		return err
-	}
-	if err := tw.Close(); err != nil {
-		return err
-	}
-	rawFile := d.diskPath()
-	if err := os.WriteFile(rawFile, buf.Bytes(), 0644); err != nil {
-		return nil
-	}
-	if err := os.Truncate(rawFile, int64(size)*int64(1024*1024)); err != nil {
-		return nil
-	}
-	log.Debugf("DONE writing to %s and %s", rawFile, d.diskPath())
-	return nil
 }
 
 func httpUnixClient(path string) http.Client {
