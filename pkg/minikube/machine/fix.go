@@ -71,8 +71,8 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 		return h, err
 	}
 
-	// Avoid reprovisioning "none" driver because provision.Detect requires SSH
-	if !driver.BareMetal(driverName) {
+	// Windows images are pre-provisioned; "none" cannot use SSH-based detection.
+	if !driver.BareMetal(driverName) && !h.Guest.IsWindows() {
 		e := engineOptions(*cc)
 		h.HostOptions.EngineOptions.Env = e.Env
 		err = provisionDockerMachine(h)

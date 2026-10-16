@@ -52,12 +52,6 @@ func (p *windowsProvisioner) Join() error {
 		return fmt.Errorf("joining Windows node %q: %w\n%s", p.starter.Node.Name, err, output)
 	}
 	klog.Infof("Windows kubeadm join completed: %s", output)
-	if err := prepareWindowsNodeFlannel(); err != nil {
-		return fmt.Errorf("preparing Windows flannel: %w", err)
-	}
-	if err := prepareWindowsNodeKubeProxy(); err != nil {
-		return fmt.Errorf("preparing Windows kube-proxy: %w", err)
-	}
 	return nil
 }
 

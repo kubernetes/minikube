@@ -18,15 +18,14 @@ package node
 
 import "k8s.io/minikube/pkg/minikube/bootstrapper"
 
-// Provisioner encapsulates OS-specific node lifecycle operations using a strategy pattern.
+// Provisioner encapsulates OS-specific node joining and labeling using a strategy pattern.
 // Different OS implementations (Linux, Windows) use the same interface but with different
 // join mechanisms and readiness verification strategies.
 // This eliminates scattered OS conditionals from shared orchestration code.
 //
-// Note: This interface is minimal and grows incrementally as new provisioner implementations
-// are added. The complete lifecycle will eventually include PreBootstrap and PostJoin methods,
-// but they are added only when a second provisioner (Windows) needs them. This follows the
-// principle of not building speculative abstractions.
+// Cluster-wide networking is configured separately by the CNI manager through the
+// control plane, before workers join. Add lifecycle methods only when a concrete
+// implementation requires them.
 type Provisioner interface {
 	// Join generates the kubeadm join command and executes it to add the node to the cluster.
 	// Handles retry logic with OS-specific failure recovery (e.g., kubeadm reset for Linux).

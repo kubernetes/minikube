@@ -17,7 +17,6 @@ limitations under the License.
 package node
 
 import (
-	"bytes"
 	"fmt"
 	"net"
 	"os"
@@ -951,34 +950,6 @@ func prepareNone() {
 	}
 }
 
-// applyWindowsManifest writes content to a temp file then runs kubectl apply -f
-// against it. Using a file avoids stdin piping complexity.
-func applyWindowsManifest(content string) error {
-	f, err := os.CreateTemp("", "minikube-windows-*.yaml")
-	if err != nil {
-		return fmt.Errorf("create temp manifest: %w", err)
-	}
-	defer os.Remove(f.Name())
-	if _, err := f.WriteString(content); err != nil {
-		f.Close()
-		return fmt.Errorf("write temp manifest: %w", err)
-	}
-	f.Close()
-
-	c := exec.Command("kubectl", "apply", "-f", f.Name())
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-	klog.Infof("[executing ==>] : %v %v", c.Path, strings.Join(c.Args, " "))
-	err = c.Run()
-	klog.Infof("[stdout =====>] : %s", stdout.String())
-	klog.Infof("[stderr =====>] : %s", stderr.String())
-	if err != nil {
-		return fmt.Errorf("kubectl apply -f %s: %w: %s", f.Name(), err, strings.TrimSpace(stderr.String()))
-	}
-	return nil
-}
-
 // prepareLinuxNodeForWindowsFlannel enables bridged traffic to be seen by
 // iptables, required for flannel VXLAN to route between Linux and Windows
 // nodes in a mixed-OS cluster.
@@ -986,26 +957,6 @@ func prepareLinuxNodeForWindowsFlannel(runner command.Runner) error {
 	if _, err := runner.RunCmd(exec.Command("sudo", "sysctl", "net.bridge.bridge-nf-call-iptables=1")); err != nil {
 		return fmt.Errorf("sysctl net.bridge.bridge-nf-call-iptables: %w", err)
 	}
-	return nil
-}
-
-// prepareWindowsNodeFlannel applies the Windows flannel DaemonSet from the
-// manifest bundled in the minikube binary (pkg/minikube/cni/flannel-windows.yaml)
-func prepareWindowsNodeFlannel() error {
-	if err := applyWindowsManifest(cni.FlannelWindowsManifest()); err != nil {
-		return fmt.Errorf("apply flannel-windows: %w", err)
-	}
-	klog.Infof("Successfully applied flannel Windows configuration.")
-	return nil
-}
-
-// prepareWindowsNodeKubeProxy applies the Windows kube-proxy DaemonSet from
-// the manifest bundled in the minikube binary (pkg/minikube/cni/kube-proxy-windows.yaml)
-func prepareWindowsNodeKubeProxy() error {
-	if err := applyWindowsManifest(cni.KubeProxyWindowsManifest()); err != nil {
-		return fmt.Errorf("apply kube-proxy-windows: %w", err)
-	}
-	klog.Infof("Successfully applied kube-proxy Windows configuration.")
 	return nil
 }
 
