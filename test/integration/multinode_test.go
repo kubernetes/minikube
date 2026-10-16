@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -536,28 +535,19 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 
 	// verify both Pods could resolve a public DNS
 	for _, name := range podNames {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.io"))
-		if err != nil {
-			t.Errorf("Pod %s could not resolve 'kubernetes.io': %v", name, err)
-		}
+		podResolve(ctx, t, name, "kubernetes.io", Target(), "kubectl", "-p", profile, "--")
 	}
 
 	// verify both Pods could resolve "kubernetes.default"
 	// this one is also checked by k8s e2e node conformance tests:
 	// https://github.com/kubernetes/kubernetes/blob/f137c4777095b3972e2dd71a01365d47be459389/test/e2e_node/environment/conformance.go#L125-L179
 	for _, name := range podNames {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.default"))
-		if err != nil {
-			t.Errorf("Pod %s could not resolve 'kubernetes.default': %v", name, err)
-		}
+		podResolve(ctx, t, name, "kubernetes.default", Target(), "kubectl", "-p", profile, "--")
 	}
 
 	// verify both pods could resolve to a local service.
 	for _, name := range podNames {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.default.svc.cluster.local"))
-		if err != nil {
-			t.Errorf("Pod %s could not resolve local service (kubernetes.default.svc.cluster.local): %v", name, err)
-		}
+		podResolve(ctx, t, name, "kubernetes.default.svc.cluster.local", Target(), "kubectl", "-p", profile, "--")
 	}
 }
 
@@ -571,16 +561,9 @@ func validatePodsPingHost(ctx context.Context, t *testing.T, profile string) {
 	podNames := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
 
 	for _, name := range podNames {
-		// get host.minikube.internal ip as resolved by nslookup
-		out, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", "nslookup host.minikube.internal | awk 'NR==5' | cut -d' ' -f3"))
-		if err != nil {
-			t.Errorf("Pod %s could not resolve 'host.minikube.internal': %v", name, err)
-			continue
-		}
-		hostIP := net.ParseIP(strings.TrimSpace(out.Stdout.String()))
-		if hostIP == nil {
-			t.Fatalf("minikube host ip is nil: %s", out.Output())
-		}
+		// get host.minikube.internal ip as resolved by dig
+		ips := podResolve(ctx, t, name, "host.minikube.internal", Target(), "kubectl", "-p", profile, "--")
+		hostIP := ips[0]
 		// try pinging host from pod
 		ping := fmt.Sprintf("ping -c 1 %s", hostIP)
 		if _, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", ping)); err != nil {

@@ -544,6 +544,8 @@ verifies a soft restart on a ha (multi-control plane) cluster works.
 #### validateHAAddSecondaryNode
 uses the minikube node add command to add a secondary control-plane node to an existing ha (multi-control plane) cluster.
 
+## TestDigAddresses
+
 ## TestImageBuild
 makes sure the 'minikube image build' command works fine
 
