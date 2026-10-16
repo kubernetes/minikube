@@ -18,6 +18,11 @@ package provision
 
 import (
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -297,4 +302,101 @@ func TestDockerClientVersion(t *testing.T) {
 			t.Errorf("Unexpected version string from %q; got %q, want %q", tc.output, tc.want, got)
 		}
 	}
+}
+
+// curlPipeSSHCommander simulates `curl <url> | sh -` on the remote host.
+// It performs a real HTTP GET against the URL in the command and only
+// applies the piped side effect on success. On HTTP errors it mirrors
+// real curl semantics: with a fail flag the pipe never runs, without it
+// the error page reaches the shell. The test asserts behavior (error and
+// sentinel presence), never the command string.
+type curlPipeSSHCommander struct {
+	sentinelFile string
+}
+
+func extractPipeURL(cmd string) string {
+	for _, f := range strings.Fields(cmd) {
+		f = strings.Trim(f, "|;\"'`")
+		if strings.HasPrefix(f, "http://") || strings.HasPrefix(f, "https://") {
+			return f
+		}
+	}
+	return ""
+}
+
+func pipeHasFailFlag(cmd string) bool {
+	fields := strings.Fields(cmd)
+	for i, f := range fields {
+		if f == "curl" && i+1 < len(fields) {
+			flags := fields[i+1]
+			if strings.HasPrefix(flags, "-") && strings.Contains(flags, "f") {
+				return true
+			}
+			if flags == "--fail" {
+				return true
+			}
+		}
+		if f == "--fail" {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *curlPipeSSHCommander) SSHCommand(cmd string) (string, error) {
+	rawURL := extractPipeURL(cmd)
+	if rawURL == "" {
+		return "", fmt.Errorf("no URL in command: %q", cmd)
+	}
+	resp, err := http.Get(rawURL)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if pipeHasFailFlag(cmd) {
+			return string(body), fmt.Errorf("curl: (22) HTTP %d", resp.StatusCode)
+		}
+		if err := os.WriteFile(c.sentinelFile, body, 0644); err != nil {
+			return "", err
+		}
+		return "", nil
+	}
+	if err := os.WriteFile(c.sentinelFile, body, 0644); err != nil {
+		return "", err
+	}
+	return "", nil
+}
+
+func TestInstallDockerGenericHTTPErrorFailsCleanly(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "boom", http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	sentinel := filepath.Join(t.TempDir(), "docker-installed")
+	p := &fakeProvisioner{GenericProvisioner{Driver: &fakedriver.Driver{}}}
+	p.SSHCommander = &curlPipeSSHCommander{sentinelFile: sentinel}
+
+	err := installDockerGeneric(p, srv.URL)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "error installing docker")
+	}
+	_, statErr := os.Stat(sentinel)
+	assert.True(t, os.IsNotExist(statErr), "failed install must not leave installed artifact")
+}
+
+func TestInstallDockerGenericHTTPOKInstalls(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("#!/bin/sh\necho installed"))
+	}))
+	defer srv.Close()
+
+	sentinel := filepath.Join(t.TempDir(), "docker-installed")
+	p := &fakeProvisioner{GenericProvisioner{Driver: &fakedriver.Driver{}}}
+	p.SSHCommander = &curlPipeSSHCommander{sentinelFile: sentinel}
+
+	assert.NoError(t, installDockerGeneric(p, srv.URL))
+	assert.FileExists(t, sentinel)
 }
