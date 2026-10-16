@@ -39,7 +39,9 @@ import (
 
 	"github.com/blang/semver/v4"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -820,10 +822,41 @@ func validateHeadlampAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateInspektorGadgetAddon tests the inspektor-gadget addon by ensuring the pod has come up and addon disables
+// validateInspektorGadgetAddon tests the Inspektor Gadget addon and its kubelet permissions.
 func validateInspektorGadgetAddon(ctx context.Context, t *testing.T, profile string) {
 	defer disableAddon(t, "inspektor-gadget", profile)
 	defer PostMortemLogs(t, profile)
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("failed to get Kubernetes client: %v", err)
+	}
+
+	checkAccess := func(resource, verb string, want bool) {
+		review, err := client.AuthorizationV1().SubjectAccessReviews().Create(ctx, &authorizationv1.SubjectAccessReview{
+			Spec: authorizationv1.SubjectAccessReviewSpec{
+				User: "system:serviceaccount:gadget:gadget",
+				ResourceAttributes: &authorizationv1.ResourceAttributes{
+					Group:       "",
+					Resource:    "nodes",
+					Subresource: resource,
+					Verb:        verb,
+				},
+			},
+		}, meta.CreateOptions{})
+		if err != nil {
+			t.Fatalf("failed to check %s on nodes/%s for the Gadget service account: %v", verb, resource, err)
+		}
+		if review.Status.EvaluationError != "" {
+			t.Fatalf("failed to evaluate %s on nodes/%s for the Gadget service account: %s", verb, resource, review.Status.EvaluationError)
+		}
+		if review.Status.Allowed != want {
+			t.Errorf("Gadget service account access to nodes/%s with verb %s = %t, want %t", resource, verb, review.Status.Allowed, want)
+		}
+	}
+
+	checkAccess("configz", "get", true)
+	checkAccess("proxy", "get", false)
 
 	if _, err := PodWait(ctx, t, profile, "gadget", "k8s-app=gadget", Minutes(8)); err != nil {
 		t.Fatalf("failed waiting for inspektor-gadget pod: %v", err)
