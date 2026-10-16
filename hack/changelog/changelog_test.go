@@ -21,7 +21,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/go-github/v85/github"
+	"github.com/google/go-github/v92/github"
 )
 
 func TestClassify(t *testing.T) {
@@ -52,7 +52,7 @@ func TestClassify(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := &github.PullRequest{Title: github.String(tt.title)}
 			for _, l := range tt.labels {
-				pr.Labels = append(pr.Labels, &github.Label{Name: github.String(l)})
+				pr.Labels = append(pr.Labels, &github.Label{Name: l})
 			}
 			gotGroup, gotSkip := classify(pr, cfg, allowed)
 			if gotGroup != tt.wantGroup || gotSkip != tt.wantSkip {
@@ -73,7 +73,7 @@ func TestGroupPullRequests(t *testing.T) {
 	prs := map[int]*github.PullRequest{
 		1: {Title: github.String("addon: cni"), Number: github.Int(1)},
 		2: {Title: github.String("ci: skip"), Number: github.Int(2)},
-		3: {Title: github.String("feature"), Number: github.Int(3), Labels: []*github.Label{{Name: github.String("kind/feature")}}},
+		3: {Title: github.String("feature"), Number: github.Int(3), Labels: []*github.Label{{Name: "kind/feature"}}},
 		4: {Title: github.String("misc"), Number: github.Int(4)},
 		5: {Title: github.String("fix crash"), Number: github.Int(5)},
 	}
