@@ -53,7 +53,7 @@ type MiniTestBosKosDeployer struct {
 	sshAddr          string
 
 	boskosClient *client.Client
-	// this channel serves as a signal channel for the hearbeat goroutine
+	// this channel serves as a signal channel for the heartbeat goroutine
 	// so that it can be explicitly closed
 	boskosHeartbeatClose chan struct{}
 }
