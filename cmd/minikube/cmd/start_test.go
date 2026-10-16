@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -32,8 +33,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/run"
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func TestGetKubernetesVersion(t *testing.T) {
@@ -299,6 +302,70 @@ func TestSuggestMemoryAllocation(t *testing.T) {
 			got := suggestMemoryAllocation(test.sysLimit, test.containerLimit, test.nodes)
 			if got != test.want {
 				t.Errorf("defaultMemorySize(sys=%d, container=%d) = %d, want: %d", test.sysLimit, test.containerLimit, got, test.want)
+			}
+		})
+	}
+}
+
+func TestValidateRequestedMemorySizeForVMDrivers(t *testing.T) {
+	oldMemoryLimits := memoryLimits
+	memoryLimits = func(_ string) (int, int, error) {
+		return 8192, 0, nil
+	}
+	viper.Set(force, true)
+	t.Cleanup(func() {
+		memoryLimits = oldMemoryLimits
+		viper.Set(force, false)
+		out.SetErrFile(os.Stderr)
+	})
+
+	tests := []struct {
+		name        string
+		driver      string
+		memory      int
+		want        string
+		doesNotWant string
+	}{
+		{
+			name:   "VM driver rejects below minimum",
+			driver: driver.KVM2,
+			memory: 2400,
+			want:   "less than the usable minimum of 2500MB",
+		},
+		{
+			name:        "VM driver warns below recommendation",
+			driver:      driver.KVM2,
+			memory:      3000,
+			want:        "less than the recommended minimum 3072MB",
+			doesNotWant: "less than the usable minimum",
+		},
+		{
+			name:        "VM driver accepts recommended memory without low memory warning",
+			driver:      driver.KVM2,
+			memory:      3072,
+			doesNotWant: "less than the recommended minimum",
+		},
+		{
+			name:        "SSH driver keeps non-VM memory requirements",
+			driver:      driver.SSH,
+			memory:      2400,
+			doesNotWant: "2500MB",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			errFile := tests.NewFakeFile()
+			out.SetErrFile(errFile)
+
+			validateRequestedMemorySize(test.memory, test.driver)
+
+			got := errFile.String()
+			if test.want != "" && !strings.Contains(got, test.want) {
+				t.Fatalf("validateRequestedMemorySize(%d, %q) output = %q, want to contain %q", test.memory, test.driver, got, test.want)
+			}
+			if test.doesNotWant != "" && strings.Contains(got, test.doesNotWant) {
+				t.Fatalf("validateRequestedMemorySize(%d, %q) output = %q, should not contain %q", test.memory, test.driver, got, test.doesNotWant)
 			}
 		})
 	}
