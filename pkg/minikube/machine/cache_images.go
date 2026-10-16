@@ -191,7 +191,6 @@ func CacheAndLoadImages(images []string, profiles []*config.Profile, overwrite b
 		return nil
 	}
 
-	// This is the most important thing
 	if err := image.SaveToDir(images, detect.ImageCacheDir(), overwrite); err != nil {
 		return fmt.Errorf("save to dir: %w", err)
 	}
