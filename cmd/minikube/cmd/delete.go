@@ -37,6 +37,7 @@ import (
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
+	"k8s.io/minikube/pkg/addons/autoscaler"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/libmachine"
@@ -236,6 +237,11 @@ func runDelete(_ *cobra.Command, args []string) {
 	defer cancel()
 
 	if deleteAll {
+		for _, profile := range profilesToDelete {
+			if err := autoscaler.Stop(profile.Config); err != nil {
+				exit.Error(reason.InternalAddonDisable, "stopping cluster-autoscaler before deletion", err)
+			}
+		}
 		deleteContainersAndVolumes(delCtx, oci.Docker)
 		deleteContainersAndVolumes(delCtx, oci.Podman)
 
@@ -331,6 +337,16 @@ func deleteProfileTimeout(profile *config.Profile, options *run.CommandOptions) 
 func deleteProfile(ctx context.Context, profile *config.Profile, options *run.CommandOptions) error {
 	klog.Infof("Deleting %s", profile.Name)
 	register.Reg.SetStep(register.Deleting)
+	if err := autoscaler.Stop(profile.Config); err != nil {
+		return fmt.Errorf("stopping cluster-autoscaler before deletion: %w", err)
+	}
+	if profile.Config != nil && profile.Config.ClusterAutoscaler != nil {
+		latest, err := config.Load(profile.Name)
+		if err != nil {
+			return err
+		}
+		profile.Config = latest
+	}
 
 	viper.Set(config.ProfileName, profile.Name)
 	if profile.Config != nil {
