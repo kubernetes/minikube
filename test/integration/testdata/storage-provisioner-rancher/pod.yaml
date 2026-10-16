@@ -8,7 +8,7 @@ spec:
   restartPolicy: OnFailure
   containers:
     - name: busybox
-      image: busybox:stable
+      image: busybox:latest
       command: ["sh", "-c", "echo 'local-path-provisioner' > /test/file1"]
       volumeMounts:
         - name: data
