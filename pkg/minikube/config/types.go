@@ -112,6 +112,9 @@ type ClusterConfig struct {
 	AutoPauseInterval       time.Duration // Specifies interval of time to wait before checking if cluster should be paused
 	Rosetta                 bool          // Only used by vfkit driver
 	VmnetOffloading         bool          // Only used by krunkit driver
+	VmnetStartAddress       *netip.Addr   // Only used by the vfkit (vmnet-shared) and krunkit drivers; nil = unset.
+	VmnetEndAddress         *netip.Addr   // Only used by the vfkit (vmnet-shared) and krunkit drivers; nil = unset.
+	VmnetSubnetMask         *netip.Addr   // Only used by the vfkit (vmnet-shared) and krunkit drivers; nil = unset.
 	DNSServers              []netip.Addr  // Static DNS servers for the VM (VM drivers only)
 	MDNS                    bool          // Enable mDNS (.local) resolution via systemd-resolved
 }
