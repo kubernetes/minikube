@@ -18,14 +18,13 @@ package docker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/blang/semver/v4"
 	"github.com/spf13/viper"
@@ -99,8 +98,8 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}), nil
 }
 
-func status(_ *run.CommandOptions) (retState registry.State) {
-	version, state := dockerVersionOrState()
+func status(ctx context.Context, _ *run.CommandOptions) (retState registry.State) {
+	version, state := dockerVersionOrState(ctx)
 	if state.Error != nil {
 		return state
 	}
@@ -151,7 +150,7 @@ func status(_ *run.CommandOptions) (retState registry.State) {
 	return checkNeedsImprovement()
 }
 
-var dockerVersionOrState = func() (string, registry.State) {
+var dockerVersionOrState = func(ctx context.Context) (string, registry.State) {
 	if _, err := exec.LookPath(oci.Docker); err != nil {
 		return "", registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker", Doc: docURL}
 	}
@@ -166,10 +165,6 @@ var dockerVersionOrState = func() (string, registry.State) {
 			Doc:       "https://minikube.sigs.k8s.io/docs/start/",
 		}
 	}
-
-	timeout := registry.Driver(driver.Docker).ProbeTimeout
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 
 	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}:{{.Server.Platform.Name}}")
 	o, err := cmd.Output()
@@ -263,7 +258,8 @@ func checkDockerEngineVersion(o string) registry.State {
 			Healthy:          true,
 			NeedsImprovement: true,
 			Fix:              hintUpdate,
-			Doc:              docURL + "#requirements"}
+			Doc:              docURL + "#requirements",
+		}
 	}
 
 	return registry.State{
@@ -273,7 +269,8 @@ func checkDockerEngineVersion(o string) registry.State {
 		Healthy:          false,
 		NeedsImprovement: true,
 		Fix:              hintUpdate,
-		Doc:              docURL + "#requirements"}
+		Doc:              docURL + "#requirements",
+	}
 }
 
 func checkDockerDesktopVersion(version string) (s registry.State) {

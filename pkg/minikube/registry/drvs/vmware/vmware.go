@@ -17,6 +17,7 @@ limitations under the License.
 package vmware
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"time"
@@ -64,7 +65,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return d, nil
 }
 
-func status(_ *run.CommandOptions) registry.State {
+func status(_ context.Context, _ *run.CommandOptions) registry.State {
 	_, err := exec.LookPath("vmrun")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Install vmrun", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/"}

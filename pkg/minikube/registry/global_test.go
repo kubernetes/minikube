@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -79,7 +80,7 @@ func TestGlobalAvailable(t *testing.T) {
 		Default:      true,
 		ProbeTimeout: time.Second,
 		Priority:     Default,
-		Status:       func(_ *run.CommandOptions) State { return State{Healthy: true} },
+		Status:       func(_ context.Context, _ *run.CommandOptions) State { return State{Healthy: true} },
 	}
 	if err := Register(bar); err != nil {
 		t.Errorf("register returned error: %v", err)
@@ -90,7 +91,7 @@ func TestGlobalAvailable(t *testing.T) {
 		Default:      true,
 		ProbeTimeout: time.Second,
 		Priority:     Default,
-		Status:       func(_ *run.CommandOptions) State { return State{Healthy: false} },
+		Status:       func(_ context.Context, _ *run.CommandOptions) State { return State{Healthy: false} },
 	}
 	if err := Register(foo); err != nil {
 		t.Errorf("register returned error: %v", err)
@@ -130,7 +131,7 @@ func TestGlobalAvailableParallel(t *testing.T) {
 			Default:      true,
 			Priority:     Default,
 			ProbeTimeout: time.Second,
-			Status: func(_ *run.CommandOptions) State {
+			Status: func(_ context.Context, _ *run.CommandOptions) State {
 				time.Sleep(probeTime)
 				return State{Healthy: true}
 			},
@@ -169,7 +170,7 @@ func TestGlobalStatus(t *testing.T) {
 		Default:      true,
 		ProbeTimeout: time.Second,
 		Priority:     Default,
-		Status:       func(_ *run.CommandOptions) State { return expected },
+		Status:       func(_ context.Context, _ *run.CommandOptions) State { return expected },
 	}
 	if err := Register(bar); err != nil {
 		t.Errorf("register returned error: %v", err)

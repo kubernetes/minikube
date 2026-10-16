@@ -18,6 +18,7 @@ package registry
 
 import (
 	"cmp"
+	"context"
 	"fmt"
 	"os"
 	"slices"
@@ -63,10 +64,8 @@ func BareMetal(name string) bool {
 	return name == None || name == Mock
 }
 
-var (
-	// globalRegistry is a globally accessible driver registry
-	globalRegistry = newRegistry()
-)
+// globalRegistry is a globally accessible driver registry
+var globalRegistry = newRegistry()
 
 // DriverState is metadata relating to a driver and status
 type DriverState struct {
@@ -121,8 +120,21 @@ func Available(vm bool, options *run.CommandOptions) []DriverState {
 		state  State
 	}
 
+	getMaxTimeout := func(drivers []DriverDef) time.Duration {
+		maxTimeout := 0 * time.Microsecond
+
+		for _, d := range drivers {
+			maxTimeout = max(d.ProbeTimeout, maxTimeout)
+		}
+
+		return maxTimeout
+	}
+
 	drivers := globalRegistry.List()
 	results := make(chan probeResult, len(drivers))
+	maxTimeout := getMaxTimeout(drivers)
+	ctx, cancel := context.WithTimeout(context.Background(), maxTimeout)
+	defer cancel()
 	var wg sync.WaitGroup
 
 	for _, d := range drivers {
@@ -135,7 +147,7 @@ func Available(vm bool, options *run.CommandOptions) []DriverState {
 		}
 		wg.Go(func() {
 			start := time.Now()
-			s := d.Status(options)
+			s := d.Status(ctx, options)
 			klog.Infof("%s probed in %v: default: %v priority: %d, state: %+v", d.Name, time.Since(start), d.Default, d.Priority, s)
 			results <- probeResult{driver: d, state: s}
 		})
@@ -170,5 +182,9 @@ func Status(name string, options *run.CommandOptions) State {
 	if d.Empty() {
 		return State{}
 	}
-	return d.Status(options)
+
+	timeout := d.ProbeTimeout
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	return d.Status(ctx, options)
 }

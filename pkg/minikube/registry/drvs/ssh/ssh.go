@@ -17,6 +17,7 @@ limitations under the License.
 package ssh
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -85,6 +86,6 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return d, nil
 }
 
-func status(_ *run.CommandOptions) registry.State {
+func status(_ context.Context, _ *run.CommandOptions) registry.State {
 	return registry.State{Installed: true, Healthy: true}
 }

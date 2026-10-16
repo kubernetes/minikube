@@ -41,10 +41,8 @@ const (
 	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperkit/"
 )
 
-var (
-	// minimumVersion is used by hyperkit versionCheck(whether user's hyperkit is older than this)
-	minimumVersion = "0.20190201"
-)
+// minimumVersion is used by hyperkit versionCheck(whether user's hyperkit is older than this)
+var minimumVersion = "0.20190201"
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
@@ -85,16 +83,11 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func status(_ *run.CommandOptions) registry.State {
+func status(ctx context.Context, _ *run.CommandOptions) registry.State {
 	path, err := exec.LookPath("hyperkit")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Run 'brew install hyperkit'", Doc: docURL}
 	}
-
-	// Allow no more than 2 seconds for querying state
-	timeout := registry.Driver(driver.HyperKit).ProbeTimeout
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 
 	cmd := exec.CommandContext(ctx, path, "-v")
 	out, err := cmd.CombinedOutput()

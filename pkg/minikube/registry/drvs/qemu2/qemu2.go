@@ -17,6 +17,7 @@ limitations under the License.
 package qemu2
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -197,7 +198,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func status(_ *run.CommandOptions) registry.State {
+func status(_ context.Context, _ *run.CommandOptions) registry.State {
 	qemuSystem, err := qemuSystemProgram()
 	if err != nil {
 		return registry.State{Error: err, Doc: docURL}
