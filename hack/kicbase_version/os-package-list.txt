@@ -16,7 +16,7 @@ ii  ca-certificates                 20250419                             all    
 ii  catatonit                       0.2.1-2+b14                          amd64        init process for containers
 ii  conmon                          2.1.12-4                             amd64        OCI container runtime monitor
 ii  conntrack                       1:1.4.8-2                            amd64        Program to modify the conntrack tables
-ii  containerd.io                   2.4.2-1~debian.13~trixie             amd64        An open and reliable container runtime
+ii  containerd.io                   2.4.2-2~debian.13~trixie             amd64        An open and reliable container runtime
 ii  containernetworking-plugins     1.1.1+ds1-3+b17                      amd64        standard networking plugins - binaries
 ii  coreutils                       9.7-3                                amd64        GNU core utilities
 ii  cri-o                           1.35.10-1.1                          amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
@@ -35,8 +35,8 @@ ii  diffutils                       1:3.10-4                             amd64  
 ii  dirmngr                         2.4.7-21+deb13u1+b5                  amd64        GNU privacy guard - network certificate management service
 ii  dmsetup                         2:1.02.205-2                         amd64        Linux Kernel Device Mapper userspace library
 ii  docker-buildx-plugin            0.38.0-1~debian.13~trixie            amd64        Docker Buildx plugin extends build capabilities with BuildKit.
-ii  docker-ce                       5:29.9.0-1~debian.13~trixie          amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:29.9.0-1~debian.13~trixie          amd64        Docker CLI: the open-source application container engine
+ii  docker-ce                       5:29.9.1-1~debian.13~trixie          amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:29.9.1-1~debian.13~trixie          amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.22.22                              amd64        Debian package management system
 ii  ebtables                        2.0.11-6                             amd64        Ethernet bridge frame table administration
 ii  ethtool                         1:6.14.2-1                           amd64        display or change Ethernet device settings
@@ -88,7 +88,7 @@ ii  libdevmapper1.02.1:amd64        2:1.02.205-2                         amd64  
 ii  libedit2:amd64                  3.1-20250104-1                       amd64        BSD editline and history libraries
 ii  libelf1t64:amd64                0.192-4                              amd64        library to read and write ELF files
 ii  libevent-core-2.1-7t64:amd64    2.1.13-stable-1~deb13u1              amd64        Asynchronous event notification library (core)
-ii  libexpat1:amd64                 2.8.3-1~deb13u1                      amd64        XML parsing C library - runtime library
+ii  libexpat1:amd64                 2.9.0-1~deb13u1                      amd64        XML parsing C library - runtime library
 ii  libffi8:amd64                   3.4.8-2                              amd64        Foreign Function Interface library runtime
 ii  libfido2-1:amd64                1.15.0-1+b1                          amd64        library for generating and verifying FIDO 2.0 objects
 ii  libfstrm0:amd64                 0.6.1-1+b3                           amd64        Frame Streams (fstrm) library
