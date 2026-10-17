@@ -193,6 +193,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 		out.WarningT("Profile name '{{.name}}' is not valid", out.V{"name": ClusterFlagValue()})
 		exit.Message(reason.Usage, "Only alphanumeric and dashes '-' are permitted. Minimum 2 characters, starting with alphanumeric.")
 	}
+
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
 		kind := reason.HostConfigLoad
@@ -200,6 +201,14 @@ func runStart(cmd *cobra.Command, _ []string) {
 			kind = reason.HostHomePermission
 		}
 		exit.Message(kind, "Unable to load config: {{.error}}", out.V{"error": err})
+	}
+
+	nodeDefinitions, err := resolveNodes(cmd, existing, viper.GetViper())
+	if err != nil {
+		exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+	}
+	if err := applyNodeDefaults(cmd, existing, nodeDefinitions, runtime.GOOS, viper.GetViper()); err != nil {
+		exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 	}
 
 	if existing != nil {
@@ -236,7 +245,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 
 	useForce := viper.GetBool(force)
 
-	starter, err := provisionWithDriver(cmd, ds, existing, options)
+	starter, err := provisionWithDriver(cmd, ds, existing, options, nodeDefinitions)
 	if err != nil {
 		node.ExitIfFatal(err, useForce)
 		machine.MaybeDisplayAdvice(err, ds.Name)
@@ -263,7 +272,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
-				starter, err = provisionWithDriver(cmd, ds, existing, options)
+				starter, err = provisionWithDriver(cmd, ds, existing, options, nodeDefinitions)
 				if err != nil {
 					continue
 				}
@@ -310,7 +319,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, options *run.CommandOptions) (node.Starter, error) {
+func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, options *run.CommandOptions, nodeDefinitions []config.Node) (node.Starter, error) {
 	driverName := ds.Name
 	klog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
@@ -355,6 +364,9 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, crName, driverName, options)
 	if err != nil {
 		return node.Starter{}, fmt.Errorf("Failed to generate cluster config: %w", err)
+	}
+	if existing == nil && len(nodeDefinitions) > 0 {
+		cc.Nodes = configureNodeSpecs(nodeDefinitions, n)
 	}
 	klog.Infof("cluster config:\n%+v", cc)
 
@@ -498,11 +510,17 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		if err != nil {
 			return nil, err
 		}
+		if cmd.Flags().Changed(nodeSpec) {
+			// --node saves the complete topology upfront; the retry already started its workers.
+			pause.RemovePausedFile(starter.Runner)
+			return configInfo, nil
+		}
 	}
 
 	// target total and number of control-plane nodes
 	numCPNodes := 1
 	numNodes := viper.GetInt(nodes)
+
 	if existing != nil {
 		numCPNodes = 0
 		for _, n := range existing.Nodes {
@@ -520,6 +538,8 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		var n config.Node
 		if existing != nil {
 			n = existing.Nodes[i]
+		} else if cmd.Flags().Changed(nodeSpec) {
+			n = starter.Cfg.Nodes[i]
 		} else {
 			nodeName := node.Name(i + 1)
 			n = config.Node{
@@ -535,8 +555,9 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		}
 
 		out.Ln("") // extra newline for clarity on the command line
+		// 1st call
 		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure), options); err != nil {
-			return nil, fmt.Errorf("adding node: %w", err)
+			return nil, fmt.Errorf("starting node %q: %w", config.MachineName(*starter.Cfg, n), err)
 		}
 	}
 
@@ -1346,6 +1367,18 @@ func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterC
 	}
 
 	validateCNI(cmd, getContainerRuntime(existing))
+
+	if cmd.Flags().Changed(windowsVhdURL) {
+		if viper.GetString(windowsVhdURL) == "" {
+			viper.Set(windowsVhdURL, constants.DefaultWindowsVhdURL)
+			exit.Message(reason.Usage, "The --windows-vhd-url flag must be set to a valid URL")
+		}
+
+		vhdURL := viper.GetString(windowsVhdURL)
+		if !strings.HasSuffix(vhdURL, ".vhd") && !strings.HasSuffix(vhdURL, ".vhdx") {
+			exit.Message(reason.Usage, "The --windows-vhd-url flag must point to a valid VHD or VHDX file")
+		}
+	}
 
 	if cmd.Flags().Changed(staticIP) {
 		if err := validateStaticIP(viper.GetString(staticIP), drvName, viper.GetString(subnet)); err != nil {

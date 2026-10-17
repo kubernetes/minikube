@@ -122,6 +122,7 @@ const (
 	ha                      = "ha"
 	nodes                   = "nodes"
 	preload                 = "preload"
+	preloadWindowsIso       = "preload-windows-iso"
 	deleteOnFailure         = "delete-on-failure"
 	forceSystemd            = "force-systemd"
 	kicBaseImage            = "base-image"
@@ -149,6 +150,8 @@ const (
 	staticIP                = "static-ip"
 	gpus                    = "gpus"
 	autoPauseInterval       = "auto-pause-interval"
+	nodeSpec                = "node"
+	windowsVhdURL           = "windows-vhd-url"
 	preloadSrc              = "preload-source"
 	rosetta                 = "rosetta"
 	vmnetOffloading         = "vmnet-offloading"
@@ -197,13 +200,14 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(enableDefaultCNI, false, "DEPRECATED: Replaced by --cni=bridge")
 	startCmd.Flags().String(cniFlag, "", "CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)")
 	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitList, fmt.Sprintf("comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to %q, available options: %q . other acceptable values are 'all' or 'none', 'true' and 'false'", strings.Join(kverify.DefaultWaitList, ","), strings.Join(kverify.AllComponentsList, ",")))
-	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes or host to be healthy.")
+	startCmd.Flags().Duration(waitTimeout, 12*time.Minute, "max time to wait per Kubernetes or host to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 	startCmd.Flags().Bool(ha, false, "Create Highly Available Multi-Control Plane Cluster with a minimum of three control-plane nodes that will also be marked for work.")
 	startCmd.Flags().IntP(nodes, "n", 1, "The total number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
+	startCmd.Flags().Bool(preloadWindowsIso, false, "If set, download the Windows ISO to improve start time of setting up a windows node. Defaults to false.")
 	startCmd.Flags().Bool(noKubernetes, false, "If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use systemd as cgroup manager. Defaults to false.")
@@ -219,7 +223,11 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
 	startCmd.Flags().StringP(gpus, "g", "", "Allow pods to use your GPUs. Options include: [all,nvidia,amd] (Docker driver with Docker container-runtime only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
+	startCmd.Flags().StringArray(nodeSpec, nil, "Describe a node with role=control-plane|worker,os=linux|windows (role is required; OS defaults to linux). Repeat for each node; currently requires one Linux control plane and cannot combine with --nodes or --ha. Windows support is experimental and limited to one Windows worker on Hyper-V.")
+	startCmd.Flags().String(windowsVhdURL, constants.DefaultWindowsVhdURL, "The VHD URL to use for the windows node on a multi-node cluster. If not set, it will be set to the default Windows Server 2025 VHD URL.")
+
 	startCmd.Flags().String(preloadSrc, "auto", "Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try github first, then gcs as failover).")
+
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
