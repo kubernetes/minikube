@@ -75,6 +75,9 @@ rules:
   - apiGroups: ["scheduling.incubator.k8s.io", "scheduling.volcano.sh"]
     resources: ["queues"]
     verbs: ["get", "list", "watch"]
+  - apiGroups: ["scheduling.volcano.sh"]
+    resources: ["namespacequeues"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["services"]
     verbs: ["get"]
@@ -234,12 +237,13 @@ metadata:
   namespace: volcano-system
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-delete-policy": before-hook-creation
     "helm.sh/hook-weight": "5" # set a higher weight to reserve buffers.
   labels:
     app: volcano-admission-init
 spec:
   backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
   template:
     spec:
       securityContext:
@@ -272,6 +276,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
   name: jobs.batch.volcano.sh
 spec:
   group: batch.volcano.sh
@@ -397,7 +402,7 @@ spec:
               queue:
                 default: default
                 maxLength: 253
-                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                pattern: ^(namespace/)?[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                 type: string
               runningEstimate:
                 type: string
@@ -3326,6 +3331,11 @@ spec:
                               x-kubernetes-list-map-keys:
                               - name
                               x-kubernetes-list-type: map
+                            schedulingGroup:
+                              properties:
+                                podGroupName:
+                                  type: string
+                              type: object
                             securityContext:
                               properties:
                                 appArmorProfile:
@@ -4317,18 +4327,6 @@ spec:
                               x-kubernetes-list-map-keys:
                               - name
                               x-kubernetes-list-type: map
-                            workloadRef:
-                              properties:
-                                name:
-                                  type: string
-                                podGroup:
-                                  type: string
-                                podGroupReplicaKey:
-                                  type: string
-                              required:
-                              - name
-                              - podGroup
-                              type: object
                           required:
                           - containers
                           type: object
@@ -4552,6 +4550,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
   name: cronjobs.batch.volcano.sh
 spec:
   group: batch.volcano.sh
@@ -4695,7 +4694,7 @@ spec:
                       queue:
                         default: default
                         maxLength: 253
-                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                        pattern: ^(namespace/)?[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                         type: string
                       runningEstimate:
                         type: string
@@ -7624,6 +7623,11 @@ spec:
                                       x-kubernetes-list-map-keys:
                                       - name
                                       x-kubernetes-list-type: map
+                                    schedulingGroup:
+                                      properties:
+                                        podGroupName:
+                                          type: string
+                                      type: object
                                     securityContext:
                                       properties:
                                         appArmorProfile:
@@ -8615,18 +8619,6 @@ spec:
                                       x-kubernetes-list-map-keys:
                                       - name
                                       x-kubernetes-list-type: map
-                                    workloadRef:
-                                      properties:
-                                        name:
-                                          type: string
-                                        podGroup:
-                                          type: string
-                                        podGroupReplicaKey:
-                                          type: string
-                                      required:
-                                      - name
-                                      - podGroup
-                                      type: object
                                   required:
                                   - containers
                                   type: object
@@ -8811,6 +8803,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
   name: commands.bus.volcano.sh
 spec:
   group: bus.volcano.sh
@@ -8910,15 +8903,6 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: volcano-controller-configmap
-  namespace: volcano-system
-data:
-  volcano-controller.conf: |
----
-# Source: volcano/templates/controllers.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
   name: volcano-sharding-configmap
   namespace: volcano-system
 data:
@@ -8972,6 +8956,15 @@ rules:
   - apiGroups: ["scheduling.incubator.k8s.io", "scheduling.volcano.sh"]
     resources: ["podgroups", "queues", "queues/status"]
     verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
+  - apiGroups: ["scheduling.volcano.sh"]
+    resources: ["namespacequeues"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: ["scheduling.volcano.sh"]
+    resources: ["namespacequeues/status"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["scheduling.volcano.sh"]
+    resources: ["namespacequeues/finalizers"]
+    verbs: ["update", "patch"]
   - apiGroups: ["flow.volcano.sh"]
     resources: ["jobflows", "jobtemplates"]
     verbs: ["get", "list", "watch", "create", "delete", "update"]
@@ -9103,6 +9096,15 @@ spec:
           - name: HELM_RELEASE_NAME
             value: volcano
 ---
+# Source: volcano/templates/controller_configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: volcano-controller-configmap
+  namespace: volcano-system
+data:
+  volcano-controller.conf: |
+---
 # Source: volcano/templates/scheduler.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -9190,6 +9192,12 @@ rules:
     verbs: ["get", "list", "watch", "create", "delete", "update"]
   - apiGroups: ["scheduling.incubator.k8s.io", "scheduling.volcano.sh"]
     resources: ["queues/status"]
+    verbs: ["update"]
+  - apiGroups: ["scheduling.volcano.sh"]
+    resources: ["namespacequeues"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["scheduling.volcano.sh"]
+    resources: ["namespacequeues/status"]
     verbs: ["update"]
   - apiGroups: ["scheduling.incubator.k8s.io", "scheduling.volcano.sh"]
     resources: ["podgroups"]
@@ -9338,6 +9346,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
   name: podgroups.scheduling.volcano.sh
 spec:
   group: scheduling.volcano.sh
@@ -9466,7 +9475,7 @@ spec:
                   Queue defines the queue to allocate resource for PodGroup; if queue does not exist,
                   the PodGroup will not be scheduled. Defaults to `default` Queue with the lowest weight.
                 maxLength: 253
-                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                pattern: ^(namespace/)?[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                 type: string
               subGroupPolicy:
                 description: |-
@@ -9581,6 +9590,254 @@ spec:
                       type: integer
                   type: object
                 type: array
+              topologyAffinity:
+                description: TopologyAffinity expresses inter-group topology affinity
+                  and anti-affinity on the HyperNode tree.
+                properties:
+                  podGroupAntiAffinity:
+                    description: PodGroupAntiAffinity defines required/preferred anti-affinity
+                      against other PodGroups.
+                    properties:
+                      preferred:
+                        items:
+                          description: PodGroupAffinityTerm selects matching PodGroups
+                            and the topology tier for HyperNode comparison.
+                          properties:
+                            namespaceSelector:
+                              description: |-
+                                A label selector is a label query over a set of resources. The result of matchLabels and
+                                matchExpressions are ANDed. An empty label selector matches all objects. A null
+                                label selector matches no objects.
+                              properties:
+                                matchExpressions:
+                                  description: matchExpressions is a list of label
+                                    selector requirements. The requirements are ANDed.
+                                  items:
+                                    description: |-
+                                      A label selector requirement is a selector that contains values, a key, and an operator that
+                                      relates the key and values.
+                                    properties:
+                                      key:
+                                        description: key is the label key that the
+                                          selector applies to.
+                                        type: string
+                                      operator:
+                                        description: |-
+                                          operator represents a key's relationship to a set of values.
+                                          Valid operators are In, NotIn, Exists and DoesNotExist.
+                                        type: string
+                                      values:
+                                        description: |-
+                                          values is an array of string values. If the operator is In or NotIn,
+                                          the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                          the values array must be empty. This array is replaced during a strategic
+                                          merge patch.
+                                        items:
+                                          type: string
+                                        type: array
+                                        x-kubernetes-list-type: atomic
+                                    required:
+                                    - key
+                                    - operator
+                                    type: object
+                                  type: array
+                                  x-kubernetes-list-type: atomic
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  description: |-
+                                    matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                                    map is equivalent to an element of matchExpressions, whose key field is "key", the
+                                    operator is "In", and the values array contains only "value". The requirements are ANDed.
+                                  type: object
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            podGroupSelector:
+                              description: |-
+                                A label selector is a label query over a set of resources. The result of matchLabels and
+                                matchExpressions are ANDed. An empty label selector matches all objects. A null
+                                label selector matches no objects.
+                              properties:
+                                matchExpressions:
+                                  description: matchExpressions is a list of label
+                                    selector requirements. The requirements are ANDed.
+                                  items:
+                                    description: |-
+                                      A label selector requirement is a selector that contains values, a key, and an operator that
+                                      relates the key and values.
+                                    properties:
+                                      key:
+                                        description: key is the label key that the
+                                          selector applies to.
+                                        type: string
+                                      operator:
+                                        description: |-
+                                          operator represents a key's relationship to a set of values.
+                                          Valid operators are In, NotIn, Exists and DoesNotExist.
+                                        type: string
+                                      values:
+                                        description: |-
+                                          values is an array of string values. If the operator is In or NotIn,
+                                          the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                          the values array must be empty. This array is replaced during a strategic
+                                          merge patch.
+                                        items:
+                                          type: string
+                                        type: array
+                                        x-kubernetes-list-type: atomic
+                                    required:
+                                    - key
+                                    - operator
+                                    type: object
+                                  type: array
+                                  x-kubernetes-list-type: atomic
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  description: |-
+                                    matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                                    map is equivalent to an element of matchExpressions, whose key field is "key", the
+                                    operator is "In", and the values array contains only "value". The requirements are ANDed.
+                                  type: object
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            topologyTier:
+                              format: int32
+                              minimum: 0
+                              type: integer
+                            topologyTierName:
+                              maxLength: 253
+                              type: string
+                            weight:
+                              format: int32
+                              maximum: 100
+                              minimum: 1
+                              type: integer
+                          required:
+                          - podGroupSelector
+                          type: object
+                        type: array
+                      required:
+                        items:
+                          description: PodGroupAffinityTerm selects matching PodGroups
+                            and the topology tier for HyperNode comparison.
+                          properties:
+                            namespaceSelector:
+                              description: |-
+                                A label selector is a label query over a set of resources. The result of matchLabels and
+                                matchExpressions are ANDed. An empty label selector matches all objects. A null
+                                label selector matches no objects.
+                              properties:
+                                matchExpressions:
+                                  description: matchExpressions is a list of label
+                                    selector requirements. The requirements are ANDed.
+                                  items:
+                                    description: |-
+                                      A label selector requirement is a selector that contains values, a key, and an operator that
+                                      relates the key and values.
+                                    properties:
+                                      key:
+                                        description: key is the label key that the
+                                          selector applies to.
+                                        type: string
+                                      operator:
+                                        description: |-
+                                          operator represents a key's relationship to a set of values.
+                                          Valid operators are In, NotIn, Exists and DoesNotExist.
+                                        type: string
+                                      values:
+                                        description: |-
+                                          values is an array of string values. If the operator is In or NotIn,
+                                          the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                          the values array must be empty. This array is replaced during a strategic
+                                          merge patch.
+                                        items:
+                                          type: string
+                                        type: array
+                                        x-kubernetes-list-type: atomic
+                                    required:
+                                    - key
+                                    - operator
+                                    type: object
+                                  type: array
+                                  x-kubernetes-list-type: atomic
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  description: |-
+                                    matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                                    map is equivalent to an element of matchExpressions, whose key field is "key", the
+                                    operator is "In", and the values array contains only "value". The requirements are ANDed.
+                                  type: object
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            podGroupSelector:
+                              description: |-
+                                A label selector is a label query over a set of resources. The result of matchLabels and
+                                matchExpressions are ANDed. An empty label selector matches all objects. A null
+                                label selector matches no objects.
+                              properties:
+                                matchExpressions:
+                                  description: matchExpressions is a list of label
+                                    selector requirements. The requirements are ANDed.
+                                  items:
+                                    description: |-
+                                      A label selector requirement is a selector that contains values, a key, and an operator that
+                                      relates the key and values.
+                                    properties:
+                                      key:
+                                        description: key is the label key that the
+                                          selector applies to.
+                                        type: string
+                                      operator:
+                                        description: |-
+                                          operator represents a key's relationship to a set of values.
+                                          Valid operators are In, NotIn, Exists and DoesNotExist.
+                                        type: string
+                                      values:
+                                        description: |-
+                                          values is an array of string values. If the operator is In or NotIn,
+                                          the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                          the values array must be empty. This array is replaced during a strategic
+                                          merge patch.
+                                        items:
+                                          type: string
+                                        type: array
+                                        x-kubernetes-list-type: atomic
+                                    required:
+                                    - key
+                                    - operator
+                                    type: object
+                                  type: array
+                                  x-kubernetes-list-type: atomic
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  description: |-
+                                    matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                                    map is equivalent to an element of matchExpressions, whose key field is "key", the
+                                    operator is "In", and the values array contains only "value". The requirements are ANDed.
+                                  type: object
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            topologyTier:
+                              format: int32
+                              minimum: 0
+                              type: integer
+                            topologyTierName:
+                              maxLength: 253
+                              type: string
+                            weight:
+                              format: int32
+                              maximum: 100
+                              minimum: 1
+                              type: integer
+                          required:
+                          - podGroupSelector
+                          type: object
+                        type: array
+                    type: object
+                type: object
             type: object
           status:
             description: |-
@@ -9653,6 +9910,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
   name: queues.scheduling.volcano.sh
 spec:
   group: scheduling.volcano.sh
@@ -9730,6 +9988,21 @@ spec:
                         type: array
                     type: object
                 type: object
+              allowedNamespaces:
+                description: |-
+                  AllowedNamespaces lists the namespaces whose NamespaceQueues may use
+                  this Queue as their cluster-scoped parent.
+                  An empty or omitted list denies attachment.
+                  The literal "*" allows all namespaces and must be the only entry when present.
+                items:
+                  maxLength: 63
+                  pattern: ^(\*|[a-z0-9]([-a-z0-9]*[a-z0-9])?)$
+                  type: string
+                type: array
+                x-kubernetes-list-type: set
+                x-kubernetes-validations:
+                - message: the wildcard '*' must be the only entry
+                  rule: '!self.exists(x, x == ''*'') || size(self) == 1'
               capability:
                 additionalProperties:
                   anyOf:
@@ -9897,6 +10170,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
   name: numatopologies.nodeinfo.volcano.sh
 spec:
   group: nodeinfo.volcano.sh
@@ -9966,6 +10240,45 @@ spec:
                   Specifies the numa info for the resource
                   Key is resource name
                 type: object
+              podAllocations:
+                description: Specifies the per-pod numa resource allocation of the
+                  node
+                items:
+                  description: PodAllocation records the numa resource allocation
+                    for all containers in a pod
+                  properties:
+                    containerAllocations:
+                      description: Specifies the per-container numa resource allocation
+                        of the pod
+                      items:
+                        description: ContainerAllocation records the numa resource
+                          allocation for a single container
+                        properties:
+                          allocations:
+                            additionalProperties:
+                              type: string
+                            description: |-
+                              Specifies the numa resource allocations of the container
+                              Key is resource name, e.g., "cpu", "memory", "nvidia.com/gpu"
+                              For "cpu", the value is a cpuset string, e.g., "0,2-4"
+                              For other resources, the value is a quantity string, e.g., "2", "4Gi"
+                            type: object
+                          name:
+                            description: Specifies the name of the container
+                            type: string
+                        type: object
+                      type: array
+                    name:
+                      description: Specifies the name of the pod
+                      type: string
+                    namespace:
+                      description: Specifies the namespace of the pod
+                      type: string
+                    uid:
+                      description: Specifies the uid of the pod
+                      type: string
+                  type: object
+                type: array
               policies:
                 additionalProperties:
                   type: string
@@ -9989,6 +10302,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
   name: hypernodes.topology.volcano.sh
 spec:
   group: topology.volcano.sh
@@ -10232,6 +10546,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
   name: nodeshards.shard.volcano.sh
 spec:
   group: shard.volcano.sh
@@ -10324,6 +10639,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
   name: colocationconfigurations.config.volcano.sh
 spec:
   group: config.volcano.sh
@@ -10702,6 +11018,7 @@ webhooks:
           - v1beta1
         operations:
           - CREATE
+          - UPDATE
         resources:
           - podgroups
         scope: '*'
@@ -10777,12 +11094,265 @@ webhooks:
     sideEffects: NoneOnDryRun  
     timeoutSeconds: 10
 ---
+# Source: volcano/templates/scheduling_v1beta1_namespacequeue.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.0
+  name: namespacequeues.scheduling.volcano.sh
+spec:
+  group: scheduling.volcano.sh
+  names:
+    kind: NamespaceQueue
+    listKind: NamespaceQueueList
+    plural: namespacequeues
+    shortNames:
+    - nq
+    singular: namespacequeue
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.parent
+      name: PARENT
+      type: string
+    - jsonPath: .status.state
+      name: STATE
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: NamespaceQueue is a namespace-scoped queue abstraction in Volcano
+          scheduling.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec defines the desired NamespaceQueue behavior.
+            properties:
+              capability:
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+                description: Capability limits the resources that this NamespaceQueue
+                  may consume.
+                type: object
+              dequeueStrategy:
+                default: traverse
+                description: DequeueStrategy controls how descendants are traversed
+                  when work is dequeued.
+                enum:
+                - fifo
+                - traverse
+                type: string
+              deserved:
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+                description: Deserved declares the fair-share resource entitlement
+                  for this NamespaceQueue.
+                type: object
+              guarantee:
+                description: Guarantee reserves resources for this NamespaceQueue
+                  and its descendants.
+                properties:
+                  resource:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    description: The amount of cluster resource reserved for queue.
+                      Just set either `percentage` or `resource`
+                    type: object
+                type: object
+              parent:
+                default: cluster/default
+                description: |-
+                  Parent can be a cluster Queue or another NamespaceQueue in the same namespace.
+                  "cluster/<name>" refers to a cluster-scoped Queue.
+                  An unprefixed value refers to a NamespaceQueue in the same namespace.
+                maxLength: 261
+                pattern: ^(cluster/)?[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                type: string
+              priority:
+                description: Priority influences queue ordering during scheduling
+                  and reclamation.
+                format: int32
+                minimum: 0
+                type: integer
+              reclaimable:
+                description: Reclaimable controls whether workloads in this NamespaceQueue
+                  may be reclaimed.
+                type: boolean
+            type: object
+          status:
+            description: Status reports the observed NamespaceQueue lifecycle and
+              workload state.
+            properties:
+              allocated:
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+                description: Allocated records scheduler-owned resources allocated
+                  to the queue.
+                type: object
+              completed:
+                description: Completed counts PodGroups that have finished execution.
+                format: int32
+                minimum: 0
+                type: integer
+              conditions:
+                description: Conditions describe authorization and scheduling readiness
+                  transitions.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              inqueue:
+                description: Inqueue counts PodGroups admitted to the scheduling queue.
+                format: int32
+                minimum: 0
+                type: integer
+              pending:
+                description: Pending counts PodGroups waiting for scheduling.
+                format: int32
+                minimum: 0
+                type: integer
+              reservation:
+                description: Reservation records scheduler-owned node reservations.
+                properties:
+                  nodes:
+                    description: Nodes are Locked nodes for queue
+                    items:
+                      type: string
+                    type: array
+                  resource:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    description: Resource is a list of total idle resource in locked
+                      nodes.
+                    type: object
+                type: object
+              running:
+                description: Running counts PodGroups with running workloads.
+                format: int32
+                minimum: 0
+                type: integer
+              state:
+                description: State is the observed lifecycle state of the NamespaceQueue.
+                enum:
+                - Open
+                - Closed
+                - Closing
+                - Unknown
+                type: string
+              unknown:
+                description: Unknown counts PodGroups whose phase is unset or not
+                  recognized.
+                format: int32
+                minimum: 0
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
 # Source: jobflow/templates/flow_v1alpha1_jobflows.yaml
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
   name: jobtemplates.flow.volcano.sh
 spec:
   group: flow.volcano.sh
@@ -10890,7 +11460,7 @@ spec:
               queue:
                 default: default
                 maxLength: 253
-                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                pattern: ^(namespace/)?[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                 type: string
               runningEstimate:
                 type: string
@@ -13819,6 +14389,11 @@ spec:
                               x-kubernetes-list-map-keys:
                               - name
                               x-kubernetes-list-type: map
+                            schedulingGroup:
+                              properties:
+                                podGroupName:
+                                  type: string
+                              type: object
                             securityContext:
                               properties:
                                 appArmorProfile:
@@ -14810,18 +15385,6 @@ spec:
                               x-kubernetes-list-map-keys:
                               - name
                               x-kubernetes-list-type: map
-                            workloadRef:
-                              properties:
-                                name:
-                                  type: string
-                                podGroup:
-                                  type: string
-                                podGroupReplicaKey:
-                                  type: string
-                              required:
-                              - name
-                              - podGroup
-                              type: object
                           required:
                           - containers
                           type: object
@@ -14962,6 +15525,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
   name: jobflows.flow.volcano.sh
 spec:
   group: flow.volcano.sh
@@ -15145,7 +15709,7 @@ spec:
                             queue:
                               default: default
                               maxLength: 253
-                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                              pattern: ^(namespace/)?[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                               type: string
                             runningEstimate:
                               type: string
@@ -18074,6 +18638,11 @@ spec:
                                             x-kubernetes-list-map-keys:
                                             - name
                                             x-kubernetes-list-type: map
+                                          schedulingGroup:
+                                            properties:
+                                              podGroupName:
+                                                type: string
+                                            type: object
                                           securityContext:
                                             properties:
                                               appArmorProfile:
@@ -19065,18 +19634,6 @@ spec:
                                             x-kubernetes-list-map-keys:
                                             - name
                                             x-kubernetes-list-type: map
-                                          workloadRef:
-                                            properties:
-                                              name:
-                                                type: string
-                                              podGroup:
-                                                type: string
-                                              podGroupReplicaKey:
-                                                type: string
-                                            required:
-                                            - name
-                                            - podGroup
-                                            type: object
                                         required:
                                         - containers
                                         type: object
