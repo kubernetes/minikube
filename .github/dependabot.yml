@@ -5,6 +5,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
     groups:
       k8s-dependencies:
         patterns:
@@ -17,6 +19,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+    open-pull-requests-limit: 3
     groups:
       official-gh-actions:
         patterns:
