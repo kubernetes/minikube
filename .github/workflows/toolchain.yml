@@ -213,6 +213,27 @@ jobs:
           path: out/buildroot/dl
           key: ${{ steps.cache-dl.outputs.cache-primary-key }}
 
+      - name: Pack toolchain
+        run: |
+          tar --create \
+              --gzip \
+              --directory out/buildroot/output \
+              --file "${CACHE_BASE}-${{ matrix.arch }}.tar.gz" \
+              host
+
+      # Pull requests share the toolchain through this artifact. After a
+      # toolchain change is merged, publish the same tar as a release asset
+      # so it outlives the artifact retention period.
+      - name: Upload toolchain
+        timeout-minutes: 10
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          # archive: false uploads the tar itself. The artifact name is the
+          # file name; the name input is ignored.
+          path: ${{ env.CACHE_BASE }}-${{ matrix.arch }}.tar.gz
+          archive: false
+          retention-days: 14
+
       - name: Generate build graphs
         if: always()
         timeout-minutes: 2
