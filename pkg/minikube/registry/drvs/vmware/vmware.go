@@ -19,6 +19,7 @@ package vmware
 import (
 	"fmt"
 	"os/exec"
+	"time"
 
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
@@ -33,12 +34,13 @@ import (
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:     driver.VMware,
-		Config:   configure,
-		Default:  false,
-		Priority: registry.Deprecated,
-		Init:     func(_ *run.CommandOptions) drivers.Driver { return vmware.NewDriver("", "") },
-		Status:   status,
+		Name:         driver.VMware,
+		Config:       configure,
+		Default:      false,
+		Priority:     registry.Deprecated,
+		Init:         func(_ *run.CommandOptions) drivers.Driver { return vmware.NewDriver("", "") },
+		Status:       status,
+		ProbeTimeout: 1 * time.Second,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))

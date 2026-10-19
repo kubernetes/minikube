@@ -72,7 +72,7 @@ var unpauseCmd = &cobra.Command{
 				name = co.Config.Name
 			}
 
-			out.Step(style.Pause, "Unpausing node {{.name}} ... ", out.V{"name": name})
+			out.Step(style.Unpause, "Unpausing node {{.name}} ... ", out.V{"name": name})
 
 			machineName := config.MachineName(*co.Config, n)
 			host, err := machine.LoadHost(co.API, machineName)
@@ -100,9 +100,9 @@ var unpauseCmd = &cobra.Command{
 		register.Reg.SetStep(register.Done)
 
 		if namespaces == nil {
-			out.Step(style.Pause, "Unpaused {{.count}} containers", out.V{"count": len(ids)})
+			out.Step(style.Unpause, "Unpaused {{.count}} containers", out.V{"count": len(ids)})
 		} else {
-			out.Step(style.Pause, "Unpaused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+			out.Step(style.Unpause, "Unpaused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
 		}
 	},
 }

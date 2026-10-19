@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/spf13/viper"
@@ -53,11 +54,12 @@ func init() {
 		Init: func(options *run.CommandOptions) drivers.Driver {
 			return qemu.NewDriver("", "", options)
 		},
-		Config:   configure,
-		Status:   status,
-		Default:  true,
-		Priority: priority,
-		Parallel: true,
+		Config:       configure,
+		Status:       status,
+		Default:      true,
+		Priority:     priority,
+		Parallel:     true,
+		ProbeTimeout: 1 * time.Second,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}

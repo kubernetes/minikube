@@ -21,6 +21,7 @@ import (
 	"maps"
 	"slices"
 	"sync"
+	"time"
 
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
@@ -72,7 +73,8 @@ type Configurator func(config.ClusterConfig, config.Node) (interface{}, error)
 // Loader is a function that loads a byte stream and creates a driver.
 type Loader func(*run.CommandOptions) drivers.Driver
 
-// StatusChecker checks if a driver is available, offering a
+// StatusChecker checks if a driver is available. Implementations must return
+// within the driver's ProbeTimeout (e.g. via context.WithTimeout).
 type StatusChecker func(*run.CommandOptions) State
 
 // State is the current state of the driver and its dependencies
@@ -103,7 +105,8 @@ type DriverDef struct {
 	// Init is a function that initializes a machine driver, if built-in to the minikube binary
 	Init Loader
 
-	// Status returns the installation status of the driver
+	// Status returns the installation status of the driver. When set, it must
+	// respect ProbeTimeout and return within that duration.
 	Status StatusChecker
 
 	// Default is whether this driver is selected by default or not (opt-in).
@@ -116,6 +119,10 @@ type DriverDef struct {
 	// parallel. When false (default) all profiles using this driver are
 	// serialized.
 	Parallel bool
+
+	// ProbeTimeout is the maximum time Status may take. Required when Status
+	// is set; Register rejects a zero or negative value in that case.
+	ProbeTimeout time.Duration
 }
 
 // Empty returns true if the driver is nil
@@ -144,6 +151,10 @@ func newRegistry() *driverRegistry {
 func (r *driverRegistry) Register(def DriverDef) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+
+	if def.Status != nil && def.ProbeTimeout <= 0 {
+		return fmt.Errorf("%q: ProbeTimeout must be > 0", def.Name)
+	}
 
 	if _, ok := r.drivers[def.Name]; ok {
 		return fmt.Errorf("%q is already registered: %+v", def.Name, def)

@@ -401,8 +401,8 @@ func (d *Driver) setupRosetta() error {
 
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "set -e\n")
-	fmt.Fprintf(&b, "sudo mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc\n")
+	fmt.Fprint(&b, "set -e\n")
+	fmt.Fprint(&b, "sudo mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc\n")
 	fmt.Fprintf(&b, "sudo mkdir -p %s\n", rosettaMountPoint)
 	fmt.Fprintf(&b, "sudo mount -t virtiofs %s %s\n", rosettaMountTag, rosettaMountPoint)
 	fmt.Fprintf(&b, "echo '%s' | sudo tee /proc/sys/fs/binfmt_misc/register\n", binfmt)

@@ -58,7 +58,7 @@ Here is an example of what a Helm-based addon definition looks like:
 *   `Values`: A slice of strings for setting individual values via `--set` (e.g., `key=value`).
 *   `ValueFiles`: A slice of strings pointing to paths of YAML value files inside the minikube VM. These are passed to Helm with the `--values` flag.
 
-When the addon is enabled, minikube will automatically ensure the `helm` binary is installed within the cluster and then run `helm upgrade --install` with the parameters you have defined. When disabled, it will run `helm uninstall`.
+When the addon is enabled, minikube runs the `helm` binary bundled in the guest image with `helm upgrade --install` and the parameters you have defined. When disabled, it runs `helm uninstall`.
 
 ### 2. Add the Addon to `pkg/addons/config.go`
 

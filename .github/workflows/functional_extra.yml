@@ -37,7 +37,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - name: Azure Login
         id: azlogin
-        uses: azure/login@7ddb5af1ef8758cf1353cf3b42f940aee27ba21c # v3.0.2
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
           creds: '{"clientId":"${{ secrets.MINIKUBE_AZ_CLIENT_ID }}","clientSecret":"${{ secrets.MINIKUBE_AZ_PASSWORD }}","subscriptionId":"${{ secrets.MINIKUBE_AZ_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.MINIKUBE_AZ_TENANT_ID }}"}'
       - name: Set up Go
@@ -54,7 +54,7 @@ jobs:
         uses: ./.github/actions/install-gopogh
       - name: Create VM
         id: create_vm
-        uses: azure/bicep-deploy@66910e9c5c7733c33a1cd605030d02234b3bc4ed # v2.3.0
+        uses: azure/bicep-deploy@4dc076a544e5297d3aeb3cb972e7614e12f5a55b # v2.4.0
         with:
           type: deploymentStack
           operation: create

@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"k8s.io/minikube/pkg/libmachine/drivers"
 
@@ -35,13 +36,14 @@ import (
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:     driver.SSH,
-		Alias:    []string{driver.AliasSSH},
-		Config:   configure,
-		Status:   status,
-		Default:  false, // requires external VM
-		Priority: registry.Discouraged,
-		Init:     func(_ *run.CommandOptions) drivers.Driver { return ssh.NewDriver(ssh.Config{}) },
+		Name:         driver.SSH,
+		Alias:        []string{driver.AliasSSH},
+		Config:       configure,
+		Status:       status,
+		Default:      false, // requires external VM
+		Priority:     registry.Discouraged,
+		Init:         func(_ *run.CommandOptions) drivers.Driver { return ssh.NewDriver(ssh.Config{}) },
+		ProbeTimeout: 1 * time.Second,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))

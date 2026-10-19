@@ -49,13 +49,14 @@ const (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.Docker,
-		Config:   configure,
-		Init:     func(_ *run.CommandOptions) drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
-		Status:   status,
-		Default:  true,
-		Priority: registry.HighlyPreferred,
-		Parallel: true,
+		Name:         driver.Docker,
+		Config:       configure,
+		Init:         func(_ *run.CommandOptions) drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
+		Status:       status,
+		Default:      true,
+		Priority:     registry.HighlyPreferred,
+		Parallel:     true,
+		ProbeTimeout: 6 * time.Second,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
@@ -166,7 +167,8 @@ var dockerVersionOrState = func() (string, registry.State) {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	timeout := registry.Driver(driver.Docker).ProbeTimeout
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}:{{.Server.Platform.Name}}")

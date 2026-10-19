@@ -17,7 +17,9 @@ limitations under the License.
 package registry
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/run"
@@ -73,20 +75,22 @@ func TestGlobalAvailable(t *testing.T) {
 	}
 
 	bar := DriverDef{
-		Name:     "healthy-bar",
-		Default:  true,
-		Priority: Default,
-		Status:   func(_ *run.CommandOptions) State { return State{Healthy: true} },
+		Name:         "healthy-bar",
+		Default:      true,
+		ProbeTimeout: time.Second,
+		Priority:     Default,
+		Status:       func(_ *run.CommandOptions) State { return State{Healthy: true} },
 	}
 	if err := Register(bar); err != nil {
 		t.Errorf("register returned error: %v", err)
 	}
 
 	foo := DriverDef{
-		Name:     "unhealthy-foo",
-		Default:  true,
-		Priority: Default,
-		Status:   func(_ *run.CommandOptions) State { return State{Healthy: false} },
+		Name:         "unhealthy-foo",
+		Default:      true,
+		ProbeTimeout: time.Second,
+		Priority:     Default,
+		Status:       func(_ *run.CommandOptions) State { return State{Healthy: false} },
 	}
 	if err := Register(foo); err != nil {
 		t.Errorf("register returned error: %v", err)
@@ -114,6 +118,44 @@ func TestGlobalAvailable(t *testing.T) {
 	}
 }
 
+func TestGlobalAvailableParallel(t *testing.T) {
+	globalRegistry = newRegistry()
+
+	const probeTime = 50 * time.Millisecond
+	const n = 10
+	for i := range n {
+		name := fmt.Sprintf("driver-%d", i)
+		if err := Register(DriverDef{
+			Name:         name,
+			Default:      true,
+			Priority:     Default,
+			ProbeTimeout: time.Second,
+			Status: func(_ *run.CommandOptions) State {
+				time.Sleep(probeTime)
+				return State{Healthy: true}
+			},
+		}); err != nil {
+			t.Fatalf("failed to register driver %s: %v", name, err)
+		}
+	}
+
+	start := time.Now()
+	got := Available(false, &run.CommandOptions{})
+	duration := time.Since(start)
+
+	// Sequential probes would take ~500ms; parallel should finish near 50ms.
+	// Allow up to 200ms so overloaded CI runners don't flake.
+	ciTolerance := 150 * time.Millisecond
+	allowedProbeDuration := probeTime + ciTolerance
+
+	if duration > allowedProbeDuration {
+		t.Errorf("available took %v, want <= %s (probes should run in parallel)", duration, allowedProbeDuration)
+	}
+	if len(got) != n {
+		t.Errorf("available returned %d drivers, want %d", len(got), n)
+	}
+}
+
 func TestGlobalStatus(t *testing.T) {
 	globalRegistry = newRegistry()
 
@@ -123,10 +165,11 @@ func TestGlobalStatus(t *testing.T) {
 
 	expected := State{Installed: true, Healthy: true}
 	bar := DriverDef{
-		Name:     "bar",
-		Default:  true,
-		Priority: Default,
-		Status:   func(_ *run.CommandOptions) State { return expected },
+		Name:         "bar",
+		Default:      true,
+		ProbeTimeout: time.Second,
+		Priority:     Default,
+		Status:       func(_ *run.CommandOptions) State { return expected },
 	}
 	if err := Register(bar); err != nil {
 		t.Errorf("register returned error: %v", err)

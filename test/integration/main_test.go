@@ -85,9 +85,20 @@ func setMaxParallelism() {
 
 	maxp := runtime.GOMAXPROCS(0)
 
-	// Do not ignore what the user has explicitly set
-	if requested != maxp {
-		fmt.Fprintf(os.Stderr, "--test-parallel=%d was set via flags (system has %d cores)\n", requested, maxp)
+	// Do not ignore what the user has explicitly set. Go defaults -test.parallel
+	// to GOMAXPROCS, so comparing to core count cannot detect an explicit value.
+	explicit := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "test.parallel" {
+			explicit = true
+		}
+	})
+	if explicit {
+		if requested < 1 {
+			fmt.Fprintf(os.Stderr, "invalid --test.parallel=%d (must be >= 1)\n", requested)
+			os.Exit(1)
+		}
+		fmt.Fprintf(os.Stderr, "--test.parallel=%d was set via flags (system has %d cores)\n", requested, maxp)
 		return
 	}
 
@@ -232,7 +243,7 @@ func Seconds(n int) time.Duration {
 	return time.Duration(*timeOutMultiplier) * time.Duration(n) * time.Second
 }
 
-// TestingKicBaseImage will return true if the integraiton test is running against a passed --base-image flag
+// TestingKicBaseImage will return true if the integration test is running against a passed --base-image flag
 func TestingKicBaseImage() bool {
 	return strings.Contains(*startArgs, "base-image")
 }

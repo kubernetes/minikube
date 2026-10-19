@@ -18,7 +18,7 @@
 # https://systemd.io/CONTAINER_INTERFACE/
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:trixie-slim-*
-ARG KICBASE_IMAGE="debian:trixie-20260824-slim"
+ARG KICBASE_IMAGE="debian:trixie-20261005-slim"
 # start from debian 13, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need.
 FROM ${KICBASE_IMAGE} AS kicbase
@@ -30,7 +30,7 @@ ARG CRI_DOCKERD_VERSION="v0.4.3"
 ARG CRI_DOCKERD_COMMIT="d969e29f500151687337b2a896ab65e8192f3145"
 ARG CNI_PLUGINS_VERSION="v1.9.1"
 ARG TARGETARCH
-ARG NERDCTL_VERSION="2.3.5"
+ARG NERDCTL_VERSION="2.4.1"
 ARG NERDCTLD_VERSION="0.7.0"
 
 # copy in static files (configs, scripts)

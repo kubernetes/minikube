@@ -73,7 +73,7 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 // The file is created if it does not exist, using the specified PERM (before umask)
 func AppendToFile(filename string, data []byte, perm os.FileMode) error {
 	spec := PathMutexSpec(filename)
-	klog.Infof("WriteFile acquiring %s: %+v", filename, spec)
+	klog.Infof("AppendToFile acquiring %s: %+v", filename, spec)
 	releaser, err := Acquire(spec)
 	if err != nil {
 		return fmt.Errorf("failed to acquire lock for %s: %+v: %w", filename, spec, err)
@@ -85,6 +85,7 @@ func AppendToFile(filename string, data []byte, perm os.FileMode) error {
 	if err != nil {
 		return fmt.Errorf("failed to open %s: %+v: %w", filename, spec, err)
 	}
+	defer fd.Close()
 
 	_, err = fd.Write(data)
 	return err

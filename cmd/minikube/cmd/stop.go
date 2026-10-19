@@ -168,8 +168,6 @@ func stop(api libmachine.API, machineName string) bool {
 		}
 		klog.Warningf("stop host returned error: %v", err)
 
-		klog.Warningf("stop host returned error: %v", err)
-
 		var e mcnerror.ErrHostDoesNotExist
 		if errors.As(err, &e) {
 			out.Styled(style.Meh, `"{{.machineName}}" does not exist, nothing to stop`, out.V{"machineName": machineName})
