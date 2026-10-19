@@ -6,10 +6,9 @@ metadata:
     integration-test: busybox
 spec:
   containers:
-    - image: gcr.io/k8s-minikube/busybox:1.28.4-glibc
-      command:
-        - sleep
-        - "3600"
+    - image: busybox:latest
+      # Trap TERM so delete does not wait out the 30s grace period.
+      command: ["sh", "-c", "trap exit TERM; sleep infinity & wait"]
       imagePullPolicy: IfNotPresent
       name: busybox
   restartPolicy: Always
