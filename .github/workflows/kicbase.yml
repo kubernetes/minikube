@@ -1,0 +1,177 @@
+name: kicbase
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to build and update"
+        type: string
+        required: true
+      repo:
+        description: "Override target image repository (e.g. docker.io/kicbase/build)"
+        type: string
+        required: false
+
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: "1.26.5"
+  PLATFORMS: "linux/amd64,linux/arm64,linux/s390x,linux/ppc64le"
+  # Configurable via GitHub Repo Settings -> Variables (vars.KICBASE_REPO & vars.KICBASE_REGISTRY)
+  KICBASE_REPO: ${{ inputs.repo || vars.KICBASE_REPO || 'docker.io/kicbase/build' }}
+  KICBASE_REGISTRY: ${{ vars.KICBASE_REGISTRY || 'docker.io' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build-kicbase:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.issue.pull_request != null &&
+        contains(github.event.comment.body, 'ok-to-build-image') &&
+        (
+          github.event.comment.user.login == 'minikube-bot' ||
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+        )
+      )
+    runs-on: ubuntu-22.04
+    outputs:
+      kic_version: ${{ steps.prep.outputs.kic_version }}
+      repo: ${{ steps.prep.outputs.repo }}
+      image: ${{ steps.prep.outputs.image }}
+      head_sha: ${{ steps.prep.outputs.head_sha }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Verify comment author is in OWNERS
+        if: github.event_name == 'issue_comment' && github.event.comment.user.login != 'minikube-bot' && github.event.comment.author_association != 'OWNER'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_USER: ${{ github.event.comment.user.login }}
+        run: |
+          if ! gh api "repos/${GITHUB_REPOSITORY}/contents/OWNERS" -H "Accept: application/vnd.github.raw" | yq '.reviewers[], .approvers[]' | grep -qix "${COMMENT_USER}"; then
+            echo "User ${COMMENT_USER} is not in OWNERS reviewers or approvers" && exit 1
+          fi
+
+      - name: Checkout repository and PR branch
+        id: pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Set up QEMU and Docker Buildx
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+      - uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
+
+      - name: Prepare PR branch and build metadata
+        id: prep
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ inputs.pr_number || github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          gh pr checkout "${PR_NUM}"
+          PR_REPO=$(gh pr view "${PR_NUM}" --json headRepositoryOwner,headRepository --jq '.headRepositoryOwner.login + "/" + .headRepository.name')
+          if [ -n "${COMMENT_BODY}" ] && [ "${PR_REPO}" != "minikube-bot/minikube" ]; then
+            APPROVED_SHA=$(echo "${COMMENT_BODY}" | tr -d '\r' | awk '/ok-to-build-image/ {print $2}')
+            if [ "$(git rev-parse HEAD)" != "${APPROVED_SHA}" ]; then
+              echo "PR HEAD ($(git rev-parse HEAD)) does not match approved SHA (${APPROVED_SHA:-<missing>}). Comment: ok-to-build-image <full-commit-sha>" && exit 1
+            fi
+          fi
+
+          KV=$(grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
+          KIC_VERSION="${KV}-$(date +%s)-${PR_NUM}"
+
+          ./hack/jenkins/build_changelog.sh deploy/kicbase/CHANGELOG || touch deploy/kicbase/CHANGELOG
+          ./hack/build_auto_pause.sh "${PLATFORMS}" "${GITHUB_WORKSPACE}/deploy/kicbase"
+
+          echo "kic_version=${KIC_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "repo=${KICBASE_REPO}" >> "$GITHUB_OUTPUT"
+          echo "image=${KICBASE_REPO}:${KIC_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          make -s KIC_VERSION="${KIC_VERSION}" --eval='print-kic-vars: ; @echo "version_json=$(VERSION_JSON)"; echo "commit_sha=$(VERSION)-$(COMMIT_NOQUOTES)"' print-kic-vars >> "$GITHUB_OUTPUT"
+
+      - name: Log in to container registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: docker.io/kicbase/build
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Build and push kicbase image
+        id: build
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          context: deploy/kicbase
+          file: deploy/kicbase/Dockerfile
+          platforms: ${{ env.PLATFORMS }}
+          push: true
+          tags: ${{ steps.prep.outputs.image }}
+          build-args: |
+            VERSION_JSON=${{ steps.prep.outputs.version_json }}
+            COMMIT_SHA=${{ steps.prep.outputs.commit_sha }}
+
+  update-pr:
+    needs: build-kicbase
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository and PR branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Update PR with new kicbase image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ inputs.pr_number || github.event.issue.number }}
+          EXPECTED_SHA: ${{ needs.build-kicbase.outputs.head_sha }}
+          KIC_VERSION: ${{ needs.build-kicbase.outputs.kic_version }}
+          REPO: ${{ needs.build-kicbase.outputs.repo }}
+          IMAGE: ${{ needs.build-kicbase.outputs.image }}
+          SHA: ${{ needs.build-kicbase.outputs.digest }}
+        run: |
+          gh pr checkout "${PR_NUM}"
+          if [ "$(git rev-parse HEAD)" != "${EXPECTED_SHA}" ]; then
+            echo "PR HEAD ($(git rev-parse HEAD)) changed during build (expected ${EXPECTED_SHA})" && exit 1
+          fi
+          DIGEST="${SHA#sha256:}"
+
+          sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${DIGEST}\"|;s|gcrRepo = .*|gcrRepo = \"${REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${REPO}\"|" pkg/drivers/kic/types.go
+
+          sudo apt-get update && sudo apt-get install -y libvirt-dev
+          docker run --rm -t --platform linux/amd64 --entrypoint dpkg "${IMAGE}" -l --no-pager > hack/kicbase_version/os-package-list.txt
+          make generate-docs
+
+      - name: Commit and push updated kicbase reference
+        env:
+          GH_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT || secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ inputs.pr_number || github.event.issue.number }}
+          KIC_VERSION: ${{ needs.build-kicbase.outputs.kic_version }}
+          REPO: ${{ needs.build-kicbase.outputs.repo }}
+          IMAGE: ${{ needs.build-kicbase.outputs.image }}
+          SHA: ${{ needs.build-kicbase.outputs.digest }}
+        run: |
+          DIGEST="${SHA#sha256:}"
+          gh auth setup-git
+          git config user.name "minikube-bot"
+          git config user.email "20374350+minikube-bot@users.noreply.github.com"
+          git commit -am "Updating kicbase image to ${KIC_VERSION}"
+          if ! git push; then
+            gh pr comment "${PR_NUM}" --body "Built \`${IMAGE}\` (\`sha256:${DIGEST}\`), but failed to push to the PR branch. Please run locally and push: \`sed -i 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${DIGEST}\"|;s|gcrRepo = .*|gcrRepo = \"${REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${REPO}\"|' pkg/drivers/kic/types.go && make generate-docs\`"
+            exit 1
+          fi
