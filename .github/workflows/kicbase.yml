@@ -103,8 +103,8 @@ jobs:
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: docker.io/kicbase/build
-          username: ${{ secrets.DOCKER_HUB_USER }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          username: ${{ secrets.DOCKER_HUB_MINIKUBE_BOT_USER }}
+          password: ${{ secrets.DOCKER_HUB_MINIKUBE_BOT_PASSWORD }}
 
       - name: Build and push kicbase image
         id: build
