@@ -4,6 +4,11 @@ on:
   workflow_dispatch:
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # For example, if you push multiple commits to a pull request in quick succession, only the latest workflow run will continue
+  cancel-in-progress: true
+
 env:
   BUILDROOT_BRANCH: "2025.02.16"
 
