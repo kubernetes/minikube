@@ -39,8 +39,6 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       kic_version: ${{ steps.prep.outputs.kic_version }}
-      repo: ${{ steps.prep.outputs.repo }}
-      image: ${{ steps.prep.outputs.image }}
       head_sha: ${{ steps.prep.outputs.head_sha }}
       digest: ${{ steps.build.outputs.digest }}
     steps:
@@ -102,9 +100,8 @@ jobs:
       - name: Log in to container registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
-          registry: docker.io/kicbase/build
-          username: ${{ secrets.DOCKER_HUB_MINIKUBE_BOT_USER }}
-          password: ${{ secrets.DOCKER_HUB_MINIKUBE_BOT_PASSWORD }}
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
       - name: Build and push kicbase image
         id: build
@@ -141,8 +138,8 @@ jobs:
           PR_NUM: ${{ inputs.pr_number || github.event.issue.number }}
           EXPECTED_SHA: ${{ needs.build-kicbase.outputs.head_sha }}
           KIC_VERSION: ${{ needs.build-kicbase.outputs.kic_version }}
-          REPO: ${{ needs.build-kicbase.outputs.repo }}
-          IMAGE: ${{ needs.build-kicbase.outputs.image }}
+          REPO: ${{ env.KICBASE_REPO }}
+          IMAGE: ${{ env.KICBASE_REPO }}:${{ needs.build-kicbase.outputs.kic_version }}
           SHA: ${{ needs.build-kicbase.outputs.digest }}
         run: |
           gh pr checkout "${PR_NUM}"
@@ -162,8 +159,8 @@ jobs:
           GH_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT || secrets.GITHUB_TOKEN }}
           PR_NUM: ${{ inputs.pr_number || github.event.issue.number }}
           KIC_VERSION: ${{ needs.build-kicbase.outputs.kic_version }}
-          REPO: ${{ needs.build-kicbase.outputs.repo }}
-          IMAGE: ${{ needs.build-kicbase.outputs.image }}
+          REPO: ${{ env.KICBASE_REPO }}
+          IMAGE: ${{ env.KICBASE_REPO }}:${{ needs.build-kicbase.outputs.kic_version }}
           SHA: ${{ needs.build-kicbase.outputs.digest }}
         run: |
           DIGEST="${SHA#sha256:}"
