@@ -23,7 +23,6 @@ import (
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine"
-	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -110,12 +109,11 @@ func (t *tunnel) cleanup() *Status {
 
 func (t *tunnel) update() *Status {
 	klog.V(3).Info("updating tunnel status...")
-	var h *host.Host
-	t.status.MinikubeState, h, t.status.MinikubeError = t.clusterInspector.getStateAndHost()
+	t.status.MinikubeState, _, t.status.MinikubeError = t.clusterInspector.getStateAndHost()
 	defer t.clusterInspector.machineAPI.Close()
 	if t.status.MinikubeState == Running {
 		klog.V(3).Infof("minikube is running, trying to add route%s", t.status.TunnelID.Route)
-		setupRoute(t, h)
+		setupRoute(t)
 		if t.status.RouteError == nil {
 			t.status.PatchedServices, t.status.LoadBalancerEmulatorError = t.LoadBalancerEmulator.PatchServices()
 		}
@@ -125,7 +123,7 @@ func (t *tunnel) update() *Status {
 	return t.status
 }
 
-func setupRoute(t *tunnel, h *host.Host) {
+func setupRoute(t *tunnel) {
 	exists, conflict, _, err := t.router.Inspect(t.status.TunnelID.Route)
 	if err != nil {
 		t.status.RouteError = fmt.Errorf("error checking for route state: %s", err)
