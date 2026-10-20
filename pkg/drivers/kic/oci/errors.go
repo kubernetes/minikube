@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"context"
 	"errors"
 	"os/exec"
 	"strings"
@@ -91,7 +92,7 @@ func LogContainerDebug(ociBin string, name string) string {
 		klog.Infof("Postmortem logs (%q): %s", rr.Command(), rr.Output())
 	}
 	if ociBin == Docker {
-		di, err := dockerSystemInfo()
+		di, err := dockerSystemInfo(context.Background())
 		if err != nil {
 			klog.Warningf("Failed to get postmortem docker info: %v", err)
 		} else {
