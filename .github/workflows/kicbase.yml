@@ -40,6 +40,12 @@ jobs:
         )
       )
     runs-on: ubuntu-22.04
+    # One build per PR: a newer ok-to-build-image cancels a build still running for the same PR.
+    # Set per job rather than per workflow so runs for unrelated comments, whose jobs are skipped,
+    # never cancel a build.
+    concurrency:
+      group: ${{ github.workflow }}-pr-${{ inputs.pr_number || github.event.issue.number }}
+      cancel-in-progress: true
     permissions:
       contents: read
       statuses: write
@@ -197,6 +203,12 @@ jobs:
       contents: read
       statuses: write
     runs-on: ubuntu-22.04
+    # One build per PR: a newer ok-to-build-image cancels a build still running for the same PR.
+    # Set per job rather than per workflow so runs for unrelated comments, whose jobs are skipped,
+    # never cancel a build.
+    concurrency:
+      group: ${{ github.workflow }}-pr-${{ inputs.pr_number || github.event.issue.number }}
+      cancel-in-progress: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
