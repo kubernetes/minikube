@@ -18,6 +18,7 @@ package driver
 
 import (
 	"cmp"
+	"context"
 	"fmt"
 	"os"
 	"runtime"
@@ -76,10 +77,8 @@ const (
 	AliasQEMU = "qemu"
 )
 
-var (
-	// systemdResolvConf is path to systemd's DNS configuration. https://github.com/kubernetes/minikube/issues/3511
-	systemdResolvConf = "/run/systemd/resolve/resolv.conf"
-)
+// systemdResolvConf is path to systemd's DNS configuration. https://github.com/kubernetes/minikube/issues/3511
+var systemdResolvConf = "/run/systemd/resolve/resolv.conf"
 
 // SupportedDrivers returns a list of supported drivers
 func SupportedDrivers() []string {
@@ -241,7 +240,9 @@ func NeedsPortForward(name string) bool {
 		return true
 	}
 
-	si, err := oci.CachedDaemonInfo(name)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	si, err := oci.CachedDaemonInfo(ctx, name)
 	if err != nil {
 		panic(err)
 	}
@@ -392,7 +393,6 @@ func Status(name string, options *run.CommandOptions) registry.DriverState {
 		return registry.DriverState{}
 
 	}
-
 }
 
 // IsAlias checks if an alias belongs to provided driver by name.
@@ -405,7 +405,6 @@ func IsAlias(name, alias string) bool {
 func SetLibvirtURI(v string) {
 	klog.Infof("Setting default libvirt URI to %s", v)
 	os.Setenv("LIBVIRT_DEFAULT_URI", v)
-
 }
 
 // IndexFromMachineName returns the order of the container based on it is name

@@ -414,7 +414,9 @@ func (d *Driver) Restart() error {
 func (d *Driver) Start() error {
 	if err := oci.StartContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
 		oci.LogContainerDebug(d.OCIBinary, d.MachineName)
-		if _, err := oci.DaemonInfo(d.OCIBinary); err != nil {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		if _, err := oci.DaemonInfo(ctx, d.OCIBinary); err != nil {
 			return fmt.Errorf("debug daemon info %q: %w", d.MachineName, oci.ErrDaemonInfo)
 		}
 		return fmt.Errorf("start: %w", err)
@@ -433,7 +435,9 @@ func (d *Driver) Start() error {
 
 	if err := retry.Expo(checkRunning, 500*time.Microsecond, time.Second*30); err != nil {
 		excerpt := oci.LogContainerDebug(d.OCIBinary, d.MachineName)
-		_, err := oci.DaemonInfo(d.OCIBinary)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		_, err := oci.DaemonInfo(ctx, d.OCIBinary)
 		if err != nil {
 			return fmt.Errorf("container name %q: %w", d.MachineName, oci.ErrDaemonInfo)
 		}

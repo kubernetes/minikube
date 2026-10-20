@@ -150,7 +150,9 @@ func checkRunning(p CreateParams) func() error {
 func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic complexity
 	// on windows os, if docker desktop is using Windows Containers. Exit early with error
 	if p.OCIBinary == Docker && runtime.GOOS == "windows" {
-		info, err := DaemonInfo(p.OCIBinary)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		info, err := DaemonInfo(ctx, p.OCIBinary)
 		if info.OSType == "windows" {
 			return ErrWindowsContainers
 		}
@@ -278,7 +280,9 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 
 	if err := retry.Expo(checkRunning(p), 15*time.Millisecond, 25*time.Second); err != nil {
 		excerpt := LogContainerDebug(p.OCIBinary, p.Name)
-		_, err := DaemonInfo(p.OCIBinary)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		_, err := DaemonInfo(ctx, p.OCIBinary)
 		if err != nil {
 			return fmt.Errorf("container name %q: %w", p.Name, ErrDaemonInfo)
 		}
