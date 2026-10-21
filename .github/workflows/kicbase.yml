@@ -49,6 +49,7 @@ jobs:
     permissions:
       contents: read
       statuses: write
+      pull-requests: write
     outputs:
       kic_version: ${{ steps.prep.outputs.kic_version }}
       head_sha: ${{ steps.pr.outputs.head_sha }}
@@ -181,27 +182,37 @@ jobs:
         if: (failure() || cancelled()) && steps.pr.outputs.head_sha != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Comments are posted as minikube-bot, like the Jenkins job did.
+          BOT_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT || secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ inputs.pr_number || github.event.issue.number }}
           HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
           FAILURE_REASON: ${{ steps.pr.outputs.failure_reason }}
           JOB_STATUS: ${{ job.status }}
         run: |
+          PR_AUTHOR=$(gh pr view "${PR_NUM}" --json author --jq '.author.login')
           if [ "${JOB_STATUS}" = "cancelled" ]; then
             STATE=error
             DESCRIPTION="Build was cancelled"
+            BODY="Building a new kicbase image for this PR was cancelled, most likely by a newer \`ok-to-build-image\`."
           else
             STATE=failure
             DESCRIPTION="${FAILURE_REASON:-Building the kicbase image failed}"
+            BODY="Hi @${PR_AUTHOR}, building a new kicbase image failed: ${FAILURE_REASON:-see the build logs}."
           fi
           # Status descriptions are limited to 140 characters.
           gh api --silent -X POST "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
             -f state="${STATE}" -f context="${STATUS_CONTEXT}" -f target_url="${RUN_URL}" \
             -f description="${DESCRIPTION:0:140}"
+          GH_TOKEN="${BOT_TOKEN}" gh pr comment "${PR_NUM}" --body "${BODY}
+
+          Build logs: ${RUN_URL}"
 
   update-pr:
     needs: build-kicbase
     permissions:
       contents: read
       statuses: write
+      pull-requests: write
     runs-on: ubuntu-22.04
     # One build per PR: a newer ok-to-build-image cancels a build still running for the same PR.
     # Set per job rather than per workflow so runs for unrelated comments, whose jobs are skipped,
@@ -251,21 +262,13 @@ jobs:
       - name: Commit and push updated kicbase reference
         env:
           GH_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT || secrets.GITHUB_TOKEN }}
-          PR_NUM: ${{ inputs.pr_number || github.event.issue.number }}
           KIC_VERSION: ${{ needs.build-kicbase.outputs.kic_version }}
-          REPO: ${{ env.KICBASE_REPO }}
-          IMAGE: ${{ env.KICBASE_REPO }}:${{ needs.build-kicbase.outputs.kic_version }}
-          SHA: ${{ needs.build-kicbase.outputs.digest }}
         run: |
-          DIGEST="${SHA#sha256:}"
           gh auth setup-git
           git config user.name "minikube-bot"
           git config user.email "20374350+minikube-bot@users.noreply.github.com"
           git commit -am "Updating kicbase image to ${KIC_VERSION}"
-          if ! git push; then
-            gh pr comment "${PR_NUM}" --body "Built \`${IMAGE}\` (\`sha256:${DIGEST}\`), but failed to push to the PR branch. Please run locally and push: \`sed -i 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${DIGEST}\"|;s|gcrRepo = .*|gcrRepo = \"${REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${REPO}\"|' pkg/drivers/kic/types.go && make generate-docs\`"
-            exit 1
-          fi
+          git push
 
       # The PR checks list only shows statuses of the head commit, and the commit pushed above is
       # the new head. Report success on it as well as on the commit that was built, otherwise the
@@ -273,30 +276,58 @@ jobs:
       - name: Report success
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Comments are posted as minikube-bot, like the Jenkins job did.
+          BOT_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT || secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ inputs.pr_number || github.event.issue.number }}
           HEAD_SHA: ${{ needs.build-kicbase.outputs.head_sha }}
           IMAGE: ${{ env.KICBASE_REPO }}:${{ needs.build-kicbase.outputs.kic_version }}
+          SHA: ${{ needs.build-kicbase.outputs.digest }}
         run: |
           for STATUS_SHA in "${HEAD_SHA}" "$(git rev-parse HEAD)"; do
             gh api --silent -X POST "repos/${GITHUB_REPOSITORY}/statuses/${STATUS_SHA}" \
               -f state=success -f context="${STATUS_CONTEXT}" -f target_url="${RUN_URL}" \
               -f description="Built ${IMAGE} and updated the PR"
           done
+          PR_AUTHOR=$(gh pr view "${PR_NUM}" --json author --jq '.author.login')
+          GH_TOKEN="${BOT_TOKEN}" gh pr comment "${PR_NUM}" --body "Hi @${PR_AUTHOR}, we have updated your PR with the reference to the newly built kicbase image \`${IMAGE}\` (\`${SHA}\`).
+          Pull the changes locally if you want to test with them or update your PR further.
+
+          Build logs: ${RUN_URL}"
 
       - name: Report update failure
         if: failure() || cancelled()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Comments are posted as minikube-bot, like the Jenkins job did.
+          BOT_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT || secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ inputs.pr_number || github.event.issue.number }}
           HEAD_SHA: ${{ needs.build-kicbase.outputs.head_sha }}
+          KIC_VERSION: ${{ needs.build-kicbase.outputs.kic_version }}
+          REPO: ${{ env.KICBASE_REPO }}
           IMAGE: ${{ env.KICBASE_REPO }}:${{ needs.build-kicbase.outputs.kic_version }}
+          SHA: ${{ needs.build-kicbase.outputs.digest }}
           JOB_STATUS: ${{ job.status }}
         run: |
+          DIGEST="${SHA#sha256:}"
+          PR_AUTHOR=$(gh pr view "${PR_NUM}" --json author --jq '.author.login')
           if [ "${JOB_STATUS}" = "cancelled" ]; then
             STATE=error
             DESCRIPTION="Build was cancelled"
+            BODY="Updating this PR with the newly built kicbase image \`${IMAGE}\` was cancelled, most likely by a newer \`ok-to-build-image\`."
           else
             STATE=failure
             DESCRIPTION="Built ${IMAGE} but failed to update the PR"
+            BODY="Hi @${PR_AUTHOR}, we built the kicbase image \`${IMAGE}\` (\`${SHA}\`) but failed to update your PR.
+          Please run the following commands and push manually:
+
+          \`\`\`
+          sed -i 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${DIGEST}\"|;s|gcrRepo = .*|gcrRepo = \"${REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${REPO}\"|' pkg/drivers/kic/types.go
+          make generate-docs
+          \`\`\`"
           fi
           gh api --silent -X POST "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
             -f state="${STATE}" -f context="${STATUS_CONTEXT}" -f target_url="${RUN_URL}" \
             -f description="${DESCRIPTION:0:140}"
+          GH_TOKEN="${BOT_TOKEN}" gh pr comment "${PR_NUM}" --body "${BODY}
+
+          Build logs: ${RUN_URL}"
