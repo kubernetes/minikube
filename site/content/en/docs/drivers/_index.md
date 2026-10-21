@@ -26,7 +26,6 @@ Here is what's supported:
 ## macOS
 
 * [Docker]({{<ref "docker.md">}}) - VM + Container (preferred)
-* [Hyperkit]({{<ref "hyperkit.md">}}) - VM
 * [VirtualBox]({{<ref "virtualbox.md">}}) - VM
 * [Parallels]({{<ref "parallels.md">}}) - VM
 * [VMware Fusion]({{<ref "vmware.md">}}) - VM

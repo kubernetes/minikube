@@ -10,20 +10,11 @@
         "SwarmMaster": false,
         "SwarmHost": "",
         "SwarmDiscovery": "",
-        "Boot2DockerURL": "file:///Users/someuser/.minikube/cache/iso/minikube-v1.2.0.iso",
         "DiskSize": 20000,
         "CPU": 2,
-        "Memory": 2000,
-        "Cmdline": "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=p1",
-        "NFSShares": [],
-        "NFSSharesRoot": "/nfsshares",
-        "UUID": "5e6787b6-aecb-11e9-81cf-8c8590c3b8b4",
-        "BootKernel": "/Users/someuser/.minikube/machines/p1/b2d-image/boot/bzImage",
-        "BootInitrd": "/Users/someuser/.minikube/machines/p1/b2d-image/boot/initrd",
-        "Initrd": "initrd",
-        "Vmlinuz": "bzImage"
+        "Memory": 2000
     },
-    "DriverName": "hyperkit",
+    "DriverName": "vfkit",
     "HostOptions": {
         "Driver": "",
         "Memory": 0,
