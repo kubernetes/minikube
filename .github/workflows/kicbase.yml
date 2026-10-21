@@ -100,6 +100,7 @@ jobs:
       - name: Log in to container registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
+          registry: ${{ env.KICBASE_REGISTRY }}
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
