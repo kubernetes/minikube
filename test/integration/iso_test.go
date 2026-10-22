@@ -19,7 +19,6 @@ limitations under the License.
 package integration
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -29,6 +28,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
@@ -42,10 +42,11 @@ func TestISOImage(t *testing.T) {
 	MaybeParallel(t)
 
 	profile := UniqueProfileName("guest")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(22))
-	defer CleanupWithLogs(t, profile, cancel)
+	defer CleanupWithLogs(t, profile, func() {})
 
 	t.Run("Setup", func(t *testing.T) {
+		ctx, cancel := ContextWithTimeout(t, 22*time.Second)
+		defer cancel()
 		args := append([]string{"start", "-p", profile, "--no-kubernetes", "--memory=3072"}, StartArgs()...)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
@@ -77,6 +78,8 @@ func TestISOImage(t *testing.T) {
 			pkg := pkg
 			t.Run(pkg, func(t *testing.T) {
 				t.Parallel()
+				ctx, cancel := ContextWithTimeout(t, time.Second)
+				defer cancel()
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("which %s", pkg)))
 				if err != nil {
 					t.Errorf("failed to verify existence of %q binary : args %q: %v", pkg, rr.Command(), err)
@@ -98,6 +101,8 @@ func TestISOImage(t *testing.T) {
 			mount := mount
 			t.Run(mount, func(t *testing.T) {
 				t.Parallel()
+				ctx, cancel := ContextWithTimeout(t, time.Second)
+				defer cancel()
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("df -t ext4 %s | grep %s", mount, mount)))
 				if err != nil {
 					t.Errorf("failed to verify existence of %q mount. args %q: %v", mount, rr.Command(), err)
@@ -107,6 +112,8 @@ func TestISOImage(t *testing.T) {
 	})
 
 	t.Run("VersionJSON", func(t *testing.T) {
+		ctx, cancel := ContextWithTimeout(t, time.Second)
+		defer cancel()
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /version.json"))
 		if err != nil {
 			t.Fatalf("failed to read /version.json. args %q: %v", rr.Command(), err)
@@ -124,6 +131,8 @@ func TestISOImage(t *testing.T) {
 	})
 
 	t.Run("HelmVersion", func(t *testing.T) {
+		ctx, cancel := ContextWithTimeout(t, time.Second)
+		defer cancel()
 		cmd := exec.CommandContext(
 			ctx,
 			Target(),
@@ -148,6 +157,8 @@ func TestISOImage(t *testing.T) {
 	})
 
 	t.Run("eBPFSupport", func(t *testing.T) {
+		ctx, cancel := ContextWithTimeout(t, time.Second)
+		defer cancel()
 		// Ensure that BTF type information is available (https://github.com/kubernetes/minikube/issues/21788)
 		btfFile := "/sys/kernel/btf/vmlinux"
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("test -f %s && echo 'OK' || echo 'NOT FOUND'", btfFile)))
@@ -161,6 +172,8 @@ func TestISOImage(t *testing.T) {
 	})
 
 	t.Run("kmodNVMeTCP", func(t *testing.T) {
+		ctx, cancel := ContextWithTimeout(t, time.Second)
+		defer cancel()
 		kmod := "nvme-tcp"
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("modinfo %s", kmod)))
 		if err != nil {
@@ -169,6 +182,8 @@ func TestISOImage(t *testing.T) {
 	})
 
 	t.Run("procIOAccounting", func(t *testing.T) {
+		ctx, cancel := ContextWithTimeout(t, time.Second)
+		defer cancel()
 		// Ensure per-task IO accounting is available (https://github.com/kubernetes/minikube/issues/22737)
 		ioFile := "/proc/1/io"
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("test -f %s && echo 'OK' || echo 'NOT FOUND'", ioFile)))
@@ -181,6 +196,8 @@ func TestISOImage(t *testing.T) {
 	})
 
 	t.Run("nftablesSupport", func(t *testing.T) {
+		ctx, cancel := ContextWithTimeout(t, time.Second)
+		defer cancel()
 		// knftables (e.g. Submariner globalnet since v0.22) needs nftables in the guest kernel (https://github.com/kubernetes/minikube/issues/23450).
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh",
 			`zgrep -E '^CONFIG_NF_TABLES=(y|m)$' /proc/config.gz >/dev/null && echo OK || echo MISSING`))
