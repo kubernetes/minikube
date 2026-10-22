@@ -162,9 +162,19 @@ jobs:
       - id: info-block
         uses: medyagh/info-block@f5c042624acf8ce21bed4b0de77962e0a56ad88e # v1
         timeout-minutes: 1
+      - name: Configure apt and update package index (ubuntu)
+        if: startsWith(matrix.os, 'ubuntu')
+        timeout-minutes: 1
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-ci.conf >/dev/null <<'EOF'
+          Acquire::Retries "5";
+          Acquire::http::Timeout "15";
+          Acquire::https::Timeout "15";
+          Acquire::http::Pipeline-Depth "0";
+          EOF
+          sudo apt-get update
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         timeout-minutes: 2
         with:
@@ -191,10 +201,6 @@ jobs:
           curl https://get.docker.com | sudo sh
           dockerd-rootless-setuptool.sh install -f
           docker context use rootless
-      - name: Update apt-get package index (ubuntu)
-        if: runner.os == 'Linux' && (matrix.driver == 'podman' || matrix.driver == 'none')
-        timeout-minutes: 2
-        run: sudo apt-get update -qq
       - name: Install cri_dockerd (baremetal only)
         shell: bash
         if: matrix.driver == 'none' && matrix.cruntime == 'docker'
@@ -269,7 +275,6 @@ jobs:
         shell: bash
         timeout-minutes: 1
         run: |
-          sudo apt -q update
           sudo apt install -q -y podman
           lsb_release -a || true
           echo "=== podman version ==="
@@ -300,7 +305,6 @@ jobs:
         if: matrix.driver == 'none' && matrix.cruntime == 'containerd'
         timeout-minutes: 1
         run: |
-          sudo apt-get update
           sudo apt-get install -y containerd
           # Configure containerd
           sudo mkdir -p /etc/containerd
