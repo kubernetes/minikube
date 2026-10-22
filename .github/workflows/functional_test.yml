@@ -191,10 +191,6 @@ jobs:
           curl https://get.docker.com | sudo sh
           dockerd-rootless-setuptool.sh install -f
           docker context use rootless
-      - name: Update brew package index (macos)
-        if: contains(matrix.os, 'macos')
-        timeout-minutes: 1
-        run: brew update
       - name: Update apt-get package index (ubuntu)
         if: runner.os == 'Linux' && (matrix.driver == 'podman' || matrix.driver == 'none')
         timeout-minutes: 2
@@ -252,27 +248,22 @@ jobs:
         timeout-minutes: 1
         run: |
           set -x
-          if [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew install docker
-          fi
           echo "=== Docker Version ==="
           docker version || true
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            echo "=== Docker Info ==="
-            docker info || true
+          echo "=== Docker Info ==="
+          docker info || true
 
-            echo "=== Docker Disk Usage ==="
-            docker system df || true
+          echo "=== Docker Disk Usage ==="
+          docker system df || true
 
-            echo "=== Docker System Info (JSON) ==="
-            docker system info --format='{{json .}}' | { command -v jq >/dev/null 2>&1 && jq . || cat; } || true
+          echo "=== Docker System Info (JSON) ==="
+          docker system info --format='{{json .}}' | { command -v jq >/dev/null 2>&1 && jq . || cat; } || true
 
-            echo "=== Running Containers ==="
-            docker ps -a || true
+          echo "=== Running Containers ==="
+          docker ps -a || true
 
-            echo "=== Images ==="
-            docker images || true
-          fi
+          echo "=== Images ==="
+          docker images || true
       - name: Install podman
         if: matrix.driver == 'podman'
         shell: bash
@@ -294,12 +285,6 @@ jobs:
       - name: Install kubectl
         timeout-minutes: 1
         uses: azure/setup-kubectl@bda439f5f36b99b262ebdcd3613869bddb064c8e # v5.2.0
-      - name: Install vfkit and vmnet_helper (macos)
-        if: matrix.driver == 'vfkit'
-        timeout-minutes: 1
-        run: |
-          brew install vfkit
-          curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
       - name: Download Test Binaries
         timeout-minutes: 1
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
