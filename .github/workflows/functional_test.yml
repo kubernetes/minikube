@@ -240,13 +240,13 @@ jobs:
       - name: Install conntrack & socat (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
-        timeout-minutes: 1
+        timeout-minutes: 2
         run: sudo apt-get -qq -y install conntrack
       # socat is required for kubectl port forward which is used in some tests
       - name: Install socat (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
-        timeout-minutes: 1
+        timeout-minutes: 2
         run: sudo apt-get -qq -y install socat        
       - name: Install container networking plugins (baremetal only)
         shell: bash
