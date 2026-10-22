@@ -106,7 +106,7 @@ jobs:
           - name: docker-containerd-rootless-ubuntu-24.04-x86
             driver: docker
             cruntime: containerd
-            os: ubuntu-24.04            
+            os: ubuntu-24.04
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
             arch: amd64
@@ -169,7 +169,7 @@ jobs:
         timeout-minutes: 2
         with:
           go-version: ${{env.GO_VERSION}}
-          cache: true      
+          cache: true
       - name: Install gopogh
         timeout-minutes: 1
         uses: ./.github/actions/install-gopogh
@@ -234,7 +234,7 @@ jobs:
         shell: bash
         if: matrix.driver == 'none'
         timeout-minutes: 1
-        run: sudo apt-get -qq -y install socat        
+        run: sudo apt-get -qq -y install socat
       - name: Install container networking plugins (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
@@ -340,7 +340,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          # make variables available for next step 
+          # make variables available for next step
           echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Convert Test Output to JSON
         if: always()
