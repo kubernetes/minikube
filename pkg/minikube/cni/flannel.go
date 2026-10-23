@@ -49,7 +49,7 @@ func (c Flannel) String() string {
 	return "Flannel"
 }
 
-// Apply enables the CNI
+// Apply enables Flannel and, for mixed clusters, Windows service networking.
 func (c Flannel) Apply(r Runner) error {
 	// Mostly applicable to the 'none' driver
 	_, err := r.RunCmd(exec.Command("stat", "/opt/cni/bin/portmap"))
@@ -72,6 +72,13 @@ func (c Flannel) manifest() (assets.CopyableFile, error) {
 	b := bytes.Buffer{}
 	if err := flannelTmpl.Execute(&b, input); err != nil {
 		return nil, err
+	}
+	if config.HasWindowsNodes(c.cc.Nodes) {
+		// Install cluster-wide resources before workers join; OS selectors control scheduling.
+		b.WriteString("\n")
+		b.WriteString(FlannelWindowsManifest())
+		b.WriteString("\n---\n")
+		b.WriteString(KubeProxyWindowsManifest())
 	}
 	return manifestAsset(b.Bytes()), nil
 }

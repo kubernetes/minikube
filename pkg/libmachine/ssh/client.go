@@ -198,7 +198,10 @@ func (client *NativeClient) session() (*ssh.Client, *ssh.Session, error) {
 func (client *NativeClient) Output(command string) (string, error) {
 	conn, session, err := client.session()
 	if err != nil {
-		return "", nil
+		if conn != nil {
+			closeConn(conn)
+		}
+		return "", err
 	}
 	defer closeConn(conn)
 	defer session.Close()
@@ -326,11 +329,16 @@ func (client *NativeClient) Shell(args ...string) error {
 		}
 	}
 
-	if err := session.RequestPty("xterm", termHeight, termWidth, modes); err != nil {
-		return err
-	}
-
+	// Only request a PTY for interactive sessions (no command provided).
+	// When a command is given, skip PTY allocation: on Windows, requesting a
+	// PTY causes the SSH server to create a conhost.exe which emits terminal
+	// control sequences while the actual command output is not forwarded back
+	// through the SSH channel. Standard SSH behaviour is identical: ssh host
+	// allocates a PTY; ssh host cmd does not.
 	if len(args) == 0 {
+		if err := session.RequestPty("xterm", termHeight, termWidth, modes); err != nil {
+			return err
+		}
 		if err := session.Shell(); err != nil {
 			return err
 		}
