@@ -104,7 +104,7 @@ func status(options *run.CommandOptions) registry.State {
 	if err := vmnet.ValidateHelper(options); err != nil {
 		var vmnetErr *vmnet.Error
 		if errors.As(err, &vmnetErr) {
-			err = vmnetErr.Err
+			return registry.State{Error: vmnetErr.Err, Fix: "Install and configure vment-helper", Doc: docURL}
 		}
 		return registry.State{Error: err, Fix: "Install and configure vment-helper", Doc: docURL}
 	}

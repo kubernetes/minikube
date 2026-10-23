@@ -97,6 +97,10 @@ linters:
           disabled: true
         - name: unsecure-url-scheme
           disabled: true
+        - name: multiline-if-init
+          disabled: true
+        - name: marshal-receiver
+          disabled: true
         ###### To be determined, this is a rule with differences.
         - name: import-alias-naming
           disabled: true

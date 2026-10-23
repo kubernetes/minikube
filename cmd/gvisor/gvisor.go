@@ -24,6 +24,8 @@ import (
 )
 
 func main() {
+	// nolint:staticcheck — gvisor.Enable() can return non-nil errors; keeping the if-err
+	// guard ensures we only log and exit on failure.
 	if err := gvisor.Enable(); err != nil {
 		log.Print(err)
 		os.Exit(1)
