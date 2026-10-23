@@ -132,6 +132,9 @@ func BuildImage(srcPath string, file string, tag string, push bool, env []string
 
 	klog.Infof("succeeded building to: %s", strings.Join(succeeded, " "))
 	klog.Infof("failed building to: %s", strings.Join(failed, " "))
+	if len(failed) > 0 {
+		return fmt.Errorf("failed to build image to profile(s): %s", strings.Join(failed, " "))
+	}
 	return nil
 }
 
