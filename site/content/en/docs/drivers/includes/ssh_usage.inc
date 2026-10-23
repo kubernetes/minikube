@@ -17,6 +17,8 @@ This VM must also meet the [kubeadm requirements](https://kubernetes.io/docs/set
 * SELinux permissive
 * cgroups v1 (v2 is not yet supported by Kubernetes)
 
+{{% readfile file="/docs/drivers/includes/rootless.inc" %}}
+
 ## Usage
 
 The ssh driver requires the IP address of the VM to use.
