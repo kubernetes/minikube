@@ -18,6 +18,7 @@ package host
 
 import (
 	"regexp"
+	"time"
 
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/cert"
@@ -70,6 +71,14 @@ type Options struct {
 	SwarmOptions  *swarm.Options
 	AuthOptions   *auth.Options
 }
+
+// stopWaitAttempts and stopWaitInterval bound the post-Stop wait for the
+// Stopped state before Host.Stop falls back to Kill. Vars (not consts) so
+// tests can shrink them; defaults match the previous WaitFor behavior.
+var (
+	stopWaitAttempts = 60
+	stopWaitInterval = 3 * time.Second
+)
 
 type Metadata struct {
 	ConfigVersion int
@@ -145,8 +154,22 @@ func (h *Host) Start() error {
 
 func (h *Host) Stop() error {
 	log.Infof("Stopping %q...", h.Name)
-	if err := h.runActionForState(h.Driver.Stop, state.Stopped); err != nil {
+	if drivers.MachineInState(h.Driver, state.Stopped)() {
+		return mcnerror.ErrHostAlreadyInState{
+			Name:  h.Name,
+			State: state.Stopped,
+		}
+	}
+
+	if err := h.Driver.Stop(); err != nil {
 		return err
+	}
+
+	if err := mcnutils.WaitForSpecific(drivers.MachineInState(h.Driver, state.Stopped), stopWaitAttempts, stopWaitInterval); err != nil {
+		// The driver initiated a graceful shutdown but the machine never
+		// reached Stopped: force it off instead of failing the stop.
+		log.Warnf("Graceful stop of %q timed out, killing it...", h.Name)
+		return h.Kill()
 	}
 
 	log.Infof("Machine %q was stopped.", h.Name)
