@@ -1,0 +1,284 @@
+name: Toolchain
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # For example, if you push multiple commits to a pull request in quick succession, only the latest workflow run will continue
+  cancel-in-progress: true
+
+env:
+  BUILDROOT_BRANCH: "2025.02.16"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            br_arch: x86_64
+            br_defconfig: minikube_x86_64_defconfig
+            runner: ubuntu-24.04
+          - arch: arm64
+            br_arch: aarch64
+            br_defconfig: minikube_aarch64_defconfig
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    name: ${{ matrix.arch }}
+    env:
+      ARTIFACTS_DIR: toolchain-build-${{ matrix.arch }}
+      BUILD_LOG: toolchain-build-${{ matrix.arch }}.log
+      BR2_EXTERNAL: ../../deploy/iso/minikube-iso
+    steps:
+      - name: Runner info
+        timeout-minutes: 1
+        run: |
+          echo "Arch: $(uname -m)"
+          echo "CPUs: $(nproc)"
+          echo "Load: $(uptime)"
+          echo "Memory:"
+          free -h | sed 's/^/  /'
+          echo "Disk:"
+          df -h . | sed 's/^/  /'
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install dependencies
+        timeout-minutes: 5
+        # From deploy/iso/minikube-iso/Dockerfile
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            automake \
+            bc \
+            build-essential \
+            cmake \
+            cpio \
+            gcc \
+            git \
+            gnupg2 \
+            libtool \
+            libpcre3-dev \
+            mkisofs \
+            p7zip-full \
+            python3 \
+            rsync \
+            unzip \
+            wget
+          if [ "$(uname -m)" = "x86_64" ]; then
+            sudo apt-get install -y gcc-multilib
+          fi
+
+      - name: Clone buildroot
+        timeout-minutes: 2
+        # Based on the 'buildroot' target in Makefile
+        run: |
+          mkdir -p out
+          git clone --depth=1 --branch=${{ env.BUILDROOT_BRANCH }} \
+            https://github.com/buildroot/buildroot out/buildroot
+
+      - name: Patch buildroot
+        run: |
+          for p in deploy/iso/minikube-iso/patches/buildroot/*.patch; do
+            [ -f "$p" ] || continue
+            echo "Applying buildroot patch: $p"
+            (cd out/buildroot && patch -p1 -i "../../$p")
+          done
+
+      # Dots are not allowed in cache keys.
+      # TODO: move this hash into the Makefile when the ISO build shares it.
+      - name: Set toolchain cache keys
+        run: |
+          set -euo pipefail
+
+          arch="${{ matrix.br_arch }}"
+          case "$arch" in
+          x86_64|aarch64) ;;
+          *)
+            echo "unexpected buildroot arch: $arch" >&2
+            exit 1
+            ;;
+          esac
+
+          iso="deploy/iso/minikube-iso"
+          defconfig="$iso/configs/minikube_${arch}_defconfig"
+
+          # Target architecture (BR2_x86_64 or BR2_aarch64). Selects the compiler tuple.
+          arch_setting="$(grep -E '^(BR2_x86_64|BR2_aarch64)=' "$defconfig")"
+
+          # Toolchain vendor and options, including C++ (BR2_TOOLCHAIN_*).
+          toolchain_settings="$(grep -E '^BR2_TOOLCHAIN_' "$defconfig" | sort)"
+
+          # Kernel headers version shipped with the toolchain.
+          header_settings="$(grep -E '^BR2_PACKAGE_HOST_LINUX_HEADERS_' "$defconfig" | sort)"
+
+          # ccache wraps the compiler installed in output/host (BR2_CCACHE).
+          ccache_setting="$(grep -E '^BR2_CCACHE=' "$defconfig")"
+
+          # Paths are relative so the hash does not depend on the checkout directory.
+          # Patches applied to Buildroot while the toolchain is built.
+          buildroot_patches="$(
+            cd "$iso" && find patches/buildroot -type f -print0 | sort -z | xargs -0 -r sha256sum
+          )"
+
+          # Patches applied to the linux-headers package, which is part of the toolchain.
+          header_patches="$(
+            cd "$iso" && find patches/linux-headers -type f -print0 | sort -z | xargs -0 -r sha256sum
+          )"
+
+          toolchain_hash="$(
+            {
+              printf '%s\n' "$BUILDROOT_BRANCH"
+              printf '%s\n' "$arch_setting"
+              printf '%s\n' "$toolchain_settings"
+              printf '%s\n' "$header_settings"
+              printf '%s\n' "$ccache_setting"
+              printf '%s\n' "$buildroot_patches"
+              printf '%s\n' "$header_patches"
+            } | sha256sum | awk '{print $1}'
+          )"
+
+          echo "CACHE_BASE=toolchain-${BUILDROOT_BRANCH//./-}" >> "$GITHUB_ENV"
+          echo "TOOLCHAIN_HASH=$toolchain_hash" >> "$GITHUB_ENV"
+
+      - name: Restore download cache
+        id: cache-dl
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: out/buildroot/dl
+          # Sources are arch-independent, so both jobs share one cache per
+          # buildroot version. The key is exact; a buildroot upgrade misses
+          # and downloads sources once for that release.
+          key: ${{ env.CACHE_BASE }}-dl
+
+      - name: Restore ccache
+        id: cache-ccache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.buildroot-ccache
+          # Exact key is the buildroot version plus a hash of the toolchain
+          # settings. Unchanged inputs hit that cache. A toolchain setting
+          # change misses it and restores the closest older cache for this
+          # version and arch.
+          key: ${{ env.CACHE_BASE }}-ccache-${{ matrix.arch }}-${{ env.TOOLCHAIN_HASH }}
+          restore-keys: ${{ env.CACHE_BASE }}-ccache-${{ matrix.arch }}-
+
+      # Based on the 'iso-prepare-%' target in Makefile.
+      # TODO: replace arch-specific Config.in.tmpl files with a single
+      # Config.in using Kconfig arch conditionals, then remove this step.
+      - name: Prepare buildroot
+        run: |
+          cp deploy/iso/minikube-iso/arch/${{ matrix.br_arch }}/Config.in.tmpl \
+             deploy/iso/minikube-iso/Config.in
+
+      - name: Load buildroot defconfig
+        timeout-minutes: 1
+        run: |
+          make -C out/buildroot ${{ matrix.br_defconfig }} O=output
+
+      - name: Build toolchain
+        # TODO: tune based on actual build times
+        timeout-minutes: 120
+        run: |
+          # Full build output goes to build.log.
+          # Only >>> package status lines are shown in the workflow log.
+          set -o pipefail
+          make -C out/buildroot O=output toolchain 2>&1 \
+            | tee "$BUILD_LOG" \
+            | grep --line-buffered -E '>>>'
+
+      # Save only on an exact-key miss, so unchanged inputs do not create
+      # another cache entry. A restored prefix match still saves the new key.
+      - name: Save ccache
+        if: success() && steps.cache-ccache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.buildroot-ccache
+          key: ${{ steps.cache-ccache.outputs.cache-primary-key }}
+
+      - name: Save download cache
+        if: success() && steps.cache-dl.outputs.cache-hit != 'true'
+        # Both arches save the same key. The first write wins; the other
+        # fails because the key already exists.
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: out/buildroot/dl
+          key: ${{ steps.cache-dl.outputs.cache-primary-key }}
+
+      - name: Pack toolchain
+        run: |
+          tar --create \
+              --gzip \
+              --directory out/buildroot/output \
+              --file "${CACHE_BASE}-${{ matrix.arch }}.tar.gz" \
+              host
+
+      # Pull requests share the toolchain through this artifact. After a
+      # toolchain change is merged, publish the same tar as a release asset
+      # so it outlives the artifact retention period.
+      - name: Upload toolchain
+        timeout-minutes: 10
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          # archive: false uploads the tar itself. The artifact name is the
+          # file name; the name input is ignored.
+          path: ${{ env.CACHE_BASE }}-${{ matrix.arch }}.tar.gz
+          archive: false
+          retention-days: 14
+
+      - name: Generate build graphs
+        if: always()
+        timeout-minutes: 2
+        run: |
+          pip3 install matplotlib numpy
+          make -C out/buildroot O=output graph-build || true
+
+      - name: Collect build artifacts
+        if: always()
+        run: |
+          tar --create \
+              --gzip \
+              --ignore-failed-read \
+              --transform "s|^out/buildroot/output/||" \
+              --transform "s|^|$ARTIFACTS_DIR/|" \
+              --file "$ARTIFACTS_DIR.tar.gz" \
+              "$BUILD_LOG" \
+              out/buildroot/output/.config \
+              out/buildroot/output/build/build-time.log \
+              out/buildroot/output/graphs
+
+      - name: Upload build artifacts
+        if: always()
+        timeout-minutes: 3
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          # archive: false uploads the tar itself. The artifact name is the
+          # file name; the name input is ignored.
+          path: ${{ env.ARTIFACTS_DIR }}.tar.gz
+          archive: false
+          retention-days: 14
+
+      - name: Build results
+        if: always()
+        timeout-minutes: 1
+        run: |
+          echo "Load: $(uptime)"
+          echo "Memory:"
+          free -h | sed 's/^/  /'
+          echo "Disk:"
+          df -h . | sed 's/^/  /'
+          echo "Build output (MB):"
+          du -sm out/buildroot/output/*/ 2>/dev/null | sort -rn | sed 's/^/  /' || true
+          if [ -x out/buildroot/output/host/bin/ccache ]; then
+            echo ""
+            echo "ccache stats:"
+            out/buildroot/output/host/bin/ccache -s
+          fi
