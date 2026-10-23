@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -186,7 +187,7 @@ func TestStatus(t *testing.T) {
 		{"", true},
 	}
 	for _, tt := range tests {
-		dockerVersionOrState = func() (string, registry.State) { return tt.input, registry.State{} }
+		dockerVersionOrState = func(_ context.Context) (string, registry.State) { return tt.input, registry.State{} }
 		oci.CachedDaemonInfo = func(string) (oci.SysInfo, error) { return oci.SysInfo{}, nil }
 		state := status(&run.CommandOptions{})
 		err := state.Error
