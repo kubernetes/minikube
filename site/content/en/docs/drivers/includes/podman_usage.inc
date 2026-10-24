@@ -10,13 +10,13 @@ It's recommended to run minikube with the podman driver and [CRI-O container run
 minikube start --driver=podman --container-runtime=cri-o
 ```
 
-Alternatively, start minikube with the podman driver only: 
+Alternatively, start minikube with the podman driver only:
 
 ```shell
-minikube start --driver=podman 
+minikube start --driver=podman
 ```
 
-To make podman the default driver: 
+To make podman the default driver:
 
 ```shell
 minikube config set driver podman
@@ -31,10 +31,18 @@ To use Podman without `sudo` (i.e., Rootless Podman), set the `rootless` propert
 minikube config set rootless true
 ```
 
+Alternatively, pass the `--rootless` flag when starting minikube:
+
+```shell
+minikube start --driver=podman --rootless
+```
+
+Ensure your host user is configured with subordinate UIDs and GIDs before starting (see [Rootless host prerequisites]({{< ref "/docs/drivers/podman#rootless-host-prerequisites" >}}) above).
+
 For Rootless Podman, it is recommended to set `--container-runtime` to `containerd`:
 
 ```shell
 minikube start --driver=podman --container-runtime=containerd
 ```
 
-See the [Rootless Docker](https://minikube.sigs.k8s.io/docs/drivers/docker/#rootless-docker) section for the requirements and the restrictions.
+See the [Rootless Docker](https://minikube.sigs.k8s.io/docs/drivers/docker/#rootless-docker) section for additional requirements and restrictions.
