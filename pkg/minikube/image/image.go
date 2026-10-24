@@ -189,6 +189,65 @@ func retrieveDaemon(ref name.Reference) (v1.Image, error) {
 	return img, err
 }
 
+// errNotInDaemon is returned by streamImageFromDaemon when the image is not present in the
+// local daemon (or the daemon is unreachable). Callers use this to distinguish a missing image
+// from a real I/O failure that occurred after the image was confirmed present.
+var errNotInDaemon = errors.New("image not found in local daemon")
+
+// streamImageFromDaemon saves a local Docker daemon image directly to dst by piping docker save output to disk, avoiding buffering the entire image in RAM.
+// Returns errNotInDaemon if the image does not exist locally or the daemon is unavailable.
+func streamImageFromDaemon(ref name.Reference, dst string) error {
+	cl, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return errNotInDaemon
+	}
+	defer cl.Close()
+
+	// Short timeout just for the inspect — matches the pattern in DigestByDockerLib.
+	// ImageSave gets its own background context since large images can take minutes.
+	inspectCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cl.NegotiateAPIVersion(inspectCtx)
+
+	// Confirm the image exists before creating temp files. Any failure here (not found,
+	// daemon unreachable) is treated as errNotInDaemon so callers can fall back to remote.
+	if _, err := cl.ImageInspect(inspectCtx, ref.Name()); err != nil {
+		return errNotInDaemon
+	}
+
+	rc, err := cl.ImageSave(context.Background(), []string{ref.Name()})
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+
+	tmp, err := os.CreateTemp(filepath.Dir(dst), filepath.Base(dst)+".*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	defer func() {
+		if _, statErr := os.Stat(tmpName); statErr == nil {
+			os.Remove(tmpName)
+		}
+	}()
+
+	if _, err = io.Copy(tmp, rc); err != nil {
+		tmp.Close()
+		// Drain the daemon-side stream so it completes cleanly rather than being cancelled mid-flight.
+		_, _ = io.Copy(io.Discard, rc)
+		return err
+	}
+	if err = tmp.Close(); err != nil {
+		return err
+	}
+	if err = os.Rename(tmpName, dst); err != nil {
+		return err
+	}
+	klog.Infof("streamed %s from daemon to %s", ref.Name(), dst)
+	return nil
+}
+
 func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
 	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(p))
 	if err == nil {
