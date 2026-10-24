@@ -13,6 +13,21 @@ The podman driver is an alternative container runtime to the [Docker]({{< ref "/
 
 - Install [podman](https://podman.io/getting-started/installation.html)
 
+### Rootless host prerequisites
+
+When running the podman driver in rootless mode (`--driver=podman --rootless` or `minikube config set rootless true`), minikube runs as your non-root user. The host must configure subordinate UID and GID ranges in `/etc/subuid` and `/etc/subgid` for that user. Without them, rootless Podman fails to allocate user namespaces and `minikube start` fails.
+
+Tested configuration on Ubuntu 24.04:
+
+```shell
+sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 $USER
+podman system migrate
+```
+
+After configuring subordinate IDs, log out and log back in (or restart your session) for the changes to take effect.
+
+> **Note:** This configuration was verified on Ubuntu 24.04; please validate and report results for other distributions (Fedora, Debian, etc.). See the upstream [Podman rootless tutorial](https://github.com/podman-container-tools/podman/blob/main/docs/tutorials/rootless_tutorial.md#etcsubuid-and-etcsubgid-configuration) for details on `/etc/subuid` and `/etc/subgid` configuration.
+
 {{% readfile file="/docs/drivers/includes/podman_usage.inc" %}}
 
 ## Known Issues
