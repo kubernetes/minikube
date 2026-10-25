@@ -60,6 +60,10 @@ type Helper struct {
 	// The pidfile and log are stored here.
 	MachineDir string
 
+	// The socket is stored here. The caller creates the directory before
+	// starting the helper. See pkg/minikube/runtimedir.
+	MachineSocketDir string
+
 	// InterfaceID is an optional UUID for the vmnet interface. When set,
 	// vmnet-helper passes --interface-id to obtain a deterministic MAC address
 	// from vmnet.
@@ -339,7 +343,7 @@ func (h *Helper) GetState() (state.State, error) {
 }
 
 func (h *Helper) SocketPath() string {
-	return filepath.Join(h.MachineDir, sockfileName)
+	return filepath.Join(h.MachineSocketDir, sockfileName)
 }
 
 func (h *Helper) openLogfile() (*os.File, error) {
