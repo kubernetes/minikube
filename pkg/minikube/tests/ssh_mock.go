@@ -23,6 +23,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"net"
 	"sync/atomic"
@@ -34,6 +35,7 @@ import (
 
 // CommandResult defines the mock response for a command.
 type CommandResult struct {
+	Stdin    string
 	Stdout   string
 	Stderr   string
 	ExitCode int
@@ -153,6 +155,7 @@ func (s *SSHServer) serve() {
 }
 
 func (s *SSHServer) handleConnection(c net.Conn) {
+	defer c.Close()
 	_, chans, reqs, err := ssh.NewServerConn(c, s.Config)
 	if err != nil {
 		s.t.Logf("NewServerConn: %v", err)
@@ -202,6 +205,14 @@ func (s *SSHServer) doExec(channel ssh.Channel, req *ssh.Request) {
 		result = CommandResult{
 			Stderr:   fmt.Sprintf("%s: command not found", cmd.Command),
 			ExitCode: 127,
+		}
+	}
+
+	if result.Stdin != "" {
+		data, err := io.ReadAll(channel)
+		if err != nil || string(data) != result.Stdin {
+			s.t.Errorf("Unexpected stdin for %q (read error: %v)", cmd.Command, err)
+			return
 		}
 	}
 

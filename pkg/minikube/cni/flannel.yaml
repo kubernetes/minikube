@@ -93,7 +93,9 @@ data:
       "Network": "{{ .PodCIDR }}",
       "EnableNFTables": false,
       "Backend": {
-        "Type": "vxlan"
+        "Type": "vxlan",
+        "VNI": 4096,
+        "Port": 4789
       }
     }
 ---
