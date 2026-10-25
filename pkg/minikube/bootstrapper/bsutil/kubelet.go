@@ -91,6 +91,11 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 		extraOpts["hostname-override"] = nodeName
 	}
 
+	// allows clients to identify minikube nodes via .spec.providerID, similar to kind
+	if _, ok := extraOpts["provider-id"]; !ok {
+		extraOpts["provider-id"] = fmt.Sprintf("minikube://%s/%s/%s/%s", mc.Driver, k8s.ContainerRuntime, mc.Name, extraOpts["hostname-override"])
+	}
+
 	// Handled by CRI in 1.24+, and not by kubelet
 	if version.LT(semver.MustParse("1.24.0-alpha.2")) {
 		pauseImage := images.Pause(version, k8s.ImageRepository)
