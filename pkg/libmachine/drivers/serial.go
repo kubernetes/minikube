@@ -183,6 +183,6 @@ func (d *SerialDriver) Stop() error {
 	return d.Driver.Stop()
 }
 
-func (d *SerialDriver) MarshalJSON() ([]byte, error) {
+func (d SerialDriver) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.Driver)
 }
