@@ -1,7 +1,6 @@
 name: build-e2e
 on:
   workflow_call:
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -32,6 +31,17 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
+      - name: Download minikube binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        timeout-minutes: 1
+        with:
+          name: minikube-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: out
+      - name: Prepare minikube build prerequisite
+        timeout-minutes: 1
+        run: |
+          mv out/minikube out/minikube-${{ matrix.goos }}-${{ matrix.goarch }}
+          touch out/minikube-${{ matrix.goos }}-${{ matrix.goarch }}
       - name: Build e2e binary
         timeout-minutes: 8
         run: |

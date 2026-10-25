@@ -1,5 +1,16 @@
 name: PR
 on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - "go.mod"
+      - "**.go"
+      - "Makefile"
+      - ".github/workflows/**"
+      - "!site/**"
+      - "!**.md"
+      - "!**.json"
   pull_request:
     paths:
       - "go.mod"
@@ -10,7 +21,7 @@ on:
       - "!**.md"
       - "!**.json"
 
-# Cancel in-progress when PR updated, like vmnet-helper/test.yaml
+# Cancel in-progress when a branch or PR is updated, like vmnet-helper/test.yaml
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -23,6 +34,7 @@ jobs:
     uses: ./.github/workflows/build-minikube.yml
 
   build-e2e:
+    needs: build-minikube
     uses: ./.github/workflows/build-e2e.yml
 
   smoke-test:
