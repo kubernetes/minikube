@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -198,29 +199,95 @@ func (m *MiniTestBosKosDeployer) gcpVMSetUp() error {
 		klog.Warningf("failed to set up firewalls: %v", err)
 	}
 
-	// create the vm
 	description := fmt.Sprintf("%s instance (login ID: %q)", m.instanceName, m.remoteUserName)
 	instImgPair := strings.SplitN(m.config.InstanceImage, "/", 2)
-	if err := m.executeLocalGloudCommand("compute", "instances", "create",
-		"--enable-nested-virtualization",
-		"--zone="+m.config.GCPZone,
-		"--description="+description,
-		"--network="+m.networkName,
-		"--image-project="+instImgPair[0],
-		"--image-family="+instImgPair[1],
-		"--machine-type="+m.config.InstanceType,
-		fmt.Sprintf("--boot-disk-size=%dGiB", m.config.DiskGiB),
-		"--boot-disk-type=pd-ssd",
-		"--metadata=block-project-ssh-keys=TRUE",
 
-		m.instanceName,
-	); err != nil {
-		klog.Errorf("failed to start a gcp vm: %v", err)
-		return err
+	// Create the VM. vmMachineTypes returns the next machine to try, from best
+	// to worst. Try each type in every us-central1 zone before the next type.
+	var err error
+	zones := vmZones(m.config.GCPZone)
+	for _, machineType := range vmMachineTypes(m.config.InstanceType, m.config.EnableNestedVirtualization) {
+		for _, zone := range zones {
+			createArgs := []string{"compute", "instances", "create"}
+			if m.config.EnableNestedVirtualization {
+				createArgs = append(createArgs, "--enable-nested-virtualization")
+			}
+			createArgs = append(createArgs,
+				"--zone="+zone,
+				"--description="+description,
+				"--network="+m.networkName,
+				"--image-project="+instImgPair[0],
+				"--image-family="+instImgPair[1],
+				"--machine-type="+machineType,
+				fmt.Sprintf("--boot-disk-size=%dGiB", m.config.DiskGiB),
+				"--boot-disk-type=pd-ssd",
+				"--metadata=block-project-ssh-keys=TRUE",
+				m.instanceName,
+			)
+			if err = m.executeLocalGloudCommand(createArgs...); err != nil {
+				klog.Warningf("failed to create %s in %s: %v", machineType, zone, err)
+				continue
+			}
+			m.config.GCPZone = zone
+			return nil
+		}
 	}
+	klog.Errorf("failed to start a gcp vm: %v", err)
+	return err
 
-	return nil
+}
 
+// vmMachineTypes returns machine types to try, from best to worst. The
+// configured type is first.
+// none falls back through e2-standard-4, n2-standard-4, n2d-standard-4, and
+// n1-standard-4. e2-standard-4 is enough: none finishes in 30m or less.
+// kvm falls back through n2-standard-8, n1-standard-8, n2-standard-4, and
+// n1-standard-4. n2-standard-8 finished in about 45m, n2-standard-4 in about
+// 75m, so the larger types come first.
+// Machine types: https://cloud.google.com/compute/docs/general-purpose-machines
+// kvm skips E2 and N2D: Compute Engine does not expose VT-x or AMD-V on those
+// types. N4D does expose AMD-V, but it only boots from Hyperdisk, and this
+// create path uses pd-ssd.
+func vmMachineTypes(preferred string, nested bool) []string {
+	candidates := []string{"e2-standard-4", "n2-standard-4", "n2d-standard-4", "n1-standard-4"}
+	if nested {
+		candidates = []string{"n2-standard-8", "n1-standard-8", "n2-standard-4", "n1-standard-4"}
+	}
+	if preferred == "" {
+		return candidates
+	}
+	types := make([]string, 0, len(candidates)+1)
+	types = append(types, preferred)
+	for _, machineType := range candidates {
+		if machineType != preferred {
+			types = append(types, machineType)
+		}
+	}
+	return types
+}
+
+// vmZones returns us-central1 zones to try. The configured zone is first.
+// The rest are shuffled so jobs do not all fall over to the same zone.
+// Zones: https://cloud.google.com/compute/docs/regions-zones
+//
+// Follow-up: check whether other regions, such as us-east1 or us-west1, are
+// less prone to stockouts and whether these jobs can create the VM there.
+func vmZones(preferred string) []string {
+	candidates := []string{"us-central1-a", "us-central1-b", "us-central1-c", "us-central1-f"}
+	if preferred != "" {
+		zones := make([]string, 0, len(candidates))
+		for _, zone := range candidates {
+			if zone != preferred {
+				zones = append(zones, zone)
+			}
+		}
+		candidates = zones
+	}
+	rand.Shuffle(len(candidates), func(i, j int) { candidates[i], candidates[j] = candidates[j], candidates[i] })
+	if preferred == "" {
+		return candidates
+	}
+	return append([]string{preferred}, candidates...)
 }
 
 func (m *MiniTestBosKosDeployer) gcpSSHSetUp() error {
