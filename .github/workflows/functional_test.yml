@@ -194,11 +194,12 @@ jobs:
           EOF
           sudo systemctl daemon-reload
       - name: Set up Rootless Docker (rootless)
+        shell: bash
         if: ${{ matrix.rootless }}
         timeout-minutes: 3
         run: |
           sudo apt-get remove moby-engine-*
-          curl https://get.docker.com | sudo sh
+          curl --fail --location https://get.docker.com | sudo sh
           dockerd-rootless-setuptool.sh install -f
           docker context use rootless
       - name: Install cri_dockerd (baremetal only)
@@ -209,11 +210,11 @@ jobs:
           CRI_DOCKERD_VERSION="v0.4.3"
           ARCH="${{ matrix.arch }}"
           VERSION="${CRI_DOCKERD_VERSION#v}"
-          curl -L "https://github.com/Mirantis/cri-dockerd/releases/download/${CRI_DOCKERD_VERSION}/cri-dockerd-${VERSION}.${ARCH}.tgz" -o /tmp/cri-dockerd.tgz
+          curl --fail --location "https://github.com/Mirantis/cri-dockerd/releases/download/${CRI_DOCKERD_VERSION}/cri-dockerd-${VERSION}.${ARCH}.tgz" --output /tmp/cri-dockerd.tgz
           tar -C /tmp -xzvf /tmp/cri-dockerd.tgz
           sudo mv /tmp/cri-dockerd/cri-dockerd /usr/bin/cri-dockerd
-          sudo curl -L "https://raw.githubusercontent.com/Mirantis/cri-dockerd/${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
-          sudo curl -L "https://raw.githubusercontent.com/Mirantis/cri-dockerd/${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+          sudo curl --fail --location "https://raw.githubusercontent.com/Mirantis/cri-dockerd/${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.socket" --output /usr/lib/systemd/system/cri-docker.socket
+          sudo curl --fail --location "https://raw.githubusercontent.com/Mirantis/cri-dockerd/${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.service" --output /usr/lib/systemd/system/cri-docker.service
           sudo chmod +x /usr/bin/cri-dockerd
       - name: Install crictl (baremetal only)
         shell: bash
@@ -223,7 +224,7 @@ jobs:
           CRICTL_VERSION="v1.35.0"
           ARCH="${{ matrix.arch }}"
           CRICTL_TAR="crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz"
-          curl -L "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/${CRICTL_TAR}" --output "${CRICTL_TAR}"
+          curl --fail --location "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/${CRICTL_TAR}" --output "${CRICTL_TAR}"
           sudo tar zxvf "${CRICTL_TAR}" -C /usr/local/bin
       # conntrack is required for kubernetes 1.18 and higher
       - name: Install conntrack (baremetal only)
@@ -246,7 +247,7 @@ jobs:
           ARCH="${{ matrix.arch }}"
           CNI_PLUGIN_TAR="cni-plugins-linux-${ARCH}-$CNI_PLUGIN_VERSION.tgz"
           CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"
-          curl -LO "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/$CNI_PLUGIN_TAR"
+          curl --fail --location --remote-name "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/$CNI_PLUGIN_TAR"
           sudo mkdir -p "$CNI_PLUGIN_INSTALL_DIR"
           sudo tar -xf "$CNI_PLUGIN_TAR" -C "$CNI_PLUGIN_INSTALL_DIR"
           rm "$CNI_PLUGIN_TAR"

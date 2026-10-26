@@ -20,7 +20,7 @@ CNI_PLUGIN_VERSION="v1.9.1"
 CNI_PLUGIN_TAR="cni-plugins-linux-amd64-$CNI_PLUGIN_VERSION.tgz"
 CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"
 
-curl -qL -O "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/$CNI_PLUGIN_TAR"
+curl --disable --fail --location --remote-name "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/$CNI_PLUGIN_TAR"
 sudo rm -rf "$CNI_PLUGIN_INSTALL_DIR"
 sudo mkdir -p "$CNI_PLUGIN_INSTALL_DIR"
 sudo tar -xf "$CNI_PLUGIN_TAR" -C "$CNI_PLUGIN_INSTALL_DIR"

@@ -21,5 +21,6 @@ ARCH=$2
 
 
 echo "Installing latest kubectl for ${ARCH}"
-curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/${OS}/${ARCH}/kubectl"
+KUBECTL_VERSION=$(curl --fail --silent --show-error --location https://dl.k8s.io/release/stable.txt)
+curl --fail --location --remote-name "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/${OS}/${ARCH}/kubectl"
 sudo install ./kubectl /usr/local/bin/kubectl
