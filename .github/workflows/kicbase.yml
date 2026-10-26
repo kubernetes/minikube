@@ -15,7 +15,7 @@ on:
 
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: "1.27.3"
+  GO_VERSION: '1.27.3'
   PLATFORMS: "linux/amd64,linux/arm64,linux/s390x,linux/ppc64le"
   # Configurable via GitHub Repo Settings -> Variables (vars.KICBASE_REPO & vars.KICBASE_REGISTRY)
   KICBASE_REPO: ${{ inputs.repo || vars.KICBASE_REPO || 'docker.io/kicbase/build' }}
