@@ -97,6 +97,13 @@ linters:
           disabled: true
         - name: unsecure-url-scheme
           disabled: true
+        # multiline-if-init wants a multi-line if initializer pulled out
+        # into its own statement. Minikube keeps the initializer in the if
+        # when the call does not fit on one line. This check does not
+        # conform to that style. To change the style later, update the code
+        # and remove this exclude.
+        - name: multiline-if-init
+          disabled: true
         ###### To be determined, this is a rule with differences.
         - name: import-alias-naming
           disabled: true

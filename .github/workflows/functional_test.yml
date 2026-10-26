@@ -61,28 +61,24 @@ jobs:
             extra-start-args: --container-runtime=docker
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 18m
           - name: docker-docker-ubuntu24.04-arm
             driver: docker
             cruntime: docker
             extra-start-args: --container-runtime=docker
             os: ubuntu-24.04-arm
             arch: arm64
-            test-timeout: 18m
           - name: docker-containerd-ubuntu-24.04-x86
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 18m
           - name: docker-containerd-ubuntu-24.04-arm
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04-arm
             arch: arm64
-            test-timeout: 18m
           - name: docker-containerd-rootless-ubuntu-24.04-x86
             driver: docker
             cruntime: containerd
@@ -90,70 +86,71 @@ jobs:
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
             arch: amd64
-            test-timeout: 18m
           - name: podman-crio-ubuntu-24.04-x86
             driver: podman
             cruntime: crio
             extra-start-args: --container-runtime=crio
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 22m
           - name: podman-crio-ubuntu-24.04-arm
             driver: podman
             cruntime: crio
             extra-start-args: --container-runtime=crio
             os: ubuntu-24.04-arm
             arch: arm64
-            test-timeout: 22m
           - name: podman-containerd-ubuntu-24.04-x86
             driver: podman
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 22m
           - name: podman-containerd-ubuntu-24.04-arm
             driver: podman
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-24.04-arm
             arch: arm64
-            test-timeout: 22m
           - name: baremetal-docker-ubuntu-24.04-x86
             driver: none
             cruntime: docker
             extra-start-args: --container-runtime=docker
             os: ubuntu-24.04
             arch: amd64
-            test-timeout: 10m
           - name: baremetal-docker-ubuntu-24.04-arm
             driver: none
             cruntime: docker
             extra-start-args: --container-runtime=docker
             os: ubuntu-24.04-arm
             arch: arm64
-            test-timeout: 10m
           - name: baremetal-containerd-ubuntu-24.04-x86
             driver: none
             cruntime: containerd
             os: ubuntu-24.04
             arch: amd64
             extra-start-args: --container-runtime=containerd
-            test-timeout: 10m
           - name: baremetal-containerd-ubuntu-24.04-arm
             driver: none
             cruntime: containerd
             os: ubuntu-24.04-arm
             arch: arm64
             extra-start-args: --container-runtime=containerd
-            test-timeout: 10m
     steps:
       - id: info-block
         uses: medyagh/info-block@f5c042624acf8ce21bed4b0de77962e0a56ad88e # v1
         timeout-minutes: 1
+      - name: Configure apt and update package index (ubuntu)
+        if: startsWith(matrix.os, 'ubuntu')
+        timeout-minutes: 1
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-ci.conf >/dev/null <<'EOF'
+          Acquire::Retries "5";
+          Acquire::http::Timeout "15";
+          Acquire::https::Timeout "15";
+          Acquire::http::Pipeline-Depth "0";
+          EOF
+          sudo apt-get update
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         timeout-minutes: 2
         with:
@@ -180,14 +177,6 @@ jobs:
           curl https://get.docker.com | sudo sh
           dockerd-rootless-setuptool.sh install -f
           docker context use rootless
-      - name: Update brew package index (macos)
-        if: contains(matrix.os, 'macos')
-        timeout-minutes: 1
-        run: brew update
-      - name: Update apt-get package index (ubuntu)
-        if: runner.os == 'Linux' && (matrix.driver == 'podman' || matrix.driver == 'none')
-        timeout-minutes: 2
-        run: sudo apt-get update -qq
       - name: Install cri_dockerd (baremetal only)
         shell: bash
         if: matrix.driver == 'none' && matrix.cruntime == 'docker'
@@ -213,17 +202,17 @@ jobs:
           curl -L "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/${CRICTL_TAR}" --output "${CRICTL_TAR}"
           sudo tar zxvf "${CRICTL_TAR}" -C /usr/local/bin
       # conntrack is required for kubernetes 1.18 and higher
-      - name: Install conntrack & socat (baremetal only)
+      - name: Install conntrack (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
         timeout-minutes: 2
-        run: sudo apt-get -qq -y install conntrack
+        run: sudo apt-get -y install conntrack
       # socat is required for kubectl port forward which is used in some tests
       - name: Install socat (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
         timeout-minutes: 1
-        run: sudo apt-get -qq -y install socat
+        run: sudo apt-get -y install socat
       - name: Install container networking plugins (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
@@ -241,34 +230,28 @@ jobs:
         timeout-minutes: 1
         run: |
           set -x
-          if [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew install docker
-          fi
           echo "=== Docker Version ==="
           docker version || true
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            echo "=== Docker Info ==="
-            docker info || true
+          echo "=== Docker Info ==="
+          docker info || true
 
-            echo "=== Docker Disk Usage ==="
-            docker system df || true
+          echo "=== Docker Disk Usage ==="
+          docker system df || true
 
-            echo "=== Docker System Info (JSON) ==="
-            docker system info --format='{{json .}}' | { command -v jq >/dev/null 2>&1 && jq . || cat; } || true
+          echo "=== Docker System Info (JSON) ==="
+          docker system info --format='{{json .}}' | { command -v jq >/dev/null 2>&1 && jq . || cat; } || true
 
-            echo "=== Running Containers ==="
-            docker ps -a || true
+          echo "=== Running Containers ==="
+          docker ps -a || true
 
-            echo "=== Images ==="
-            docker images || true
-          fi
+          echo "=== Images ==="
+          docker images || true
       - name: Install podman
         if: matrix.driver == 'podman'
         shell: bash
         timeout-minutes: 1
         run: |
-          sudo apt -q update
-          sudo apt install -q -y podman
+          sudo apt install -y podman
           lsb_release -a || true
           echo "=== podman version ==="
           podman version || true
@@ -291,15 +274,8 @@ jobs:
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
       - name: Download minikube binary
         timeout-minutes: 1
-<<<<<<< HEAD
-<<<<<<< HEAD
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-=======
-        uses: actions/download-artifact@d7d2b6b31ede9d1091053d87d2c74921a1f0ddecfc
->>>>>>> 10f2f12e8 (ci: centralize PR builds via pr.yml with parallel reusable builds)
-=======
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
->>>>>>> 5ded64046 (ci: centralize PR builds and reuse artifacts)
+
         with:
           name: minikube-linux-${{ matrix.arch }}
           path: out
@@ -320,9 +296,8 @@ jobs:
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
       - name: Install containerd (baremetal only)
         if: matrix.driver == 'none' && matrix.cruntime == 'containerd'
-        timeout-minutes: 1
+        timeout-minutes: 2
         run: |
-          sudo apt-get update
           sudo apt-get install -y containerd
           # Configure containerd
           sudo mkdir -p /etc/containerd
