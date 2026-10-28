@@ -24,7 +24,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 echo "Installing latest docker"
-curl --fail --silent --show-error --location https://get.docker.com --output get-docker.sh
+curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 rm get-docker.sh
 sudo adduser jenkins docker || true
