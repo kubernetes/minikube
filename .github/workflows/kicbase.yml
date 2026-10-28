@@ -160,7 +160,7 @@ jobs:
           make -s KIC_VERSION="${KIC_VERSION}" --eval='print-kic-vars: ; @echo "version_json=$(VERSION_JSON)"; echo "commit_sha=$(VERSION)-$(COMMIT_NOQUOTES)"' print-kic-vars >> "$GITHUB_OUTPUT"
 
       - name: Log in to container registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ${{ env.KICBASE_REGISTRY }}
           username: ${{ secrets.DOCKER_HUB_USER }}
