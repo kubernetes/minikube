@@ -33,8 +33,7 @@ jobs:
       - name: Build Binaries
         timeout-minutes: 32
         run: |
-          make cross
-          make e2e-cross
+          make -j cross minikube-linux-arm64 minikube-darwin-arm64 e2e-cross
           cp -r test/integration/testdata ./out
           whoami
           echo github ref $GITHUB_REF
