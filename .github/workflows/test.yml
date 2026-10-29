@@ -106,8 +106,8 @@ jobs:
           timeout-minutes: 7
           run: |
             make generate-docs
-            if [ -n "$(git status --porcelain)" ]; then
-              git --no-pager diff
+            if [ -n "$(git status --porcelain site/)" ]; then
+              git --no-pager diff site/
               echo "::notice::Please run 'make generate-docs' and commit the changes"
               exit 1
             fi
