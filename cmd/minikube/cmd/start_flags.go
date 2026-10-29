@@ -17,13 +17,13 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"net/netip"
 	"runtime"
 	"slices"
 	"strings"
 	"time"
-
-	"net/netip"
 
 	"github.com/blang/semver/v4"
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -150,9 +150,7 @@ const (
 	mdns                    = config.MDNS
 )
 
-var (
-	outputFormat string
-)
+var outputFormat string
 
 // initMinikubeFlags includes commandline flags for minikube.
 func initMinikubeFlags() {
@@ -376,9 +374,12 @@ func getCPUCount(drvName string) int {
 		return ci
 	}
 
-	si, err := oci.CachedDaemonInfo(drvName)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	si, err := oci.CachedDaemonInfo(ctx, drvName)
 	if err != nil {
-		si, err = oci.DaemonInfo(drvName)
+		si, err = oci.DaemonInfo(ctx, drvName)
 		if err != nil {
 			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
 		}
@@ -750,7 +751,9 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, crName st
 	}
 
 	if driver.IsKIC(drvName) {
-		si, err := oci.CachedDaemonInfo(drvName)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		si, err := oci.CachedDaemonInfo(ctx, drvName)
 		if err != nil {
 			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
 		}

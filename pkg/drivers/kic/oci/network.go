@@ -17,14 +17,14 @@ limitations under the License.
 package oci
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os/exec"
 	"runtime"
 	"strconv"
 	"strings"
-
-	"errors"
 
 	"github.com/blang/semver/v4"
 
@@ -35,7 +35,9 @@ import (
 // RoutableHostIPFromInside returns the ip/dns of the host that container lives on
 // is routable from inside the container
 func RoutableHostIPFromInside(ociBin string, clusterName string, containerName string) (net.IP, error) {
-	si, err := CachedDaemonInfo(ociBin)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	si, err := CachedDaemonInfo(ctx, ociBin)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +195,6 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	o := strings.TrimSpace(rr.Stdout.String())
 	o = strings.Trim(o, "'")
 	p, err := strconv.Atoi(o)
-
 	if err != nil {
 		return p, fmt.Errorf("convert host-port %q to number: %w", o, err)
 	}

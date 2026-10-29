@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -44,9 +45,9 @@ var (
 )
 
 // CachedDaemonInfo will run and return a docker/podman info only once per minikube run time. to avoid performance
-var CachedDaemonInfo = func(ociBin string) (SysInfo, error) {
+var CachedDaemonInfo = func(ctx context.Context, ociBin string) (SysInfo, error) {
 	if cachedSysInfo == nil {
-		si, err := DaemonInfo(ociBin)
+		si, err := DaemonInfo(ctx, ociBin)
 		cachedSysInfo = &si
 		cachedSysInfoErr = &err
 	}
@@ -57,13 +58,13 @@ var CachedDaemonInfo = func(ociBin string) (SysInfo, error) {
 }
 
 // DaemonInfo returns common docker/podman daemon system info that minikube cares about
-func DaemonInfo(ociBin string) (SysInfo, error) {
+func DaemonInfo(ctx context.Context, ociBin string) (SysInfo, error) {
 	if ociBin == Podman {
 		p, err := podmanSystemInfo()
 		cachedSysInfo = &SysInfo{CPUs: p.Host.Cpus, TotalMemory: p.Host.MemTotal, OSType: p.Host.Os, Swarm: false, Rootless: p.Host.Security.Rootless, StorageDriver: p.Store.GraphDriverName}
 		return *cachedSysInfo, err
 	}
-	d, err := dockerSystemInfo()
+	d, err := dockerSystemInfo(ctx)
 	rootless := false
 	for _, se := range d.SecurityOptions {
 		if strings.HasPrefix(se, "name=rootless") {
@@ -227,11 +228,10 @@ type podmanSysInfo struct {
 		ContainerStore struct {
 			Number int `json:"number"`
 		} `json:"ContainerStore"`
-		GraphDriverName string `json:"GraphDriverName"`
-		GraphOptions    struct {
-		} `json:"GraphOptions"`
-		GraphRoot   string `json:"GraphRoot"`
-		GraphStatus struct {
+		GraphDriverName string   `json:"GraphDriverName"`
+		GraphOptions    struct{} `json:"GraphOptions"`
+		GraphRoot       string   `json:"GraphRoot"`
+		GraphStatus     struct {
 			BackingFilesystem string `json:"Backing Filesystem"`
 			NativeOverlayDiff string `json:"Native Overlay Diff"`
 			SupportsDType     string `json:"Supports d_type"`
@@ -245,15 +245,15 @@ type podmanSysInfo struct {
 	} `json:"store"`
 }
 
-var dockerInfoGetter = func() (string, error) {
-	rr, err := runCmd(exec.Command(Docker, "system", "info", "--format", "{{json .}}"))
+var dockerInfoGetter = func(ctx context.Context) (string, error) {
+	rr, err := runCmd(exec.CommandContext(ctx, Docker, "system", "info", "--format", "{{json .}}"))
 	return rr.Stdout.String(), err
 }
 
 // dockerSystemInfo returns docker system info --format '{{json .}}'
-func dockerSystemInfo() (dockerSysInfo, error) {
+func dockerSystemInfo(ctx context.Context) (dockerSysInfo, error) {
 	var ds dockerSysInfo
-	rawJSON, err := dockerInfoGetter()
+	rawJSON, err := dockerInfoGetter(ctx)
 	if err != nil {
 		klog.Warningf("docker info: %v", err)
 		return ds, fmt.Errorf("docker system info: %w", err)
