@@ -14,16 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+set -e -o pipefail
 
 install_kind() {
-	curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/latest/download/kind-linux-amd64
+	curl --fail --location --output ./kind https://github.com/kubernetes-sigs/kind/releases/latest/download/kind-linux-amd64
 	chmod +x ./kind
 	sudo mv ./kind /usr/local/bin/kind
 }
 
 install_k3d() {
-	curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+	curl --fail --silent --show-error https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
 }
 
 install_minikube() {

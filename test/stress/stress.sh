@@ -63,7 +63,7 @@ lecho() {
 }
 
 lecho "Downloading minikube ${UPGRADE_FROM} for upgrade test ..."
-curl -L -C - -o "${OLD_PATH}" https://storage.googleapis.com/minikube/releases/${UPGRADE_FROM}/minikube-darwin-amd64
+curl --fail --location --continue-at - --output "${OLD_PATH}" https://storage.googleapis.com/minikube/releases/${UPGRADE_FROM}/minikube-darwin-amd64 || exit 1
 chmod 755 "${OLD_PATH}"
 
 

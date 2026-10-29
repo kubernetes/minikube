@@ -19,7 +19,7 @@ set -eux -o pipefail
 GH_VERSION="2.102.0"
 
 echo "Installing latest version of gh"
-curl -qLO "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz"
+curl --disable --fail --location --remote-name "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz"
 tar -xf "gh_${GH_VERSION}_linux_amd64.tar.gz" &&
 sudo mv "gh_${GH_VERSION}_linux_amd64/bin/gh" /usr/local/bin/gh
 rm "gh_${GH_VERSION}_linux_amd64.tar.gz"

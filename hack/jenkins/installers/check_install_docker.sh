@@ -30,5 +30,6 @@ rm get-docker.sh
 sudo adduser jenkins docker || true
 
 echo "Installing latest kubectl"
-curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/${ARCH}/kubectl"
+KUBECTL_VERSION=$(curl --fail --silent --show-error --location https://dl.k8s.io/release/stable.txt)
+curl --fail --location --remote-name "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl"
 sudo install ./kubectl /usr/local/bin/kubectl

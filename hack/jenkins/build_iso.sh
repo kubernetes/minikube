@@ -76,7 +76,7 @@ fi
 # Example: "v1.38.0-1782213340-23211" -> 1782213340
 # NOTE: tr -d '"' is needed because Makefile-head (from master) may still have quoted values.
 # This can be simplified once master no longer uses quotes around ISO_VERSION.
-curl -L https://github.com/kubernetes/minikube/raw/master/Makefile --output Makefile-head
+curl --fail --location https://github.com/kubernetes/minikube/raw/master/Makefile --output Makefile-head || exit $?
 head_iso_timestamp=$(grep -E "ISO_VERSION \?= " Makefile-head | cut -d " " -f 3 | tr -d '"' | cut -d "-" -f 2)
 
 # NOTE: The PR's Makefile may also have quoted values if the PR was created before this fix.
