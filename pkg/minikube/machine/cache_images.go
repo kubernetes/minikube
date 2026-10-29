@@ -44,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/detect"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -97,7 +98,7 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, imgs []st
 	var g errgroup.Group
 
 	var imgClient *client.Client
-	if cr.Name() == "Docker" {
+	if driver.IsDocker(cc.Driver) && cr.Name() == "Docker" {
 		imgClient, err = client.NewClientWithOpts(client.FromEnv) // image client
 		if err != nil {
 			klog.Infof("couldn't get a local image daemon which might be ok: %v", err)
