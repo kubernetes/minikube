@@ -173,3 +173,12 @@ func TestStartWithAllAddonsDisabled(t *testing.T) {
 		}
 	}
 }
+
+func TestPreStartMessages(t *testing.T) {
+	addons := []string{"ingress", "ambassador", "olm", "nvidia-gpu-device-plugin", "dashboard"}
+	for _, a := range addons {
+		// Should execute cleanly without panic
+		preStartMessages(a, "true")
+		preStartMessages(a, "false")
+	}
+}
