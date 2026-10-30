@@ -65,7 +65,6 @@ func printAddonImagesTable(addon string) {
 
 			var tData [][]string
 			table := tablewriter.NewWriter(os.Stdout)
-			table.Header([]string{"Image Name", "Default Image", "Default Registry"})
 			table.Header("Image Name", "Default Image", "Default Registry")
 			table.Options(
 				tablewriter.WithHeaderAutoFormat(tw.On),
