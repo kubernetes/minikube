@@ -359,7 +359,7 @@ func downloadRemote(cr CommandRunner, src string) (string, error) {
 		return "", err
 	}
 	dst := strings.TrimSpace(rr.Stdout.String())
-	cmd := exec.Command("curl", "-L", "-o", dst, src)
+	cmd := exec.Command("curl", "-fSL", "-o", dst, src)
 	if _, err := cr.RunCmd(cmd); err != nil {
 		return "", err
 	}
