@@ -36,7 +36,8 @@ PATH="/usr/sbin:$PATH"
 
 if ! kubeadm &>/dev/null; then
   echo "WARNING: kubeadm is not installed. will try to install."
-  curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubeadm"
+  KUBEADM_VERSION=$(curl --fail --silent --show-error --location https://dl.k8s.io/release/stable.txt)
+  curl --fail --location --remote-name "https://dl.k8s.io/release/${KUBEADM_VERSION}/bin/linux/amd64/kubeadm"
   sudo install kubeadm /usr/local/bin/kubeadm
 fi
 # "none" driver specific cleanup from previous runs.
@@ -75,12 +76,12 @@ if [[ $(cri-dockerd --version 2>&1) != *"$CRI_DOCKERD_VERSION"* ]]; then
   echo "WARNING: expected version of cri-dockerd is not installed. will try to install."
   sudo systemctl stop cri-docker.socket || true
   sudo systemctl stop cri-docker.service || true
-  curl -L "https://github.com/Mirantis/cri-dockerd/releases/download/v${CRI_DOCKERD_VERSION}/cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz" -o /tmp/cri-dockerd.tgz
+  curl --fail --location "https://github.com/Mirantis/cri-dockerd/releases/download/v${CRI_DOCKERD_VERSION}/cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz" --output /tmp/cri-dockerd.tgz
   tar -C /tmp -xzvf /tmp/cri-dockerd.tgz
   sudo mv /tmp/cri-dockerd/cri-dockerd /usr/bin/cri-dockerd
   sudo chmod +x /usr/bin/cri-dockerd
-  sudo curl -L "https://raw.githubusercontent.com/Mirantis/cri-dockerd/v${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
-  sudo curl -L "https://raw.githubusercontent.com/Mirantis/cri-dockerd/v${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+  sudo curl --fail --location "https://raw.githubusercontent.com/Mirantis/cri-dockerd/v${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.socket" --output /usr/lib/systemd/system/cri-docker.socket
+  sudo curl --fail --location "https://raw.githubusercontent.com/Mirantis/cri-dockerd/v${CRI_DOCKERD_VERSION}/packaging/systemd/cri-docker.service" --output /usr/lib/systemd/system/cri-docker.service
 
   sudo systemctl daemon-reload
   sudo systemctl enable cri-docker.service
@@ -91,7 +92,7 @@ fi
 CRICTL_VERSION="v1.35.0"
 if [[ $(crictl --version) != *"$CRICTL_VERSION"* ]]; then
   echo "WARNING: expected version of crictl is not installed. will try to install."
-  curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
+  curl --fail --location https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
   sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
 fi
 
