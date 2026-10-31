@@ -697,6 +697,7 @@
 	"The hypervisor does not appear to be configured properly. Run 'minikube start --alsologtostderr -v=1' and inspect the error code": "O hipervisor não parece estar configurado corretamente. Execute 'minikube start --alsologtostderr -v=1' e inspecione o código de erro",
 	"The image '{{.imageName}}' does not match arch of the container runtime, use a multi-arch image instead": "A imagem '{{.imageName}}' não corresponde à arquitetura do runtime de contêiner, use uma imagem multi-arch em vez disso",
 	"The image '{{.imageName}}' was not found; unable to add it to cache.": "A imagem '{{.imageName}}' não foi encontrada; não foi possível adicioná-la ao cache.",
+	"The ingress (ingress-nginx) addon is deprecated and unmaintained upstream. Please use the traefik addon instead: 'minikube addons enable traefik'. For more details, visit: https://minikube.sigs.k8s.io/docs/handbook/addons/traefik": "",
 	"The initial time interval for each check that wait performs in seconds": "O intervalo de tempo inicial para cada verificação que o wait realiza, em segundos",
 	"The kubeadm binary within the Docker container is not executable": "O binário kubeadm dentro do contêiner Docker não é executável",
 	"The machine-driver specified is failing to start. Try running 'docker-machine-driver-\u003ctype\u003e version'": "O machine-driver especificado está falhando ao iniciar. Tente executar 'docker-machine-driver-\u003ctype\u003e version'",
