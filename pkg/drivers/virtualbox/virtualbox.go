@@ -57,6 +57,16 @@ const (
 // (for host-to-guest and inter-node reachability).
 const hostOnlyNicIndex = 2
 
+// stopWaitShort caps the in-Stop graceful wait in polls of one second.
+// Stop only initiates the shutdown and returns: the caller waits for the
+// Stopped state and force-stops the VM with Kill if the guest ignores the
+// request.
+var stopWaitShort = 10
+
+// stopWaitLong caps waits in flows that must observe a stopped VM before
+// proceeding (Restart, adapter repair).
+var stopWaitLong = 60
+
 //nolint:staticcheck // ST1005: error strings should not be capitalized
 var (
 	ErrUnableToGenerateRandomIP = errors.New("unable to generate random IP")
@@ -714,6 +724,12 @@ func (d *Driver) Start() error {
 		return err
 	}
 
+	// Stop only initiates the shutdown: the adapter must not be touched
+	// while the VM is still running.
+	if err := d.waitForStopped(stopWaitLong); err != nil {
+		return err
+	}
+
 	// We have to be sure the host-only adapter is not used by the VM
 	d.sleeper.Sleep(5 * time.Second)
 
@@ -750,16 +766,18 @@ func (d *Driver) Stop() error {
 	if err := d.vbm("controlvm", d.MachineName, "acpipowerbutton"); err != nil {
 		return err
 	}
-	for {
+	// Brief wait for the common case of a cooperative guest. If the VM is
+	// still running afterwards the caller (Host.Stop) keeps waiting and
+	// force-stops it with Kill, so Stop must return here either way.
+	for i := 0; i < stopWaitShort; i++ {
 		s, err := d.GetState()
 		if err != nil {
 			return err
 		}
-		if s == state.Running {
-			d.sleeper.Sleep(1 * time.Second)
-		} else {
+		if s != state.Running {
 			break
 		}
+		d.sleeper.Sleep(1 * time.Second)
 	}
 
 	d.IPAddress = ""
@@ -767,9 +785,35 @@ func (d *Driver) Stop() error {
 	return nil
 }
 
+// waitForStopped polls until the VM leaves the Running state, killing it
+// with Kill if it does not stop in time. For flows that must observe a
+// stopped VM before proceeding (Restart, adapter repair).
+func (d *Driver) waitForStopped(maxAttempts int) error {
+	for i := 0; i < maxAttempts; i++ {
+		s, err := d.GetState()
+		if err != nil {
+			return err
+		}
+		if s != state.Running {
+			return nil
+		}
+		d.sleeper.Sleep(1 * time.Second)
+	}
+
+	log.Warnf("VM %s did not stop in time, killing it", d.MachineName)
+	return d.Kill()
+}
+
 // Restart restarts a machine which is known to be running.
 func (d *Driver) Restart() error {
 	if err := d.Stop(); err != nil {
+		//nolint:staticcheck // ST1005: error strings should not be capitalized
+		return fmt.Errorf("Problem stopping the VM: %s", err)
+	}
+
+	// Stop only initiates the shutdown: wait for it here since Start
+	// requires a stopped VM.
+	if err := d.waitForStopped(stopWaitLong); err != nil {
 		//nolint:staticcheck // ST1005: error strings should not be capitalized
 		return fmt.Errorf("Problem stopping the VM: %s", err)
 	}
