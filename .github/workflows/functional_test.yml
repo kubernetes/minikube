@@ -1,30 +1,7 @@
 # Functional Test is a subset of minikube integration test, testing the most essential features of minikube.
 name: Functional Test
 on:
-  workflow_dispatch:
-  pull_request:
-    paths:
-      - "go.mod"
-      - "**.go"
-      - "Makefile"
-      - .github/workflows/functional_test.yml
-      - "!site/**"
-      - "!**.md"
-      - "!**.json"
-  push:
-    branches: [ master ]
-    paths:
-      - "go.mod"
-      - "**.go"
-      - "Makefile"
-      - "!site/**"
-      - "!**.md"
-      - "!**.json"
-# Limit one functional test job running per PR/Branch
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  # For example, if you push multiple commits to a pull request in quick succession, only the latest workflow run will continue
-  cancel-in-progress: true
+  workflow_call:
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.27.3'
@@ -54,7 +31,7 @@ jobs:
         timeout-minutes: 2
         with:
           go-version: ${{env.GO_VERSION}}
-          cache: true      
+          cache: true
       - name: Download Dependencies
         timeout-minutes: 1
         run: go mod download
@@ -71,7 +48,6 @@ jobs:
           path: out
   functional-test:
     name: ${{ matrix.name }}
-    needs: build-test-binaries
     runs-on: ${{ matrix.os }}
     permissions:
       contents: none
@@ -290,11 +266,28 @@ jobs:
       - name: Install kubectl
         timeout-minutes: 1
         uses: azure/setup-kubectl@bda439f5f36b99b262ebdcd3613869bddb064c8e # v5.2.0
-      - name: Download Test Binaries
+      - name: Install vfkit and vmnet_helper (macos)
+        if: matrix.driver == 'vfkit'
+        timeout-minutes: 1
+        run: |
+          brew install vfkit
+          curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
+      - name: Download minikube binary
         timeout-minutes: 1
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+
         with:
-          name: binaries-${{ matrix.arch }}
+          name: minikube-linux-${{ matrix.arch }}
+          path: out
+      - name: Download e2e binary
+        timeout-minutes: 1
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: e2e-linux-${{ matrix.arch }}
+          path: out
+      - name: Prepare binaries
+        timeout-minutes: 1
+        run: chmod +x out/minikube out/e2e-linux-${{ matrix.arch }}
       - name: Disable AppArmor for MySQL
         if: runner.os == 'Linux'
         timeout-minutes: 1
@@ -318,12 +311,10 @@ jobs:
         run: |
           set -x
           mkdir -p report
-          chmod a+x ./e2e-*
-          chmod a+x ./minikube-*
-          ./minikube-$(go env GOOS)-$(go env GOARCH) delete --all --purge
+          ./out/minikube delete --all --purge
           START_TIME=$(date -u +%s)
           # -test.timeout=0 disables the go test timeout; the step timeout-minutes above enforces the actual deadline
-          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr"  -test.run TestFunctional -test.timeout=0 -test.v -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt
+          ./out/e2e-linux-${{ matrix.arch }} -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr" -test.run TestFunctional -test.timeout=0 -test.v -binary=./out/minikube 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
