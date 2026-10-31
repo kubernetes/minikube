@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -176,22 +177,120 @@ func TestCheckDockerDesktopVersion(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
+	type expectedError struct {
+		reason string
+		fix    string
+	}
+
 	tests := []struct {
-		input             string
-		shouldReturnError bool
+		input                string
+		shouldReturnError    bool
+		cachedDaemonInfoMock func(ctx context.Context, ociBin string) (oci.SysInfo, error)
+		shouldErrWith        *expectedError
 	}{
-		{"linux-20.10.22:Docker Desktop 4.16.2 (95914)", false},
-		{"noDashHere:Docker Desktop 4.16.2 (95914)", true},
-		{"linux-20.10.22:Docker Desktop 4.16.0 (95914)", true},
-		{"", true},
+		{
+			"linux-20.10.22:Docker Desktop 4.16.2 (95914)",
+			false,
+			func(_ context.Context, _ string) (oci.SysInfo, error) { return oci.SysInfo{}, nil },
+			nil,
+		},
+		{
+			"noDashHere:Docker Desktop 4.16.2 (95914)",
+			true,
+			func(_ context.Context, _ string) (oci.SysInfo, error) { return oci.SysInfo{}, nil },
+			&expectedError{
+				reason: "PROVIDER_DOCKER_VERSION_PARSING_FAILED",
+				fix:    "",
+			},
+		},
+		{
+			"linux-20.10.22:Docker Desktop 4.16.0 (95914)",
+			true,
+			func(_ context.Context, _ string) (oci.SysInfo, error) { return oci.SysInfo{}, nil },
+			&expectedError{
+				reason: "PROVIDER_DOCKER_DESKTOP_VERSION_BAD",
+				fix:    "Update Docker Desktop to 4.16.1 or greater",
+			},
+		},
+		{
+			"",
+			true,
+			func(_ context.Context, _ string) (oci.SysInfo, error) { return oci.SysInfo{}, nil },
+			&expectedError{
+				reason: "PROVIDER_DOCKER_VERSION_PARSING_FAILED",
+				fix:    "",
+			},
+		},
+		{
+			"linux-20.10.22:Docker Desktop 4.16.2 (95914)",
+			true,
+			func(_ context.Context, _ string) (oci.SysInfo, error) { return oci.SysInfo{}, context.DeadlineExceeded },
+			&expectedError{
+				reason: "PROVIDER_DOCKER_DEADLINE_EXCEEDED",
+				fix:    "Restart the Docker service",
+			},
+		},
 	}
 	for _, tt := range tests {
-		dockerVersionOrState = func() (string, registry.State) { return tt.input, registry.State{} }
-		oci.CachedDaemonInfo = func(string) (oci.SysInfo, error) { return oci.SysInfo{}, nil }
+		dockerVersionOrState = func(_ context.Context) (string, registry.State) { return tt.input, registry.State{} }
+		oci.CachedDaemonInfo = tt.cachedDaemonInfoMock
 		state := status(&run.CommandOptions{})
 		err := state.Error
+
 		if (err == nil && tt.shouldReturnError) || (err != nil && !tt.shouldReturnError) {
 			t.Errorf("status(%q) = %+v; expected shouldReturnError = %t", tt.input, state, tt.shouldReturnError)
 		}
+
+		if err == nil && tt.shouldErrWith != nil {
+			t.Errorf("status(%q) = %+v; expected shouldErrWith = %+v", tt.input, state, tt.shouldErrWith)
+		}
+
+		if tt.shouldErrWith != nil {
+			if tt.shouldErrWith.fix != state.Fix {
+				t.Errorf("status(%q) = %+v; expected error fix = %s", tt.input, state, tt.shouldErrWith.fix)
+			}
+
+			if tt.shouldErrWith.reason != state.Reason {
+				t.Errorf("status(%q) = %+v; expected error reason = %s", tt.input, state, tt.shouldErrWith.reason)
+			}
+		}
+	}
+}
+
+func TestStatusSharedDeadline(t *testing.T) {
+	originalVersion := dockerVersionOrState
+	originalInfo := oci.CachedDaemonInfo
+	t.Cleanup(func() {
+		dockerVersionOrState = originalVersion
+		oci.CachedDaemonInfo = originalInfo
+	})
+
+	var versionCtx, infoCtx context.Context
+
+	dockerVersionOrState = func(ctx context.Context) (string, registry.State) {
+		versionCtx = ctx
+		return "linux-20.10.22:Docker Desktop 4.16.2 (95914)", registry.State{}
+	}
+	oci.CachedDaemonInfo = func(ctx context.Context, _ string) (oci.SysInfo, error) {
+		infoCtx = ctx
+		return oci.SysInfo{}, nil
+	}
+
+	state := status(&run.CommandOptions{})
+	if state.Error != nil {
+		t.Fatalf("status() returned an error: %v", state.Error)
+	}
+	if versionCtx == nil || infoCtx == nil {
+		t.Fatal("expected both version and info checks to be called")
+	}
+
+	versionDeadline, versionOK := versionCtx.Deadline()
+	infoDeadline, infoOK := infoCtx.Deadline()
+	if !versionOK || !infoOK {
+		t.Fatal("expected both checks to receive a context with a deadline")
+	}
+	if !versionDeadline.Equal(infoDeadline) {
+		t.Fatalf("deadlines differ: version=%v, info=%v",
+			versionDeadline, infoDeadline)
 	}
 }

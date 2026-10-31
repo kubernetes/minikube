@@ -20,6 +20,7 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -33,8 +34,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/blang/semver/v4"
 	"github.com/box-cli-maker/box-cli-maker/v3"
@@ -836,9 +835,11 @@ func validateProfileName() {
 		for _, n := range p.Config.Nodes {
 			machineName := config.MachineName(*p.Config, n)
 			if ClusterFlagValue() == machineName {
-				out.WarningT("Profile name '{{.name}}' is duplicated with machine name '{{.machine}}' in profile '{{.profile}}'", out.V{"name": ClusterFlagValue(),
+				out.WarningT("Profile name '{{.name}}' is duplicated with machine name '{{.machine}}' in profile '{{.profile}}'", out.V{
+					"name":    ClusterFlagValue(),
 					"machine": machineName,
-					"profile": p.Name})
+					"profile": p.Name,
+				})
 				exit.Message(reason.Usage, "Profile name should be unique")
 			}
 		}
@@ -1085,7 +1086,9 @@ func memoryLimits(drvName string) (int, int, error) {
 	containerLimit := 0
 
 	if driver.IsKIC(drvName) {
-		s, err := oci.CachedDaemonInfo(drvName)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		s, err := oci.CachedDaemonInfo(ctx, drvName)
 		if err != nil {
 			return -1, -1, err
 		}
@@ -1206,9 +1209,11 @@ func validateCPUCount(drvName string) {
 	isKIC := driver.IsKIC(drvName)
 
 	if isKIC {
-		si, err := oci.CachedDaemonInfo(drvName)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		si, err := oci.CachedDaemonInfo(ctx, drvName)
 		if err != nil {
-			si, err = oci.DaemonInfo(drvName)
+			si, err = oci.DaemonInfo(ctx, drvName)
 			if err != nil {
 				exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
 			}
@@ -1932,7 +1937,10 @@ func validateDockerStorageDriver(drvName string) {
 	if _, err := exec.LookPath(drvName); err != nil {
 		exit.Error(reason.DrvNotFound, fmt.Sprintf("%s not found on PATH", drvName), err)
 	}
-	si, err := oci.DaemonInfo(drvName)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	si, err := oci.DaemonInfo(ctx, drvName)
 	if err != nil {
 		klog.Warningf("Unable to confirm that %s is using overlay2 storage driver; setting preload=false", drvName)
 		viper.Set(preload, false)
@@ -2050,7 +2058,6 @@ func getLatestPatch(majorMinorVer string) string {
 		if strings.HasPrefix(k, fmt.Sprintf("v%s.", majorMinorVer)) {
 			return strings.TrimPrefix(k, version.VersionPrefix)
 		}
-
 	}
 	return ""
 }
