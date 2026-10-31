@@ -1,0 +1,7 @@
+name: CI
+jobs:
+  build:
+    steps:
+      - name: Test
+        run: make test
+        timeout-minutes: 15
