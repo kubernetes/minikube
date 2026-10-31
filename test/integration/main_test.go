@@ -20,7 +20,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"math"
 	"os"
 	"os/exec"
 	"runtime"
@@ -70,7 +69,11 @@ func TestMainNoArgs(t *testing.T) {
 	}
 }
 
-// setMaxParallelism caps the max parallelism. Go assumes 1 core per test, whereas minikube needs 2 cores per test.
+// setMaxParallelism caps how many tests run at once to one test per CPU.
+// A cluster is started with 2 CPUs, but that is a cap on the node, not a
+// reservation of host CPUs. Start rarely uses more than one CPU, and the rest
+// of a test is waiting on the apiserver and pods or running short commands, so
+// those waits can overlap.
 func setMaxParallelism() {
 
 	flagVal := flag.Lookup("test.parallel").Value.String()
@@ -99,13 +102,7 @@ func setMaxParallelism() {
 		return
 	}
 
-	if maxp == 2 {
-		fmt.Fprintf(os.Stderr, "Found %d cores, will not round down core count.\n", maxp)
-		return
-	}
-
-	// Each "minikube start" consumes up to 2 cores, though the average usage is somewhat lower
-	limit := int(math.Floor(float64(maxp) / 1.75))
+	limit := maxp
 
 	// Windows tests were failing from timeouts due to too much parallelism
 	if runtime.GOOS == "windows" {
