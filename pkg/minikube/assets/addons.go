@@ -302,7 +302,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "kong", "3rd party (Kong HQ)", "@gAmUssA", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
 		"Kong":        "kong:3@sha256:aa4a4687b1330e427ad0d3b27a0606b833894297c78abf1a212edc9ba73c8620",
-		"KongIngress": "kong/kubernetes-ingress-controller:3.5.13@sha256:979f12864a13031545d58623d17af7a071b417396fbb3928a169d897b056b68f",
+		"KongIngress": "kong/kubernetes-ingress-controller:3.5.14@sha256:b83d58296cdd88aa75b2514ca5a7335ddff5018e2127b55b97653306386797d2",
 	}, map[string]string{
 		"Kong":        "docker.io",
 		"KongIngress": "docker.io",
@@ -340,7 +340,7 @@ var Addons = map[string]*Addon{
 			"metrics-server-service.yaml",
 			"0640"),
 	}, false, "metrics-server", "Kubernetes", "", "", map[string]string{
-		"MetricsServer": "metrics-server/metrics-server:v0.9.0@sha256:d9862115e7c7881280d3d75ca26bda8ffc0fc213315979575bf23ce9826205c0",
+		"MetricsServer": "metrics-server/metrics-server:v0.9.1@sha256:9b0ba1926e1d3089673f45461c3c1416109dea33b3ba3434048defd380df329b",
 	}, map[string]string{
 		"MetricsServer": "registry.k8s.io",
 	}, nil),
@@ -381,7 +381,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "registry", "minikube", "", "", map[string]string{
 		"KubeRegistryProxy": "minikube/kube-registry-proxy:v0.0.11@sha256:e321acf067df0a78fba3ff97748c10029ca2c413c5b7207e4ca000c62fcdac93",
-		"Registry":          "registry:3@sha256:ddf754342cfc8acc51a56d5d0ab6af06826461864460636d8bd5c546dab2a7b8",
+		"Registry":          "registry:3@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3",
 	}, map[string]string{
 		"KubeRegistryProxy": "registry.k8s.io",
 		"Registry":          "docker.io",
