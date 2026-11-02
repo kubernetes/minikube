@@ -48,7 +48,7 @@ See the [Getting Started Guide](https://minikube.sigs.k8s.io/docs/start/)
 You can run minikube in a GitHub Codespace by clicking here:
 [![Open in GitHub Codespaces](https://img.shields.io/badge/Open%20in-GitHub%20Codespaces-blue?logo=github)](https://codespaces.new/kubernetes/minikube?quickstart=1)
 
-This will launch a Github Codespace. You can then run `minikube start` and `minikube dashboard` - You can then open Minikube Dashboard by clicking opening the link displayed in the terminal.  
+This will launch a Github Codespace. You can then run `minikube start` and `minikube dashboard` - You can then open Minikube Dashboard by clicking the link displayed in the terminal.  
 
 You can also run Minikube in a Dev Container locally using your favorite IDE, for more information see Dev Containers <https://code.visualstudio.com/docs/devcontainers/containers>
 
