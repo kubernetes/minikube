@@ -222,6 +222,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
 	startCmd.Flags().StringArray(nodeSpec, nil, "Describe a node with role=control-plane|worker,os=linux|windows (role is required; OS defaults to linux). Repeat for each node; cannot combine with --nodes or --ha. Currently supports one Linux control plane with optional Linux workers; Windows provisioning is not yet available.")
 	startCmd.Flags().String(preloadSrc, "auto", "Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try github first, then gcs as failover).")
+	startCmd.MarkFlagsMutuallyExclusive(nodes, nodeSpec)
+	startCmd.MarkFlagsMutuallyExclusive(ha, nodeSpec)
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options

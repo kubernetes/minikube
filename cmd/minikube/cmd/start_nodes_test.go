@@ -36,6 +36,10 @@ func nodeFlagCommand(t *testing.T, args ...string) (*cobra.Command, *viper.Viper
 	cmd.Flags().StringArray(nodeSpec, nil, "")
 	cmd.Flags().IntP(nodes, "n", 1, "")
 	cmd.Flags().Bool(ha, false, "")
+	// Use the registered flag groups without sharing mutable flag values.
+	for _, name := range []string{nodeSpec, nodes, ha} {
+		cmd.Flags().Lookup(name).Annotations = startCmd.Flags().Lookup(name).Annotations
+	}
 	if err := cmd.ParseFlags(args); err != nil {
 		t.Fatal(err)
 	}
@@ -53,6 +57,32 @@ func TestNodeFlagRegistration(t *testing.T) {
 	}
 	if startCmd.Flags().Lookup("node-os") != nil {
 		t.Fatal("obsolete --node-os flag is still registered")
+	}
+}
+
+func TestNodeFlagExclusivity(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		args     []string
+		conflict bool
+	}{
+		{"defaults", nil, false},
+		{"explicit node", []string{"--node=role=control-plane"}, false},
+		{"repeated node", []string{"--node=role=control-plane", "--node=role=worker"}, false},
+		{"legacy count", []string{"--nodes=2"}, false},
+		{"legacy HA", []string{"--ha"}, false},
+		{"legacy HA with count", []string{"--ha", "--nodes=3"}, false},
+		{"count conflict", []string{"--node=role=control-plane", "--nodes=1"}, true},
+		{"shorthand count conflict", []string{"--node=role=control-plane", "-n", "1"}, true},
+		{"HA conflict", []string{"--node=role=control-plane", "--ha"}, true},
+		{"false HA conflict", []string{"--node=role=control-plane", "--ha=false"}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd, _ := nodeFlagCommand(t, tc.args...)
+			if err := cmd.ValidateFlagGroups(); (err != nil) != tc.conflict {
+				t.Fatalf("flag validation for %v = %v; want conflict %t", tc.args, err, tc.conflict)
+			}
+		})
 	}
 }
 
@@ -107,9 +137,6 @@ func TestResolveNodes(t *testing.T) {
 		{"single Linux node", []string{"--node", "role=control-plane"}, 1, ""},
 		{"worker first", []string{"--node=role=worker", "--node=role=control-plane"}, 2, ""},
 		{"multiple Linux workers", []string{"--node=role=control-plane", "--node=role=worker", "--node=role=worker"}, 3, ""},
-		{"count conflict", []string{"--node=role=control-plane", "-n", "1"}, 0, "cannot be combined"},
-		{"HA conflict", []string{"--node=role=control-plane", "--ha"}, 0, "cannot be combined"},
-		{"false HA conflict", []string{"--node=role=control-plane", "--ha=false"}, 0, "cannot be combined"},
 		{"empty flag", []string{"--node="}, 0, "at least one node specification"},
 		{"empty second flag", []string{"--node=role=control-plane", "--node="}, 0, "nonempty key=value"},
 		{"worker only", []string{"--node=role=worker"}, 0, "requires a Linux control-plane"},
@@ -165,13 +192,26 @@ func TestNodeLegacyInputsUnchanged(t *testing.T) {
 }
 
 func TestNodeImplicitHAConflict(t *testing.T) {
-	cmd, v := nodeFlagCommand(t, "--node=role=control-plane")
-	v.SetDefault(ha, true)
-	if _, err := resolveNodes(cmd, nil, v); err == nil || !strings.Contains(err.Error(), "HA to be disabled") {
-		t.Fatalf("expected implicit HA conflict, got %v", err)
-	}
-	if !v.GetBool(ha) {
-		t.Fatal("HA setting was silently changed")
+	for _, source := range []string{"configuration", "environment"} {
+		t.Run(source, func(t *testing.T) {
+			cmd, v := nodeFlagCommand(t, "--node=role=control-plane")
+			if source == "environment" {
+				t.Setenv("MINIKUBE_HA", "true")
+				v.SetEnvPrefix(minikubeEnvPrefix)
+				v.AutomaticEnv()
+			} else {
+				v.SetDefault(ha, true)
+			}
+			if err := cmd.ValidateFlagGroups(); err != nil {
+				t.Fatalf("implicit HA should not conflict during flag validation: %v", err)
+			}
+			if _, err := resolveNodes(cmd, nil, v); err == nil || !strings.Contains(err.Error(), "HA to be disabled") {
+				t.Fatalf("expected implicit HA conflict, got %v", err)
+			}
+			if !v.GetBool(ha) {
+				t.Fatal("HA setting was silently changed")
+			}
+		})
 	}
 }
 
