@@ -41,10 +41,14 @@ var configViewCmd = &cobra.Command{
 	Use:   "view",
 	Short: "Display values currently set in the minikube config file",
 	Long: `Display values currently set in the minikube config file.
-	The output format can be customized using the --format flag, which accepts a Go template. 
+	The output format can be customized using the --format flag, which accepts a Go template.
 	The config file is typically located at "~/.minikube/config/config.json".`,
-	Run: func(_ *cobra.Command, _ []string) {
-		err := View()
+	Run: func(cmd *cobra.Command, _ []string) {
+		profile := ""
+		if cmd.Flags().Changed(config.ProfileName) {
+			profile, _ = cmd.Flags().GetString(config.ProfileName)
+		}
+		err := View(profile)
 		if err != nil {
 			exit.Error(reason.InternalConfigView, "config view failed", err)
 		}
@@ -59,8 +63,8 @@ For the list of accessible variables for the template, see the struct values her
 }
 
 // View displays the current config
-func View() error {
-	cfg, err := config.ReadConfig(localpath.ConfigFile())
+func View(profile string) error {
+	cfg, err := config.ReadConfig(localpath.ConfigFile(profile))
 	if err != nil {
 		return err
 	}

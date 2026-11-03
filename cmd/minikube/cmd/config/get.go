@@ -22,6 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 	config "k8s.io/minikube/pkg/minikube/config"
+	localpath "k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -40,7 +41,12 @@ var configGetCmd = &cobra.Command{
 		}
 
 		cmd.SilenceUsage = true
-		val, err := Get(args[0])
+		profile := ""
+		if cmd.Flags().Changed(config.ProfileName) {
+			profile, _ = cmd.Flags().GetString(config.ProfileName)
+		}
+		path := localpath.ConfigFile(profile)
+		val, err := Get(path, args[0])
 		if err != nil {
 			return err
 		}
@@ -58,6 +64,6 @@ func init() {
 }
 
 // Get gets a property
-func Get(name string) (string, error) {
-	return config.Get(name)
+func Get(path string, name string) (string, error) {
+	return config.Get(path, name)
 }

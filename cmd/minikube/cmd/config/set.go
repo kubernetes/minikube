@@ -32,14 +32,18 @@ var configSetCmd = &cobra.Command{
 	Short: "Sets an individual value in a minikube config file",
 	Long: `Sets the PROPERTY_NAME config value to PROPERTY_VALUE
 	These values can be overwritten by flags or environment variables at runtime.`,
-	Run: func(_ *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 2 {
 			exit.Message(reason.Usage, "not enough arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
 		}
 		if len(args) > 2 {
 			exit.Message(reason.Usage, "too many arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
 		}
-		err := Set(args[0], args[1])
+		profile := ""
+		if cmd.Flags().Changed(config.ProfileName) {
+			profile, _ = cmd.Flags().GetString(config.ProfileName)
+		}
+		err := Set(profile, args[0], args[1])
 		if err != nil {
 			exit.Error(reason.InternalConfigSet, "Set failed", err)
 		}
@@ -51,7 +55,7 @@ func init() {
 }
 
 // Set sets a property to a value
-func Set(name string, value string) error {
+func Set(profile string, name string, value string) error {
 	s, err := findSetting(name)
 	if err != nil {
 		return fmt.Errorf("find settings for %q value of %q: %w", name, value, err)
@@ -63,9 +67,10 @@ func Set(name string, value string) error {
 	}
 
 	// Set the value
-	cc, err := config.ReadConfig(localpath.ConfigFile())
+	path := localpath.ConfigFile(profile)
+	cc, err := config.ReadConfig(path)
 	if err != nil {
-		return fmt.Errorf("read config file %q: %w", localpath.ConfigFile(), err)
+		return fmt.Errorf("read config file %q: %w", path, err)
 	}
 	err = s.set(cc, name, value)
 	if err != nil {
@@ -79,5 +84,5 @@ func Set(name string, value string) error {
 	}
 
 	// Write the value
-	return config.WriteConfig(localpath.ConfigFile(), cc)
+	return config.WriteConfig(path, cc)
 }

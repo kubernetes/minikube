@@ -25,7 +25,7 @@ import (
 
 func TestNotFound(t *testing.T) {
 	createTestConfig(t)
-	err := Set("nonexistent", "10")
+	err := Set("", "nonexistent", "10")
 	if err == nil || err.Error() != "find settings for \"nonexistent\" value of \"10\": property name \"nonexistent\" not found" {
 		t.Fatalf("Set did not return error for unknown property: %+v", err)
 	}
@@ -34,19 +34,19 @@ func TestNotFound(t *testing.T) {
 func TestSetNotAllowed(t *testing.T) {
 	createTestConfig(t)
 	t.Run("driver", func(t *testing.T) {
-		err := Set("driver", "123456")
+		err := Set("", "driver", "123456")
 		if err == nil || err.Error() != "run validations for \"driver\" with value of \"123456\": [driver \"123456\" is not supported]" {
 			t.Fatalf("Set did not return error for unallowed value: %+v", err)
 		}
 	})
 	t.Run("memory", func(t *testing.T) {
-		err := Set("memory", "10a")
+		err := Set("", "memory", "10a")
 		if err == nil || err.Error() != "run validations for \"memory\" with value of \"10a\": [invalid memory size: invalid suffix: 'a']" {
 			t.Fatalf("Set did not return error for unallowed value: %+v", err)
 		}
 	})
 	t.Run("dns-servers", func(t *testing.T) {
-		err := Set("dns-servers", ",1.2.3.4")
+		err := Set("", "dns-servers", ",1.2.3.4")
 		if err == nil {
 			t.Fatalf("Set did not return error for invalid dns-servers value")
 		}
@@ -56,9 +56,9 @@ func TestSetNotAllowed(t *testing.T) {
 func TestSetOK(t *testing.T) {
 	createTestConfig(t)
 	t.Run("driver", func(t *testing.T) {
-		err := Set("driver", "ssh")
+		err := Set("", "driver", "ssh")
 		defer func() {
-			err = Unset("driver")
+			err = Unset("", "driver")
 			if err != nil {
 				t.Errorf("failed to unset driver: %+v", err)
 			}
@@ -66,7 +66,7 @@ func TestSetOK(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Set returned error for valid property value: %+v", err)
 		}
-		val, err := Get("driver")
+		val, err := Get(localpath.ConfigFile(""), "driver")
 		if err != nil {
 			t.Fatalf("Get returned error for valid property: %+v", err)
 		}
@@ -75,7 +75,7 @@ func TestSetOK(t *testing.T) {
 		}
 	})
 	t.Run("dns-servers", func(t *testing.T) {
-		err := Set("dns-servers", "8.8.8.8,1.1.1.1")
+		err := Set("", "dns-servers", "8.8.8.8,1.1.1.1")
 		if err != nil {
 			t.Fatalf("Set returned error for valid dns-servers value: %+v", err)
 		}

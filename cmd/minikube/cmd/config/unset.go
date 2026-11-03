@@ -28,11 +28,15 @@ var configUnsetCmd = &cobra.Command{
 	Use:   "unset PROPERTY_NAME",
 	Short: "unsets an individual value in a minikube config file",
 	Long:  "unsets PROPERTY_NAME from the minikube config file.  Can be overwritten by flags or environmental variables",
-	Run: func(_ *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube config unset PROPERTY_NAME")
 		}
-		err := Unset(args[0])
+		profile := ""
+		if cmd.Flags().Changed(config.ProfileName) {
+			profile, _ = cmd.Flags().GetString(config.ProfileName)
+		}
+		err := Unset(profile, args[0])
 		if err != nil {
 			exit.Error(reason.InternalConfigUnset, "unset failed", err)
 		}
@@ -44,11 +48,11 @@ func init() {
 }
 
 // Unset unsets a property
-func Unset(name string) error {
-	m, err := config.ReadConfig(localpath.ConfigFile())
+func Unset(profile string, name string) error {
+	m, err := config.ReadConfig(localpath.ConfigFile(profile))
 	if err != nil {
 		return err
 	}
 	delete(m, name)
-	return config.WriteConfig(localpath.ConfigFile(), m)
+	return config.WriteConfig(localpath.ConfigFile(profile), m)
 }

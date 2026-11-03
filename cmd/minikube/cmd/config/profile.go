@@ -74,7 +74,7 @@ var ProfileCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		err := Set(config.ProfileName, profile)
+		err := Set("", config.ProfileName, profile)
 		if err != nil {
 			exit.Error(reason.InternalConfigSet, "Setting profile failed", err)
 		}

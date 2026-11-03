@@ -20,18 +20,19 @@ import (
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 func TestUnsetConfig(t *testing.T) {
 	createTestConfig(t)
 	propName := "cpus"
 	propValue := "1"
-	err := Set(propName, propValue)
+	err := Set("", propName, propValue)
 	if err != nil {
 		t.Errorf("Failed to set the property %q", propName)
 	}
 
-	cpus, err := config.Get("cpus")
+	cpus, err := config.Get(localpath.ConfigFile(""), "cpus")
 	if err != nil {
 		t.Errorf("Failed to read config %q", err)
 	}
@@ -40,12 +41,12 @@ func TestUnsetConfig(t *testing.T) {
 		t.Errorf("Expected cpus to be %s but got %s", propValue, cpus)
 	}
 
-	err = Unset(propName)
+	err = Unset("", propName)
 	if err != nil {
 		t.Errorf("Failed to unset property %q", err)
 	}
 
-	_, err = config.Get("cpus")
+	_, err = config.Get(localpath.ConfigFile(""), "cpus")
 	if err != config.ErrKeyNotFound {
 		t.Errorf("Expected error %q but got %q", config.ErrKeyNotFound, err)
 	}

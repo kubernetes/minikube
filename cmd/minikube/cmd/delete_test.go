@@ -151,7 +151,7 @@ func TestDeleteProfile(t *testing.T) {
 var hostAndDirsDeleterMock = func(_ libmachine.API, _ *config.ClusterConfig, _ string) error { return deleteContextTest() }
 
 func deleteContextTest() error {
-	if err := cmdcfg.Unset(config.ProfileName); err != nil {
+	if err := cmdcfg.Unset("", config.ProfileName); err != nil {
 		return DeletionError{Err: fmt.Errorf("unset minikube profile: %v", err), Errtype: Fatal}
 	}
 	return nil

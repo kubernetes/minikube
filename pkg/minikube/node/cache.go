@@ -103,7 +103,7 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, contai
 	if driver.IsKIC(driverName) {
 		waitDownloadKicBaseImage(kicGroup)
 	}
-	if err := saveImagesToTarFromConfig(); err != nil {
+	if err := saveImagesToTarFromConfig(""); err != nil {
 		exit.Error(reason.InetCacheTar, "Failed to cache images to tar", err)
 	}
 	out.Step(style.Check, "Download complete!")
@@ -253,8 +253,8 @@ func waitCacheRequiredImages(g *errgroup.Group) {
 
 // saveImagesToTarFromConfig saves images to tar in cache which specified in config file.
 // currently only used by download-only option
-func saveImagesToTarFromConfig() error {
-	images, err := imagesInConfigFile()
+func saveImagesToTarFromConfig(profile string) error {
+	images, err := imagesInConfigFile(profile)
 	if err != nil {
 		return err
 	}
@@ -267,7 +267,7 @@ func saveImagesToTarFromConfig() error {
 // CacheAndLoadImagesInConfig loads the images currently in the config file
 // called by 'start' and 'cache reload' commands.
 func CacheAndLoadImagesInConfig(profiles []*config.Profile, options *run.CommandOptions) error {
-	images, err := imagesInConfigFile()
+	images, err := imagesInConfigFile("")
 	if err != nil {
 		return fmt.Errorf("images: %w", err)
 	}
@@ -277,8 +277,8 @@ func CacheAndLoadImagesInConfig(profiles []*config.Profile, options *run.Command
 	return machine.CacheAndLoadImages(images, profiles, false, options)
 }
 
-func imagesInConfigFile() ([]string, error) {
-	configFile, err := config.ReadConfig(localpath.ConfigFile())
+func imagesInConfigFile(profile string) ([]string, error) {
+	configFile, err := config.ReadConfig(localpath.ConfigFile(profile))
 	if err != nil {
 		return nil, fmt.Errorf("read: %w", err)
 	}

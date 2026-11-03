@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/viper"
 
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 const (
@@ -115,8 +114,8 @@ func IsPermissionDenied(err error) bool {
 type MinikubeConfig map[string]interface{}
 
 // Get gets a named value from config
-func Get(name string) (string, error) {
-	m, err := ReadConfig(localpath.ConfigFile())
+func Get(path string, name string) (string, error) {
+	m, err := ReadConfig(path)
 	if err != nil {
 		return "", err
 	}
@@ -151,13 +150,13 @@ func ReadConfig(configFile string) (MinikubeConfig, error) {
 		if os.IsNotExist(err) {
 			return make(map[string]interface{}), nil
 		}
-		return nil, fmt.Errorf("open %s: %v", localpath.ConfigFile(), err)
+		return nil, fmt.Errorf("open %s: %v", configFile, err)
 	}
 	defer f.Close()
 
 	m, err := decode(f)
 	if err != nil {
-		return nil, fmt.Errorf("decode %s: %v", localpath.ConfigFile(), err)
+		return nil, fmt.Errorf("decode %s: %v", configFile, err)
 	}
 
 	return m, nil

@@ -108,6 +108,7 @@ func TestPropertyWithNameArg(t *testing.T) {
 		name         string
 	}{
 		{Profile, "Profile"},
+		{ConfigFile, "ConfigFile"},
 		{ClientCert, "ClientCert"},
 		{ClientKey, "ClientKey"},
 	}
@@ -133,7 +134,7 @@ func TestPropertyWithoutNameArg(t *testing.T) {
 		propertyFunc propertyFnWithoutArg
 		name         string
 	}{
-		{ConfigFile, "ConfigFile"},
+		{func() string { return ConfigFile("") }, "ConfigFile"},
 		{CACert, "CACert"},
 	}
 	miniPath := MiniPath()

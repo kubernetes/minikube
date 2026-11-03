@@ -18,11 +18,13 @@ package config
 
 import (
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 func TestGetNotFound(t *testing.T) {
 	createTestConfig(t)
-	_, err := Get("nonexistent")
+	_, err := Get(localpath.ConfigFile(""), "nonexistent")
 	if err == nil || err.Error() != "specified key could not be found in config" {
 		t.Fatalf("Get did not return error for unknown property")
 	}
@@ -31,11 +33,11 @@ func TestGetNotFound(t *testing.T) {
 func TestGetOK(t *testing.T) {
 	createTestConfig(t)
 	name := "driver"
-	err := Set(name, "ssh")
+	err := Set("", name, "ssh")
 	if err != nil {
 		t.Fatalf("Set returned error for property %s, %+v", name, err)
 	}
-	val, err := Get(name)
+	val, err := Get(localpath.ConfigFile(""), name)
 	if err != nil {
 		t.Fatalf("Get returned error for property %s, %+v", name, err)
 	}

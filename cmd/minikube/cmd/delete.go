@@ -463,7 +463,7 @@ func deleteContext(machineName string) error {
 		return DeletionError{Err: fmt.Errorf("update config: %v", err), Errtype: Fatal}
 	}
 
-	if err := cmdcfg.Unset(config.ProfileName); err != nil {
+	if err := cmdcfg.Unset("", config.ProfileName); err != nil {
 		return DeletionError{Err: fmt.Errorf("unset minikube profile: %v", err), Errtype: Fatal}
 	}
 	return nil

@@ -56,7 +56,7 @@ var addCacheCmd = &cobra.Command{
 			exit.Error(reason.InternalCacheLoad, "Failed to cache and load images", err)
 		}
 		// Add images to config file
-		if err := cmdConfig.AddToConfigMap(cacheImageConfigKey, args); err != nil {
+		if err := cmdConfig.AddToConfigMap("", cacheImageConfigKey, args); err != nil {
 			exit.Error(reason.InternalAddConfig, "Failed to update config", err)
 		}
 	},
@@ -89,7 +89,7 @@ var deleteCacheCmd = &cobra.Command{
 	Long:  "Delete an image from the local cache.",
 	Run: func(_ *cobra.Command, args []string) {
 		// Delete images from config file
-		if err := cmdConfig.DeleteFromConfigMap(cacheImageConfigKey, args); err != nil {
+		if err := cmdConfig.DeleteFromConfigMap("", cacheImageConfigKey, args); err != nil {
 			exit.Error(reason.InternalDelConfig, "Failed to delete images from config", err)
 		}
 		// Delete images from cache/images directory
