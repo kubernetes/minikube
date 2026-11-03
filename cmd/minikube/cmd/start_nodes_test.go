@@ -40,6 +40,10 @@ func nodeFlagCommand(t *testing.T, args ...string) (*cobra.Command, *viper.Viper
 	cmd.Flags().String(cniFlag, "", "")
 	cmd.Flags().String(containerRuntime, "", "")
 	cmd.Flags().Bool(noKubernetes, false, "")
+	// Use the registered flag groups without sharing mutable flag values.
+	for _, name := range []string{nodeSpec, nodes, ha} {
+		cmd.Flags().Lookup(name).Annotations = startCmd.Flags().Lookup(name).Annotations
+	}
 	if err := cmd.ParseFlags(args); err != nil {
 		t.Fatal(err)
 	}
@@ -60,6 +64,33 @@ func TestNodeFlagRegistration(t *testing.T) {
 	}
 }
 
+func TestNodeFlagExclusivity(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		args     []string
+		conflict bool
+	}{
+		{"defaults", nil, false},
+		{"explicit node", []string{"--node=role=control-plane"}, false},
+		{"repeated node", []string{"--node=role=control-plane", "--node=role=worker"}, false},
+		{"mixed topology", []string{"--node=role=control-plane", "--node=role=worker,os=windows"}, false},
+		{"legacy count", []string{"--nodes=2"}, false},
+		{"legacy HA", []string{"--ha"}, false},
+		{"legacy HA with count", []string{"--ha", "--nodes=3"}, false},
+		{"count conflict", []string{"--node=role=control-plane", "--nodes=1"}, true},
+		{"shorthand count conflict", []string{"--node=role=control-plane", "-n", "1"}, true},
+		{"HA conflict", []string{"--node=role=control-plane", "--ha"}, true},
+		{"false HA conflict", []string{"--node=role=control-plane", "--ha=false"}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd, _ := nodeFlagCommand(t, tc.args...)
+			if err := cmd.ValidateFlagGroups(); (err != nil) != tc.conflict {
+				t.Fatalf("flag validation for %v = %v; want conflict %t", tc.args, err, tc.conflict)
+			}
+		})
+	}
+}
+
 func TestNodeFlagResolution(t *testing.T) {
 	cp := config.Node{ControlPlane: true, Worker: true}
 	worker := config.Node{Worker: true}
@@ -75,9 +106,6 @@ func TestNodeFlagResolution(t *testing.T) {
 		{name: "worker first", args: []string{"--node=os=windows,role=worker", "--node=role=control-plane"}, want: []config.Node{cp, win}},
 		{name: "case and space", args: []string{"--node= Role = Control-Plane , OS=Linux ", "--node=role=Worker,os=WINDOWS"}, want: []config.Node{cp, win}},
 		{name: "parser supports future workers", args: []string{"--node=role=worker,os=windows", "--node=role=control-plane", "--node=role=worker", "--node=role=worker,os=windows"}, want: []config.Node{cp, win, worker, win}},
-		{name: "count conflict", args: []string{"--node=role=control-plane", "-n", "1"}, err: "cannot be combined"},
-		{name: "HA conflict", args: []string{"--node=role=control-plane", "--ha"}, err: "cannot be combined"},
-		{name: "explicit false HA conflict", args: []string{"--node=role=control-plane", "--ha=false"}, err: "cannot be combined"},
 		{name: "empty", args: []string{"--node="}, err: "at least one node specification"},
 		{name: "empty second node", args: []string{"--node=role=control-plane", "--node="}, err: "nonempty key=value"},
 		{name: "missing role", args: []string{"--node=os=linux"}, err: "role is required"},
@@ -274,14 +302,27 @@ func TestNodeExplicitTopologyOverridesDefaults(t *testing.T) {
 }
 
 func TestNodeRejectsImplicitHA(t *testing.T) {
-	cmd, v := nodeFlagCommand(t, "--node=role=control-plane", "--node=role=worker")
-	v.SetDefault(ha, true)
-	before := v.AllSettings()
-	if _, err := resolveNodes(cmd, nil, v); err == nil || !strings.Contains(err.Error(), "HA to be disabled") {
-		t.Fatalf("expected an implicit HA conflict, got %v", err)
-	}
-	if !reflect.DeepEqual(before, v.AllSettings()) {
-		t.Fatal("--node silently changed the configured HA setting")
+	for _, source := range []string{"configuration", "environment"} {
+		t.Run(source, func(t *testing.T) {
+			cmd, v := nodeFlagCommand(t, "--node=role=control-plane", "--node=role=worker")
+			if source == "environment" {
+				t.Setenv("MINIKUBE_HA", "true")
+				v.SetEnvPrefix(minikubeEnvPrefix)
+				v.AutomaticEnv()
+			} else {
+				v.SetDefault(ha, true)
+			}
+			if err := cmd.ValidateFlagGroups(); err != nil {
+				t.Fatalf("implicit HA should not conflict during flag validation: %v", err)
+			}
+			before := v.AllSettings()
+			if _, err := resolveNodes(cmd, nil, v); err == nil || !strings.Contains(err.Error(), "HA to be disabled") {
+				t.Fatalf("expected an implicit HA conflict, got %v", err)
+			}
+			if !reflect.DeepEqual(before, v.AllSettings()) {
+				t.Fatal("--node silently changed the configured HA setting")
+			}
+		})
 	}
 }
 

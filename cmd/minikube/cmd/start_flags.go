@@ -227,6 +227,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(windowsVhdURL, constants.DefaultWindowsVhdURL, "The VHD URL to use for the windows node on a multi-node cluster. If not set, it will be set to the default Windows Server 2025 VHD URL.")
 
 	startCmd.Flags().String(preloadSrc, "auto", "Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try github first, then gcs as failover).")
+	startCmd.MarkFlagsMutuallyExclusive(nodes, nodeSpec)
+	startCmd.MarkFlagsMutuallyExclusive(ha, nodeSpec)
 
 }
 

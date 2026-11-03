@@ -97,9 +97,6 @@ func resolveNodes(cmd *cobra.Command, existing *config.ClusterConfig, v *viper.V
 	if !cmd.Flags().Changed(nodeSpec) {
 		return nil, nil
 	}
-	if cmd.Flags().Changed(nodes) || cmd.Flags().Changed(ha) {
-		return nil, errors.New("--node cannot be combined with --nodes/-n or --ha")
-	}
 	if v.GetBool(ha) {
 		return nil, errors.New("--node requires HA to be disabled in the configuration or environment")
 	}
