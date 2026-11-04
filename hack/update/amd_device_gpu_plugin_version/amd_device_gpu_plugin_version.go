@@ -42,15 +42,22 @@ type Data struct {
 
 // findMatchingImageTag finds the Docker Hub image tag corresponding to a GitHub release tag.
 // Docker Hub tags may include a numeric patch suffix not present in the GitHub release tag
-// (e.g. GitHub "v1.25.2" may correspond to Docker Hub "v1.25.2.8").
+// (e.g. GitHub "v1.25.2" may correspond to Docker Hub "v1.25.2.8"), and may omit
+// the leading "v" entirely (e.g. GitHub "v1.25.2" corresponds to Docker Hub "1.25.2.8").
 // Tags should be provided newest-first (Docker Hub API default); the first match is returned.
 func findMatchingImageTag(tags []string, ghTag string) (string, error) {
+	candidates := []string{ghTag}
+	if trimmed := strings.TrimPrefix(ghTag, "v"); trimmed != ghTag {
+		candidates = append(candidates, trimmed)
+	}
 	for _, tag := range tags {
-		if tag == ghTag || strings.HasPrefix(tag, ghTag+".") {
-			return tag, nil
+		for _, c := range candidates {
+			if tag == c || strings.HasPrefix(tag, c+".") {
+				return tag, nil
+			}
 		}
 	}
-	return "", fmt.Errorf("no Docker Hub image tag found matching GitHub release tag %s", ghTag)
+	return "", fmt.Errorf("no Docker Hub image tag found matching GitHub release tag %q", ghTag)
 }
 
 func main() {
