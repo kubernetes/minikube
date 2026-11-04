@@ -1,0 +1,8 @@
+name: CI
+jobs:
+  build:
+    steps:
+      - uses: actions/setup-go@v6
+      - run: |
+          make build
+          make test
