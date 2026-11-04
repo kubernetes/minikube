@@ -71,7 +71,7 @@ var settings = []Setting{
 	{
 		name:        "v",
 		set:         SetInt,
-		validations: []setFn{IsPositive},
+		validations: []setFn{IsNonNegative},
 	},
 	{
 		name:        "cpus",
