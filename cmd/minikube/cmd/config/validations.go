@@ -130,6 +130,17 @@ func IsPositive(name, val string) error {
 	return nil
 }
 
+func IsNonNegative(name, val string) error {
+	i, err := strconv.Atoi(val)
+	if err != nil {
+		return fmt.Errorf("%s:%v", name, err)
+	}
+	if i < 0 {
+		return fmt.Errorf("%s must be >= 0", name)
+	}
+	return nil
+}
+
 // IsValidCIDR checks if a string parses as a CIDR
 func IsValidCIDR(_, cidr string) error {
 	_, _, err := net.ParseCIDR(cidr)

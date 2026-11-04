@@ -100,6 +100,20 @@ func TestValidCIDR(t *testing.T) {
 	runValidations(t, tests, "cidr", IsValidCIDR)
 }
 
+func TestIsNonNegative(t *testing.T) {
+        tests := []validationTest{
+                {"0", false},
+                {"1", false},
+                {"10", false},
+                {"-1", true},
+                {"abc", true},
+                {"", true},
+                {"1.5", true},
+        }
+
+        runValidations(t, tests, "v", IsNonNegative)
+}
+
 func TestValidRuntime(t *testing.T) {
 	var tests = []validationTest{
 		{
