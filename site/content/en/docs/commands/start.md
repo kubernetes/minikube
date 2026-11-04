@@ -116,7 +116,10 @@ minikube start [flags]
       --subnet string                     Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)
       --trace string                      Send trace events. Options include: [gcp]
       --vm                                Filter to use only VM Drivers
+      --vmnet-end-address                 The DHCP IPv4 range end address for the vmnet interface. Must be in the private IP range (RFC 1918) and in the same subnet as --vmnet-start-address. Must be set together with --vmnet-start-address and --vmnet-subnet-mask (vfkit with --network vmnet-shared, and krunkit drivers only)
       --vmnet-offloading                  Enable vmnet checksum and TSO offloading. See krunkit driver documentation for known limitations (krunkit driver only)
+      --vmnet-start-address               The starting IPv4 address for the vmnet interface, used as the gateway address. The subsequent address up to and including --vmnet-end-address are placed in the DHCP pool. All other addresses are available for static assignment. The address must be in the private IP range (RFC 1918). Must be set together with --vmnet-end-address and --vmnet-subnet-mask (vfkit with --network vmnet-shared, and krunkit drivers only)
+      --vmnet-subnet-mask                 The IPv4 subnet mask to use on the vmnet interface. Must be set together with --vmnet-start-address and --vmnet-end-address (vfkit with --network vmnet-shared, and krunkit drivers only)
       --wait strings                      comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to "apiserver,system_pods", available options: "apiserver,system_pods,default_sa,apps_running,node_ready,kubelet,extra" . other acceptable values are 'all' or 'none', 'true' and 'false' (default [apiserver,system_pods])
       --wait-timeout duration             max time to wait per Kubernetes or host to be healthy. (default 6m0s)
 ```
