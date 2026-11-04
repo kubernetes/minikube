@@ -75,11 +75,10 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig, options *run.CommandOptions) 
 	creds, err := google.FindDefaultCredentials(ctx)
 	if err != nil {
 		if detect.IsCloudShell() {
-			if c := os.Getenv("CLOUDSDK_CONFIG"); c != "" {
-				f, err := os.ReadFile(path.Join(c, "application_default_credentials.json"))
-				if err == nil {
-					creds, _ = google.CredentialsFromJSON(ctx, f) //nolint:staticcheck
-				}
+			var cloudShellErr error
+			creds, cloudShellErr = credentialsFromCloudShellADC(ctx)
+			if cloudShellErr != nil {
+				klog.Warningf("failed to load Cloud Shell credentials: %v", cloudShellErr)
 			}
 		} else {
 			exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
@@ -98,6 +97,9 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig, options *run.CommandOptions) 
 		return nil
 	}
 
+	if creds == nil {
+		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+	}
 	if creds.JSON == nil {
 		out.WarningT("You have authenticated with a service account that does not have an associated JSON file. The GCP Auth addon requires credentials with a JSON file in order to continue.")
 		return nil
@@ -135,6 +137,24 @@ or set the GOOGLE_CLOUD_PROJECT environment variable.`)
 	emptyFile := assets.NewMemoryAssetTarget([]byte{}, projectPath, readPermission)
 	return r.Copy(emptyFile)
 
+}
+
+// credentialsFromCloudShellADC loads application default credentials from the
+// Cloud Shell CLOUDSDK_CONFIG directory.
+func credentialsFromCloudShellADC(ctx context.Context) (*google.Credentials, error) {
+	c := os.Getenv("CLOUDSDK_CONFIG")
+	if c == "" {
+		return nil, fmt.Errorf("CLOUDSDK_CONFIG is not set")
+	}
+	f, err := os.ReadFile(path.Join(c, "application_default_credentials.json"))
+	if err != nil {
+		return nil, fmt.Errorf("reading application default credentials: %w", err)
+	}
+	creds, err := google.CredentialsFromJSON(ctx, f) //nolint:staticcheck
+	if err != nil {
+		return nil, fmt.Errorf("parsing application default credentials: %w", err)
+	}
+	return creds, nil
 }
 
 func patchServiceAccounts(cc *config.ClusterConfig) error {
