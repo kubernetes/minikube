@@ -23,8 +23,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"text/template"
 	"time"
 
@@ -49,8 +51,23 @@ func init() {
 
 	// used in update_kubeadm_constants.go
 	flag.String("kubernetes-version", "latest", "kubernetes-version")
-	flag.Parse()
+	// Skip parsing under `go test`: the testing framework registers its own
+	// flags only after package init, and parsing them here would fail.
+	if !testBinary() {
+		flag.Parse()
+	}
 	defer klog.Flush()
+}
+
+// testBinary reports whether the process is a `go test` binary (the testing
+// framework passes -test.* flags that flag.Parse would reject at init time).
+func testBinary() bool {
+	for _, arg := range os.Args {
+		if strings.HasPrefix(arg, "-test.") || strings.HasPrefix(arg, "--test.") {
+			return true
+		}
+	}
+	return false
 }
 
 // Item defines Content where all occurrences of each Replace map key,
