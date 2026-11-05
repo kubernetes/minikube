@@ -47,9 +47,8 @@ var ProfileCmd = &cobra.Command{
 
 		profile := args[0]
 		// Check whether the profile name is container friendly
-		if !config.ProfileNameValid(profile) {
-			out.WarningT("Profile name '{{.profilename}}' is not valid", out.V{"profilename": profile})
-			exit.Message(reason.Usage, "Only alphanumeric and dashes '-' are permitted. Minimum 1 character, starting with alphanumeric.")
+		if err := config.ValidateProfileName(profile); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 		/**
 		we need to add code over here to check whether the profile

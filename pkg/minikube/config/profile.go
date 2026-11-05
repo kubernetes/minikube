@@ -88,6 +88,14 @@ func ProfileNameValid(name string) bool {
 	return validName.MatchString(name) && len(name) > 1
 }
 
+// ValidateProfileName returns an error if name cannot be used as a profile name.
+func ValidateProfileName(name string) error {
+	if !ProfileNameValid(name) {
+		return fmt.Errorf("profile name %q is not valid: only alphanumeric and dashes '-' are permitted, minimum 2 characters, starting with alphanumeric", name)
+	}
+	return nil
+}
+
 // ProfileNameInReservedKeywords checks if the profile is an internal keywords
 func ProfileNameInReservedKeywords(name string) bool {
 	for _, v := range keywords {

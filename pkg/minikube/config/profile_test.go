@@ -117,6 +117,26 @@ func TestProfileNameValid(t *testing.T) {
 	}
 }
 
+func TestValidateProfileName(t *testing.T) {
+	var testCases = map[string]bool{
+		"minikube":  false,
+		"pro-file1": false,
+		"a":         true,
+		"bad_name!": true,
+		"-profile":  true,
+	}
+
+	for name, shouldErr := range testCases {
+		err := ValidateProfileName(name)
+		if shouldErr && err == nil {
+			t.Errorf("expected ValidateProfileName(%q) to fail", name)
+		}
+		if !shouldErr && err != nil {
+			t.Errorf("expected ValidateProfileName(%q) to pass, got: %v", name, err)
+		}
+	}
+}
+
 func TestProfileNameInReservedKeywords(t *testing.T) {
 	var testCases = []struct {
 		name     string

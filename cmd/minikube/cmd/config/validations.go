@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	units "github.com/docker/go-units"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -38,6 +39,17 @@ func IsValidDriver(_, name string) error {
 		return nil
 	}
 	return fmt.Errorf("driver %q is not supported", name)
+}
+
+// IsValidProfileName checks if a string can be used as a profile name
+func IsValidProfileName(_, name string) error {
+	if err := config.ValidateProfileName(name); err != nil {
+		return err
+	}
+	if config.ProfileNameInReservedKeywords(name) {
+		return fmt.Errorf("profile name %q is a reserved keyword", name)
+	}
+	return nil
 }
 
 // RequiresRestartMsg returns the "requires restart" message
