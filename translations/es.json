@@ -607,7 +607,6 @@
 	"Sorry, the IP provided with the --listen-address flag is invalid: {{.listenAddr}}.": "",
 	"Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formats are: \u003cip\u003e[:\u003cport\u003e], \u003chostname\u003e[:\u003cport\u003e] or \u003cnetwork\u003e/\u003cnetmask\u003e": "",
 	"Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config": "De momento, --extra-config no admite el parámetro kubeadm.{{.parameter_name}}",
-	"Sorry, the url provided with the --registry-mirror flag is invalid: {{.url}}": "La URL proporcionada con la marca --registry-mirror no es válida: {{.url}}",
 	"Sorry, {{.driver}} does not allow mounts to be changed after container creation (previous mount: '{{.old}}', new mount: '{{.new}})'": "",
 	"Source {{.path}} can not be empty": "",
 	"Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}. Use `minikube config defaults kubernetes-version` for details.": "",

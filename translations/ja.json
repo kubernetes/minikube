@@ -607,7 +607,6 @@
 	"Sorry, the IP provided with the --listen-address flag is invalid: {{.listenAddr}}.": "申し訳ありませんが、--listen-address フラグで指定された IP アドレスは無効です: {{.listenAddr}}",
 	"Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formats are: \u003cip\u003e[:\u003cport\u003e], \u003chostname\u003e[:\u003cport\u003e] or \u003cnetwork\u003e/\u003cnetmask\u003e": "申し訳ありませんが、--insecure-registry で指定されたアドレス {{.addr}} は無効です。想定された形式: \u003cIP\u003e[:\u003cポート\u003e]、\u003cホスト名\u003e[:\u003cポート\u003e]、\u003cネットワーク\u003e/\u003cネットマスク\u003e",
 	"Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config": "申し訳ありませんが、kubeadm.{{.parameter_name}} パラメーターは現在 --extra-config で未対応です",
-	"Sorry, the url provided with the --registry-mirror flag is invalid: {{.url}}": "申し訳ありませんが、--registry-mirror フラグとともに指定された URL は無効です: {{.url}}",
 	"Sorry, {{.driver}} does not allow mounts to be changed after container creation (previous mount: '{{.old}}', new mount: '{{.new}})'": "申し訳ありませんが、{{.driver}} はコンテナーの生成後にマウントを変更できません (旧マウント: '{{.old}}'、新マウント: '{{.new}})'",
 	"Source {{.path}} can not be empty": "ソース {{.path}} は空にできません",
 	"Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}. Use `minikube config defaults kubernetes-version` for details.": "指定された Kubernetes バージョン {{.specified}} はサポートされた最古バージョン {{.oldest}} より古いです。詳細は `minikube config defaults kubernetes-version` を使用してください。",

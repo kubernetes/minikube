@@ -607,7 +607,6 @@
 	"Sorry, the IP provided with the --listen-address flag is invalid: {{.listenAddr}}.": "抱歉，使用 --listen-address 标志提供的 IP 无效：{{.listenAddr}}。",
 	"Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formats are: \u003cip\u003e[:\u003cport\u003e], \u003chostname\u003e[:\u003cport\u003e] or \u003cnetwork\u003e/\u003cnetmask\u003e": "抱歉，使用 --insecure-registry 标志提供的地址无效：{{.addr}}。预期格式为：\u003cip\u003e[:\u003cport\u003e]、\u003chostname\u003e[:\u003cport\u003e] 或 \u003cnetwork\u003e/\u003cnetmask\u003e",
 	"Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config": "抱歉，--extra-config 目前不支持 kubeadm.{{.parameter_name}} 参数",
-	"Sorry, the url provided with the --registry-mirror flag is invalid: {{.url}}": "抱歉，通过 --registry-mirror 标志提供的网址无效：{{.url}}",
 	"Sorry, {{.driver}} does not allow mounts to be changed after container creation (previous mount: '{{.old}}', new mount: '{{.new}})'": "抱歉，{{.driver}} 不允许在容器创建后更改挂载（之前的挂载：'{{.old}}'，新挂载：'{{.new}}'）",
 	"Source {{.path}} can not be empty": "源路径 {{.path}} 不能为空",
 	"Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}. Use `minikube config defaults kubernetes-version` for details.": "指定的 Kubernetes 版本 {{.specified}} 小于支持的最低版本 {{.oldest}}。有关详细信息，请使用 `minikube config defaults kubernetes-version`",
