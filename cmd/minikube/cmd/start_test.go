@@ -905,3 +905,43 @@ func TestGetContainerRuntime(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateRegistryMirror(t *testing.T) {
+	var tests = []struct {
+		mirrors  []string
+		errorMsg string
+	}{
+		{
+			mirrors:  []string{"http://mirror.example.com"},
+			errorMsg: "",
+		},
+		{
+			mirrors:  []string{"https://mirror.example.com:5000"},
+			errorMsg: "",
+		},
+		{
+			mirrors:  []string{"ftp://mirror.example.com"},
+			errorMsg: "Sorry, the url provided with the --registry-mirror flag is invalid: ftp://mirror.example.com",
+		},
+		{
+			mirrors:  []string{"http://mirror.example.com/path"},
+			errorMsg: "Sorry, the url provided with the --registry-mirror flag is invalid: http://mirror.example.com/path",
+		},
+		{
+			mirrors:  []string{"http://[::1"},
+			errorMsg: "Sorry, the url provided with the --registry-mirror flag is invalid: parse \"http://[::1\": missing ']' in host",
+		},
+	}
+	for _, test := range tests {
+		t.Run(strings.Join(test.mirrors, ","), func(t *testing.T) {
+			got := validateRegistryMirror(test.mirrors)
+			gotError := ""
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("validateRegistryMirror(mirrors=%v): got %v, expected %v", test.mirrors, got, test.errorMsg)
+			}
+		})
+	}
+}
