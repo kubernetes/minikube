@@ -19,6 +19,7 @@ package cruntime
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -273,6 +274,20 @@ func (r *CRIO) ListImages(ListImagesOptions) ([]ListImage, error) {
 func (r *CRIO) LoadImage(imgPath string) error {
 	klog.Infof("Loading image: %s", imgPath)
 	c := exec.Command("sudo", "podman", "load", "-i", imgPath)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return fmt.Errorf("crio load image: %w", err)
+	}
+	return nil
+}
+
+// LoadImageStream loads an image into this runtime, reading it from img.
+//
+// podman load reads stdin when -i is absent, so this is the command above with
+// its -i dropped.
+func (r *CRIO) LoadImageStream(img io.Reader) error {
+	klog.Info("Loading image from stream")
+	c := exec.Command("sudo", "podman", "load")
+	c.Stdin = img
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return fmt.Errorf("crio load image: %w", err)
 	}
