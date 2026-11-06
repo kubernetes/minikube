@@ -733,6 +733,7 @@
 	"The socket_vmnet network is only supported on macOS": "Το δίκτυο socket_vmnet υποστηρίζεται μόνο σε macOS",
 	"The time interval for each check that wait performs in seconds": "Το χρονικό διάστημα για κάθε έλεγχο που εκτελεί η αναμονή σε δευτερόλεπτα",
 	"The total number of nodes to spin up. Defaults to 1.": "Ο συνολικός αριθμός κόμβων προς εκκίνηση. Προεπιλογή 1.",
+	"The url provided with the --registry-mirror flag is invalid: {{.err}}": "",
 	"The value passed to --format is invalid": "Η τιμή που μεταβιβάστηκε στο --format δεν είναι έγκυρη",
 	"The value passed to --format is invalid: {{.error}}": "Η τιμή που μεταβιβάστηκε στο --format δεν είναι έγκυρη: {{.error}}",
 	"The vfkit driver is only supported on macOS": "Ο οδηγός vfkit υποστηρίζεται μόνο σε macOS",

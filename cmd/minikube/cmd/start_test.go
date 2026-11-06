@@ -907,41 +907,43 @@ func TestGetContainerRuntime(t *testing.T) {
 }
 
 func TestValidateRegistryMirror(t *testing.T) {
-	var tests = []struct {
-		mirrors  []string
-		errorMsg string
-	}{
-		{
-			mirrors:  []string{"http://mirror.example.com"},
-			errorMsg: "",
-		},
-		{
-			mirrors:  []string{"https://mirror.example.com:5000"},
-			errorMsg: "",
-		},
-		{
-			mirrors:  []string{"ftp://mirror.example.com"},
-			errorMsg: "Sorry, the url provided with the --registry-mirror flag is invalid: ftp://mirror.example.com",
-		},
-		{
-			mirrors:  []string{"http://mirror.example.com/path"},
-			errorMsg: "Sorry, the url provided with the --registry-mirror flag is invalid: http://mirror.example.com/path",
-		},
-		{
-			mirrors:  []string{"http://[::1"},
-			errorMsg: "Sorry, the url provided with the --registry-mirror flag is invalid: parse \"http://[::1\": missing ']' in host",
-		},
-	}
-	for _, test := range tests {
-		t.Run(strings.Join(test.mirrors, ","), func(t *testing.T) {
-			got := validateRegistryMirror(test.mirrors)
-			gotError := ""
-			if got != nil {
-				gotError = got.Error()
-			}
-			if gotError != test.errorMsg {
-				t.Errorf("validateRegistryMirror(mirrors=%v): got %v, expected %v", test.mirrors, got, test.errorMsg)
-			}
-		})
-	}
+	t.Run("valid", func(t *testing.T) {
+		valid := []struct {
+			name    string
+			mirrors []string
+		}{
+			{"url", []string{"http://mirror.example.com"}},
+			{"url with port", []string{"https://mirror.example.com:5000"}},
+			{"multiple urls", []string{"http://mirror.example.com", "https://mirror.example.com:5000"}},
+		}
+		for _, tc := range valid {
+			t.Run(tc.name, func(t *testing.T) {
+				if err := validateRegistryMirror(tc.mirrors); err != nil {
+					t.Errorf("validateRegistryMirror(%q) = %v, want nil", tc.mirrors, err)
+				}
+			})
+		}
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		invalid := []struct {
+			name   string
+			mirror string
+		}{
+			{"http with path", "http://mirror.example.com/path"},
+			{"ftp", "ftp://mirror.example.com"},
+			{"ipv6", "http://[::1"},
+		}
+		for _, tc := range invalid {
+			t.Run(tc.name, func(t *testing.T) {
+				err := validateRegistryMirror([]string{tc.mirror})
+				if err == nil {
+					t.Fatalf("validateRegistryMirror(%q) = nil, want error", tc.mirror)
+				}
+				if !strings.Contains(err.Error(), tc.mirror) {
+					t.Errorf("validateRegistryMirror(%q) = %q, want error containing the url", tc.mirror, err)
+				}
+			})
+		}
+	})
 }

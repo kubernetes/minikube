@@ -733,6 +733,7 @@
 	"The socket_vmnet network is only supported on macOS": "A rede socket_vmnet só é suportada no macOS",
 	"The time interval for each check that wait performs in seconds": "O intervalo de tempo para cada verificação que o wait realiza, em segundos",
 	"The total number of nodes to spin up. Defaults to 1.": "O número total de nós a iniciar. O padrão é 1.",
+	"The url provided with the --registry-mirror flag is invalid: {{.err}}": "",
 	"The value passed to --format is invalid": "O valor passado para --format é inválido",
 	"The value passed to --format is invalid: {{.error}}": "O valor passado para --format é inválido: {{.error}}",
 	"The vfkit driver is only supported on macOS": "O driver vfkit só é suportado no macOS",

@@ -733,6 +733,7 @@
 	"The socket_vmnet network is only supported on macOS": "Tora socket_vmnet tenê li ser macOS tê piştgirî kirin",
 	"The time interval for each check that wait performs in seconds": "Navbêna demê ji bo her kontrola ku wait dike bi çirkeyan",
 	"The total number of nodes to spin up. Defaults to 1.": "Tevahî hejmara node-ên ku werin destpêkirin. Wekî xwerû 1 e.",
+	"The url provided with the --registry-mirror flag is invalid: {{.err}}": "",
 	"The value passed to --format is invalid": "Nirxa ku ji --format re hatîye dayîn nederbasdar e",
 	"The value passed to --format is invalid: {{.error}}": "Nirxa ku ji --format re hatîye dayîn nederbasdar e: {{.error}}",
 	"The vfkit driver is only supported on macOS": "Driver 'vfkit' tenê li ser macOS tê piştgirî kirin",

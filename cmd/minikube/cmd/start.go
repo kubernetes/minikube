@@ -1374,7 +1374,7 @@ func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterC
 
 	validateBareMetal(drvName, getContainerRuntime(existing))
 	if err := validateRegistryMirror(registryMirror); err != nil {
-		exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		exit.Message(reason.Usage, "The url provided with the --registry-mirror flag is invalid: {{.err}}", out.V{"err": err})
 	}
 	validateInsecureRegistry()
 }
@@ -1596,10 +1596,11 @@ func validateRegistryMirror(mirrors []string) error {
 	for _, loc := range mirrors {
 		URL, err := url.Parse(loc)
 		if err != nil {
-			return fmt.Errorf("Sorry, the url provided with the --registry-mirror flag is invalid: %w", err)
+			klog.Errorln("Error Parsing URL: ", err)
+			return errors.New(loc)
 		}
 		if (URL.Scheme != "http" && URL.Scheme != "https") || URL.Path != "" {
-			return fmt.Errorf("Sorry, the url provided with the --registry-mirror flag is invalid: %s", loc)
+			return errors.New(loc)
 		}
 	}
 	return nil

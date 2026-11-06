@@ -733,6 +733,7 @@
 	"The socket_vmnet network is only supported on macOS": "Мережа socket_vmnet підтримується тільки в macOS.",
 	"The time interval for each check that wait performs in seconds": "Інтервал часу для кожної перевірки, яку виконує wait, у секундах",
 	"The total number of nodes to spin up. Defaults to 1.": "Загальна кількість вузлів, які потрібно запустити. Стандартно — 1.",
+	"The url provided with the --registry-mirror flag is invalid: {{.err}}": "",
 	"The value passed to --format is invalid": "Значення, передане до --format, є недійсним",
 	"The value passed to --format is invalid: {{.error}}": "Значення, передане до --format, є недійсним: {{.error}}",
 	"The vfkit driver is only supported on macOS": "Драйвер vfkit підтримується тільки в macOS.",
