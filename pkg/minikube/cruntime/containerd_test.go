@@ -17,7 +17,17 @@ limitations under the License.
 package cruntime
 
 import (
+	"archive/tar"
+	"bytes"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/command"
 
 	"k8s.io/minikube/pkg/version"
 )
@@ -58,6 +68,108 @@ func TestParseContainerdVersion(t *testing.T) {
 			}
 			if got != tc.want {
 				t.Errorf("expected version to be: %q but got %q", tc.want, got)
+			}
+		})
+	}
+}
+
+// TestDownloadRemote runs the guest download commands locally so that it checks
+// HTTP and filesystem behavior without depending on command arguments.
+func TestDownloadRemote(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("download commands require a Unix environment")
+	}
+	for _, tool := range []string{"mktemp", "curl", "tar", "rm"} {
+		if _, err := exec.LookPath(tool); err != nil {
+			t.Skipf("%s is required: %v", tool, err)
+		}
+	}
+	// BSD mktemp does not honor TMPDIR without a template. Keep all generated
+	// files inside the test directory on both macOS and Linux.
+	mktemp, err := exec.LookPath("mktemp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	binDir := t.TempDir()
+	script := "#!/bin/sh\nexec " + mktemp + " \"$@\" \"$TMPDIR/download.XXXXXXXX\"\n"
+	if err := os.WriteFile(filepath.Join(binDir, "mktemp"), []byte(script), 0700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	var archive bytes.Buffer
+	tw := tar.NewWriter(&archive)
+	const dockerfile = "FROM scratch\n"
+	if err := tw.WriteHeader(&tar.Header{Name: "Dockerfile", Mode: 0600, Size: int64(len(dockerfile))}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tw.Write([]byte(dockerfile)); err != nil {
+		t.Fatal(err)
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name     string
+		status   int
+		body     []byte
+		redirect bool
+		wantErr  bool
+	}{
+		{name: "success", status: http.StatusOK, body: archive.Bytes()},
+		{name: "redirect", status: http.StatusOK, body: archive.Bytes(), redirect: true},
+		{name: "not found", status: http.StatusNotFound, body: []byte("not found"), wantErr: true},
+		// A valid archive in an error response must still be rejected. Otherwise a
+		// failure inside tar could hide the missing HTTP status check.
+		{name: "server error with archive", status: http.StatusInternalServerError, body: archive.Bytes(), wantErr: true},
+		{name: "invalid archive", status: http.StatusOK, body: []byte("not an archive"), wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Setenv("TMPDIR", dir)
+			sentinel := filepath.Join(dir, "existing")
+			if err := os.WriteFile(sentinel, []byte("keep me"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tc.redirect && r.URL.Path == "/context" {
+					http.Redirect(w, r, "/archive", http.StatusFound)
+					return
+				}
+				w.WriteHeader(tc.status)
+				_, _ = w.Write(tc.body)
+			}))
+			defer server.Close()
+			got, err := downloadRemote(command.NewExecRunner(false), server.URL+"/context")
+			if (err != nil) != tc.wantErr {
+				t.Errorf("downloadRemote() error = %v, want error %v", err, tc.wantErr)
+			}
+			if tc.wantErr {
+				if got != "" {
+					t.Errorf("failed download returned context %q", got)
+				}
+			} else {
+				content, err := os.ReadFile(filepath.Join(got, "Dockerfile"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if string(content) != dockerfile {
+					t.Errorf("Dockerfile = %q, want %q", content, dockerfile)
+				}
+				// A successful context belongs to the caller; only the download is temporary.
+				if err := os.RemoveAll(got); err != nil {
+					t.Fatal(err)
+				}
+			}
+			entries, err := os.ReadDir(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(entries) != 1 || entries[0].Name() != "existing" {
+				t.Errorf("download left temporary files: %v", entries)
+			}
+			content, err := os.ReadFile(sentinel)
+			if err != nil || string(content) != "keep me" {
+				t.Errorf("existing file changed: content=%q, error=%v", content, err)
 			}
 		})
 	}
