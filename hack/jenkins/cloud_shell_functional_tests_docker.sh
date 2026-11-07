@@ -56,11 +56,11 @@ EOF
 
 code=$?
 if [ $code -gt 0 ]; then
-    curl -L -u minikube-bot:${access_token} \
+    curl --fail --location --user minikube-bot:${access_token} \
       "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}" \
-      -H "Content-Type: application/json" \
-      -X POST \
-      -d "{\"state\": \"failure\", \"description\": \"Jenkins: Cloud Shell failed to start\", \"target_url\": \"https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${ROOT_JOB_ID}/Docker_Cloud_Shell.html\", \"context\": \"Docker_Cloud_Shell\"}"
+      --header "Content-Type: application/json" \
+      --request POST \
+      --data "{\"state\": \"failure\", \"description\": \"Jenkins: Cloud Shell failed to start\", \"target_url\": \"https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${ROOT_JOB_ID}/Docker_Cloud_Shell.html\", \"context\": \"Docker_Cloud_Shell\"}"
 fi
 
 exit $code

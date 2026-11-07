@@ -42,8 +42,8 @@ sudo apt-get install jq -y
 rm -rf sonobuoy
 
 # Get latest sonobuoy version
-sonobuoy=$(curl -s https://api.github.com/repos/vmware-tanzu/sonobuoy/releases/latest | jq .assets[].browser_download_url | grep linux_amd64 | cut -d '"' -f 2)
-curl -LO $sonobuoy
+sonobuoy=$(curl --fail --silent --show-error https://api.github.com/repos/vmware-tanzu/sonobuoy/releases/latest | jq .assets[].browser_download_url | grep linux_amd64 | cut -d '"' -f 2)
+curl --fail --location --remote-name "$sonobuoy"
 tarball=$(echo $sonobuoy | awk -F "/" '{print $(NF)}')
 tar -xzf $tarball
 

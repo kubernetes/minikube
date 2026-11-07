@@ -67,11 +67,11 @@ function retry_github_status() {
 
   while [[ "${attempt}" -lt 8 ]]; do
     local out=$(mktemp)
-    code=$(curl -o "${out}" -s --write-out "%{http_code}" -L -u minikube-bot:${token} \
+    code=$(curl --fail --output "${out}" --silent --show-error --write-out "%{http_code}" --location --user minikube-bot:${token} \
       "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}" \
-      -H "Content-Type: application/json" \
-      -X POST \
-      -d "{\"state\": \"${state}\", \"description\": \"Jenkins: ${desc}\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
+      --header "Content-Type: application/json" \
+      --request POST \
+      --data "{\"state\": \"${state}\", \"description\": \"Jenkins: ${desc}\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
 
     # 2xx HTTP codes
     if [[ "${code}" =~ ^2 ]]; then
@@ -172,7 +172,7 @@ mkdir -p out/ testdata/
 if ! type -P gsutil >/dev/null; then
   if [[ ! -x "out/gsutil/gsutil" ]]; then
     echo "Installing gsutil to $(pwd)/out ..."
-    curl -s https://storage.googleapis.com/pub/gsutil.tar.gz | tar -C out/ -zxf -
+    (set -o pipefail; curl --fail --silent --show-error https://storage.googleapis.com/pub/gsutil.tar.gz | tar -C out/ -zxf -) || exit $?
   fi
   PATH="$(pwd)/out/gsutil:$PATH"
 fi
@@ -423,9 +423,11 @@ if ! type "jq" > /dev/null; then
       echo "Unable to install 'jq' automatically for arm64 on Darwin, please install 'jq' manually."
       exit 5
     elif [ "${OS}" != "darwin" ]; then
-      curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
+      curl --fail --location --remote-name https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 || exit $?
+      sudo install jq-linux64 /usr/local/bin/jq
     else
-      curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 && sudo install jq-osx-amd64 /usr/local/bin/jq
+      curl --fail --location --remote-name https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 || exit $?
+      sudo install jq-osx-amd64 /usr/local/bin/jq
     fi
 fi
 

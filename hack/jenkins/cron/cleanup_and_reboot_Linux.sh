@@ -43,7 +43,7 @@ function cleanup() {
 		minikube="$(sudo su - ${user} -c 'command -v minikube')"
 		if [ ! -x "${minikube}" ]; then
 			minikube="/tmp/minikube"
-			curl -sfL https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 -o "${minikube}" && chmod +x "${minikube}" || true
+			curl --fail --silent --show-error --location https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 --output "${minikube}" && chmod +x "${minikube}" || true
 		fi
 		if [ -x "${minikube}" ]; then
 			if sudo su - "${user}" -c "${minikube} delete --all --purge" >/dev/null 2>&1; then
