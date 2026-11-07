@@ -17,13 +17,19 @@ limitations under the License.
 package oci
 
 import (
+	"context"
 	"testing"
 )
 
-var daemonResponseMock string
-var daemonInfoGetterMock = func() (string, error) {
-	return daemonResponseMock, nil
-}
+var (
+	daemonResponseMock         string
+	podmanDaemonInfoGetterMock = func() (string, error) {
+		return daemonResponseMock, nil
+	}
+	dockerDaemonInfoGetterMock = func(context.Context) (string, error) {
+		return daemonResponseMock, nil
+	}
+)
 
 func TestDockerSystemInfo(t *testing.T) {
 	testCases := []struct {
@@ -156,8 +162,8 @@ func TestDockerSystemInfo(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			daemonResponseMock = tc.RawJSON
 			// setting up mock funcs
-			dockerInfoGetter = daemonInfoGetterMock
-			podmanInfoGetter = daemonInfoGetterMock
+			dockerInfoGetter = dockerDaemonInfoGetterMock
+			podmanInfoGetter = podmanDaemonInfoGetterMock
 			s, err := DaemonInfo(tc.OciBin)
 
 			if err != nil && !tc.ShouldError {
