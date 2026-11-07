@@ -17,7 +17,6 @@ limitations under the License.
 package qemu
 
 import (
-	"archive/tar"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -676,48 +675,13 @@ func (d *Driver) pidfilePath() string {
 func (d *Driver) generateDiskImage(size int) error {
 	log.Debugf("Creating %d MB hard disk image...", size)
 
-	magicString := "boot2docker, please format-me"
-
-	buf := new(bytes.Buffer)
-	tw := tar.NewWriter(buf)
-
-	// magicString first so the automount script knows to format the disk
-	file := &tar.Header{Name: magicString, Size: int64(len(magicString))}
-	if err := tw.WriteHeader(file); err != nil {
-		return err
-	}
-	if _, err := tw.Write([]byte(magicString)); err != nil {
-		return err
-	}
-	// .ssh/key.pub => authorized_keys
-	file = &tar.Header{Name: ".ssh", Typeflag: tar.TypeDir, Mode: 0700}
-	if err := tw.WriteHeader(file); err != nil {
-		return err
-	}
-	pubKey, err := os.ReadFile(d.publicSSHKeyPath())
+	buf, err := mcnutils.MakeDiskImage(d.publicSSHKeyPath())
 	if err != nil {
-		return err
-	}
-	file = &tar.Header{Name: ".ssh/authorized_keys", Size: int64(len(pubKey)), Mode: 0644}
-	if err := tw.WriteHeader(file); err != nil {
-		return err
-	}
-	if _, err := tw.Write(pubKey); err != nil {
-		return err
-	}
-	file = &tar.Header{Name: ".ssh/authorized_keys2", Size: int64(len(pubKey)), Mode: 0644}
-	if err := tw.WriteHeader(file); err != nil {
-		return err
-	}
-	if _, err := tw.Write(pubKey); err != nil {
-		return err
-	}
-	if err := tw.Close(); err != nil {
 		return err
 	}
 	rawFile := fmt.Sprintf("%s.raw", d.diskPath())
 	if err := os.WriteFile(rawFile, buf.Bytes(), 0644); err != nil {
-		return nil
+		return err
 	}
 	if stdout, stderr, err := cmdOutErr("qemu-img", "convert", "-f", "raw", "-O", "qcow2", rawFile, d.diskPath()); err != nil {
 		fmt.Printf("OUTPUT: %s\n", stdout)
