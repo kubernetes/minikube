@@ -267,3 +267,42 @@ func TestIsValidIPAddressSlice(t *testing.T) {
 
 	runValidations(t, tests, "dns-servers", IsValidIPAddressSlice)
 }
+
+func TestNonNegative(t *testing.T) {
+	var tests = []validationTest{
+		{
+			value:     "0",
+			shouldErr: false,
+		},
+		{
+			value:     "1",
+			shouldErr: false,
+		},
+		{
+			value:     "10",
+			shouldErr: false,
+		},
+		{
+			value:     "-1",
+			shouldErr: true,
+		},
+		{
+			value:     "-10",
+			shouldErr: true,
+		},
+		{
+			value:     "abc",
+			shouldErr: true,
+		},
+		{
+			value:     "",
+			shouldErr: true,
+		},
+		{
+			value:     "1.5",
+			shouldErr: true,
+		},
+	}
+
+	runValidations(t, tests, "v", IsNonNegative)
+}
