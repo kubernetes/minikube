@@ -286,3 +286,176 @@ jobs:
             echo "ccache stats:"
             "out/buildroot/$BR2_OUTPUT/host/bin/ccache" -s
           fi
+
+  # Smoke-test the uploaded toolchain as an external toolchain by building one
+  # small package. Preparation steps deliberately duplicate the build job; they
+  # will move into a shared script or Makefile later.
+  test:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            br_arch: x86_64
+            br_defconfig: minikube_x86_64_defconfig
+            runner: ubuntu-24.04
+          - arch: arm64
+            br_arch: aarch64
+            br_defconfig: minikube_aarch64_defconfig
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    name: Test (${{ matrix.arch }})
+    env:
+      ARTIFACTS_DIR: toolchain-test-${{ matrix.arch }}
+      BR2_EXTERNAL: ../../deploy/iso/minikube-iso
+      # Package build tree (Makefile iso-prepare-% style). Must differ from
+      # the extracted toolchain path or toolchain-external-custom collides.
+      BR2_OUTPUT: output-${{ matrix.br_arch }}
+      # Where the build job produced host/; must match that absolute path.
+      BR2_TOOLCHAIN: toolchain-${{ matrix.br_arch }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set artifact name
+        run: echo "CACHE_BASE=toolchain-${BUILDROOT_BRANCH//./-}" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc \
+            build-essential \
+            ca-certificates \
+            cpio \
+            file \
+            git \
+            patch \
+            perl \
+            python3 \
+            rsync \
+            unzip \
+            wget \
+            xz-utils
+
+      - name: Clone buildroot
+        timeout-minutes: 2
+        run: |
+          mkdir -p out
+          git clone --depth=1 --branch=${{ env.BUILDROOT_BRANCH }} \
+            https://github.com/buildroot/buildroot out/buildroot
+
+      - name: Patch buildroot
+        run: |
+          for p in deploy/iso/minikube-iso/patches/buildroot/*.patch; do
+            [ -f "$p" ] || continue
+            echo "Applying buildroot patch: $p"
+            (cd out/buildroot && patch -p1 -i "../../$p")
+          done
+
+      - name: Prepare buildroot
+        run: |
+          cp deploy/iso/minikube-iso/arch/${{ matrix.br_arch }}/Config.in.tmpl \
+             deploy/iso/minikube-iso/Config.in
+
+      - name: Load buildroot defconfig
+        timeout-minutes: 1
+        run: |
+          make -C out/buildroot ${{ matrix.br_defconfig }} O="$BR2_OUTPUT"
+
+      # Not relocatable: extract so host/ lands at the same absolute path as
+      # the toolchain build (toolchain-<arch>/host), outside O=output-<arch>.
+      - name: Download toolchain
+        timeout-minutes: 5
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ env.CACHE_BASE }}-${{ matrix.arch }}.tar.gz
+
+      - name: Extract toolchain
+        run: |
+          mkdir -p "out/buildroot/$BR2_TOOLCHAIN"
+          tar --extract --gzip \
+              --directory "out/buildroot/$BR2_TOOLCHAIN" \
+              --file "${CACHE_BASE}-${{ matrix.arch }}.tar.gz"
+          test -x "out/buildroot/$BR2_TOOLCHAIN/host/bin/${{ matrix.br_arch }}-minikube-linux-gnu-gcc"
+
+      # Switch the loaded defconfig to the preinstalled toolchain. Used by ISO
+      # builds and this smoke test; the toolchain build job must not do this.
+      # TODO: move to a script / `make external-toolchain` for local and CI use.
+      - name: Configure external toolchain
+        run: |
+          set -euo pipefail
+          config="out/buildroot/$BR2_OUTPUT/.config"
+          host="${GITHUB_WORKSPACE}/out/buildroot/${BR2_TOOLCHAIN}/host"
+          prefix="${{ matrix.br_arch }}-minikube-linux-gnu"
+
+          gcc_ver="$(sed -n 's/^BR2_GCC_VERSION_\([0-9][0-9]*\)_X=y$/\1/p' "$config")"
+          if [ -z "$gcc_ver" ]; then
+            echo "failed to read BR2_GCC_VERSION_*_X from $config" >&2
+            exit 1
+          fi
+          headers_ver="$(sed -n 's/^BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_\([0-9_]*\)=y$/\1/p' "$config")"
+          if [ -z "$headers_ver" ]; then
+            echo "failed to read BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_* from $config" >&2
+            exit 1
+          fi
+
+          {
+            echo 'BR2_TOOLCHAIN_EXTERNAL=y'
+            echo 'BR2_TOOLCHAIN_EXTERNAL_CUSTOM=y'
+            echo 'BR2_TOOLCHAIN_EXTERNAL_PREINSTALLED=y'
+            echo "BR2_TOOLCHAIN_EXTERNAL_PATH=\"${host}\""
+            echo "BR2_TOOLCHAIN_EXTERNAL_CUSTOM_PREFIX=\"${prefix}\""
+            echo "BR2_TOOLCHAIN_EXTERNAL_GCC_${gcc_ver}=y"
+            echo "BR2_TOOLCHAIN_EXTERNAL_HEADERS_${headers_ver}=y"
+            echo 'BR2_TOOLCHAIN_EXTERNAL_CUSTOM_GLIBC=y'
+            echo 'BR2_TOOLCHAIN_EXTERNAL_CXX=y'
+            # glibc no longer ships sunrpc; olddefconfig would enable this.
+            echo '# BR2_TOOLCHAIN_EXTERNAL_INET_RPC is not set'
+          } >> "$config"
+          make -C out/buildroot O="$BR2_OUTPUT" olddefconfig
+          grep -E '^BR2_TOOLCHAIN_EXTERNAL' "$config"
+
+      # make zlib pulls in the external toolchain and any needed host tools.
+      # No separate make toolchain: that only duplicated dependency work.
+      - name: Build zlib with external toolchain
+        timeout-minutes: 30
+        run: |
+          set -o pipefail
+          make -C out/buildroot O="$BR2_OUTPUT" zlib 2>&1 \
+            | tee "$ARTIFACTS_DIR.log" \
+            | grep --line-buffered -E '>>>'
+
+      - name: Generate build graphs
+        if: always()
+        timeout-minutes: 2
+        run: |
+          pip3 install matplotlib numpy
+          make -C out/buildroot O="$BR2_OUTPUT" graph-build || true
+
+      - name: Collect test artifacts
+        if: always()
+        run: |
+          tar --create \
+              --gzip \
+              --ignore-failed-read \
+              --transform "s|^out/buildroot/$BR2_OUTPUT/||" \
+              --transform "s|^|$ARTIFACTS_DIR/|" \
+              --file "$ARTIFACTS_DIR.tar.gz" \
+              "$ARTIFACTS_DIR.log" \
+              "out/buildroot/$BR2_OUTPUT/.config" \
+              "out/buildroot/$BR2_OUTPUT/build/build-time.log" \
+              "out/buildroot/$BR2_OUTPUT/graphs"
+
+      - name: Upload test artifacts
+        if: always()
+        timeout-minutes: 3
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          # archive: false uploads the tar itself. The artifact name is the
+          # file name; the name input is ignored.
+          path: ${{ env.ARTIFACTS_DIR }}.tar.gz
+          archive: false
+          retention-days: 14
