@@ -124,9 +124,19 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 		// - vfkkit+nat
 		// - vfkit+vmnet-shared
 		// - krunkit+vmnet-shared
-		vmIPString, _ := hostInfo.Driver.GetIP()
-		gatewayIPString := vmIPString[:strings.LastIndex(vmIPString, ".")+1] + "1"
-		return net.ParseIP(gatewayIPString), nil
+		// NOTE: deriving the gateway as subnet .1 from the VM IP is a
+		// best-effort guess. vmnet-helper can configure the gateway
+		// (start-address) to any address and auto-selects the subnet when
+		// address options are omitted, so this assumption can be wrong.
+		vmIPString, err := hostInfo.Driver.GetIP()
+		if err != nil {
+			return nil, fmt.Errorf("getting VM IP address: %w", err)
+		}
+		vmIP := net.ParseIP(vmIPString).To4()
+		if vmIP == nil {
+			return nil, fmt.Errorf("converting VM IP address %q to IPv4 address", vmIPString)
+		}
+		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
 	case driver.VMware:
 		vmIPString, err := hostInfo.Driver.GetIP()
 		if err != nil {
