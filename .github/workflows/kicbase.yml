@@ -17,7 +17,8 @@ env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.27.3'
   PLATFORMS: "linux/amd64,linux/arm64,linux/s390x,linux/ppc64le"
-  # Configurable via GitHub Repo Settings -> Variables (vars.KICBASE_REPO & vars.KICBASE_REGISTRY)
+  # Configurable via GitHub Repo Settings -> Variables (vars.KICBASE_REPO & vars.KICBASE_REGISTRY).
+  # Login uses secrets.REGISTRY_USER / secrets.REGISTRY_PASSWORD, shared with the toolchain and ISO builds.
   KICBASE_REPO: ${{ inputs.repo || vars.KICBASE_REPO || 'docker.io/kicbase/build' }}
   KICBASE_REGISTRY: ${{ vars.KICBASE_REGISTRY || 'docker.io' }}
   # Commit status reported on the PR head, like a prow job context.
@@ -163,8 +164,8 @@ jobs:
         uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ${{ env.KICBASE_REGISTRY }}
-          username: ${{ secrets.DOCKER_HUB_USER }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
 
       - name: Build and push kicbase image
         id: build
