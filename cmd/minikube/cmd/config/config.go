@@ -132,8 +132,9 @@ var settings = []Setting{
 		set:  SetBool,
 	},
 	{
-		name: config.ProfileName,
-		set:  SetString,
+		name:        config.ProfileName,
+		set:         SetString,
+		validations: []setFn{IsValidProfileName},
 	},
 	{
 		name: Bootstrapper,
