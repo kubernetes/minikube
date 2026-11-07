@@ -46,6 +46,8 @@ import (
 
 const (
 	containerdNamespaceRoot = "/run/containerd/runc/k8s.io"
+	// nerdctlNamespace is the containerd namespace minikube manages via nerdctl
+	nerdctlNamespace = "k8s.io"
 	// ContainerdConfFile is the path to the containerd configuration
 	containerdConfigFile               = "/etc/containerd/config.toml"
 	containerdMirrorsRoot              = "/etc/containerd/certs.d"
@@ -262,14 +264,24 @@ func (r *Containerd) Disable() error {
 	return r.Init.ForceStop("containerd")
 }
 
+// nerdctlCmd returns a nerdctl invocation against the k8s.io namespace.
+// nerdctl is the supported production interface to containerd: unlike the
+// ctr/crictl debugging tools it resolves partial image names the same way
+// docker does (see https://github.com/kubernetes/minikube/issues/23670).
+func nerdctlCmd(args ...string) *exec.Cmd {
+	full := append([]string{"nerdctl", "-n", nerdctlNamespace}, args...)
+	return exec.Command("sudo", full...)
+}
+
 // ImageExists checks if image exists based on image name and optionally image sha
 func (r *Containerd) ImageExists(name string, sha string) bool {
 	klog.Infof("Checking existence of image with name %q and sha %q", name, sha)
-	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "ls", fmt.Sprintf("name==%s", name))
-	// note: image name and image id's sha can be on different lines in ctr output
-	if rr, err := r.Runner.RunCmd(c); err != nil ||
-		!strings.Contains(rr.Output(), name) ||
-		(sha != "" && !strings.Contains(rr.Output(), sha)) {
+	rr, err := r.Runner.RunCmd(nerdctlCmd("image", "inspect", name))
+	if err != nil {
+		return false
+	}
+	// note: image name and image id's sha can be on different lines in inspect output
+	if sha != "" && !strings.Contains(rr.Output(), sha) {
 		return false
 	}
 	return true
@@ -277,7 +289,43 @@ func (r *Containerd) ImageExists(name string, sha string) bool {
 
 // ListImages lists images managed by this container runtime
 func (r *Containerd) ListImages(ListImagesOptions) ([]ListImage, error) {
-	return listCRIImages(r.Runner)
+	return listNerdctlImages(r.Runner)
+}
+
+// listNerdctlImages lists images using nerdctl
+func listNerdctlImages(cr CommandRunner) ([]ListImage, error) {
+	// Name/Repository/Tag/ID/Digest/Size are long-stable template fields.
+	// Rows are filtered to tagged images only: under k8s.io the same image
+	// is also stored under digest and config-ID names, which show up with
+	// Tag "<none>" and must not pollute the list.
+	c := nerdctlCmd("images", "--no-trunc", "--format", "{{.Name}}\t{{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Digest}}\t{{.Size}}")
+	rr, err := cr.RunCmd(c)
+	if err != nil {
+		return nil, fmt.Errorf("nerdctl images: %w", err)
+	}
+
+	images := []ListImage{}
+	for line := range strings.Lines(strings.TrimSpace(rr.Output())) {
+		if line == "" {
+			continue
+		}
+		// Name, Repository, Tag, ID and Digest never contain tabs, Size is last
+		parts := strings.SplitN(line, "\t", 6)
+		if len(parts) != 6 {
+			continue
+		}
+		repository, tag, id, digest, size := parts[1], parts[2], parts[3], parts[4], parts[5]
+		if repository == "<none>" || tag == "<none>" {
+			continue
+		}
+		img := ListImage{ID: id, Size: size}
+		img.RepoTags = []string{fmt.Sprintf("%s:%s", repository, tag)}
+		if digest != "" && digest != "<none>" {
+			img.RepoDigests = []string{digest}
+		}
+		images = append(images, img)
+	}
+	return images, nil
 }
 
 // LoadImage loads an image into this runtime
@@ -285,13 +333,13 @@ func (r *Containerd) LoadImage(imagePath string) error {
 	klog.Infof("Loading image: %s", imagePath)
 	// retry up to 3 times handle transient "short read" or "unexpected EOF" errors example #22309
 	return retry.Expo(func() error {
-		c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "import", imagePath)
+		c := nerdctlCmd("load", "--input", imagePath)
 		if _, err := r.Runner.RunCmd(c); err != nil {
 			// Only retry on transient "short read" or "unexpected EOF" errors
 			if strings.Contains(err.Error(), "short read") || strings.Contains(err.Error(), "unexpected EOF") {
-				return fmt.Errorf("ctr images import: %w", err)
+				return fmt.Errorf("nerdctl load: %w", err)
 			}
-			return backoff.Permanent(fmt.Errorf("ctr images import: %w", err))
+			return backoff.Permanent(fmt.Errorf("nerdctl load: %w", err))
 		}
 		return nil
 	}, 250*time.Millisecond, 2*time.Minute, 3)
@@ -299,30 +347,43 @@ func (r *Containerd) LoadImage(imagePath string) error {
 
 // PullImage pulls an image into this runtime
 func (r *Containerd) PullImage(name string) error {
-	return pullCRIImage(r.Runner, name)
+	klog.Infof("Pulling image: %s", name)
+	c := nerdctlCmd("pull", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return fmt.Errorf("nerdctl pull: %w", err)
+	}
+	return nil
 }
 
 // SaveImage save an image from this runtime
 func (r *Containerd) SaveImage(name string, destPath string) error {
 	klog.Infof("Saving image %s: %s", name, destPath)
-	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "export", destPath, name)
+	c := nerdctlCmd("save", "--output", destPath, name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return fmt.Errorf("ctr images export: %w", err)
+		return fmt.Errorf("nerdctl save: %w", err)
 	}
 	return nil
 }
 
 // RemoveImage removes a image
 func (r *Containerd) RemoveImage(name string) error {
-	return removeCRIImage(r.Runner, name, false)
+	klog.Infof("Removing image: %s", name)
+	// nerdctl removes a single tag, unlike crictl which deletes all images
+	// sharing the same hash, and resolves partial names, so no
+	// docker.io/localhost fallback retry is needed here.
+	c := nerdctlCmd("rmi", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return fmt.Errorf("nerdctl rmi: %w", err)
+	}
+	return nil
 }
 
 // TagImage tags an image in this runtime
 func (r *Containerd) TagImage(source string, target string) error {
 	klog.Infof("Tagging image %s: %s", source, target)
-	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "tag", source, target)
+	c := nerdctlCmd("tag", source, target)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return fmt.Errorf("ctr images tag: %w", err)
+		return fmt.Errorf("nerdctl tag: %w", err)
 	}
 	return nil
 }
@@ -433,9 +494,9 @@ func (r *Containerd) BuildImage(src string, file string, tag string, push bool, 
 // PushImage pushes an image
 func (r *Containerd) PushImage(name string) error {
 	klog.Infof("Pushing image %s", name)
-	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "push", name)
+	c := nerdctlCmd("push", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return fmt.Errorf("ctr images push: %w", err)
+		return fmt.Errorf("nerdctl push: %w", err)
 	}
 	return nil
 }
