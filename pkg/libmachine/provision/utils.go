@@ -43,7 +43,22 @@ type DockerOptions struct {
 func installDockerGeneric(p Provisioner, baseURL string) error {
 	// install docker - until cloudinit we use ubuntu everywhere so we
 	// just install it using the docker repos
-	if output, err := p.SSHCommand(fmt.Sprintf("if ! type docker; then curl -sSL %s | sh -; fi", baseURL)); err != nil {
+	script := fmt.Sprintf(`
+set -eu
+
+if type docker; then
+	echo "docker is installed"
+	exit 0
+fi
+
+install_docker=/tmp/install-docker.sh
+trap 'rm -f "$install_docker"' EXIT
+
+curl --fail --silent --show-error --location --output "$install_docker" '%s'
+sh "$install_docker"
+`, baseURL)
+
+	if output, err := p.SSHCommand(script); err != nil {
 		return fmt.Errorf("error installing docker: %s", output)
 	}
 
