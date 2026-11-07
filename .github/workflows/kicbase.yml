@@ -212,8 +212,10 @@ jobs:
 
   update-pr:
     needs: build-kicbase
+    # contents: write lets GITHUB_TOKEN push to a branch in this repo when
+    # MINIKUBE_BOT_PAT is unset. The push step still prefers the bot PAT.
     permissions:
-      contents: read
+      contents: write
       statuses: write
       pull-requests: write
     runs-on: ubuntu-22.04
