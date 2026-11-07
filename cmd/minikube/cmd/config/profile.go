@@ -46,16 +46,13 @@ var ProfileCmd = &cobra.Command{
 		}
 
 		profile := args[0]
+		// Checked before ValidateProfileName so users get the hint for deleting an existing reserved profile.
+		if config.ProfileNameInReservedKeywords(profile) {
+			exit.Message(reason.InternalReservedProfile, `Profile name "{{.profilename}}" is reserved keyword. To delete this profile, run: "{{.cmd}}"`, out.V{"profilename": profile, "cmd": mustload.ExampleCmd(profile, "delete")})
+		}
 		// Check whether the profile name is container friendly
 		if err := config.ValidateProfileName(profile); err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
-		}
-		/**
-		we need to add code over here to check whether the profile
-		name is in the list of reserved keywords
-		*/
-		if config.ProfileNameInReservedKeywords(profile) {
-			exit.Message(reason.InternalReservedProfile, `Profile name "{{.profilename}}" is reserved keyword. To delete this profile, run: "{{.cmd}}"`, out.V{"profilename": profile, "cmd": mustload.ExampleCmd(profile, "delete")})
 		}
 
 		if profile == "default" {

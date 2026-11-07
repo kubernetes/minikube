@@ -43,13 +43,7 @@ func IsValidDriver(_, name string) error {
 
 // IsValidProfileName checks if a string can be used as a profile name
 func IsValidProfileName(_, name string) error {
-	if err := config.ValidateProfileName(name); err != nil {
-		return err
-	}
-	if config.ProfileNameInReservedKeywords(name) {
-		return fmt.Errorf("profile name %q is a reserved keyword", name)
-	}
-	return nil
+	return config.ValidateProfileName(name)
 }
 
 // RequiresRestartMsg returns the "requires restart" message

@@ -118,22 +118,30 @@ func TestProfileNameValid(t *testing.T) {
 }
 
 func TestValidateProfileName(t *testing.T) {
-	var testCases = map[string]bool{
-		"minikube":  false,
-		"pro-file1": false,
-		"a":         true,
-		"bad_name!": true,
-		"-profile":  true,
+	testCases := []struct {
+		name      string
+		shouldErr bool
+	}{
+		{name: "minikube", shouldErr: false},
+		{name: "pro-file1", shouldErr: false},
+		{name: "", shouldErr: true},
+		{name: "a", shouldErr: true},
+		{name: "bad_name!", shouldErr: true},
+		{name: "-profile", shouldErr: true},
+		{name: "start", shouldErr: true},
+		{name: "Logs", shouldErr: true},
 	}
 
-	for name, shouldErr := range testCases {
-		err := ValidateProfileName(name)
-		if shouldErr && err == nil {
-			t.Errorf("expected ValidateProfileName(%q) to fail", name)
-		}
-		if !shouldErr && err != nil {
-			t.Errorf("expected ValidateProfileName(%q) to pass, got: %v", name, err)
-		}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateProfileName(tc.name)
+			if tc.shouldErr && err == nil {
+				t.Errorf("expected ValidateProfileName(%q) to fail", tc.name)
+			}
+			if !tc.shouldErr && err != nil {
+				t.Errorf("expected ValidateProfileName(%q) to pass, got: %v", tc.name, err)
+			}
+		})
 	}
 }
 

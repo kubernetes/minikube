@@ -93,6 +93,9 @@ func ValidateProfileName(name string) error {
 	if !ProfileNameValid(name) {
 		return fmt.Errorf("profile name %q is not valid: only alphanumeric and dashes '-' are permitted, minimum 2 characters, starting with alphanumeric", name)
 	}
+	if ProfileNameInReservedKeywords(name) {
+		return fmt.Errorf("profile name %q is a reserved keyword", name)
+	}
 	return nil
 }
 
