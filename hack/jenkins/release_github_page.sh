@@ -91,8 +91,9 @@ for path in $(gsutil ls "gs://${ISO_BUCKET}/minikube-v${VERSION}*" || true); do
   gsutil cp "${path}" out/
 done
  
-# Upload all end-user assets other than preload files, as they are release independent
-for file in $( find out \( -name "minikube[_-]*" -or -name "docker-machine-*" -or -name "kic*" -or -name "licenses.tar.gz" \) ); do
+# Upload all end-user assets other than preload files, as they are release independent.
+# Skip the unversioned "latest" deb/rpm copies: they exist only for stable GCS URLs and duplicate the versioned packages in the GitHub release.
+for file in $( find out \( -name "minikube[_-]*" -or -name "docker-machine-*" -or -name "kic*" -or -name "licenses.tar.gz" \) -not -name "minikube_latest_*" -not -name "minikube-latest.*" ); do
     n=0
     until [ $n -ge 5 ]
     do
