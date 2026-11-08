@@ -194,10 +194,10 @@ func (d *Driver) PreCreateCheck() error {
 	// Check that the user is an Administrator
 	isAdmin, err := isAdministrator()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check administrator privileges: %w", err)
 	}
 	if !isAdmin {
-		return ErrNotAdministrator
+		return fmt.Errorf("%s: please run minikube from a terminal with Administrator or Hyper-V Administrator privileges", ErrNotAdministrator)
 	}
 
 	// Check that there is a virtual switch already configured
