@@ -288,6 +288,7 @@ func init() {
 	// Ungrouped commands will show up in the "Other Commands" section
 	RootCmd.AddCommand(completionCmd)
 	RootCmd.AddCommand(licenseCmd)
+	RootCmd.AddCommand(doctorCmd)
 	templates.ActsAsRootCommand(RootCmd, []string{"options"}, groups...)
 
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
