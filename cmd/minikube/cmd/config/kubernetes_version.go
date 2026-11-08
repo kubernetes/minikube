@@ -20,7 +20,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/google/go-github/v85/github"
+	"github.com/google/go-github/v92/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -41,7 +41,10 @@ func supportedKubernetesVersions() (releases []string) {
 
 // IsInGitHubKubernetesVersions checks whether ver is in the GitHub list of K8s versions
 func IsInGitHubKubernetesVersions(ver string) (bool, error) {
-	ghc := github.NewClient(nil)
+	ghc, err := github.NewClient()
+	if err != nil {
+		return false, err
+	}
 
 	_, resp, err := ghc.Repositories.GetReleaseByTag(context.Background(), "kubernetes", "kubernetes", ver)
 	if err != nil {
