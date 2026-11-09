@@ -224,6 +224,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 // TestKubernetesUpgrade upgrades Kubernetes from oldest to newest
 func TestKubernetesUpgrade(t *testing.T) {
 	MaybeParallel(t)
+	MaybeSkipDockerRuntime(t, constants.OldestKubernetesVersion, constants.NewestKubernetesVersion)
 	profile := UniqueProfileName("kubernetes-upgrade")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(55))
 

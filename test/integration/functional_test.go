@@ -88,6 +88,7 @@ func TestFunctionalNewestKubernetes(t *testing.T) {
 }
 
 func testFunctionalInternal(t *testing.T, k8sVersion string) {
+	MaybeSkipDockerRuntime(t, k8sVersion)
 	profile := UniqueProfileName("functional")
 	ctx := context.WithValue(context.Background(), ContextKey("k8sVersion"), k8sVersion)
 	ctx, cancel := context.WithTimeout(ctx, Minutes(40))
