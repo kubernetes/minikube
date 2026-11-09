@@ -1,0 +1,10 @@
+name: CI
+jobs:
+  build:
+    steps:
+      - uses: actions/setup-go@v6
+        timeout-minutes: 3
+      - run: |
+          make build
+          make test
+        timeout-minutes: 8
