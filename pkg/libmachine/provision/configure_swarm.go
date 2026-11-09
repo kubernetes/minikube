@@ -18,12 +18,13 @@ package provision
 
 import (
 	"fmt"
+	"net/netip"
 	"net/url"
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/log"
@@ -98,14 +99,14 @@ func configureSwarm(p Provisioner, swarmOptions swarm.Options, authOptions auth.
 		hostBind := fmt.Sprintf("%s:%s", dockerDir, dockerDir)
 		masterHostConfig := &container.HostConfig{
 			RestartPolicy: container.RestartPolicy{
-				Name:              "always",
+				Name:              container.RestartPolicyAlways,
 				MaximumRetryCount: 0,
 			},
 			Binds: []string{hostBind},
-			PortBindings: nat.PortMap{
-				nat.Port(fmt.Sprintf("%s/tcp", port)): []nat.PortBinding{
+			PortBindings: network.PortMap{
+				network.MustParsePort(fmt.Sprintf("%s/tcp", port)): []network.PortBinding{
 					{
-						HostIP:   "0.0.0.0",
+						HostIP:   netip.IPv4Unspecified(),
 						HostPort: port,
 					},
 				},
@@ -115,9 +116,9 @@ func configureSwarm(p Provisioner, swarmOptions swarm.Options, authOptions auth.
 		swarmMasterConfig := &container.Config{
 			Image: swarmOptions.Image,
 			Env:   swarmOptions.Env,
-			ExposedPorts: nat.PortSet{
-				"2375/tcp":                            {},
-				nat.Port(fmt.Sprintf("%s/tcp", port)): {},
+			ExposedPorts: network.PortSet{
+				network.MustParsePort("2375/tcp"):                  {},
+				network.MustParsePort(fmt.Sprintf("%s/tcp", port)): {},
 			},
 			Cmd: cmdMaster,
 		}
@@ -131,7 +132,7 @@ func configureSwarm(p Provisioner, swarmOptions swarm.Options, authOptions auth.
 	if swarmOptions.Agent {
 		workerHostConfig := &container.HostConfig{
 			RestartPolicy: container.RestartPolicy{
-				Name:              "always",
+				Name:              container.RestartPolicyAlways,
 				MaximumRetryCount: 0,
 			},
 		}

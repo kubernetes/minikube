@@ -24,7 +24,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/cert"
 )
@@ -83,12 +84,12 @@ func TestDockerClient(t *testing.T) {
 		AuthOp: &auth.Options{},
 	}
 
-	client, err := DockerClient(host)
+	cli, err := DockerClient(host)
 	if err != nil {
 		t.Fatalf("DockerClient failed: %v", err)
 	}
 
-	v, err := client.ServerVersion(context.Background())
+	v, err := cli.ServerVersion(context.Background(), client.ServerVersionOptions{})
 	if err != nil {
 		t.Fatalf("ServerVersion failed: %v", err)
 	}

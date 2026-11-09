@@ -19,6 +19,8 @@ package mcndockerclient
 import (
 	"context"
 	"fmt"
+
+	"github.com/moby/moby/client"
 )
 
 var CurrentDockerVersioner DockerVersioner = &defaultDockerVersioner{}
@@ -35,13 +37,13 @@ type defaultDockerVersioner struct{}
 
 func (dv *defaultDockerVersioner) DockerVersion(host DockerHost) (string, error) {
 	ctx := context.Background()
-	client, err := DockerClient(host)
+	cli, err := DockerClient(host)
 	if err != nil {
 		return "", fmt.Errorf("Unable to query docker version: %s", err)
 	}
-	defer client.Close()
+	defer cli.Close()
 
-	version, err := client.ServerVersion(ctx)
+	version, err := cli.ServerVersion(ctx, client.ServerVersionOptions{})
 	if err != nil {
 		return "", fmt.Errorf("Unable to query docker version: %s", err)
 	}
