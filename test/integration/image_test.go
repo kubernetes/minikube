@@ -32,6 +32,7 @@ func TestImageBuild(t *testing.T) {
 	if ContainerRuntime() != constants.Docker {
 		t.Skip()
 	}
+	MaybeSkipDockerRuntime(t)
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("image")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))

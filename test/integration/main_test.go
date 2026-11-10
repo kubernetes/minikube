@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
 )
@@ -198,6 +199,35 @@ func ContainerRuntime() string {
 		}
 	}
 	return constants.Containerd
+}
+
+// MaybeSkipDockerRuntime skips when the docker container runtime is paired with any
+// Kubernetes version >= 1.38 (cri-dockerd lacks the v5 websocket API). With no versions,
+// constants.DefaultKubernetesVersion is used — for tests that do not pass
+// --kubernetes-version themselves. See https://github.com/kubernetes/minikube/issues/24017
+func MaybeSkipDockerRuntime(t *testing.T, versions ...string) {
+	t.Helper()
+	if ContainerRuntime() != constants.Docker {
+		return
+	}
+	if len(versions) == 0 {
+		versions = []string{constants.DefaultKubernetesVersion}
+	}
+	// 1.38.0-0 is the earliest 1.38 prerelease (numeric pre < alpha/beta/rc), so
+	// 1.38.0-beta.0 and 1.38.0 both compare >= this threshold.
+	minUnsupported := semver.MustParse("1.38.0-0")
+	for _, version := range versions {
+		if version == "" {
+			version = constants.DefaultKubernetesVersion
+		}
+		requested, err := semver.Parse(strings.TrimPrefix(version, "v"))
+		if err != nil {
+			continue
+		}
+		if requested.GTE(minUnsupported) {
+			t.Skipf("skipping: docker container runtime is not supported with Kubernetes %s (requires < 1.38.0); see https://github.com/kubernetes/minikube/issues/24017", version)
+		}
+	}
 }
 
 // arm64Platform returns true if running on arm64/* platform
