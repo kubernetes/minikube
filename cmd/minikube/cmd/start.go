@@ -1261,11 +1261,10 @@ func validateCPUCount(drvName string) {
 
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterConfig) { //nolint:gocyclo
-	if cmd.Flags().Changed(humanReadableDiskSize) {
-		err := validateDiskSize(viper.GetString(humanReadableDiskSize))
-		if err != nil {
-			exitIfNotForced(reason.Usage, "{{.err}}", out.V{"err": err})
-		}
+	// Always validate: viper includes config and MINIKUBE_DISK_SIZE,
+	// not only --disk-size.
+	if err := validateDiskSize(viper.GetString(humanReadableDiskSize)); err != nil {
+		exitIfNotForced(reason.Usage, "{{.err}}", out.V{"err": err})
 	}
 
 	if cmd.Flags().Changed(cpus) {
