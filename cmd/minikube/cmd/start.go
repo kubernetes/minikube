@@ -1863,15 +1863,45 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	}
 }
 
-// validateContainerRuntime ensures that the container runtime is reasonable
+// validateContainerRuntime ensures that the container runtime is reasonable and compatible with the Kubernetes version
 func validateContainerRuntime(old *config.ClusterConfig) {
-	if old == nil || old.KubernetesConfig.ContainerRuntime == "" {
+	if old != nil && old.KubernetesConfig.ContainerRuntime != "" {
+		if err := validateRuntime(old.KubernetesConfig.ContainerRuntime); err != nil {
+			klog.Errorf("Error parsing old runtime %q: %v", old.KubernetesConfig.ContainerRuntime, err)
+		}
+	}
+
+	crName := getContainerRuntime(old)
+	k8sVersion, err := getKubernetesVersion(old)
+	if err != nil {
 		return
 	}
 
-	if err := validateRuntime(old.KubernetesConfig.ContainerRuntime); err != nil {
-		klog.Errorf("Error parsing old runtime %q: %v", old.KubernetesConfig.ContainerRuntime, err)
+	if err := validateRuntimeCompatibility(crName, k8sVersion); err != nil {
+		exit.Message(reason.DockerRuntimeUnsupported, "docker container runtime is not compatible with the requested kubernetes version.")
 	}
+}
+
+// validateRuntimeCompatibility validates that the container runtime is compatible with the requested Kubernetes version
+func validateRuntimeCompatibility(crName string, k8sVersion string) error {
+	if !strings.EqualFold(crName, constants.Docker) {
+		return nil
+	}
+	if k8sVersion == "" || k8sVersion == constants.NoKubernetesVersion {
+		return nil
+	}
+	verStr := strings.TrimPrefix(strings.ToLower(k8sVersion), version.VersionPrefix)
+	if isTwoDigitSemver(verStr) {
+		verStr += ".0"
+	}
+	v, err := semver.Make(verStr)
+	if err != nil {
+		return nil
+	}
+	if v.Major > 1 || (v.Major == 1 && v.Minor >= 38) {
+		return errors.New("docker container runtime is not compatible with the requested kubernetes version")
+	}
+	return nil
 }
 
 func isBaseImageApplicable(drv string) bool {
