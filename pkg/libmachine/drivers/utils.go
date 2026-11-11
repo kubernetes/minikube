@@ -62,7 +62,7 @@ func RunSSHCommandFromDriver(d Driver, command string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf(`ssh command error:
 command : %s
-err     : %v
+err     : %w
 output  : %s`, command, err, output)
 	}
 

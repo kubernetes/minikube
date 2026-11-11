@@ -71,8 +71,8 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 		return h, err
 	}
 
-	// Avoid reprovisioning "none" driver because provision.Detect requires SSH
-	if !driver.BareMetal(driverName) {
+	// Windows images are pre-provisioned; "none" cannot use SSH-based detection.
+	if !driver.BareMetal(driverName) && !h.Guest.IsWindows() {
 		e := engineOptions(*cc)
 		h.HostOptions.EngineOptions.Env = e.Env
 		err = provisionDockerMachine(h)
@@ -186,8 +186,12 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 }
 
 // ensureSyncedGuestClock ensures that the guest system clock is relatively in-sync
-func ensureSyncedGuestClock(h hostRunner, drv string) error {
+func ensureSyncedGuestClock(h hostRunner, drv string, guestOS string) error {
 	if !driver.IsVM(drv) {
+		return nil
+	}
+	// Windows guests don't support the Linux "date +%s.%N" command.
+	if guestOS == config.GuestOSWindows {
 		return nil
 	}
 	d, err := guestClockDelta(h, time.Now())
