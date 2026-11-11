@@ -469,6 +469,38 @@ func TestValidateRuntime(t *testing.T) {
 	})
 }
 
+func TestShouldWarnDockerDeprecation(t *testing.T) {
+	tests := []struct {
+		runtime  string
+		version  string
+		wantWarn bool
+	}{
+		{"containerd", "v1.37.0", false},
+		{"containerd", "v1.38.0", false},
+		{"crio", "v1.37.0", false},
+		{"docker", constants.NoKubernetesVersion, false},
+		{"docker", "", true},
+		{"docker", "v1.24.0", true},
+		{"docker", "v1.37.0", true},
+		{"docker", "v1.37.2", true},
+		{"docker", "1.37.2", true},
+		{"docker", "v1.37", true},
+		{"docker", "v1.38.0-alpha.0", false},
+		{"docker", "v1.38.0-beta.0", false},
+		{"docker", "v1.38.0", false},
+		{"docker", "v1.39.0", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("%s_%s", tc.runtime, tc.version), func(t *testing.T) {
+			got := shouldWarnDockerDeprecation(tc.runtime, tc.version)
+			if got != tc.wantWarn {
+				t.Errorf("shouldWarnDockerDeprecation(%q, %q) = %v, want %v", tc.runtime, tc.version, got, tc.wantWarn)
+			}
+		})
+	}
+}
+
 func TestIsTwoDigitSemver(t *testing.T) {
 	var tcs = []struct {
 		desc     string
