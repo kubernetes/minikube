@@ -905,3 +905,40 @@ func TestGetContainerRuntime(t *testing.T) {
 		})
 	}
 }
+
+func TestIsFlagOrConfigSet(t *testing.T) {
+	setupViper()
+
+	// Each case uses its own key, so nothing leaks into the global viper used by other tests.
+	newCmd := func(name string) *cobra.Command {
+		cmd := &cobra.Command{}
+		cmd.Flags().String(name, "default", "")
+		if err := viper.BindPFlag(name, cmd.Flags().Lookup(name)); err != nil {
+			t.Fatal(err)
+		}
+		return cmd
+	}
+
+	if isFlagOrConfigSet(newCmd("test-default"), "test-default") {
+		t.Errorf("flag default: got set, want not set")
+	}
+
+	cmd := newCmd("test-flag")
+	if err := cmd.Flags().Set("test-flag", "flag"); err != nil {
+		t.Fatal(err)
+	}
+	if !isFlagOrConfigSet(cmd, "test-flag") {
+		t.Errorf("changed flag: got not set, want set")
+	}
+
+	t.Setenv("MINIKUBE_TEST_ENV", "env")
+	if !isFlagOrConfigSet(newCmd("test-env"), "test-env") {
+		t.Errorf("MINIKUBE_ env var: got not set, want set")
+	}
+
+	cmd = newCmd("test-config")
+	viper.Set("test-config", "config")
+	if !isFlagOrConfigSet(cmd, "test-config") {
+		t.Errorf("config value: got not set, want set")
+	}
+}
