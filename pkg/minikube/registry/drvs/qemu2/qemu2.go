@@ -21,7 +21,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -119,10 +121,47 @@ func qemuVersion() (semver.Version, error) {
 	cmd := exec.Command(qemuSystem, "-version")
 	rr, err := cmd.Output()
 	if err != nil {
-		return semver.Version{}, err
+		return semver.Version{}, fmt.Errorf("%s -version: %w", qemuSystem, err)
 	}
-	v := strings.Split(strings.TrimPrefix(string(rr), "QEMU emulator version "), "\n")[0]
-	return semver.Make(v)
+	return parseQemuVersion(string(rr))
+}
+
+// qemuVersionRegexp matches the version reported by `qemu-system-* -version`.
+// Distributions and custom builds append arbitrary suffixes after the version
+// number, so only the leading "major.minor[.patch]" is captured, e.g.:
+//
+//	QEMU emulator version 8.2.1 (v8.2.1)
+//	QEMU emulator version 7.2.0 (Debian 1:7.2+dfsg-7)
+//	QEMU emulator version 2.11.1(Debian 1:2.11+dfsg-1ubuntu7.42)
+var qemuVersionRegexp = regexp.MustCompile(`QEMU emulator version (\d+)\.(\d+)(?:\.(\d+))?`)
+
+// parseQemuVersion extracts the semantic version from the output of
+// `qemu-system-* -version`. A missing patch component is treated as 0.
+func parseQemuVersion(output string) (semver.Version, error) {
+	m := qemuVersionRegexp.FindStringSubmatch(output)
+	if m == nil {
+		firstLine, _, _ := strings.Cut(strings.TrimSpace(output), "\n")
+		return semver.Version{}, fmt.Errorf("unable to parse QEMU version from %q", strings.TrimSpace(firstLine))
+	}
+	parts := [3]uint64{}
+	for i, s := range m[1:] {
+		if s == "" {
+			continue
+		}
+		n, err := strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			return semver.Version{}, fmt.Errorf("invalid QEMU version component %q: %w", s, err)
+		}
+		parts[i] = n
+	}
+	return semver.Version{Major: parts[0], Minor: parts[1], Patch: parts[2]}, nil
+}
+
+// needsHighmemOff reports whether the arm64 "virt" machine on darwin must be
+// started with highmem=off. QEMU before 7.0.0 requires it, and highmem also
+// fails with 3072MB of memory or less.
+func needsHighmemOff(v semver.Version, memoryMB int) bool {
+	return v.LT(semver.Version{Major: 7}) || memoryMB <= 3072
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
@@ -144,13 +183,11 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		qemuCPU = "cortex-a72"
 		// highmem=off needed for qemu 6.2.0 and lower, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
 		if runtime.GOOS == "darwin" {
-			qemu7 := semver.MustParse("7.0.0")
 			v, err := qemuVersion()
 			if err != nil {
 				return nil, err
 			}
-			// Surprisingly, highmem doesn't work for low memory situations
-			if v.LT(qemu7) || cc.Memory <= 3072 {
+			if needsHighmemOff(v, cc.Memory) {
 				qemuMachine += ",highmem=off"
 			}
 			qemuCPU = "host"
