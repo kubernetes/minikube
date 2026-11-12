@@ -533,7 +533,7 @@ Verify that the Service has been created by running:
 kubectl get services hello-minikube
 ```
 
-The easiest way to access this service is to let minikube launch a web browser for you:
+The easiest way to access this Service is to let minikube launch a web browser for you:
 
 ```shell
 minikube service hello-minikube
@@ -545,19 +545,19 @@ Alternatively, use kubectl to forward the port:
 kubectl port-forward service/hello-minikube 7080:8080
 ```
 
-Tada! Your application is now available at `http://localhost:7080/`.
+Tada! Your application is now available at `http://localhost:7080`.
 
 You should be able to see the request metadata in the application output. Try changing the path of the request and observe the changes. Similarly, you can do a POST request and observe the body show up in the output.
 {{% /tab %}}
 {{% tab LoadBalancer %}}
-To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is an example deployment:
+To access a LoadBalancer Service, use the "minikube tunnel" command. Here is an example deployment:
 
 ```shell
 kubectl create deployment balanced --image=kicbase/echo-server:1.0
 kubectl expose deployment balanced --type=LoadBalancer --port=8080
 ```
 
-In another window, start the tunnel to create a routable IP for the 'balanced' deployment:
+In another window, start the tunnel to create a routable IP for the 'balanced' Service:
 
 ```shell
 minikube tunnel
@@ -569,7 +569,7 @@ To find the routable IP, run this command and examine the `EXTERNAL-IP` column:
 kubectl get services balanced
 ```
 
-Your deployment is now available at &lt;EXTERNAL-IP&gt;:8080
+Your Service is now available at &lt;EXTERNAL-IP&gt;:8080
 {{% /tab %}}
 {{% tab Ingress %}}
 Enable ingress addon:
