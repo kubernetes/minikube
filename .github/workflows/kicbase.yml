@@ -8,8 +8,16 @@ on:
         description: "PR number to build and update"
         type: string
         required: true
+      registry:
+        description: "Override image registry host (blank: vars.KICBASE_REGISTRY or docker.io)"
+        type: string
+        required: false
       repo:
-        description: "Override target image repository (e.g. docker.io/kicbase/build)"
+        description: "Override image namespace/org under the registry (blank: vars.KICBASE_REPO or kicbase)"
+        type: string
+        required: false
+      image:
+        description: "Override image name (blank: vars.KICBASE_IMAGE or build)"
         type: string
         required: false
 
@@ -19,10 +27,13 @@ env:
   # TODO: linux/s390x is omitted until vim-tiny is installable on s390x again.
   # https://github.com/kubernetes/minikube/issues/23997
   PLATFORMS: "linux/amd64,linux/arm64,linux/ppc64le"
-  # Configurable via GitHub Repo Settings -> Variables (vars.KICBASE_REPO & vars.KICBASE_REGISTRY).
+  # Image coordinates: <registry>/<repo>/<image>:<KIC_VERSION>. Blank
+  # workflow_dispatch inputs fall back to vars.KICBASE_* and then to the static
+  # defaults, which reproduce docker.io/kicbase/build.
   # Login uses secrets.REGISTRY_USER / secrets.REGISTRY_PASSWORD, shared with the toolchain and ISO builds.
-  KICBASE_REPO: ${{ inputs.repo || vars.KICBASE_REPO || 'docker.io/kicbase/build' }}
-  KICBASE_REGISTRY: ${{ vars.KICBASE_REGISTRY || 'docker.io' }}
+  KICBASE_REGISTRY: ${{ inputs.registry || vars.KICBASE_REGISTRY || 'docker.io' }}
+  KICBASE_REPO: ${{ inputs.repo || vars.KICBASE_REPO || 'kicbase' }}
+  KICBASE_IMAGE: ${{ inputs.image || vars.KICBASE_IMAGE || 'build' }}
   # Commit status reported on the PR head, like a prow job context.
   STATUS_CONTEXT: Kicbase / build
   RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -54,6 +65,7 @@ jobs:
       statuses: write
       pull-requests: write
     outputs:
+      image_ref: ${{ steps.prep.outputs.image_ref }}
       kic_version: ${{ steps.prep.outputs.kic_version }}
       head_sha: ${{ steps.pr.outputs.head_sha }}
       digest: ${{ steps.build.outputs.digest }}
@@ -157,9 +169,9 @@ jobs:
           ./hack/jenkins/build_changelog.sh deploy/kicbase/CHANGELOG || touch deploy/kicbase/CHANGELOG
           ./hack/build_auto_pause.sh "${PLATFORMS}" "${GITHUB_WORKSPACE}/deploy/kicbase"
 
+          IMAGE_REF="${KICBASE_REGISTRY%/}/${KICBASE_REPO%/}/${KICBASE_IMAGE}"
+          echo "image_ref=${IMAGE_REF}" >> "$GITHUB_OUTPUT"
           echo "kic_version=${KIC_VERSION}" >> "$GITHUB_OUTPUT"
-          echo "repo=${KICBASE_REPO}" >> "$GITHUB_OUTPUT"
-          echo "image=${KICBASE_REPO}:${KIC_VERSION}" >> "$GITHUB_OUTPUT"
           make -s KIC_VERSION="${KIC_VERSION}" --eval='print-kic-vars: ; @echo "version_json=$(VERSION_JSON)"; echo "commit_sha=$(VERSION)-$(COMMIT_NOQUOTES)"' print-kic-vars >> "$GITHUB_OUTPUT"
 
       - name: Log in to container registry
@@ -177,7 +189,7 @@ jobs:
           file: deploy/kicbase/Dockerfile
           platforms: ${{ env.PLATFORMS }}
           push: true
-          tags: ${{ steps.prep.outputs.image }}
+          tags: "${{ steps.prep.outputs.image_ref }}:${{ steps.prep.outputs.kic_version }}"
           build-args: |
             VERSION_JSON=${{ steps.prep.outputs.version_json }}
             COMMIT_SHA=${{ steps.prep.outputs.commit_sha }}
@@ -252,17 +264,16 @@ jobs:
 
       - name: Update PR with new kicbase image
         env:
+          IMAGE_REF: ${{ needs.build-kicbase.outputs.image_ref }}
           KIC_VERSION: ${{ needs.build-kicbase.outputs.kic_version }}
-          REPO: ${{ env.KICBASE_REPO }}
-          IMAGE: ${{ env.KICBASE_REPO }}:${{ needs.build-kicbase.outputs.kic_version }}
           SHA: ${{ needs.build-kicbase.outputs.digest }}
         run: |
           DIGEST="${SHA#sha256:}"
 
-          sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${DIGEST}\"|;s|gcrRepo = .*|gcrRepo = \"${REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${REPO}\"|" pkg/drivers/kic/types.go
+          sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${DIGEST}\"|;s|gcrRepo = .*|gcrRepo = \"${IMAGE_REF}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${IMAGE_REF}\"|" pkg/drivers/kic/types.go
 
           sudo apt-get update && sudo apt-get install -y libvirt-dev
-          docker run --rm -t --platform linux/amd64 --entrypoint dpkg "${IMAGE}" -l --no-pager > hack/kicbase_version/os-package-list.txt
+          docker run --rm -t --platform linux/amd64 --entrypoint dpkg "${IMAGE_REF}:${KIC_VERSION}" -l --no-pager > hack/kicbase_version/os-package-list.txt
           make generate-docs
 
       - name: Commit and push updated kicbase reference
@@ -286,16 +297,17 @@ jobs:
           BOT_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT || secrets.GITHUB_TOKEN }}
           PR_NUM: ${{ inputs.pr_number || github.event.issue.number }}
           HEAD_SHA: ${{ needs.build-kicbase.outputs.head_sha }}
-          IMAGE: ${{ env.KICBASE_REPO }}:${{ needs.build-kicbase.outputs.kic_version }}
+          IMAGE_REF: ${{ needs.build-kicbase.outputs.image_ref }}
+          KIC_VERSION: ${{ needs.build-kicbase.outputs.kic_version }}
           SHA: ${{ needs.build-kicbase.outputs.digest }}
         run: |
           for STATUS_SHA in "${HEAD_SHA}" "$(git rev-parse HEAD)"; do
             gh api --silent -X POST "repos/${GITHUB_REPOSITORY}/statuses/${STATUS_SHA}" \
               -f state=success -f context="${STATUS_CONTEXT}" -f target_url="${RUN_URL}" \
-              -f description="Built ${IMAGE} and updated the PR"
+              -f description="Built ${IMAGE_REF}:${KIC_VERSION} and updated the PR"
           done
           PR_AUTHOR=$(gh pr view "${PR_NUM}" --json author --jq '.author.login')
-          GH_TOKEN="${BOT_TOKEN}" gh pr comment "${PR_NUM}" --body "Hi @${PR_AUTHOR}, we have updated your PR with the reference to the newly built kicbase image \`${IMAGE}\` (\`${SHA}\`).
+          GH_TOKEN="${BOT_TOKEN}" gh pr comment "${PR_NUM}" --body "Hi @${PR_AUTHOR}, we have updated your PR with the reference to the newly built kicbase image \`${IMAGE_REF}:${KIC_VERSION}\` (\`${SHA}\`).
           Pull the changes locally if you want to test with them or update your PR further.
 
           Build logs: ${RUN_URL}"
@@ -308,9 +320,8 @@ jobs:
           BOT_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT || secrets.GITHUB_TOKEN }}
           PR_NUM: ${{ inputs.pr_number || github.event.issue.number }}
           HEAD_SHA: ${{ needs.build-kicbase.outputs.head_sha }}
+          IMAGE_REF: ${{ needs.build-kicbase.outputs.image_ref }}
           KIC_VERSION: ${{ needs.build-kicbase.outputs.kic_version }}
-          REPO: ${{ env.KICBASE_REPO }}
-          IMAGE: ${{ env.KICBASE_REPO }}:${{ needs.build-kicbase.outputs.kic_version }}
           SHA: ${{ needs.build-kicbase.outputs.digest }}
           JOB_STATUS: ${{ job.status }}
         run: |
@@ -319,15 +330,15 @@ jobs:
           if [ "${JOB_STATUS}" = "cancelled" ]; then
             STATE=error
             DESCRIPTION="Build was cancelled"
-            BODY="Updating this PR with the newly built kicbase image \`${IMAGE}\` was cancelled, most likely by a newer \`ok-to-build-image\`."
+            BODY="Updating this PR with the newly built kicbase image \`${IMAGE_REF}:${KIC_VERSION}\` was cancelled, most likely by a newer \`ok-to-build-image\`."
           else
             STATE=failure
-            DESCRIPTION="Built ${IMAGE} but failed to update the PR"
-            BODY="Hi @${PR_AUTHOR}, we built the kicbase image \`${IMAGE}\` (\`${SHA}\`) but failed to update your PR.
+            DESCRIPTION="Built ${IMAGE_REF}:${KIC_VERSION} but failed to update the PR"
+            BODY="Hi @${PR_AUTHOR}, we built the kicbase image \`${IMAGE_REF}:${KIC_VERSION}\` (\`${SHA}\`) but failed to update your PR.
           Please run the following commands and push manually:
 
           \`\`\`
-          sed -i 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${DIGEST}\"|;s|gcrRepo = .*|gcrRepo = \"${REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${REPO}\"|' pkg/drivers/kic/types.go
+          sed -i 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${DIGEST}\"|;s|gcrRepo = .*|gcrRepo = \"${IMAGE_REF}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${IMAGE_REF}\"|' pkg/drivers/kic/types.go
           make generate-docs
           \`\`\`"
           fi
