@@ -1428,14 +1428,7 @@ func validatePort(port string) error {
 
 // validateDiskSize validates the supplied disk size
 func validateDiskSize(diskSize string) error {
-	diskSizeMB, err := util.CalculateSizeInMB(diskSize)
-	if err != nil {
-		return fmt.Errorf("Validation unable to parse disk size %v: %v", diskSize, err)
-	}
-	if diskSizeMB < minimumDiskSize {
-		return fmt.Errorf("Requested disk size %v is less than minimum of %v", diskSizeMB, minimumDiskSize)
-	}
-	return nil
+	return cmdcfg.ValidateDiskSize(diskSize)
 }
 
 // validateRuntime validates the supplied runtime

@@ -162,6 +162,7 @@ func TestIsValidCPUs(t *testing.T) {
 		{"abc", true},
 		{"-2", true},
 		{"", true},
+		{"1", true}, // below MinimumCPUs, same as --cpus=1
 	}
 
 	runValidations(t, tests, "cpus", IsValidCPUs)
@@ -176,9 +177,24 @@ func TestIsValidMemory(t *testing.T) {
 		{"-4000", true},
 		{"abc", true},
 		{"", true},
+		{"1800mb", false},
+		{"100MB", true}, // below MinimumMemoryMB, same as --memory=100MB
 	}
 
 	runValidations(t, tests, "memory", IsValidMemory)
+}
+
+func TestIsValidDiskSize(t *testing.T) {
+	tests := []validationTest{
+		{"20000mb", false},
+		{"20g", false},
+		{"2000", false},
+		{"1MB", true}, // below MinimumDiskSizeMB, same as --disk-size=1MB
+		{"abc", true},
+		{"", true},
+	}
+
+	runValidations(t, tests, "disk-size", IsValidDiskSize)
 }
 
 func TestIsValidIPAddressSlice(t *testing.T) {
