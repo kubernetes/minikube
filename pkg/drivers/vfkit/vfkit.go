@@ -53,6 +53,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/run"
+	"k8s.io/minikube/pkg/minikube/runtimedir"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -243,6 +244,11 @@ func (d *Driver) Start() error {
 	var socketPath string
 
 	if d.VmnetHelper != nil {
+		socketDir, err := d.SocketDir()
+		if err != nil {
+			return err
+		}
+		d.VmnetHelper.MachineSocketDir = socketDir
 		socketPath = d.VmnetHelper.SocketPath()
 		if err := d.VmnetHelper.Start(socketPath); err != nil {
 			return err
@@ -282,10 +288,14 @@ func (d *Driver) Start() error {
 func (d *Driver) startVfkit(socketPath string) error {
 	var startCmd []string
 
+	vfkitSock, err := d.sockfilePath()
+	if err != nil {
+		return err
+	}
 	startCmd = append(startCmd,
 		"--memory", fmt.Sprintf("%d", d.Memory),
 		"--cpus", fmt.Sprintf("%d", d.CPU),
-		"--restful-uri", fmt.Sprintf("unix://%s", d.sockfilePath()),
+		"--restful-uri", fmt.Sprintf("unix://%s", vfkitSock),
 		"--log-level", "debug")
 
 	// On arm64 console= is required get boot messages in serial.log. On x86_64
@@ -342,7 +352,7 @@ func (d *Driver) startVfkit(socketPath string) error {
 	}
 
 	log.Debugf("executing: vfkit %s", strings.Join(startCmd, " "))
-	os.Remove(d.sockfilePath())
+	os.Remove(vfkitSock)
 	cmd := exec.Command("vfkit", startCmd...)
 
 	// Create vfkit in a new process group, so minikube caller can use killpg
@@ -493,6 +503,9 @@ func (d *Driver) Remove() error {
 			return fmt.Errorf("kill: %w", err)
 		}
 	}
+	if err := runtimedir.RemoveSocketDir(d.GetMachineName()); err != nil {
+		log.Debugf("Failed to remove socket dir: %v", err)
+	}
 	return nil
 }
 
@@ -593,9 +606,8 @@ func (d *Driver) diskPath() string {
 	return filepath.Join(machineDir, "disk.img")
 }
 
-func (d *Driver) sockfilePath() string {
-	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
-	return filepath.Join(machineDir, sockFilename)
+func (d *Driver) sockfilePath() (string, error) {
+	return d.ResolveSocketPath(sockFilename)
 }
 
 func (d *Driver) pidfilePath() string {
@@ -672,7 +684,11 @@ type VMState struct {
 }
 
 func (d *Driver) GetVFKitState() (string, error) {
-	httpc := httpUnixClient(d.sockfilePath())
+	sock, err := d.sockfilePath()
+	if err != nil {
+		return "", err
+	}
+	httpc := httpUnixClient(sock)
 	var vmstate VMState
 	response, err := httpc.Get("http://_/vm/state")
 	if err != nil {
@@ -689,7 +705,11 @@ func (d *Driver) GetVFKitState() (string, error) {
 
 // SetVFKitState sets the state of the vfkit VM, (s is the state)
 func (d *Driver) SetVFKitState(s string) error {
-	httpc := httpUnixClient(d.sockfilePath())
+	sock, err := d.sockfilePath()
+	if err != nil {
+		return err
+	}
+	httpc := httpUnixClient(sock)
 	var vmstate VMState
 	vmstate.State = s
 	data, err := json.Marshal(&vmstate)
