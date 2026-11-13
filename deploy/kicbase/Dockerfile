@@ -17,6 +17,8 @@
 # For systemd + docker configuration used below, see the following references:
 # https://systemd.io/CONTAINER_INTERFACE/
 
+# Testing kicbase build
+
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:trixie-slim-*
 ARG KICBASE_IMAGE="debian:trixie-20261104-slim"
 # start from debian 13, this image is reasonably small as a starting point
