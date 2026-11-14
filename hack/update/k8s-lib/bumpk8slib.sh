@@ -23,7 +23,7 @@ if [ -z "$VERSION" ]; then
     exit 1
 fi
 MODS=($(
-    curl -sS https://raw.githubusercontent.com/kubernetes/kubernetes/v${VERSION}/go.mod |
+    curl --fail --silent --show-error https://raw.githubusercontent.com/kubernetes/kubernetes/v${VERSION}/go.mod |
     sed -n 's|.*k8s.io/\(.*\) => ./staging/src/k8s.io/.*|k8s.io/\1|p'
 ))
 for MOD in "${MODS[@]}"; do

@@ -44,7 +44,7 @@ generate_package_list() {
 }
 
 # Let's make sure we have the newest kicbase reference
-curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
+curl --fail --location https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go || exit $?
 # kicbase tags are of the form VERSION-TIMESTAMP-PR, so this grep finds that TIMESTAMP in the middle
 # if it doesn't exist, it will just return VERSION, which is covered in the if statement below
 HEAD_KIC_TIMESTAMP=$(grep -E "Version =" types-head.go | cut -d \" -f 2 | cut -d "-" -f 2)

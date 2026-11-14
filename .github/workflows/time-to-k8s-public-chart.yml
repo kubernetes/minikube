@@ -41,7 +41,8 @@ jobs:
       - name: Install kubectl
         shell: bash
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
+          KUBECTL_VERSION=$(curl --fail --silent --show-error --location https://dl.k8s.io/release/stable.txt)
+          curl --fail --location --remote-name "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/darwin/amd64/kubectl"
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e

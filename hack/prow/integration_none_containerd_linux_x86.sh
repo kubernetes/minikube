@@ -48,7 +48,7 @@ fi
 CRICTL_VERSION="v1.35.0"
 if [[ $(crictl --version) != *"$CRICTL_VERSION"* ]]; then
   echo "WARNING: expected version of crictl is not installed. will try to install."
-  curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
+  curl --fail --location https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
   sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
 fi
 
