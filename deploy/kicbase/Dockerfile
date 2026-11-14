@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Testing kicbase build
+
 # kind node base image
 #
 # For systemd + docker configuration used below, see the following references:
