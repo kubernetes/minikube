@@ -1865,13 +1865,48 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 
 // validateContainerRuntime ensures that the container runtime is reasonable
 func validateContainerRuntime(old *config.ClusterConfig) {
-	if old == nil || old.KubernetesConfig.ContainerRuntime == "" {
+	if viper.GetBool(noKubernetes) {
 		return
 	}
 
-	if err := validateRuntime(old.KubernetesConfig.ContainerRuntime); err != nil {
-		klog.Errorf("Error parsing old runtime %q: %v", old.KubernetesConfig.ContainerRuntime, err)
+	if old != nil && old.KubernetesConfig.ContainerRuntime != "" {
+		if err := validateRuntime(old.KubernetesConfig.ContainerRuntime); err != nil {
+			klog.Errorf("Error parsing old runtime %q: %v", old.KubernetesConfig.ContainerRuntime, err)
+		}
 	}
+
+	crName := getContainerRuntime(old)
+	k8sVersion, err := getKubernetesVersion(old)
+	if err != nil {
+		return
+	}
+
+	if shouldWarnDockerDeprecation(crName, k8sVersion) {
+		out.WarningT("The docker container runtime is deprecated and will be removed in a future release. Recommend using the default runtime: containerd (--container-runtime=containerd)")
+	}
+}
+
+// shouldWarnDockerDeprecation returns true if minikube should warn about docker runtime deprecation
+func shouldWarnDockerDeprecation(crName, k8sVersion string) bool {
+	if !strings.EqualFold(crName, constants.Docker) {
+		return false
+	}
+	if k8sVersion == constants.NoKubernetesVersion {
+		return false
+	}
+	if k8sVersion == "" {
+		return true
+	}
+	verStr := strings.TrimPrefix(strings.ToLower(k8sVersion), version.VersionPrefix)
+	if isTwoDigitSemver(verStr) {
+		verStr += ".0"
+	}
+	v, err := semver.Make(verStr)
+	if err != nil {
+		return true
+	}
+	// Only warn for versions < 1.38 (1.38+ does not work with docker runtime)
+	return v.Major == 1 && v.Minor < 38
 }
 
 func isBaseImageApplicable(drv string) bool {

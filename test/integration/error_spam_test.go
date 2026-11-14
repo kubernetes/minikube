@@ -55,6 +55,8 @@ var stderrAllow = []string{
 	// registry connectivity warning from inside the container
 	`Failing to connect to https://registry.k8s.io/`,
 	`you may need to configure a proxy`,
+	// docker container runtime deprecation warning
+	`The docker container runtime is deprecated`,
 }
 
 // stderrAllowRe combines rootCauses into a single regex
