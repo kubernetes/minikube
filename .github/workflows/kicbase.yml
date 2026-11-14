@@ -225,8 +225,9 @@ jobs:
 
   update-pr:
     needs: build-kicbase
-    # contents: write lets GITHUB_TOKEN push to a branch in this repo when
-    # MINIKUBE_BOT_PAT is unset. The push step still prefers the bot PAT.
+    # contents: write is for a fork run, where the push uses the fork's
+    # GITHUB_TOKEN (FORK_GITHUB_TOKEN) to update its own PR branch. Upstream
+    # pushes with MINIKUBE_BOT_PAT instead.
     permissions:
       contents: write
       statuses: write
@@ -278,9 +279,22 @@ jobs:
 
       - name: Commit and push updated kicbase reference
         env:
-          GH_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT || secrets.GITHUB_TOKEN }}
+          # Non-empty fallback: gh treats an empty GH_TOKEN as unset and
+          # would otherwise fall back to GITHUB_TOKEN.
+          MINIKUBE_BOT_PAT: ${{ secrets.MINIKUBE_BOT_PAT || 'missing minikube bot pat' }}
+          # Deliberately not named GITHUB_TOKEN: gh falls back to it when
+          # GH_TOKEN is empty.
+          FORK_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           KIC_VERSION: ${{ needs.build-kicbase.outputs.kic_version }}
         run: |
+          # Select by repository, not by whether the secret happens to be set.
+          # MINIKUBE_BOT_PAT exists only in kubernetes/minikube; a fork has no
+          # bot PAT and uses its own GITHUB_TOKEN for its own PR branch.
+          if [ "${GITHUB_REPOSITORY}" = "kubernetes/minikube" ]; then
+            export GH_TOKEN="${MINIKUBE_BOT_PAT}"
+          else
+            export GH_TOKEN="${FORK_GITHUB_TOKEN}"
+          fi
           gh auth setup-git
           git config user.name "minikube-bot"
           git config user.email "20374350+minikube-bot@users.noreply.github.com"
