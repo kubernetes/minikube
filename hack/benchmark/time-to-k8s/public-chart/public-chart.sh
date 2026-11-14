@@ -33,7 +33,9 @@ run_benchmark() {
 }
 
 generate_chart() {
-        go run ./hack/benchmark/time-to-k8s/public-chart/generate-chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --daily-chart ./daily-chart.png --weekly-chart ./weekly-chart.png --past-runs ./runs.json
+        # generate-chart.go is part of the hack module (hack/go.mod), so build it from there.
+        ( cd hack && go build -o ../out/time-to-k8s-chart ./benchmark/time-to-k8s/public-chart/generate-chart.go )
+        ./out/time-to-k8s-chart --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --daily-chart ./daily-chart.png --weekly-chart ./weekly-chart.png --past-runs ./runs.json
 }
 
 copy() {
