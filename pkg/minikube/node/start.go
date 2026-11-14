@@ -232,19 +232,32 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 	klog.Infof("waiting for startup goroutines ...")
 	wg.Wait()
 
-	// update config with enabled addons
-	if starter.ExistingAddons != nil {
-		klog.Infof("waiting for cluster config update ...")
-		if ea, ok := <-enabledAddons; ok {
-			addons.UpdateConfigToEnable(starter.Cfg, ea, options)
+	updateNodeAddonConfig(starter, enabledAddons, options)
+	if starter.ExistingAddons != nil && starter.Cfg.Addons["cluster-autoscaler"] {
+		latest, err := config.Load(starter.Cfg.Name)
+		if err != nil {
+			return nil, fmt.Errorf("reloading autoscaled node inventory: %w", err)
 		}
-	} else {
-		addons.UpdateConfigToDisable(starter.Cfg, options)
+		starter.Cfg.Nodes = latest.Nodes
 	}
 
 	// Write enabled addons to the config before completion
 	klog.Infof("writing updated cluster config ...")
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+}
+
+// updateNodeAddonConfig preserves cluster-wide addon settings when adding a
+// worker. A nil ExistingAddons skips installation on that node, not the addons
+// already running on the control plane.
+func updateNodeAddonConfig(starter Starter, enabledAddons <-chan []string, options *run.CommandOptions) {
+	if starter.ExistingAddons != nil {
+		klog.Infof("waiting for cluster config update ...")
+		if ea, ok := <-enabledAddons; ok {
+			addons.UpdateConfigToEnable(starter.Cfg, ea, options)
+		}
+	} else if config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
+		addons.UpdateConfigToDisable(starter.Cfg, options)
+	}
 }
 
 // handleNoKubernetes handles starting minikube without Kubernetes.

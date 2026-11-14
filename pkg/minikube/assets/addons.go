@@ -113,6 +113,9 @@ func (a *Addon) EnableByDefault() {
 // Addons is the list of addons
 // TODO: Make dynamically loadable: move this data to a .yaml file within each addon directory
 var Addons = map[string]*Addon{
+	// The installed project's host-side lifecycle script owns its Helm release
+	// and provider container. It must not be installed through the guest runner.
+	"cluster-autoscaler": NewAddon(nil, false, "cluster-autoscaler", "3rd party (astrivant)", "astrivant", "https://minikube.sigs.k8s.io/docs/handbook/addons/cluster-autoscaler/", nil, nil, nil),
 	"auto-pause": NewAddon([]*BinAsset{
 		MustBinAsset(
 			addons.AutoPauseAssets,
