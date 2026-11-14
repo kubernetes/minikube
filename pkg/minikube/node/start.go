@@ -271,12 +271,14 @@ func startPrimaryControlPlane(starter Starter, cr cruntime.Manager, options *run
 	}
 
 	if config.IsHA(*starter.Cfg) {
-		n, err := network.Inspect(starter.Node.IP)
-		if err != nil {
-			return nil, nil, fmt.Errorf("inspect network: %w", err)
+		if starter.Cfg.KubernetesConfig.APIServerHAVIP == "" {
+			n, err := network.Inspect(starter.Node.IP)
+			if err != nil {
+				return nil, nil, fmt.Errorf("inspect network: %w", err)
+			}
+			// update cluster config
+			starter.Cfg.KubernetesConfig.APIServerHAVIP = n.ClientMax // last available ip from node's subnet, should've been reserved already
 		}
-		// update cluster config
-		starter.Cfg.KubernetesConfig.APIServerHAVIP = n.ClientMax // last available ip from node's subnet, should've been reserved already
 	}
 
 	// must be written before bootstrap, otherwise health checks may flake due to stale IP
