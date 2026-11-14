@@ -1259,11 +1259,16 @@ func validateCPUCount(drvName string) {
 	}
 }
 
+// isFlagOrConfigSet reports whether name was set by a flag, the minikube config or a MINIKUBE_ env var.
+// viper merges all three, so validating only changed flags lets config and env values skip the checks.
+func isFlagOrConfigSet(cmd *cobra.Command, name string) bool {
+	return cmd.Flags().Changed(name) || viper.IsSet(name)
+}
+
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterConfig) { //nolint:gocyclo
-	if cmd.Flags().Changed(humanReadableDiskSize) {
-		err := validateDiskSize(viper.GetString(humanReadableDiskSize))
-		if err != nil {
+	if isFlagOrConfigSet(cmd, humanReadableDiskSize) {
+		if err := validateDiskSize(viper.GetString(humanReadableDiskSize)); err != nil {
 			exitIfNotForced(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 	}
@@ -1280,19 +1285,19 @@ func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterC
 		exit.Message(reason.Usage, "Cannot use the option --no-kubernetes on the {{.name}} driver", out.V{"name": drvName})
 	}
 
-	if cmd.Flags().Changed(memory) {
+	if isFlagOrConfigSet(cmd, memory) {
 		validateChangedMemoryFlags(drvName)
 	}
 
-	if cmd.Flags().Changed(listenAddress) {
+	if isFlagOrConfigSet(cmd, listenAddress) {
 		validateListenAddress(viper.GetString(listenAddress))
 	}
 
-	if cmd.Flags().Changed(imageRepository) {
+	if isFlagOrConfigSet(cmd, imageRepository) {
 		viper.Set(imageRepository, validateImageRepository(viper.GetString(imageRepository)))
 	}
 
-	if cmd.Flags().Changed(ports) {
+	if isFlagOrConfigSet(cmd, ports) {
 		err := validatePorts(viper.GetStringSlice(ports))
 		if err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
@@ -1300,7 +1305,7 @@ func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterC
 
 	}
 
-	if cmd.Flags().Changed(subnet) {
+	if isFlagOrConfigSet(cmd, subnet) {
 		err := validateSubnet(viper.GetString(subnet))
 		if err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
@@ -1315,19 +1320,19 @@ func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterC
 
 	validateCNI(cmd, getContainerRuntime(existing))
 
-	if cmd.Flags().Changed(staticIP) {
+	if isFlagOrConfigSet(cmd, staticIP) {
 		if err := validateStaticIP(viper.GetString(staticIP), drvName, viper.GetString(subnet)); err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 	}
 
-	if cmd.Flags().Changed(gpus) {
+	if isFlagOrConfigSet(cmd, gpus) {
 		if err := validateGPUs(viper.GetString(gpus), drvName, getContainerRuntime(existing)); err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 	}
 
-	if cmd.Flags().Changed(autoPauseInterval) {
+	if isFlagOrConfigSet(cmd, autoPauseInterval) {
 		if err := validateAutoPauseInterval(viper.GetDuration(autoPauseInterval)); err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
@@ -1423,14 +1428,7 @@ func validatePort(port string) error {
 
 // validateDiskSize validates the supplied disk size
 func validateDiskSize(diskSize string) error {
-	diskSizeMB, err := util.CalculateSizeInMB(diskSize)
-	if err != nil {
-		return fmt.Errorf("Validation unable to parse disk size %v: %v", diskSize, err)
-	}
-	if diskSizeMB < minimumDiskSize {
-		return fmt.Errorf("Requested disk size %v is less than minimum of %v", diskSizeMB, minimumDiskSize)
-	}
-	return nil
+	return cmdcfg.ValidateDiskSize(diskSize)
 }
 
 // validateRuntime validates the supplied runtime
