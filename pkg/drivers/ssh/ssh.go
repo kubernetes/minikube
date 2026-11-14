@@ -17,6 +17,7 @@ limitations under the License.
 package ssh
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -45,10 +46,11 @@ import (
 type Driver struct {
 	*drivers.BaseDriver
 	*common.CommonDriver
-	EnginePort int
-	SSHKey     string
-	runtime    cruntime.Manager
-	exec       command.Runner
+	EnginePort       int
+	SSHKey           string
+	ContainerRuntime string
+	runtime          cruntime.Manager
+	exec             command.Runner
 }
 
 // Config is configuration for the SSH driver
@@ -70,6 +72,7 @@ func NewDriver(c Config) *Driver {
 			MachineName: c.MachineName,
 			StorePath:   c.StorePath,
 		},
+		ContainerRuntime: c.ContainerRuntime,
 	}
 	runner := command.NewSSHRunner(d)
 	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
@@ -80,6 +83,21 @@ func NewDriver(c Config) *Driver {
 	d.runtime = runtime
 	d.exec = runner
 	return d
+}
+
+// UnmarshalJSON restores the container runtime after the driver is loaded
+// from the machine config (see LocalClient.NewHost and LocalClient.Load).
+func (d *Driver) UnmarshalJSON(data []byte) error {
+	type Alias Driver
+	if err := json.Unmarshal(data, (*Alias)(d)); err != nil {
+		return err
+	}
+	r, err := cruntime.New(cruntime.Config{Type: d.ContainerRuntime, Runner: d.exec})
+	if err != nil {
+		return fmt.Errorf("container runtime: %w", err)
+	}
+	d.runtime = r
+	return nil
 }
 
 // DriverName returns the name of the driver
