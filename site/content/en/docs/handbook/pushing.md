@@ -409,6 +409,33 @@ cluster, and run the load commands there - against the same storage.
 minikube image load my_image
 ```
 
+`minikube image load` / `save` always go through `~/.minikube/cache/images`
+unless you pass a tarball path.
+
+**load** (image name, not a `.tar` file) looks for the image in this order:
+
+1. cache (`~/.minikube/cache/images`)
+2. local Docker daemon (`--daemon`, on by default if the name is missing from cache)
+3. remote registry (`--remote`, also on by default if still missing)
+
+So a bare `minikube image load nginx` may talk to Docker or the network.
+Use `--daemon=false --remote=false` if you only want the cache (offline).
+
+**save** writes the cluster image into the cache first. It does **not**
+load into the host Docker daemon or push to a registry unless you pass
+`--daemon` / `--remote`.
+
+A path ending in `.tar` skips the cache entirely:
+
+```shell
+minikube image load ./my_image.tar
+minikube image save my_image ./my_image.tar
+```
+
+`image pull` / `image push` are separate commands (pull from a registry
+into the cluster, push a cluster image to a registry). They are not the
+same as `load --remote` / `save --remote`.
+
 For more information, see:
 
 * [Reference: image load command]({{< ref "/docs/commands/image.md#minikube-image-load" >}})
