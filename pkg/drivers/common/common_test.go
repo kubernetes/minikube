@@ -17,6 +17,9 @@ limitations under the License.
 package common
 
 import (
+	"archive/tar"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,7 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-func Test_createDiskImage(t *testing.T) {
+func TestCreateRawDiskImage(t *testing.T) {
 	tmpdir := tests.MakeTempDir(t)
 
 	sshPath := filepath.Join(tmpdir, "ssh")
@@ -35,14 +38,88 @@ func Test_createDiskImage(t *testing.T) {
 
 	sizeInMb := 100
 	sizeInBytes := int64(104857600)
-	if err := createRawDiskImage(sshPath, diskPath, sizeInMb); err != nil {
-		t.Errorf("createDiskImage() error = %v", err)
+	if err := CreateRawDiskImage(sshPath, diskPath, sizeInMb); err != nil {
+		t.Fatalf("CreateRawDiskImage() error = %v", err)
 	}
 	fi, err := os.Lstat(diskPath)
 	if err != nil {
-		t.Errorf("Lstat() error = %v", err)
+		t.Fatalf("Lstat() error = %v", err)
 	}
 	if fi.Size() != sizeInBytes {
 		t.Errorf("Disk size is %v, want %v", fi.Size(), sizeInBytes)
+	}
+	f, err := os.Open(diskPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	tr := tar.NewReader(f)
+	for _, want := range []struct {
+		name string
+		body string
+		mode int64
+	}{
+		{"boot2docker, please format-me", "boot2docker, please format-me", 0},
+		{".ssh", "", 0700},
+		{".ssh/authorized_keys", "mysshkey", 0644},
+		{".ssh/authorized_keys2", "mysshkey", 0644},
+	} {
+		h, err := tr.Next()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if h.Name != want.name || h.Mode != want.mode {
+			t.Errorf("tar entry = %s (%o), want %s (%o)", h.Name, h.Mode, want.name, want.mode)
+		}
+		body, err := io.ReadAll(tr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(body) != want.body {
+			t.Errorf("%s content = %q, want %q", h.Name, body, want.body)
+		}
+	}
+	if _, err := tr.Next(); err != io.EOF {
+		t.Fatalf("after final tar entry: got %v, want EOF", err)
+	}
+}
+
+func TestCreateRawDiskImageErrors(t *testing.T) {
+	for _, scenario := range []string{"missing key", "missing directory", "existing disk", "invalid size"} {
+		t.Run(scenario, func(t *testing.T) {
+			dir := t.TempDir()
+			keyPath := filepath.Join(dir, "key.pub")
+			diskPath := filepath.Join(dir, "disk")
+			if err := os.WriteFile(keyPath, []byte("test public key"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			size := 1
+			switch scenario {
+			case "missing key":
+				keyPath = filepath.Join(dir, "missing.pub")
+			case "missing directory":
+				diskPath = filepath.Join(dir, "missing", "disk")
+			case "existing disk":
+				if err := os.WriteFile(diskPath, []byte("existing disk contents"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			case "invalid size":
+				size = -1
+			}
+			err := CreateRawDiskImage(keyPath, diskPath, size)
+			var pathErr *os.PathError
+			if !errors.As(err, &pathErr) {
+				t.Fatalf("CreateRawDiskImage() error = %v, want filesystem error", err)
+			}
+			if scenario == "existing disk" {
+				data, err := os.ReadFile(diskPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if string(data) != "existing disk contents" {
+					t.Fatalf("existing disk was modified: %q", data)
+				}
+			}
+		})
 	}
 }
