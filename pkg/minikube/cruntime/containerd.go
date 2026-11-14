@@ -341,6 +341,7 @@ func gitClone(cr CommandRunner, src string) (string, error) {
 	return tmp, nil
 }
 
+// downloadRemote removes downloaded archives; extracted directories belong to the caller on success and are removed on failure.
 func downloadRemote(cr CommandRunner, src string) (dir string, err error) {
 	u, err := url.Parse(src)
 	if err != nil {

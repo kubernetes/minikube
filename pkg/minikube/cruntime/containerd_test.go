@@ -28,7 +28,6 @@ import (
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/command"
-
 	"k8s.io/minikube/pkg/version"
 )
 
