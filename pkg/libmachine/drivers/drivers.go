@@ -64,7 +64,9 @@ type Driver interface {
 	// GetState returns the state that the host is in (running, stopped, etc)
 	GetState() (state.State, error)
 
-	// Kill stops a host forcefully
+	// Kill stops a host forcefully. It is called by the stop flow when the
+	// machine does not reach the Stopped state within the graceful
+	// shutdown wait after Stop.
 	Kill() error
 
 	// PreCreateCheck allows for pre-create operations to make sure a driver is ready for creation
@@ -84,7 +86,11 @@ type Driver interface {
 	// Start a host
 	Start() error
 
-	// Stop a host gracefully
+	// Stop a host gracefully. Stop only initiates the shutdown and returns
+	// without waiting for it to complete: the caller waits for the Stopped
+	// state and force-stops the machine with Kill if the guest ignores the
+	// request. Flows that must observe a stopped machine before proceeding
+	// (e.g. Restart) wait for the Stopped state themselves.
 	Stop() error
 }
 
