@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   sync-images:
+    if: github.repository == 'kubernetes/minikube'
     runs-on: ubuntu-latest
     defaults:
       run:
