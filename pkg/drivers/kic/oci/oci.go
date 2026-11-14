@@ -40,6 +40,10 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
+// nvidiaDriverCapabilities is used with --gpus. "all" includes display, which
+// needs /dev/nvidia-modeset and fails on compute-only hosts.
+const nvidiaDriverCapabilities = "compute,compat32,graphics,utility,video"
+
 // DeleteContainersByLabel deletes all containers that have a specific label
 // if there no containers found with the given 	label, it will return nil
 func DeleteContainersByLabel(ociBin string, label string) []error {
@@ -193,7 +197,7 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 
 	switch p.GPUs {
 	case "all", "nvidia":
-		runArgs = append(runArgs, "--gpus", "all", "--env", "NVIDIA_DRIVER_CAPABILITIES=all")
+		runArgs = append(runArgs, "--gpus", "all", "--env", "NVIDIA_DRIVER_CAPABILITIES="+nvidiaDriverCapabilities)
 	case "nvidia.com":
 		runArgs = append(runArgs, "--device", "nvidia.com/gpu=all")
 	case "amd":
