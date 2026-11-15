@@ -24,9 +24,7 @@ on:
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.27.3'
-  # TODO: linux/s390x is omitted until vim-tiny is installable on s390x again.
-  # https://github.com/kubernetes/minikube/issues/23997
-  PLATFORMS: "linux/amd64,linux/arm64,linux/ppc64le"
+  PLATFORMS: "linux/amd64,linux/arm64,linux/ppc64le,linux/s390x"
   # Image parameters: <registry>/<repo>/<image>:<KIC_VERSION>. Blank
   # workflow_dispatch inputs fall back to vars.KICBASE_* and then to the static
   # defaults, which reproduce docker.io/kicbase/build.
