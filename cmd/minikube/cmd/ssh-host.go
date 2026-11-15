@@ -126,6 +126,8 @@ func appendKnownHelper(nodeName string, appendKnown bool) {
 
 		return
 	}
+
+	fmt.Print(keys)
 }
 
 func init() {
