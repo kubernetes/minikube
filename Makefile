@@ -806,8 +806,13 @@ out/hugo/hugo:
 	test -d out/hugo || git clone https://github.com/gohugoio/hugo.git out/hugo
 	(cd out/hugo && git fetch origin && git checkout $(HUGO_VERSION) && go build --tags extended)
 
+.PHONY: site-build
+site-build: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Build the documentation site
+	(cd site && npm install --no-audit --no-fund)
+	(cd site && PATH="$$PWD/node_modules/.bin:$$PATH" ../out/hugo/hugo --logLevel warn)
+
 .PHONY: site
-site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serve the documentation site to localhost
+site: site-build ## Serve the documentation site to localhost
 	(cd site && ../out/hugo/hugo serve \
 	  --disableFastRender \
 	  --navigateToChanged \
