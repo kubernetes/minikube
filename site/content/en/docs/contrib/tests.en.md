@@ -375,6 +375,16 @@ Steps:
 - Run `minikube ssh echo hello` to make sure we can SSH into the minikube container and run an command
 - Run `minikube ssh cat /etc/hostname` as well to make sure the command is run inside minikube
 
+#### validateSSHHostCmd
+asserts basic "ssh-host" command functionality
+
+Steps:
+- Run `minikube ssh-host` to print the node's ssh host keys
+- Pipe the output to `ssh-keygen -lf -` to make sure it lists one or more valid host keys, whatever the key type
+
+Skips:
+- Skips `none` driver since `ssh-host` is not supported
+
 #### validateCpCmd
 asserts basic "cp" command functionality
 
