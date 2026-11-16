@@ -24,6 +24,7 @@ import (
 	"path"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -647,7 +648,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	configureDNS(runner, cfg.DNSServers)
 	configureMDNS(runner, cfg.MDNS)
 
-	ip, err := validateNetwork(hostInfo, runner, cfg.KubernetesConfig.ImageRepository)
+	ip, err := validateNetwork(hostInfo, runner, cfg.KubernetesConfig.ImageRepository, cfg.InsecureRegistry)
 	if err != nil {
 		return runner, preExists, m, hostInfo, fmt.Errorf("Failed to validate network: %w", err)
 	}
@@ -731,7 +732,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (string, error) {
+func validateNetwork(h *host.Host, r command.Runner, imageRepository string, insecureRegistries []string) (string, error) {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		return ip, err
@@ -768,7 +769,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 	}
 
 	// Non-blocking
-	go tryRegistry(r, h.Driver.DriverName(), imageRepository, ip)
+	go tryRegistry(r, h.Driver.DriverName(), imageRepository, ip, insecureRegistries)
 	return ip, nil
 }
 
@@ -824,7 +825,7 @@ func trySSH(h *host.Host, ip string) error {
 }
 
 // tryRegistry tries to connect to the image repository
-func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
+func tryRegistry(r command.Runner, driverName, imageRepository, ip string, insecureRegistries []string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
 	opts := []string{"-sS", "-m", "2"}
 
@@ -837,6 +838,11 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 		imageRepository = images.DefaultKubernetesRepo
 	}
 
+	registryHost, _, _ := strings.Cut(imageRepository, "/")
+	insecureRegistry := slices.Contains(insecureRegistries, registryHost)
+	if insecureRegistry {
+		opts = append(opts, "--insecure")
+	}
 	curlTarget := fmt.Sprintf("https://%s/", imageRepository)
 	opts = append(opts, curlTarget)
 
@@ -850,7 +856,13 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 	}
 	cmdHost := exec.Command(hostExe, opts...)
 
-	if rr, err := r.RunCmd(cmd); err != nil {
+	rr, err := r.RunCmd(cmd)
+	if err != nil && insecureRegistry {
+		curlTarget = fmt.Sprintf("http://%s/", imageRepository)
+		opts[len(opts)-1] = curlTarget
+		rr, err = r.RunCmd(exec.Command("curl", opts...))
+	}
+	if err != nil {
 		klog.Warningf("%s failed: %v", rr.Args, err)
 
 		// using QEMU with the user network
@@ -869,8 +881,13 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 		warning := "Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}"
 		if !driver.IsNone(driverName) && !driver.IsSSH(driverName) {
 			if err := cmdHost.Run(); err != nil {
-				// both inside and outside failed
-				warning = "Failing to connect to {{.curlTarget}} from both inside the minikube {{.type}} and host machine"
+				if insecureRegistry {
+					err = exec.Command(hostExe, opts...).Run()
+				}
+				if err != nil {
+					// both inside and outside failed
+					warning = "Failing to connect to {{.curlTarget}} from both inside the minikube {{.type}} and host machine"
+				}
 			}
 		}
 		out.WarningT(warning, out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
