@@ -29,6 +29,32 @@ Once you've discovered an issue to work on:
 - Send a PR out that mentions the issue
 - Comment on the issue with `/assign` to assign it to yourself
 
+### Set up your development environment
+
+Install the required packages for your platform:
+
+#### Linux
+
+Ubuntu, Debian:
+
+```shell
+sudo apt-get update
+sudo apt-get install -y build-essential git make golang-go
+```
+
+RHEL, CentOS, Fedora:
+
+```shell
+sudo dnf install -y gcc git make golang
+```
+
+#### macOS
+
+```shell
+xcode-select --install
+brew install go
+```
+
 ### clone `minikube`
 
 After forking minikube you can `clone` for best practices use the following instruction:

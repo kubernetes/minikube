@@ -15,6 +15,8 @@ weight: 2
   * GNU Make e.g. `winget install GnuWin32.make`, then add `C:\Program Files (x86)\GnuWin32\bin` to `PATH`
 * 4GB of RAM
 
+For instructions on setting up a development machine, see the [Contributor Guide](../guide.en.md#set-up-your-development-environment).
+
 ## Downloading the source
 
 ```shell
