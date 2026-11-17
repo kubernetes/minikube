@@ -11,18 +11,6 @@ description: >
 - Go distribution
   - Specific version depends on minikube version.
   - The current dependency version can be found here : [master branch's go.mod file](https://github.com/kubernetes/minikube/blob/master/go.mod).
-- If you are on Linux, you will need to install `libvirt-dev`, since unit tests need kvm2 driver:
-
-```shell
-# For Debian based
-sudo apt-get install libvirt-dev
-
-# For Centos
-yum install libvirt-devel
-
-# For Fedora
-dnf install libvirt-devel
-```
 
 ## Unit Tests
 
