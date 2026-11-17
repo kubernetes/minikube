@@ -14,7 +14,9 @@ The minikube ISO is booted by each hypervisor to provide a stable minimal Linux 
 * Ubuntu 22.04.5 LTS (Jammy Jellyfish)
 * docker
 * A recent GNU Make distribution (>=4.0)
-* A recent Go distribution (>=1.22.0)
+* A Go distribution (>=1.21.0) that supports automatic toolchain downloads.
+  The Makefile uses `GOTOOLCHAIN` to download the Go version specified by
+  `GO_VERSION` when needed.
 * If you are on Windows or Mac, you'll need Docker to be installed.
 * 4GB of RAM
 
