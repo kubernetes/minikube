@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/util"
 )
 
 type remotePath struct {
@@ -135,6 +136,12 @@ func setDstFileNameFromSrc(dst, src string) string {
 
 // split path to node name and file path
 func newRemotePath(path string) *remotePath {
+	// a Windows path with a drive letter, such as C:/a, has the same shape as
+	// <node>:<abs path>, so check for a volume name first
+	if util.HasVolumeName(path) {
+		return &remotePath{node: "", path: path}
+	}
+
 	// if destination path is not a absolute path, trying to parse with <node>:<abs path> format
 	sp := strings.SplitN(path, ":", 2)
 	if len(sp) == 2 && len(sp[0]) > 0 && !strings.Contains(sp[0], "/") && strings.HasPrefix(sp[1], "/") {
