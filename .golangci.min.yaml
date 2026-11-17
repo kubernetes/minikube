@@ -1,4 +1,7 @@
 version: "2"
+run:
+  build-tags:
+    - libvirt_dlopen
 linters:
   enable:
     - govet

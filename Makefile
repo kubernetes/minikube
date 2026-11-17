@@ -467,7 +467,7 @@ gofmt: ## Run go fmt and list the files differs from gofmt's
 
 .PHONY: vet
 vet: ## Run go vet
-	@go vet $(SOURCE_PACKAGES)
+	@go vet -tags "$(MINIKUBE_BUILD_TAGS)" $(SOURCE_PACKAGES)
 
 .PHONY: imports
 imports: ## Run goimports and modify files in place
