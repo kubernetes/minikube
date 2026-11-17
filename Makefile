@@ -377,7 +377,7 @@ endif
 
 .PHONY: test
 test: ## Trigger minikube test
-	MINIKUBE_LDFLAGS="${MINIKUBE_LDFLAGS}" ./test.sh
+	MINIKUBE_LDFLAGS="${MINIKUBE_LDFLAGS}" MINIKUBE_BUILD_TAGS="$(MINIKUBE_BUILD_TAGS)" ./test.sh
 
 .PHONY: generate-docs
 generate-docs: update-translations out/minikube ## Automatically generate commands documentation.
