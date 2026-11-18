@@ -282,11 +282,12 @@ func mutateURLs(serviceName string, urls []string) ([]string, error) {
 	return formattedUrls, nil
 }
 
-// openBrowser opens a URL in the default browser. Tests replace it.
-var openBrowser = browser.OpenURL
+// openFirstURL opens a service's first URL in the browser. Tests replace it.
+var openFirstURL = browser.OpenFirstURL
 
-// openURLs opens the URLs in the last column of each service row. A service
-// with multiple ports has one URL per line in that column.
+// openURLs opens the first URL of each service row. A service with multiple
+// ports has one URL per line in the last column, and like "minikube addons open"
+// only the first one is opened.
 func openURLs(rows [][]string) {
 	for _, row := range rows {
 		if len(row) < 4 {
@@ -294,27 +295,30 @@ func openURLs(rows [][]string) {
 			continue
 		}
 
+		var urls []string
 		for _, u := range strings.Split(row[3], "\n") {
-			u = strings.TrimSpace(u)
-			if u == "" {
-				continue
+			if u = strings.TrimSpace(u); u != "" {
+				urls = append(urls, u)
 			}
+		}
+		if len(urls) == 0 {
+			continue
+		}
 
-			if _, err := url.Parse(u); err != nil {
-				klog.Warningf("failed to parse url %q: %v (will not open)", u, err)
-				out.Stringf("%s\n", u)
-				continue
-			}
+		if _, err := url.Parse(urls[0]); err != nil {
+			klog.Warningf("failed to parse url %q: %v (will not open)", urls[0], err)
+			out.Stringf("%s\n", urls[0])
+			continue
+		}
 
-			if serviceURLMode {
-				out.Stringf("%s\n", u)
-				continue
-			}
+		if serviceURLMode {
+			out.Stringf("%s\n", urls[0])
+			continue
+		}
 
-			out.Styled(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": row[0], "service_name": row[1]})
-			if err := openBrowser(u); err != nil {
-				exit.Error(reason.HostBrowser, fmt.Sprintf("open url failed: %s", u), err)
-			}
+		out.Styled(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": row[0], "service_name": row[1]})
+		if err := openFirstURL(urls); err != nil {
+			exit.Error(reason.HostBrowser, fmt.Sprintf("open url failed: %s", urls[0]), err)
 		}
 	}
 }

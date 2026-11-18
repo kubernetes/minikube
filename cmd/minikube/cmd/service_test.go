@@ -39,7 +39,7 @@ func TestOpenURLs(t *testing.T) {
 			rows: [][]string{
 				{"default", "web", "http/80\nhttps/443", "http://192.168.49.2:30080\nhttp://192.168.49.2:30443"},
 			},
-			want: []string{"http://192.168.49.2:30080", "http://192.168.49.2:30443"},
+			want: []string{"http://192.168.49.2:30080"},
 		},
 		{
 			name: "multiple services",
@@ -47,7 +47,7 @@ func TestOpenURLs(t *testing.T) {
 				{"default", "web", "http/80", "http://192.168.49.2:30080"},
 				{"default", "api", "", "http://127.0.0.1:51234\nhttp://127.0.0.1:51235"},
 			},
-			want: []string{"http://192.168.49.2:30080", "http://127.0.0.1:51234", "http://127.0.0.1:51235"},
+			want: []string{"http://192.168.49.2:30080", "http://127.0.0.1:51234"},
 		},
 		{
 			name: "skips rows without urls",
@@ -63,12 +63,12 @@ func TestOpenURLs(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var opened []string
-			orig := openBrowser
-			openBrowser = func(u string) error {
-				opened = append(opened, u)
+			orig := openFirstURL
+			openFirstURL = func(urls []string) error {
+				opened = append(opened, urls[0])
 				return nil
 			}
-			t.Cleanup(func() { openBrowser = orig })
+			t.Cleanup(func() { openFirstURL = orig })
 
 			openURLs(tc.rows)
 
