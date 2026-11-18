@@ -302,9 +302,9 @@ func expectedImageFormat(format string) []string {
 
 // validateImageCommands runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
-	// docs(skip): Skips on `none` driver as image loading is not supported
-	if NoneDriver() {
-		t.Skip("image commands are not available on the none driver")
+	// docs(skip): Skips on `none` and `ssh` drivers as image loading is not supported
+	if NoneDriver() || SSHDriver() {
+		t.Skip("image commands are not available on the none and ssh drivers")
 	}
 	// docs(skip): Skips on GitHub Actions / prow environment and macOS as this test case requires a running docker daemon
 	if VFKitDriver() && runtime.GOOS == "darwin" {
