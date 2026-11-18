@@ -31,6 +31,7 @@ import (
 )
 
 func main() {
+	update.Init()
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 

@@ -41,6 +41,7 @@ type Data struct {
 }
 
 func main() {
+	update.Init()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
