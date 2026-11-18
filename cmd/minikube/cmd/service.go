@@ -282,29 +282,39 @@ func mutateURLs(serviceName string, urls []string) ([]string, error) {
 	return formattedUrls, nil
 }
 
-func openURLs(urls [][]string) {
-	for _, u := range urls {
+// openBrowser opens a URL in the default browser. Tests replace it.
+var openBrowser = browser.OpenURL
 
-		if len(u) < 4 {
+// openURLs opens the URLs in the last column of each service row. A service
+// with multiple ports has one URL per line in that column.
+func openURLs(rows [][]string) {
+	for _, row := range rows {
+		if len(row) < 4 {
 			klog.Warning("No URL found")
 			continue
 		}
 
-		_, err := url.Parse(u[3])
-		if err != nil {
-			klog.Warningf("failed to parse url %q: %v (will not open)", u[3], err)
-			out.Stringf("%s\n", u)
-			continue
-		}
+		for _, u := range strings.Split(row[3], "\n") {
+			u = strings.TrimSpace(u)
+			if u == "" {
+				continue
+			}
 
-		if serviceURLMode {
-			out.Stringf("%s\n", u)
-			continue
-		}
+			if _, err := url.Parse(u); err != nil {
+				klog.Warningf("failed to parse url %q: %v (will not open)", u, err)
+				out.Stringf("%s\n", u)
+				continue
+			}
 
-		out.Styled(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": u[1]})
-		if err := browser.OpenURL(u[3]); err != nil {
-			exit.Error(reason.HostBrowser, fmt.Sprintf("open url failed: %s", u), err)
+			if serviceURLMode {
+				out.Stringf("%s\n", u)
+				continue
+			}
+
+			out.Styled(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": row[0], "service_name": row[1]})
+			if err := openBrowser(u); err != nil {
+				exit.Error(reason.HostBrowser, fmt.Sprintf("open url failed: %s", u), err)
+			}
 		}
 	}
 }
