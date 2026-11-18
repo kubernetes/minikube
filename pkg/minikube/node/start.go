@@ -24,6 +24,7 @@ import (
 	"path"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -647,7 +648,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool, 
 	configureDNS(runner, cfg.DNSServers)
 	configureMDNS(runner, cfg.MDNS)
 
-	ip, err := validateNetwork(hostInfo, runner, cfg.KubernetesConfig.ImageRepository)
+	ip, err := validateNetwork(hostInfo, runner, cfg.KubernetesConfig.ImageRepository, cfg.InsecureRegistry)
 	if err != nil {
 		return runner, preExists, m, hostInfo, fmt.Errorf("Failed to validate network: %w", err)
 	}
@@ -731,7 +732,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (string, error) {
+func validateNetwork(h *host.Host, r command.Runner, imageRepository string, insecureRegistries []string) (string, error) {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		return ip, err
@@ -768,7 +769,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 	}
 
 	// Non-blocking
-	go tryRegistry(r, h.Driver.DriverName(), imageRepository, ip)
+	go tryRegistry(r, h.Driver.DriverName(), imageRepository, ip, insecureRegistries)
 	return ip, nil
 }
 
@@ -824,7 +825,7 @@ func trySSH(h *host.Host, ip string) error {
 }
 
 // tryRegistry tries to connect to the image repository
-func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
+func tryRegistry(r command.Runner, driverName, imageRepository, ip string, insecureRegistries []string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
 	opts := []string{"-sS", "-m", "2"}
 
@@ -837,46 +838,74 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 		imageRepository = images.DefaultKubernetesRepo
 	}
 
-	curlTarget := fmt.Sprintf("https://%s/", imageRepository)
-	opts = append(opts, curlTarget)
+	// An insecure registry may only serve plain HTTP (or HTTPS with a
+	// self-signed certificate), so for a registry listed in
+	// --insecure-registry, fall back to HTTP when HTTPS fails instead of
+	// warning about a registry that is actually reachable. HTTPS stays
+	// the default, and is the only scheme tried for other registries.
+	registryHost, _, _ := strings.Cut(imageRepository, "/")
+	insecure := slices.Contains(insecureRegistries, registryHost)
+	if insecure {
+		opts = append(opts, "--insecure")
+	}
+	targets := []string{fmt.Sprintf("https://%s/", imageRepository)}
+	if insecure {
+		targets = append(targets, fmt.Sprintf("http://%s/", imageRepository))
+	}
 
 	// Always use the 'curl' binary inside the guest. On Windows hosts,
 	// PowerShell exposes an alias which can interfere with the host check,
 	// so use 'curl.exe' for the host-run check only.
-	cmd := exec.Command("curl", opts...)
 	hostExe := "curl"
 	if runtime.GOOS == "windows" {
 		hostExe = "curl.exe"
 	}
-	cmdHost := exec.Command(hostExe, opts...)
+	curlOpts := func(target string) []string {
+		args := append([]string{}, opts...)
+		return append(args, target)
+	}
 
-	if rr, err := r.RunCmd(cmd); err != nil {
-		klog.Warningf("%s failed: %v", rr.Args, err)
-
-		// using QEMU with the user network
-		if driver.IsQEMU(driverName) && ip == "127.0.0.1" {
-			out.WarningT("Due to DNS issues your cluster may have problems starting and you may not be able to pull images\nMore details available at: https://minikube.sigs.k8s.io/docs/drivers/qemu/#known-issues")
+	curlTarget := targets[0]
+	for _, target := range targets {
+		curlTarget = target
+		cmd := exec.Command("curl", curlOpts(target)...)
+		if rr, err := r.RunCmd(cmd); err == nil {
+			return
+		} else {
+			klog.Warningf("%s failed: %v", rr.Args, err)
 		}
-		// now we shall also try whether this registry is reachable
-		// outside the machine so that we can tell in the logs that if
-		// the user's computer had any network issue or could it be
-		// related to a network module config change in minikube ISO
+	}
 
-		// We should skip the second check if the user is using the none
-		// or ssh driver since there is no difference between an "inside"
-		// and "outside" check on the none driver, and checking the host
-		// on the ssh driver is not helpful.
-		warning := "Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}"
-		if !driver.IsNone(driverName) && !driver.IsSSH(driverName) {
-			if err := cmdHost.Run(); err != nil {
-				// both inside and outside failed
-				warning = "Failing to connect to {{.curlTarget}} from both inside the minikube {{.type}} and host machine"
+	// using QEMU with the user network
+	if driver.IsQEMU(driverName) && ip == "127.0.0.1" {
+		out.WarningT("Due to DNS issues your cluster may have problems starting and you may not be able to pull images\nMore details available at: https://minikube.sigs.k8s.io/docs/drivers/qemu/#known-issues")
+	}
+	// now we shall also try whether this registry is reachable
+	// outside the machine so that we can tell in the logs that if
+	// the user's computer had any network issue or could it be
+	// related to a network module config change in minikube ISO
+
+	// We should skip the second check if the user is using the none
+	// or ssh driver since there is no difference between an "inside"
+	// and "outside" check on the none driver, and checking the host
+	// on the ssh driver is not helpful.
+	warning := "Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}"
+	if !driver.IsNone(driverName) && !driver.IsSSH(driverName) {
+		hostOK := false
+		for _, target := range targets {
+			if err := exec.Command(hostExe, curlOpts(target)...).Run(); err == nil {
+				hostOK = true
+				break
 			}
 		}
-		out.WarningT(warning, out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
-
-		out.ErrT(style.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
+		if !hostOK {
+			// both inside and outside failed
+			warning = "Failing to connect to {{.curlTarget}} from both inside the minikube {{.type}} and host machine"
+		}
 	}
+	out.WarningT(warning, out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
+
+	out.ErrT(style.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
 }
 
 // prepareNone prepares the user and host for the joy of the "none" driver
