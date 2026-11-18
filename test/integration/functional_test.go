@@ -165,6 +165,7 @@ func testFunctionalInternal(t *testing.T, k8sVersion string) {
 			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
 			{"TunnelCmd", validateTunnelCmd},
 			{"SSHCmd", validateSSHCmd},
+			{"SSHHostCmd", validateSSHHostCmd},
 			{"CpCmd", validateCpCmd},
 			{"MySQL", validateMySQL},
 			{"FileSync", validateFileSync},
@@ -1874,6 +1875,43 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	// trailing whitespace differs between native and external SSH clients, so let's trim it and call it a day
 	if strings.TrimSpace(rr.Stdout.String()) != want {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
+	}
+}
+
+// validateSSHHostCmd asserts basic "ssh-host" command functionality
+func validateSSHHostCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+	// docs(skip): Skips `none` driver since `ssh-host` is not supported
+	if NoneDriver() {
+		t.Skipf("skipping: ssh-host unsupported by none")
+	}
+	mctx, cancel := context.WithTimeout(ctx, Minutes(1))
+	defer cancel()
+
+	// docs: Run `minikube ssh-host` to print the node's ssh host keys
+	rr, err := Run(t, exec.CommandContext(mctx, Target(), "-p", profile, "ssh-host"))
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Fatalf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
+	if err != nil {
+		t.Fatalf("failed to run ssh-host. args %q : %v", rr.Command(), err)
+	}
+	if strings.TrimSpace(rr.Stdout.String()) == "" {
+		t.Fatalf("expected minikube ssh-host to print the host keys, but the output is empty. args %q", rr.Command())
+	}
+
+	// docs: Pipe the output to `ssh-keygen -lf -` to make sure it lists one or more valid host keys, whatever the key type
+	if _, err := exec.LookPath("ssh-keygen"); err != nil {
+		t.Skipf("skipping key validation: ssh-keygen not found: %v", err)
+	}
+	keygen := exec.CommandContext(mctx, "ssh-keygen", "-lf", "-")
+	keygen.Stdin = bytes.NewReader(rr.Stdout.Bytes())
+	kr, err := Run(t, keygen)
+	if err != nil {
+		t.Fatalf("ssh-keygen failed to parse the minikube ssh-host output %q: %v", rr.Stdout.String(), err)
+	}
+	if !strings.Contains(kr.Stdout.String(), "SHA256:") {
+		t.Fatalf("expected ssh-keygen to print one or more SHA256 fingerprints, got %q", kr.Stdout.String())
 	}
 }
 
