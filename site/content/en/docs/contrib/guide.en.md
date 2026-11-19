@@ -55,6 +55,19 @@ xcode-select --install
 brew install go
 ```
 
+#### Windows
+
+Install Go, Git for Windows (which includes Git Bash), GNU Make, and Docker Desktop:
+
+```powershell
+winget install --id GoLang.Go --exact
+winget install --id Git.Git --exact
+winget install --id GnuWin32.Make --exact
+winget install --id Docker.DockerDesktop --exact
+```
+
+Add `C:\Program Files (x86)\GnuWin32\bin` to `PATH`, then run build and test commands from Git Bash.
+
 ### clone `minikube`
 
 After forking minikube you can `clone` for best practices use the following instruction:
