@@ -144,6 +144,23 @@ EOF
 sudo systemctl restart systemd-resolved
 ```
 
+NOTE: the above apporach makes the system DNS unusable, as the first request to any noncached domain will always fail!
+
+Better approach is to register it as link level DNS ( unformtinately doesn't persist restarts ):
+```
+MINIKUBE_IP=$(minikube ip)
+MINIKUBE_IP_PREFIX=$(echo "$MINIKUBE_IP" | sed 's/\.[0-9]\{1,3\}$//')
+MINIKUBE_IF=$(ip route | grep ${MINIKUBE_IP_PREFIX} | awk '{print $3}' | head -1)
+echo "Setting DNS for .test on $MINIKUBE_IF(ip:$MINIKUBE_IP)"
+
+# Set DNS scoped to just that interface
+sudo resolvectl dns $MINIKUBE_IF "${MINIKUBE_IP}"
+sudo resolvectl domain $MINIKUBE_IF "~test"
+
+sudo systemctl restart systemd-resolved
+```
+
+
 {{% /linuxtab %}}
 
 {{% mactab %}}
