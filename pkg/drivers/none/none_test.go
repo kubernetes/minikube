@@ -69,3 +69,40 @@ func TestUnmarshalJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestUseContainerRuntime(t *testing.T) {
+	tests := []struct {
+		name          string
+		runtime       string
+		expectRuntime string
+		wantErr       bool
+	}{
+		{name: "containerd", runtime: "containerd", expectRuntime: "containerd"},
+		{name: "crio", runtime: "crio", expectRuntime: "CRI-O"},
+		{name: "docker", runtime: "docker", expectRuntime: "Docker"},
+		{name: "empty keeps docker", runtime: "", expectRuntime: "Docker"},
+		{name: "invalid", runtime: "invalid", wantErr: true, expectRuntime: "Docker"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			d := NewDriver(Config{})
+			err := d.UseContainerRuntime(tc.runtime)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("expected error for invalid container runtime")
+				}
+				if d.ContainerRuntime != "" {
+					t.Errorf("ContainerRuntime = %q after error, want empty", d.ContainerRuntime)
+				}
+			} else if err != nil {
+				t.Fatalf("UseContainerRuntime(%q) failed: %v", tc.runtime, err)
+			} else if d.ContainerRuntime != tc.runtime {
+				t.Errorf("ContainerRuntime = %q, want %q", d.ContainerRuntime, tc.runtime)
+			}
+			if got := d.RuntimeName(); got != tc.expectRuntime {
+				t.Errorf("runtime name = %q, want %q", got, tc.expectRuntime)
+			}
+		})
+	}
+}
