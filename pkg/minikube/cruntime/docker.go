@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -307,6 +308,22 @@ func (r *Docker) ListImages(ListImagesOptions) ([]ListImage, error) {
 func (r *Docker) LoadImage(imgPath string) error {
 	klog.Infof("Loading image: %s", imgPath)
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cat %s | docker load", imgPath))
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return fmt.Errorf("loadimage docker: %w", err)
+	}
+	return nil
+}
+
+// LoadImageStream loads an image into this runtime, reading it from img.
+//
+// docker load has always taken the tarball on stdin here: the file-based
+// LoadImage above exists only to produce that stdin, via "sudo cat FILE". Only
+// the source of the bytes changes. The sudo goes with it, since reading the
+// guest-side file was what needed it, not docker load.
+func (r *Docker) LoadImageStream(img io.Reader) error {
+	klog.Info("Loading image from stream")
+	c := exec.Command("docker", "load")
+	c.Stdin = img
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return fmt.Errorf("loadimage docker: %w", err)
 	}
