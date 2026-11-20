@@ -636,6 +636,11 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		if config.IsHA(cfg) || !driver.IsVM(cfg.Driver) {
 			return nil
 		}
+		// If VM driver cluster is already running with a healthy control plane, skip reconfiguration
+		if st, err := kverify.APIServerStatus(k.c, host, port); err == nil && st == state.Running {
+			klog.Infof("The running cluster has a healthy control plane, skipping reconfiguration: %s", host)
+			return nil
+		}
 	} else {
 		klog.Infof("detected kubeadm config drift (will reconfigure cluster from new %s):\n%s", conf, rr.Output())
 	}
