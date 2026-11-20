@@ -44,6 +44,8 @@ func TestParsePath(t *testing.T) {
 		{"./:a/b", "", "./:a/b"},
 		{"c:\\a", "", "c:\\a"},
 		{"c:\\a\\b", "", "c:\\a\\b"},
+		{"C:/a", "", "C:/a"},
+		{"C:/a/b", "", "C:/a/b"},
 		{"minikube:/a", "minikube", "/a"},
 		{"minikube:/a/b", "minikube", "/a/b"},
 		{"minikube:/a/b:c", "minikube", "/a/b:c"},
