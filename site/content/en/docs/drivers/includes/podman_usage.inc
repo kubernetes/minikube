@@ -24,6 +24,8 @@ minikube config set driver podman
 
 ## Rootless Podman
 
+{{% readfile file="/docs/drivers/includes/rootless.inc" %}}
+
 By default, minikube executes Podman with `sudo`.
 To use Podman without `sudo` (i.e., Rootless Podman), set the `rootless` property to `true`:
 
