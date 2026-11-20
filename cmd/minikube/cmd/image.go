@@ -20,7 +20,6 @@ import (
 	"io"
 	"net/url"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -33,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/util"
 	docker "k8s.io/minikube/third_party/go-dockerclient"
 )
 
@@ -304,7 +304,7 @@ var buildImageCmd = &cobra.Command{
 			// If it is an URL, pass it as-is
 			u, err := url.Parse(img)
 			local := err == nil && u.Scheme == "" && u.Host == ""
-			if runtime.GOOS == "windows" && filepath.VolumeName(img) != "" {
+			if util.HasVolumeName(img) {
 				local = true
 			}
 			if local {

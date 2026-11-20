@@ -212,3 +212,11 @@ func TestRemoveDuplicateStrings(t *testing.T) {
 		})
 	}
 }
+
+func TestHasVolumeName(t *testing.T) {
+	for _, path := range []string{`C:/a`, `C:\a`, `/a/b`, `minikube:/a`} {
+		if HasVolumeName(path) {
+			t.Errorf("HasVolumeName(%q) = true, want false on non-Windows platforms", path)
+		}
+	}
+}

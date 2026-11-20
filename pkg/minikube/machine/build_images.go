@@ -23,7 +23,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	dockerref "github.com/distribution/reference"
@@ -37,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util"
 )
 
 // buildRoot is where images should be built from within the guest VM
@@ -62,7 +62,7 @@ func BuildImage(srcPath string, file string, tag string, push bool, env []string
 		srcPath = u.Path
 	}
 	remote := err == nil && u.Scheme != ""
-	if runtime.GOOS == "windows" && filepath.VolumeName(srcPath) != "" {
+	if util.HasVolumeName(srcPath) {
 		remote = false
 	}
 
