@@ -96,8 +96,9 @@ func IsURLExists(_, location string) error {
 		return nil
 	}
 
-	// chop off "file://" from the location, giving us the real system path
-	sysPath := strings.TrimPrefix(location, "file://")
+	// URL.Path is already unescaped, unlike the original URL string. Keep the
+	// host for Windows drive-letter URLs such as file://C:/path.
+	sysPath := parsed.Host + parsed.Path
 	stat, err := os.Stat(sysPath)
 	if err != nil {
 		if os.IsNotExist(err) {
