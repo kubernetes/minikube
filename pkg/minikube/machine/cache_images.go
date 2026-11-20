@@ -885,6 +885,9 @@ func TagImage(profile *config.Profile, source string, target string, options *ru
 
 	klog.Infof("succeeded tagging in: %s", strings.Join(succeeded, " "))
 	klog.Infof("failed tagging in: %s", strings.Join(failed, " "))
+	if len(failed) > 0 {
+		return fmt.Errorf("failed to tag image on %s", strings.Join(failed, ", "))
+	}
 	return nil
 }
 
