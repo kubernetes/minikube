@@ -82,6 +82,7 @@ Creating a deployment inside kubernetes cluster
 
 ```shell
 minikube kubectl -- create deployment hello-minikube --image=kicbase/echo-server:1.0
+minikube kubectl -- rollout status deployment/hello-minikube
 ```
 
 Exposing the deployment with a NodePort service

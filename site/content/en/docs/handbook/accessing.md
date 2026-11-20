@@ -42,6 +42,7 @@ Services of type `NodePort` can be exposed via the `minikube service <service-na
 
     ```shell
     kubectl create deployment hello-minikube1 --image=kicbase/echo-server:1.0
+    kubectl rollout status deployment/hello-minikube1
     ```
 
 2. Create a Kubernetes service type NodePort
@@ -160,6 +161,7 @@ Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command
 
     ```shell
     kubectl create deployment hello-minikube1 --image=kicbase/echo-server:1.0
+    kubectl rollout status deployment/hello-minikube1
     ```
 
 3. Create a Kubernetes service with type LoadBalancer

@@ -90,6 +90,7 @@ Create a file `redis-deployment.yaml` and paste the contents above. Then install
 
 ```shell
 kubectl apply -f redis-deployment.yaml
+kubectl rollout status deployment/redis-deployment
 ```
 
 Next we need to create a service that can route traffic to our pods:

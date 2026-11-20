@@ -26,6 +26,7 @@ Once started, you can interact with your cluster using `kubectl`, just like any 
 
 ```shell
 kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0
+kubectl rollout status deployment/hello-minikube
 ```
 
 Exposing a service as a NodePort

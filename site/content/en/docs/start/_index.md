@@ -524,6 +524,7 @@ Create a sample deployment and expose it on port 8080:
 
 ```shell
 kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0
+kubectl rollout status deployment/hello-minikube
 kubectl expose deployment hello-minikube --type=NodePort --port=8080
 ```
 
@@ -554,6 +555,7 @@ To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is 
 
 ```shell
 kubectl create deployment balanced --image=kicbase/echo-server:1.0
+kubectl rollout status deployment/balanced
 kubectl expose deployment balanced --type=LoadBalancer --port=8080
 ```
 

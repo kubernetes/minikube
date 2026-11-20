@@ -291,6 +291,9 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("failed to kubectl replace ingress-dns-example. args %q. %v", rr.Command(), err)
 	}
+	if _, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "rollout", "status", "deployment/hello-world-app")); err != nil {
+		t.Errorf("failed waiting for hello-world-app deployment to roll out: %v", err)
+	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ip"))
 	if err != nil {
@@ -786,11 +789,10 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 			t.Fatalf("print env project: %v", err)
 		}
 
-		// Make sure the pod is up and running, which means we successfully pulled the private image down
-		// 8 minutes, because 4 is not enough for images to pull in all cases.
-		_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image", Minutes(8))
+		// Make sure the deployment is rolled out, which means we successfully pulled the private image down.
+		_, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "rollout", "status", "deployment/private-image", "--timeout=8m"))
 		if err != nil {
-			t.Fatalf("wait for private image: %v", err)
+			t.Fatalf("wait for private image deployment: %v", err)
 		}
 
 		// Try it with a European mirror as well
@@ -799,9 +801,9 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 			t.Fatalf("print env project: %v", err)
 		}
 
-		_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image-eu", Minutes(8))
+		_, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "rollout", "status", "deployment/private-image-eu", "--timeout=8m"))
 		if err != nil {
-			t.Fatalf("wait for private image: %v", err)
+			t.Fatalf("wait for private image deployment: %v", err)
 		}
 	})
 }
