@@ -55,6 +55,9 @@ func TestJSONOutput(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.command, func(t *testing.T) {
+			if test.command == "stop" && SSHDriver() {
+				t.Skip("skipping: stop fails on ssh driver: https://github.com/kubernetes/minikube/issues/24094")
+			}
 			var ces []*cloudEvent
 			t.Run("Command", func(t *testing.T) {
 				args := []string{test.command, "-p", profile, "--output=json", "--user=testUser"}
