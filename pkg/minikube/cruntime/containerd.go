@@ -130,9 +130,15 @@ func (r *Containerd) Available() error {
 
 // generateContainerdConfig sets up /etc/containerd/config.toml & /etc/containerd/containerd.conf.d/02-containerd.conf
 func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, cgroupDriver string, insecureRegistry []string, inUserNamespace bool) error {
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo test -f %s || (sudo mkdir -p %s && containerd config default | sudo tee %s > /dev/null)`, containerdConfigFile, path.Dir(containerdConfigFile), containerdConfigFile))); err != nil {
+		return fmt.Errorf("create default containerd config: %w", err)
+	}
 	pauseImage := images.Pause(kv, imageRepository)
 	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)sandbox_image = .*$|\1sandbox_image = %q|' %s`, pauseImage, containerdConfigFile))); err != nil {
 		return fmt.Errorf("update sandbox_image: %w", err)
+	}
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)sandbox = .*$|\1sandbox = %q|' %s`, pauseImage, containerdConfigFile))); err != nil {
+		return fmt.Errorf("update pinned_images sandbox: %w", err)
 	}
 	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)restrict_oom_score_adj = .*$|\1restrict_oom_score_adj = %t|' %s`, inUserNamespace, containerdConfigFile))); err != nil {
 		return fmt.Errorf("update restrict_oom_score_adj: %w", err)
