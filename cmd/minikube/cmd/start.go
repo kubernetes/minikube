@@ -188,9 +188,8 @@ func runStart(cmd *cobra.Command, _ []string) {
 		registryMirror = viper.GetStringSlice("registry-mirror")
 	}
 
-	if !config.ProfileNameValid(ClusterFlagValue()) {
-		out.WarningT("Profile name '{{.name}}' is not valid", out.V{"name": ClusterFlagValue()})
-		exit.Message(reason.Usage, "Only alphanumeric and dashes '-' are permitted. Minimum 2 characters, starting with alphanumeric.")
+	if err := config.ValidateProfileName(ClusterFlagValue()); err != nil {
+		exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 	}
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {

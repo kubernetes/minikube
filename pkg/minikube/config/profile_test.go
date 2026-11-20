@@ -117,6 +117,34 @@ func TestProfileNameValid(t *testing.T) {
 	}
 }
 
+func TestValidateProfileName(t *testing.T) {
+	testCases := []struct {
+		name      string
+		shouldErr bool
+	}{
+		{name: "minikube", shouldErr: false},
+		{name: "pro-file1", shouldErr: false},
+		{name: "", shouldErr: true},
+		{name: "a", shouldErr: true},
+		{name: "bad_name!", shouldErr: true},
+		{name: "-profile", shouldErr: true},
+		{name: "start", shouldErr: true},
+		{name: "Logs", shouldErr: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateProfileName(tc.name)
+			if tc.shouldErr && err == nil {
+				t.Errorf("expected ValidateProfileName(%q) to fail", tc.name)
+			}
+			if !tc.shouldErr && err != nil {
+				t.Errorf("expected ValidateProfileName(%q) to pass, got: %v", tc.name, err)
+			}
+		})
+	}
+}
+
 func TestProfileNameInReservedKeywords(t *testing.T) {
 	var testCases = []struct {
 		name     string
