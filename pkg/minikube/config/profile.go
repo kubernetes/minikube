@@ -30,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
@@ -190,6 +191,10 @@ var DockerContainers = func() ([]string, error) {
 // invalidPs are the profiles that have a directory or config file but not usable
 // invalidPs would be suggested to be deleted
 func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
+	return listProfiles(kubeconfig.PathFromEnv(), DockerContainers, miniHome...)
+}
+
+func listProfiles(kubeconfigPath string, dockerContainers func() ([]string, error), miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
 	activeP := viper.GetString(ProfileName)
 	// try to get profiles list based on left over evidences such as directory
 	pDirs, err := profileDirs(miniHome...)
@@ -197,14 +202,16 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		return nil, nil, err
 	}
 	// try to get profiles list based on all containers created by docker driver
-	cs, err := DockerContainers()
+	cs, err := dockerContainers()
 	if err == nil {
 		pDirs = append(pDirs, cs...)
 	}
 
-	activeKubeContext, err := kubeconfig.GetCurrentContext(kubeconfig.PathFromEnv())
-	if err != nil {
-		return nil, nil, err
+	activeKubeContext := ""
+	if ctx, err := kubeconfig.GetCurrentContext(kubeconfigPath); err != nil {
+		out.WarningT("Unable to determine the current kubeconfig context: {{.error}}", out.V{"error": err})
+	} else {
+		activeKubeContext = ctx
 	}
 	nodeNames := map[string]bool{}
 	for _, n := range removeDupes(pDirs) {
