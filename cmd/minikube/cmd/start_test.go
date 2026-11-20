@@ -469,6 +469,41 @@ func TestValidateRuntime(t *testing.T) {
 	})
 }
 
+func TestValidateRuntimeCompatibility(t *testing.T) {
+	tests := []struct {
+		runtime string
+		version string
+		wantErr bool
+	}{
+		{"containerd", "v1.38.0", false},
+		{"containerd", "v1.38.0-beta.0", false},
+		{"crio", "v1.38.0", false},
+		{"docker", "v1.37.0", false},
+		{"docker", "v1.37.2", false},
+		{"docker", "v1.37.99", false},
+		{"docker", constants.NoKubernetesVersion, false},
+		{"docker", "", false},
+		{"docker", "v1.38.0-alpha.0", true},
+		{"docker", "v1.38.0-beta.0", true},
+		{"docker", "v1.38.0-rc.1", true},
+		{"docker", "v1.38.0", true},
+		{"docker", "1.38.0", true},
+		{"docker", "v1.38", true},
+		{"docker", "v1.38.1", true},
+		{"docker", "v1.39.0", true},
+		{"docker", "v2.0.0", true},
+	}
+
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("%s_%s", tc.runtime, tc.version), func(t *testing.T) {
+			err := validateRuntimeCompatibility(tc.runtime, tc.version)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("validateRuntimeCompatibility(%q, %q) error = %v, wantErr %v", tc.runtime, tc.version, err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestIsTwoDigitSemver(t *testing.T) {
 	var tcs = []struct {
 		desc     string

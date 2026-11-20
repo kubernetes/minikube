@@ -479,6 +479,13 @@ var (
 	KubernetesInstallFailed = Kind{ID: "K8S_INSTALL_FAILED", ExitCode: ExControlPlaneError}
 	// minikube failed to update the Kubernetes cluster because the container runtime was unavailable
 	KubernetesInstallFailedRuntimeNotRunning = Kind{ID: "K8S_INSTALL_FAILED_CONTAINER_RUNTIME_NOT_RUNNING", ExitCode: ExRuntimeNotRunning}
+	// docker container runtime is not supported with kubernetes >= 1.38
+	DockerRuntimeUnsupported = Kind{
+		ID:       "RUNTIME_DOCKER_UNSUPPORTED",
+		ExitCode: ExProgramUnsupported,
+		Advice:   translate.T("use containerd runtime"),
+		Style:    style.Conflict,
+	}
 	// an outdated Kubernetes version was specified for minikube to use
 	KubernetesTooOld = Kind{ID: "K8S_OLD_UNSUPPORTED", ExitCode: ExControlPlaneUnsupported}
 	// a too new Kubernetes version was specified for minikube to use

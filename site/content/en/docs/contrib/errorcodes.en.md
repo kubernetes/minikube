@@ -469,6 +469,9 @@ minikube failed to update the Kubernetes cluster
 "K8S_INSTALL_FAILED_CONTAINER_RUNTIME_NOT_RUNNING" (Exit code ExRuntimeNotRunning)  
 minikube failed to update the Kubernetes cluster because the container runtime was unavailable  
 
+"RUNTIME_DOCKER_UNSUPPORTED" (Exit code ExProgramUnsupported)  
+docker container runtime is not supported with kubernetes >= 1.38  
+
 "K8S_OLD_UNSUPPORTED" (Exit code ExControlPlaneUnsupported)  
 an outdated Kubernetes version was specified for minikube to use  
 
