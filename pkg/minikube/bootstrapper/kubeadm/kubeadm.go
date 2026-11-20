@@ -210,11 +210,10 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig, options *run.CommandOption
 			skipSystemVerification = true
 		}
 	}
-	// For kic on linux example error: "modprobe: FATAL: Module configs not found in directory /lib/modules/5.2.17-1rodete3-amd64"
-	if driver.IsKIC(cfg.Driver) {
-		klog.Infof("ignoring SystemVerification for kubeadm because of %s driver", cfg.Driver)
-		skipSystemVerification = true
-	}
+	// EXPERIMENT for https://github.com/kubernetes/minikube/issues/23838: no longer
+	// skip SystemVerification for KIC, to find out if the skip is still needed.
+	// Kubeadm already detects a missing memory cgroup controller, which minikube
+	// currently silences and then fails later with an opaque timeout.
 	if skipSystemVerification {
 		ignore = append(ignore, "SystemVerification")
 	}
