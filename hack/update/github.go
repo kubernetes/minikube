@@ -101,6 +101,22 @@ func GHReleases(ctx context.Context, owner, repo string) (stable, latest, edge R
 	return stable, latest, edge, nil
 }
 
+// GHLatestRelease returns the latest published GitHub release (not a prerelease
+// or draft) and the commit SHA for its tag.
+func GHLatestRelease(ctx context.Context, owner, repo string) (Release, error) {
+	ghc := GHClient()
+	release, _, err := ghc.Repositories.GetLatestRelease(ctx, owner, repo)
+	if err != nil {
+		return Release{}, err
+	}
+	tag := release.GetTagName()
+	commit, _, err := ghc.Repositories.GetCommit(ctx, owner, repo, tag, nil)
+	if err != nil {
+		return Release{}, fmt.Errorf("unable to resolve commit for %s: %w", tag, err)
+	}
+	return Release{Tag: tag, Commit: commit.GetSHA()}, nil
+}
+
 func StableVersion(ctx context.Context, owner, repo string) (string, error) {
 	stable, _, _, err := GHReleases(ctx, owner, repo)
 	if err != nil || !semver.IsValid(stable.Tag) {
