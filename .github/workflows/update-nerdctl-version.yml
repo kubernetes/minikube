@@ -35,7 +35,7 @@ jobs:
         timeout-minutes: 1
         id: createPR
         if: ${{ steps.bumpNerdctl.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@15733dbdfeedb4f7fdb73d13c6f5ac83b710fab8
+        uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Kicbase/ISO: Update nerdctl from ${{ steps.bumpNerdctl.outputs.OLD_VERSION }} to ${{ steps.bumpNerdctl.outputs.NEW_VERSION }}'
