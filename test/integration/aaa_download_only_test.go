@@ -113,9 +113,9 @@ func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 
 			preloadExists := false
 			t.Run("preload-exists", func(t *testing.T) {
-				// skip for none, as none driver does not have preload feature.
-				if NoneDriver() {
-					t.Skip("None driver does not have preload")
+				// skip for none and ssh, as these drivers do not have preload feature.
+				if NoneDriver() || SSHDriver() {
+					t.Skip("None and ssh drivers do not have preload")
 				}
 				// Driver does not matter here, since the only exception is none driver,
 				// which cannot occur here.

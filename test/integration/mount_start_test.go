@@ -50,6 +50,9 @@ func TestMountStart(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support mount")
 	}
+	if SSHDriver() {
+		t.Skip("skipping: ssh driver does not support mount")
+	}
 
 	type validateFunc func(context.Context, *testing.T, string)
 	profile1 := UniqueProfileName("mount-start-1")

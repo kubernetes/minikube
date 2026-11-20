@@ -146,6 +146,11 @@ func NoneDriver() bool {
 	return matchDriverFlag("none")
 }
 
+// SSHDriver returns whether or not this test is using the ssh driver
+func SSHDriver() bool {
+	return matchDriverFlag("ssh")
+}
+
 // HyperVDriver returns whether or not this test is using the Hyper-V driver
 func HyperVDriver() bool {
 	return matchDriverFlag("hyperv")
@@ -183,7 +188,7 @@ func KicDriver() bool {
 
 // VMDriver checks if the driver is a VM
 func VMDriver() bool {
-	return !KicDriver() && !NoneDriver()
+	return !KicDriver() && !NoneDriver() && !SSHDriver()
 }
 func VFKitDriver() bool {
 	return matchDriverFlag("vfkit")

@@ -762,6 +762,9 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 	if KVMDriver() {
 		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23153")
 	}
+	if SSHDriver() {
+		t.Skip("skipping: restart needs --ssh-ip-address again on ssh driver: https://github.com/kubernetes/minikube/issues/24093")
+	}
 
 	start := time.Now()
 	// docs: The test `validateStartWithProxy` should have start minikube, make sure the configured node port is `8441`
@@ -874,6 +877,9 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 	if KVMDriver() {
 		t.Skip("skipping: flaky on KVM driver: https://github.com/kubernetes/minikube/issues/23153")
+	}
+	if SSHDriver() {
+		t.Skip("skipping: restart needs --ssh-ip-address again on ssh driver: https://github.com/kubernetes/minikube/issues/24093")
 	}
 
 	start := time.Now()

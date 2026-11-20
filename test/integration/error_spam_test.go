@@ -65,6 +65,9 @@ func TestErrorSpam(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver always shows a warning")
 	}
+	if SSHDriver() {
+		t.Skip("skipping: ssh driver logs errors when stopping docker on hosts without docker")
+	}
 
 	profile := UniqueProfileName("nospam")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(25))

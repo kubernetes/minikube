@@ -528,7 +528,7 @@ func RepoRoot(t *testing.T) string {
 func MaybeParallel(t *testing.T) {
 	t.Helper()
 	// TODO: Allow parallelized tests on "none" that do not require independent clusters
-	if NoneDriver() {
+	if NoneDriver() || SSHDriver() {
 		return
 	}
 	t.Parallel()

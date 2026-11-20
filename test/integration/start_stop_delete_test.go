@@ -41,6 +41,9 @@ import (
 // TestStartStop tests starting, stopping and restarting a minikube clusters with various Kubernetes versions and configurations
 // The oldest supported, newest supported and default Kubernetes versions are always tested.
 func TestStartStop(t *testing.T) {
+	if SSHDriver() {
+		t.Skip("skipping: stop fails on ssh driver: https://github.com/kubernetes/minikube/issues/24094")
+	}
 	MaybeParallel(t)
 
 	t.Run("group", func(t *testing.T) {
