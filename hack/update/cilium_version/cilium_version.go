@@ -31,6 +31,7 @@ import (
 )
 
 func main() {
+	update.Init()
 	if _, err := exec.LookPath("helm"); err != nil {
 		klog.Fatal("helm not found on system, either install or add to PATH")
 	}

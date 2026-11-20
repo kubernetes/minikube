@@ -47,6 +47,7 @@ type Data struct {
 }
 
 func main() {
+	update.Init()
 	// set a context with defined timeout
 	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
 	defer cancel()
