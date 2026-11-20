@@ -67,7 +67,9 @@ function install_dependencies() {
 	else
 		# install brew if not present
 		if ! command -v brew >/dev/null 2>&1; then
-			/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+			local brew_install_script
+			brew_install_script=$(curl --fail --silent --show-error --location https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)
+			/bin/bash -c "$brew_install_script"
 			echo >> /Users/ec2-user/.zprofile
 			echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> /Users/ec2-user/.zprofile
 			eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -81,7 +83,7 @@ function install_dependencies() {
 		brew install vfkit pstree coreutils pidof
 		ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
 		# install vmnet shared on macos in non-interactive mode
-		curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
+		(set -o pipefail; curl --fail --silent --show-error --location https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash)
 
 		# ensure go dirs are owned by current user so that go install can write
 		sudo chown -R $(whoami) $HOME/go
@@ -107,10 +109,10 @@ function install_dependencies() {
 			brew install jq
 		elif [ "${OS}" == "linux" ]; then
 		# linux x86
-			curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
+			curl --fail --location --remote-name https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
 		else
 		# macos ax86
-			curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 && sudo install jq-osx-amd64 /usr/local/bin/jq
+			curl --fail --location --remote-name https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 && sudo install jq-osx-amd64 /usr/local/bin/jq
 		fi
 	fi
 
