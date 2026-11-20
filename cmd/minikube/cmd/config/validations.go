@@ -25,11 +25,21 @@ import (
 	"strconv"
 	"strings"
 
-	units "github.com/docker/go-units"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util"
+)
+
+// Minimum resources accepted by "minikube start" and "minikube config set".
+const (
+	// MinimumDiskSizeMB is the smallest disk size in MB.
+	MinimumDiskSizeMB = 2000
+	// MinimumMemoryMB is the smallest memory in MB; Kubernetes (kubeadm) will not start with less.
+	MinimumMemoryMB = 1800
+	// MinimumCPUs is the smallest number of CPUs.
+	MinimumCPUs = 2
 )
 
 // IsValidDriver checks if a driver is supported
@@ -46,33 +56,61 @@ func RequiresRestartMsg(_, _ string) error {
 	return nil
 }
 
-// IsValidDiskSize checks if a string is a valid disk size
-func IsValidDiskSize(_, disksize string) error {
-	_, err := units.FromHumanSize(disksize)
+// ValidateDiskSize checks a disk size from a flag, the config or the environment.
+func ValidateDiskSize(diskSize string) error {
+	diskSizeMB, err := util.CalculateSizeInMB(diskSize)
 	if err != nil {
-		return fmt.Errorf("invalid disk size: %v", err)
+		return fmt.Errorf("Validation unable to parse disk size %v: %v", diskSize, err)
+	}
+	if diskSizeMB < MinimumDiskSizeMB {
+		return fmt.Errorf("Requested disk size %v is less than minimum of %v", diskSizeMB, MinimumDiskSizeMB)
 	}
 	return nil
 }
 
-// IsValidCPUs checks if a string is a valid number of CPUs
-func IsValidCPUs(name, cpus string) error {
+// ValidateMemory checks a memory size from a flag, the config or the environment.
+func ValidateMemory(memsize string) error {
+	if memsize == constants.MaxResources || memsize == constants.NoLimit {
+		return nil
+	}
+	memMB, err := util.CalculateSizeInMB(memsize)
+	if err != nil {
+		return fmt.Errorf("invalid memory size: %v", err)
+	}
+	if memMB < MinimumMemoryMB {
+		return fmt.Errorf("Requested memory allocation %dMiB is less than the usable minimum of %dMB", memMB, MinimumMemoryMB)
+	}
+	return nil
+}
+
+// ValidateCPUs checks a cpu count from a flag, the config or the environment.
+func ValidateCPUs(cpus string) error {
 	if cpus == constants.MaxResources || cpus == constants.NoLimit {
 		return nil
 	}
-	return IsPositive(name, cpus)
+	count, err := strconv.Atoi(cpus)
+	if err != nil {
+		return fmt.Errorf("invalid cpu count: %v", err)
+	}
+	if count < MinimumCPUs {
+		return fmt.Errorf("Requested cpu count %d is less than the minimum allowed of %d", count, MinimumCPUs)
+	}
+	return nil
+}
+
+// IsValidDiskSize checks if a string is a valid disk size
+func IsValidDiskSize(_, disksize string) error {
+	return ValidateDiskSize(disksize)
+}
+
+// IsValidCPUs checks if a string is a valid number of CPUs
+func IsValidCPUs(_, cpus string) error {
+	return ValidateCPUs(cpus)
 }
 
 // IsValidMemory checks if a string is a valid memory size
 func IsValidMemory(_, memsize string) error {
-	if memsize == constants.MaxResources || memsize == constants.NoLimit {
-		return nil
-	}
-	_, err := units.FromHumanSize(memsize)
-	if err != nil {
-		return fmt.Errorf("invalid memory size: %v", err)
-	}
-	return nil
+	return ValidateMemory(memsize)
 }
 
 // IsValidURL checks if a location is a valid URL

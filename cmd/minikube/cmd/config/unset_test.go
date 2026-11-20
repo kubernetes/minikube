@@ -25,7 +25,7 @@ import (
 func TestUnsetConfig(t *testing.T) {
 	createTestConfig(t)
 	propName := "cpus"
-	propValue := "1"
+	propValue := "2"
 	err := Set(propName, propValue)
 	if err != nil {
 		t.Errorf("Failed to set the property %q", propName)
