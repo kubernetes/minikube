@@ -26,12 +26,19 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/mod/semver"
+
 	"k8s.io/minikube/hack/update"
 
 	"k8s.io/klog/v2"
 )
 
-const cxTimeout = 5 * time.Minute
+const (
+	cxTimeout = 5 * time.Minute
+
+	// dockerTagPrefix is the prefix moby uses for Docker Engine release tags since v29 (ie, 'docker-v29.9.3').
+	dockerTagPrefix = "docker-"
+)
 
 var schema = map[string]update.Item{
 	"deploy/iso/minikube-iso/arch/aarch64/package/docker-bin-aarch64/docker-bin.mk": {
@@ -54,12 +61,23 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
 	defer cancel()
 
-	stable, _, _, err := update.GHReleases(ctx, "moby", "moby")
+	// List only 'docker-v*' tags: moby also has 'api/v*', 'client/v*' and legacy 'v*' tags,
+	// and 'docker-v*' tags sort too late to be reached by update.GHReleases.
+	refs, _, err := update.GHClient().Git.ListMatchingRefs(ctx, "moby", "moby", "tags/"+dockerTagPrefix+"v")
 	if err != nil {
-		klog.Fatalf("Unable to get docker stable version: %v", err)
+		klog.Fatalf("Unable to list docker tags: %v", err)
+	}
+	tags := make([]string, 0, len(refs))
+	for _, ref := range refs {
+		tags = append(tags, strings.TrimPrefix(ref.GetRef(), "refs/tags/"))
 	}
 
-	data := Data{Version: strings.TrimPrefix(stable.Tag, "v")}
+	version := latestStable(tags)
+	if version == "" {
+		klog.Fatalf("Unable to find docker stable version in %d %q tags", len(tags), dockerTagPrefix+"v")
+	}
+
+	data := Data{Version: version}
 
 	if err := update.Apply(schema, data); err != nil {
 		klog.Fatalf("unable to apply update: %v", err)
@@ -71,6 +89,22 @@ func main() {
 	if err := updateHashFile(data.Version, "x86_64", ""); err != nil {
 		klog.Fatalf("failed to update hash file: %v", err)
 	}
+}
+
+// latestStable returns the greatest stable version (without 'v') among 'docker-v*' tags,
+// or an empty string if there is none. Pre-releases and other tags are ignored.
+func latestStable(tags []string) string {
+	stable := ""
+	for _, tag := range tags {
+		ver, ok := strings.CutPrefix(tag, dockerTagPrefix)
+		if !ok || !semver.IsValid(ver) || semver.Prerelease(ver) != "" {
+			continue
+		}
+		if stable == "" || semver.Compare(ver, stable) == 1 {
+			stable = ver
+		}
+	}
+	return strings.TrimPrefix(stable, "v")
 }
 
 func updateHashFile(version, arch, folderSuffix string) error {
