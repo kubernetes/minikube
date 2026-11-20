@@ -12,6 +12,7 @@ aliases:
 
 ```shell
 kubectl create deployment hello-minikube1 --image=kicbase/echo-server:1.0
+kubectl rollout status deployment/hello-minikube1
 kubectl expose deployment hello-minikube1 --type=LoadBalancer --port=8080
 ```
 

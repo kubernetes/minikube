@@ -1572,13 +1572,13 @@ func validateServiceCmdDeployApp(ctx context.Context, t *testing.T, profile stri
 		if err != nil {
 			t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 		}
+		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "rollout", "status", "deployment/hello-node"))
+		if err != nil {
+			t.Fatalf("failed to wait for hello-node deployment rollout: %q : %v", rr.Command(), err)
+		}
 		rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
 		if err != nil {
 			t.Fatalf("failed to expose hello-node deployment: %q : %v", rr.Command(), err)
-		}
-
-		if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", Minutes(10)); err != nil {
-			t.Fatalf("failed waiting for hello-node pod: %v", err)
 		}
 	})
 }
@@ -1757,15 +1757,14 @@ func validateServiceCmdConnect(ctx context.Context, t *testing.T, profile string
 	if err != nil {
 		t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 	}
+	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "rollout", "status", "deployment/hello-node-connect"))
+	if err != nil {
+		t.Fatalf("failed to wait for hello-node-connect deployment rollout: %q : %v", rr.Command(), err)
+	}
 	rr, err = Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "expose", "deployment", "hello-node-connect", "--type=NodePort", "--port=8080"))
 	if err != nil {
 		t.Fatalf("failed to expose hello-node deployment: %q : %v", rr.Command(), err)
 	}
-
-	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node-connect", Minutes(10)); err != nil {
-		t.Fatalf("failed waiting for hello-node pod: %v", err)
-	}
-
 	cmdContext := exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node-connect", "--url")
 	if NeedsPortForward() {
 		t.Skipf("test is broken for port-forwarded drivers: https://github.com/kubernetes/minikube/issues/7383")
@@ -1951,6 +1950,9 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
 	if err != nil {
 		t.Fatalf("failed to kubectl replace mysql: args %q failed: %v", rr.Command(), err)
+	}
+	if _, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "rollout", "status", "deployment/mysql")); err != nil {
+		t.Fatalf("failed waiting for mysql deployment to roll out: %v", err)
 	}
 
 	// docs: Wait for the `mysql` pod to be running

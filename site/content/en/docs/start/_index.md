@@ -555,6 +555,7 @@ To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is 
 
 ```shell
 kubectl create deployment balanced --image=kicbase/echo-server:1.0
+kubectl rollout status deployment/balanced
 kubectl expose deployment balanced --type=LoadBalancer --port=8080
 ```
 

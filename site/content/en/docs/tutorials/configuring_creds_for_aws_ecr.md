@@ -99,6 +99,7 @@ Create a file called `alpine-deployment.yaml` and paste the contents above. Be s
 
 ```shell
 kubectl apply -f alpine-deployment.yaml
+kubectl rollout status deployment/alpine
 ```
 
 ### Test your deployment

@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -151,17 +150,8 @@ func TestNetworkPlugins(t *testing.T) {
 							t.Errorf("failed to apply netcat manifest: %v", err)
 						}
 
-						client, err := kapi.Client(profile)
-						if err != nil {
-							t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
-						}
-
-						if err := kapi.WaitForDeploymentToStabilize(client, "default", "netcat", Minutes(15)); err != nil {
-							t.Errorf("failed waiting for netcat deployment to stabilize: %v", err)
-						}
-
-						if _, err := PodWait(ctx, t, profile, "default", "app=netcat", Minutes(15)); err != nil {
-							t.Fatalf("failed waiting for netcat pod: %v", err)
+						if _, err := Run(t, exec.CommandContext(ctx, KubectlBinary(), "--context", profile, "rollout", "status", "deployment/netcat", "--timeout=15m")); err != nil {
+							t.Errorf("failed waiting for netcat deployment to roll out: %v", err)
 						}
 					})
 				}

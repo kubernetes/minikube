@@ -55,6 +55,7 @@ First, let's create a Kubernetes deployment and service which we will talk to vi
 
 ```shell script
 kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0
+kubectl rollout status deployment/hello-minikube
 kubectl expose deployment hello-minikube --port=8080
 ```
 
@@ -104,6 +105,7 @@ that maps a target backend service to a given host or prefix.
 Let's create another Kubernetes deployment and service that we will expose via Ambassador -
 ```shell script
 kubectl create deployment mapping-minikube --image=kicbase/echo-server:1.0
+kubectl rollout status deployment/mapping-minikube
 kubectl expose deployment mapping-minikube --port=8080
 ```
 
