@@ -41,6 +41,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 const (
@@ -137,7 +138,16 @@ or set the GOOGLE_CLOUD_PROJECT environment variable.`)
 
 }
 
+// patchServiceAccounts adds the gcp-auth image pull secret to the service accounts in every namespace.
+// Addons are enabled while the apiserver may still be starting, so transient failures
+// such as "connection refused" are retried, the same way addon manifests are applied.
 func patchServiceAccounts(cc *config.ClusterConfig) error {
+	return retry.Expo(func() error { return patchServiceAccountsOnce(cc) }, 250*time.Millisecond, 2*time.Minute)
+}
+
+// patchServiceAccountsOnce makes a single attempt at patching; it is safe to repeat,
+// since service accounts that already reference the secret are left unchanged.
+func patchServiceAccountsOnce(cc *config.ClusterConfig) error {
 	client, err := service.K8s.GetCoreClient(cc.Name)
 	if err != nil {
 		return err
@@ -157,12 +167,8 @@ func patchServiceAccounts(cc *config.ClusterConfig) error {
 		}
 
 		// Let's make sure we at least find the default service account
-		for len(salist.Items) == 0 {
-			salist, err = serviceaccounts.List(context.TODO(), metav1.ListOptions{})
-			if err != nil {
-				return err
-			}
-			time.Sleep(1 * time.Second)
+		if len(salist.Items) == 0 {
+			return fmt.Errorf("no service accounts in namespace %q yet", n.Name)
 		}
 
 		ips := corev1.LocalObjectReference{Name: secretName}
