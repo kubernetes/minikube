@@ -1,5 +1,7 @@
 version: "2"
 run:
+  build-tags:
+    - libvirt_dlopen
   timeout: 20m
 linters:
   enable:

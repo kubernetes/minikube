@@ -7,11 +7,15 @@ weight: 2
 
 ## Prerequisites
 
-* A recent Go distribution (>=1.22.0)
+* A Go distribution (>=1.21.0) that supports automatic toolchain downloads.
+  The Makefile uses `GOTOOLCHAIN` to download the Go version specified by
+  `GO_VERSION` when needed.
 * If you are on Windows, you'll need to have installed
   * Docker
   * GNU Make e.g. `winget install GnuWin32.make`, then add `C:\Program Files (x86)\GnuWin32\bin` to `PATH`
 * 4GB of RAM
+
+For instructions on setting up a development machine, see the [Contributor Guide](../guide.en.md#set-up-your-development-environment).
 
 ## Downloading the source
 
