@@ -153,7 +153,7 @@ Steps:
 - Make sure image saving to Docker daemon works by `minikube image load`
 
 Skips:
-- Skips on `none` driver as image loading is not supported
+- Skips on `none` and `ssh` drivers as image loading is not supported
 - Skips on GitHub Actions / prow environment and macOS as this test case requires a running docker daemon
 
 #### validateDockerEnv

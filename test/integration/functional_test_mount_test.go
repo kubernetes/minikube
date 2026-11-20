@@ -54,6 +54,9 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support mount")
 	}
+	if SSHDriver() {
+		t.Skip("skipping: mount uses the docker user by default, which does not exist on ssh driver host")
+	}
 	if HyperVDriver() {
 		t.Skip("skipping: mount broken on hyperv: https://github.com/kubernetes/minikube/issues/5029")
 	}
