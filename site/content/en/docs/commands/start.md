@@ -26,7 +26,7 @@ minikube start [flags]
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-pause-interval duration      Duration of inactivity before the minikube VM is paused (default 1m0s) (default 1m0s)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "docker.io/kicbase/build:v0.0.51-1794996102-24082@sha256:64c864cf0bbe103e4e8efec256d7afbc2ee6f298cc05de92f107125154f4244b")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "docker.io/kicbase/build:v0.0.51-1795248759-24108@sha256:f090e26bf50df4d084957215f6ff735acf3bb0e72a95bf6c11e9de8e35d461ad")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
