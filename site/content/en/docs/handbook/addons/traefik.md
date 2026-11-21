@@ -76,6 +76,13 @@ The service exposes three endpoints:
 
 > **Note:** You do not need to use the `web/80` and `websecure/443` URLs returned by this command. Traefik binds directly to the node's ports 80 and 443 via `hostPort`, you can access your applications directly using the minikube IP (e.g. `http://$(minikube ip)`).
 
+<details>
+<summary>Docker driver on macOS: use a localhost URL instead of the node IP</summary>
+
+With the Docker driver on macOS the node IP is not directly reachable from the host, so `curl -H "Host: traefik.example" http://$(minikube ip)` does not work. Use the URL printed by `minikube service traefik -n kube-system --url` instead, which is a `localhost` address that reaches Traefik through a local tunnel.
+
+</details>
+
 To print only the dashboard URL directly, you can run:
 
 ```shell
