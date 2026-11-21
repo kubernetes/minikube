@@ -96,6 +96,13 @@ Services of type `NodePort` can be exposed via the `minikube service <service-na
 
 The minikube VM is exposed to the host system via a host-only IP address, that can be obtained with the `minikube ip` command. Any services of type `NodePort` can be accessed over that IP address, on the NodePort.
 
+<details>
+<summary>Note: the node IP is not directly reachable with the Docker driver on macOS</summary>
+
+When using the Docker driver on macOS, the IP returned by `minikube ip` is not directly reachable from the host, so `curl http://$(minikube ip):NODE_PORT` fails. Use `minikube service <service-name> -n <namespace> --url` to get a `localhost` URL for the service, or run `minikube tunnel`, instead.
+
+</details>
+
 To determine the NodePort for your service, you can use a `kubectl` command like this (note that `nodePort` begins with lowercase `n` in JSON output):
 
 ```shell
