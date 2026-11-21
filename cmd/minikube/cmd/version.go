@@ -40,17 +40,36 @@ var (
 	listComponentsVersions bool
 )
 
+// versionInfo contains the data printed by the version command. It holds
+// collected version data only; formatting is done separately.
+type versionInfo struct {
+	Version    string
+	Commit     string
+	Components map[string]string
+}
+
+// values returns the machine-readable version data. Values are interface{}
+// because the output will also include lists such as kicbase and iso images.
+func (d versionInfo) values() map[string]interface{} {
+	values := map[string]interface{}{
+		"minikubeVersion": d.Version,
+		"commit":          d.Commit,
+	}
+	for key, value := range d.Components {
+		values[key] = value
+	}
+	return values
+}
+
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version of minikube",
 	Long:  `Print the version of minikube.`,
 	Run: func(_ *cobra.Command, _ []string) {
 		options := flags.CommandOptions()
-		minikubeVersion := version.GetVersion()
-		gitCommitID := version.GetGitCommitID()
-		data := map[string]interface{}{
-			"minikubeVersion": minikubeVersion,
-			"commit":          gitCommitID,
+		info := versionInfo{
+			Version: version.GetVersion(),
+			Commit:  version.GetGitCommitID(),
 		}
 
 		if listComponentsVersions && !shortVersion {
@@ -69,16 +88,17 @@ var versionCmd = &cobra.Command{
 				"runc":        exec.Command("runc", "--version"),
 				"crun":        exec.Command("crun", "--version"),
 			}
+			info.Components = make(map[string]string, len(versionCMDS))
 			for k, v := range versionCMDS {
 				rr, err := runner.RunCmd(v)
 				if err != nil {
 					klog.Warningf("error getting %s's version: %v", k, err)
-					data[k] = "error"
+					info.Components[k] = "error"
 				} else {
 					version := rr.Stdout.String()
 					// remove extra lines after the version
 					version = strings.Split(version, "\n")[0]
-					data[k] = strings.TrimSpace(version)
+					info.Components[k] = strings.TrimSpace(version)
 				}
 
 			}
@@ -88,32 +108,28 @@ var versionCmd = &cobra.Command{
 		switch versionOutput {
 		case "":
 			if !shortVersion {
-				out.Ln("minikube version: %v", minikubeVersion)
-				if gitCommitID != "" {
-					out.Ln("commit: %v", gitCommitID)
+				out.Ln("minikube version: %v", info.Version)
+				if info.Commit != "" {
+					out.Ln("commit: %v", info.Commit)
 				}
-				keys := slices.Sorted(maps.Keys(data))
+				keys := slices.Sorted(maps.Keys(info.Components))
 				for _, k := range keys {
-					v := data[k]
-					// for backward compatibility we keep displaying the old way for these two
-					if k == "minikubeVersion" || k == "commit" {
-						continue
-					}
+					v := info.Components[k]
 					if v != "" {
 						out.Ln("\n%s:\n%s", k, v)
 					}
 				}
 			} else {
-				out.Ln("%v", minikubeVersion)
+				out.Ln("%v", info.Version)
 			}
 		case "json":
-			json, err := json.Marshal(data)
+			json, err := json.Marshal(info.values())
 			if err != nil {
 				exit.Error(reason.InternalJSONMarshal, "version json failure", err)
 			}
 			out.Ln(string(json))
 		case "yaml":
-			yaml, err := yaml.Marshal(data)
+			yaml, err := yaml.Marshal(info.values())
 			if err != nil {
 				exit.Error(reason.InternalYamlMarshal, "version yaml failure", err)
 			}
