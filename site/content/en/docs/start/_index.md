@@ -17,6 +17,7 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 * 20GB of free disk space
 * Internet connection
 * Container or virtual machine manager, such as: [Docker]({{<ref "/docs/drivers/docker">}}), [QEMU]({{<ref "/docs/drivers/qemu">}}), [Hyper-V]({{<ref "/docs/drivers/hyperv">}}), [KVM]({{<ref "/docs/drivers/kvm2">}}), [Parallels]({{<ref "/docs/drivers/parallels">}}), [Podman]({{<ref "/docs/drivers/podman">}}), [VirtualBox]({{<ref "/docs/drivers/virtualbox">}}), or [VMware Fusion/Workstation]({{<ref "/docs/drivers/vmware">}})
+* Minikube can be used with currently supported macOS versions: macOS 15, 26, and 27. Older versions which are no longer supported by Apple, are outside our support scope.
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
