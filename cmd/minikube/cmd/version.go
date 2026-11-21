@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"maps"
 	"os/exec"
 	"slices"
@@ -66,6 +67,12 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version of minikube",
 	Long:  `Print the version of minikube.`,
 	Run: func(_ *cobra.Command, _ []string) {
+		switch versionOutput {
+		case "", "yaml", "json":
+		default:
+			exit.Message(reason.InternalOutputUsage, "error: --output must be 'yaml' or 'json'")
+		}
+
 		options := flags.CommandOptions()
 		info := versionInfo{
 			Version: version.GetVersion(),
@@ -105,39 +112,49 @@ var versionCmd = &cobra.Command{
 
 		}
 
-		switch versionOutput {
-		case "":
-			if !shortVersion {
-				out.Ln("minikube version: %v", info.Version)
-				if info.Commit != "" {
-					out.Ln("commit: %v", info.Commit)
-				}
-				keys := slices.Sorted(maps.Keys(info.Components))
-				for _, k := range keys {
-					v := info.Components[k]
-					if v != "" {
-						out.Ln("\n%s:\n%s", k, v)
-					}
-				}
-			} else {
-				out.Ln("%v", info.Version)
-			}
-		case "json":
-			json, err := json.Marshal(info.values())
-			if err != nil {
-				exit.Error(reason.InternalJSONMarshal, "version json failure", err)
-			}
-			out.Ln(string(json))
-		case "yaml":
-			yaml, err := yaml.Marshal(info.values())
-			if err != nil {
-				exit.Error(reason.InternalYamlMarshal, "version yaml failure", err)
-			}
-			out.Ln(string(yaml))
-		default:
-			exit.Message(reason.InternalOutputUsage, "error: --output must be 'yaml' or 'json'")
+		output, err := formatVersion(info, versionOutput, shortVersion)
+		if err != nil {
+			exit.Error(reason.InternalError, "version failure", err)
 		}
+		out.String(output)
 	},
+}
+
+// formatVersion returns the complete command output for the given data and
+// options. It does not read flags or global state, and it does not exit.
+func formatVersion(info versionInfo, output string, short bool) (string, error) {
+	switch output {
+	case "":
+		if short {
+			return info.Version + "\n", nil
+		}
+		var buf strings.Builder
+		fmt.Fprintf(&buf, "minikube version: %v\n", info.Version)
+		if info.Commit != "" {
+			fmt.Fprintf(&buf, "commit: %v\n", info.Commit)
+		}
+		for _, key := range slices.Sorted(maps.Keys(info.Components)) {
+			value := info.Components[key]
+			if value != "" {
+				fmt.Fprintf(&buf, "\n%s:\n%s\n", key, value)
+			}
+		}
+		return buf.String(), nil
+	case "json":
+		b, err := json.Marshal(info.values())
+		if err != nil {
+			return "", err
+		}
+		return string(b) + "\n", nil
+	case "yaml":
+		b, err := yaml.Marshal(info.values())
+		if err != nil {
+			return "", err
+		}
+		return string(b) + "\n", nil
+	default:
+		panic("invalid output format: " + output)
+	}
 }
 
 func init() {
