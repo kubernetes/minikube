@@ -1,0 +1,1 @@
+minikube version: v1.39.0
