@@ -1,2 +1,3 @@
 sha256 c94c3d6de364a13375d8d7448e4c64f5cb12960fbb1cdd7ac708bece418e4dba cri-dockerd-0.4.3.amd64.tgz
 sha256 5350e6a939acdf3263ba976bddac2e0ddb56d6600667a9f7ff1f7007e552bdb4 cri-dockerd-0.4.10.amd64.tgz
+sha256 eb8a965169e82da1e57339a2f0a9296fcaff3202455fd7254080cdb53f4d0522 cri-dockerd-0.4.11.amd64.tgz
