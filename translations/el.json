@@ -675,7 +675,7 @@
 	"The ambassador addon has stopped working as of v1.23.0, for more details visit: https://github.com/datawire/ambassador-operator/issues/73": "Το πρόσθετο ambassador έχει σταματήσει να λειτουργεί από την έκδοση v1.23.0, για περισσότερες λεπτομέρειες επισκεφθείτε: https://github.com/datawire/ambassador-operator/issues/73",
 	"The apiserver listening port": "Η θύρα ακρόασης του apiserver",
 	"The authoritative apiserver hostname for apiserver certificates and connectivity. This can be used if you want to make the apiserver available from outside the machine": "Το έγκυρο όνομα κεντρικού υπολογιστή apiserver για πιστοποιητικά και συνδεσιμότητα apiserver. Αυτό μπορεί να χρησιμοποιηθεί εάν θέλετε να κάνετε τον apiserver διαθέσιμο εκτός του μηχανήματος",
-	"The base image to use for docker/podman drivers. Intended for local development.": "Το βασικό image προς χρήση για προγράμματα οδήγησης docker/podman. Προορίζεται για τοπική ανάπτυξη.",
+	"The base image to use for docker/podman drivers. Intended for local development. See \"minikube version\" for the default images.": "",
 	"The certificate hostname provided appears to be invalid (may be a minikube bug, try 'minikube delete')": "",
 	"The cluster dns domain name used in the Kubernetes cluster": "Το όνομα τομέα DNS συμπλέγματος που χρησιμοποιείται στο σύμπλεγμα Kubernetes",
 	"The control-plane node {{.name}} apiserver is not running (will try others): (state={{.state}})": "Ο apiserver του κόμβου control-plane {{.name}} δεν εκτελείται (θα δοκιμαστούν άλλοι): (κατάσταση={{.state}})",

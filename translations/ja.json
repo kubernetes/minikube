@@ -675,7 +675,7 @@
 	"The ambassador addon has stopped working as of v1.23.0, for more details visit: https://github.com/datawire/ambassador-operator/issues/73": "v1.23.0 で ambassador アドオンは機能を停止しました。 詳細はこちらを参照してください: https://github.com/datawire/ambassador-operator/issues/73",
 	"The apiserver listening port": "API サーバーリスニングポート",
 	"The authoritative apiserver hostname for apiserver certificates and connectivity. This can be used if you want to make the apiserver available from outside the machine": "API サーバーの証明書と接続のための、権威 API サーバーホスト名。マシン外部から API サーバーに接続できるようにしたい場合に使用します。",
-	"The base image to use for docker/podman drivers. Intended for local development.": "Docker/Podman ドライバーで使用されるベースイメージ。ローカルデプロイ用です。",
+	"The base image to use for docker/podman drivers. Intended for local development. See \"minikube version\" for the default images.": "",
 	"The certificate hostname provided appears to be invalid (may be a minikube bug, try 'minikube delete')": "提供された証明書ホスト名が無効のようです (minikube のバグかも知れません。'minikube delete' を試してください)",
 	"The cluster dns domain name used in the Kubernetes cluster": "Kubernetes クラスターで使用されるクラスター DNS ドメイン名",
 	"The control-plane node {{.name}} apiserver is not running (will try others): (state={{.state}})": "",

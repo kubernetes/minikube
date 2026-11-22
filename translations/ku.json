@@ -675,7 +675,7 @@
 	"The ambassador addon has stopped working as of v1.23.0, for more details visit: https://github.com/datawire/ambassador-operator/issues/73": "Ambassador addon ji v1.23.0 vir ve xebat rawestand, ji bo hûrguliyên bêtir serdana vir bike: https://github.com/datawire/ambassador-operator/issues/73",
 	"The apiserver listening port": "Porta guhdarîkirina apiserver",
 	"The authoritative apiserver hostname for apiserver certificates and connectivity. This can be used if you want to make the apiserver available from outside the machine": "Navê mêvandarê apiserver ê rayedar ji bo sertîfîkayên apiserver û pêwendiyê. Ev dikare were bikaranîn heke tu bixwazî apiserver ji derveyî makîneyê berdest bikî",
-	"The base image to use for docker/podman drivers. Intended for local development.": "Base image ku ji bo docker/podman drivers were bikaranîn. Ji bo pêşkeftina herêmî tê armanc kirin.",
+	"The base image to use for docker/podman drivers. Intended for local development. See \"minikube version\" for the default images.": "",
 	"The certificate hostname provided appears to be invalid (may be a minikube bug, try 'minikube delete')": "Navê mêvandarê sertîfîkayê yê hatî dayîn nederbasdar xuya dike (dibe ku xeletiyek minikube be, 'minikube delete' biceribîne)",
 	"The cluster dns domain name used in the Kubernetes cluster": "Navê domaina dns a cluster ku di cluster-a Kubernetes de tê bikaranîn",
 	"The control-plane node {{.name}} apiserver is not running (will try others): (state={{.state}})": "Apiserver-a control-plane node {{.name}} naxebite (dê yên din biceribîne): (state={{.state}})",
