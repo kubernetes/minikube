@@ -151,7 +151,7 @@ func formatVersion(info versionInfo, output string, short bool) (string, error) 
 		if err != nil {
 			return "", err
 		}
-		return string(b) + "\n", nil
+		return string(b), nil
 	default:
 		panic("invalid output format: " + output)
 	}

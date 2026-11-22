@@ -11,4 +11,3 @@ dockerd: Docker version 28.5.2, build 89c5e8f
 minikubeVersion: v1.39.0
 podman: podman version 3.4.7
 runc: runc version 1.5.3
-
