@@ -78,8 +78,6 @@ func TestFormatVersion(t *testing.T) {
 		checkTestdata(t, "default-empty-commit.txt", got)
 	})
 
-	// This locks the current block format. The inconsistent layout is
-	// intentional test coverage until the text format is fixed.
 	t.Run("default-components", func(t *testing.T) {
 		got, err := formatVersion(withComponents, defaultFormat, longForm)
 		if err != nil {

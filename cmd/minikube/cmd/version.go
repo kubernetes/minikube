@@ -136,7 +136,7 @@ func formatVersion(info versionInfo, output string, short bool) (string, error) 
 		for _, key := range slices.Sorted(maps.Keys(info.Components)) {
 			value := info.Components[key]
 			if value != "" {
-				fmt.Fprintf(&buf, "\n%s:\n%s\n", key, value)
+				fmt.Fprintf(&buf, "%s: %s\n", key, value)
 			}
 		}
 		return buf.String(), nil
