@@ -40,9 +40,14 @@ const (
 )
 
 func TestFormatVersion(t *testing.T) {
+	kicbaseImages := []string{
+		"quay.io/minikube/kicbase:v1.39.0@sha256:4a1c825b61479e6c898851ea66f13c620aaeab6002746e95067fc2c4b38a0b24",
+		"docker.io/minikube/kicbase:v1.39.0@sha256:4a1c825b61479e6c898851ea66f13c620aaeab6002746e95067fc2c4b38a0b24",
+	}
 	withComponents := versionInfo{
 		Version: "v1.39.0",
 		Commit:  "937f6eb62e261321adbf97c87618d74817e54c54",
+		Kicbase: kicbaseImages,
 		Components: map[string]string{
 			"buildctl":    "buildctl github.com/moby/buildkit v0.34.2 8c579433824224dc64a158cf8734495b6e2b186a",
 			"containerd":  "containerd github.com/containerd/containerd/v2 v2.4.2 b7a25261e029d68978bbf290df0a62fc819b3c51",
@@ -60,6 +65,7 @@ func TestFormatVersion(t *testing.T) {
 	withoutComponents := versionInfo{
 		Version: withComponents.Version,
 		Commit:  withComponents.Commit,
+		Kicbase: withComponents.Kicbase,
 	}
 
 	t.Run("default", func(t *testing.T) {
@@ -71,7 +77,7 @@ func TestFormatVersion(t *testing.T) {
 	})
 
 	t.Run("default-empty-commit", func(t *testing.T) {
-		got, err := formatVersion(versionInfo{Version: withComponents.Version}, defaultFormat, longForm)
+		got, err := formatVersion(versionInfo{Version: withComponents.Version, Kicbase: withComponents.Kicbase}, defaultFormat, longForm)
 		if err != nil {
 			t.Fatalf("formatVersion: %v", err)
 		}

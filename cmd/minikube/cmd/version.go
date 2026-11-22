@@ -27,6 +27,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -45,6 +46,7 @@ var (
 type versionInfo struct {
 	Version    string
 	Commit     string
+	Kicbase    []string
 	Components map[string]string
 }
 
@@ -54,6 +56,9 @@ func (d versionInfo) values() map[string]interface{} {
 	values := map[string]interface{}{
 		"minikubeVersion": d.Version,
 		"commit":          d.Commit,
+	}
+	if len(d.Kicbase) > 0 {
+		values["kicbase"] = d.Kicbase
 	}
 	for key, value := range d.Components {
 		values[key] = value
@@ -76,6 +81,7 @@ var versionCmd = &cobra.Command{
 		info := versionInfo{
 			Version: version.GetVersion(),
 			Commit:  version.GetGitCommitID(),
+			Kicbase: kic.DefaultImages(),
 		}
 
 		if listComponentsVersions && !shortVersion {
@@ -132,6 +138,9 @@ func formatVersion(info versionInfo, output string, short bool) (string, error) 
 		}
 		if info.Commit != "" {
 			ordered = append(ordered, yaml.MapItem{Key: "commit", Value: info.Commit})
+		}
+		if len(info.Kicbase) > 0 {
+			ordered = append(ordered, yaml.MapItem{Key: "kicbase", Value: info.Kicbase})
 		}
 		for _, key := range slices.Sorted(maps.Keys(info.Components)) {
 			value := info.Components[key]

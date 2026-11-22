@@ -1,1 +1,1 @@
-{"commit":"937f6eb62e261321adbf97c87618d74817e54c54","minikubeVersion":"v1.39.0"}
+{"commit":"937f6eb62e261321adbf97c87618d74817e54c54","kicbase":["quay.io/minikube/kicbase:v1.39.0@sha256:4a1c825b61479e6c898851ea66f13c620aaeab6002746e95067fc2c4b38a0b24","docker.io/minikube/kicbase:v1.39.0@sha256:4a1c825b61479e6c898851ea66f13c620aaeab6002746e95067fc2c4b38a0b24"],"minikubeVersion":"v1.39.0"}
