@@ -61,8 +61,8 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
 	defer cancel()
 
-	// List only 'docker-v*' tags: moby also has 'api/v*', 'client/v*' and legacy 'v*' tags,
-	// and 'docker-v*' tags sort too late to be reached by update.GHReleases.
+	// List only 'docker-v*' tags: moby also has 'api/v*', 'client/v*' and legacy 'v*' tags and 'docker-v*' tags sort too late to be reached by update.GHReleases.
+	// Matching-refs returns every match in one unpaginated response, so its 300-tag search limit does not apply.
 	refs, _, err := update.GHClient().Git.ListMatchingRefs(ctx, "moby", "moby", "tags/"+dockerTagPrefix+"v")
 	if err != nil {
 		klog.Fatalf("Unable to list docker tags: %v", err)
@@ -92,12 +92,14 @@ func main() {
 }
 
 // latestStable returns the greatest stable version (without 'v') among 'docker-v*' tags,
-// or an empty string if there is none. Pre-releases and other tags are ignored.
+// or an empty string if there is none. Pre-releases, non-canonical versions (ie, 'v29.9' or
+// 'v29.9.3+build', which have no matching download) and other tags are ignored.
 func latestStable(tags []string) string {
 	stable := ""
 	for _, tag := range tags {
 		ver, ok := strings.CutPrefix(tag, dockerTagPrefix)
-		if !ok || !semver.IsValid(ver) || semver.Prerelease(ver) != "" {
+		// semver.Canonical returns "" for invalid versions, so this also rejects them.
+		if !ok || semver.Canonical(ver) != ver || semver.Prerelease(ver) != "" {
 			continue
 		}
 		if stable == "" || semver.Compare(ver, stable) == 1 {
