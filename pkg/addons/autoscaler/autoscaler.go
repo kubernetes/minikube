@@ -210,16 +210,23 @@ func validateClusterAutoscaler(cc *config.ClusterConfig, goos, goarch string) er
 	if (goos != "darwin" && goos != "linux" && goos != "windows") || (goarch != "amd64" && goarch != "arm64") {
 		return fmt.Errorf("cluster-autoscaler supports macOS, Linux and Windows on amd64 and arm64; got %s/%s", goos, goarch)
 	}
+	nativeVM := goos == "darwin" && goarch == "arm64" && cc.Driver == "vfkit"
 	driver := "kvm2"
 	if goos == "darwin" {
 		driver = "qemu2"
 	} else if goos == "windows" || goarch == "arm64" {
 		driver = "docker"
 	}
+	if nativeVM {
+		driver = "vfkit"
+	}
 	if cc.Driver != driver {
 		return fmt.Errorf("cluster-autoscaler on %s/%s requires the %s driver", goos, goarch, driver)
 	}
-	if goos == "darwin" && cc.Network != "socket_vmnet" {
+	if nativeVM && cc.Network != "vmnet-shared" {
+		return fmt.Errorf("cluster-autoscaler requires --network=vmnet-shared with vfkit")
+	}
+	if goos == "darwin" && !nativeVM && cc.Network != "socket_vmnet" {
 		return fmt.Errorf("cluster-autoscaler requires --network=socket_vmnet with qemu2")
 	}
 	v, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)

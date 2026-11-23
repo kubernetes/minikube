@@ -35,6 +35,10 @@ func TestValidateClusterAutoscaler(t *testing.T) {
 		wantError                                    string
 	}{
 		{"macOS arm64", "darwin", "arm64", "qemu2", "socket_vmnet", "v1.35.0", 1, ""},
+		{"macOS vfkit", "darwin", "arm64", "vfkit", "vmnet-shared", "v1.35.0", 1, ""},
+		{"macOS vfkit host-only", "darwin", "arm64", "vfkit", "vmnet-host", "v1.35.0", 1, "vmnet-shared"},
+		{"macOS vfkit Intel", "darwin", "amd64", "vfkit", "vmnet-shared", "v1.35.0", 1, "qemu2 driver"},
+		{"macOS vfkit version", "darwin", "arm64", "vfkit", "vmnet-shared", "v1.34.0", 1, "v1.35.x"},
 		{"macOS amd64", "darwin", "amd64", "qemu2", "socket_vmnet", "v1.35.4", 1, ""},
 		{"Linux amd64", "linux", "amd64", "kvm2", "", "v1.35.0", 1, ""},
 		{"Linux arm64", "linux", "arm64", "docker", "", "v1.35.0", 1, ""},
@@ -74,6 +78,10 @@ func TestValidateClusterAutoscaler(t *testing.T) {
 }
 
 func TestClusterAutoscalerSettings(t *testing.T) {
+	// A developer's installed addon must not satisfy this missing-installation fixture.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("MINIKUBE_HOME", home)
 	for _, key := range []string{"ADDON_PATH", "STATE_DIR", "BINARY", "IMAGE"} {
 		t.Setenv("MINIKUBE_AUTOSCALER_"+key, "")
 	}
