@@ -1,0 +1,24 @@
+---
+config: {"flowchart": {"rankSpacing": 90, "subGraphTitleMargin": {"bottom": 24, "top": 0}}, "layout": "dagre", "theme": "base", "themeVariables": {"edgeLabelBackground": "#F8F9F4", "lineColor": "#647D8B", "primaryTextColor": "#243746"}}
+---
+flowchart TB
+    subgraph n244210e48437b6556980a70249a99369934a352429034cef9d7bd253b3bf2c01["`project: astrivant/minikube`"]
+        n2ad562319767157087dda0dec6391f4479f8a04869ab0cc8d3a9c3637dae73b5["branch: cluster-autoscaler-addon (review)"]
+    end
+    subgraph n1581e27de87bffae0bd4d745cd7964e68528d7a83e2e4c259a782d275df6f558["`project: kubernetes/minikube`"]
+        nc97ace4c8fef2cee8fa0f3c9f52aab18dbd4f42438afe362ffb8f75ce4c04b84["review #35;23809: Native shared-vmnet autoscaler support (open#59; draft#59; review)"]
+        n34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c["branch: master"]
+    end
+    n2ad562319767157087dda0dec6391f4479f8a04869ab0cc8d3a9c3637dae73b5 -->|based on| n34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c
+    nc97ace4c8fef2cee8fa0f3c9f52aab18dbd4f42438afe362ffb8f75ce4c04b84 ---|correlates| n2ad562319767157087dda0dec6391f4479f8a04869ab0cc8d3a9c3637dae73b5
+    click n2ad562319767157087dda0dec6391f4479f8a04869ab0cc8d3a9c3637dae73b5 href "https://github.com/astrivant/minikube/tree/cluster-autoscaler-addon" "Open recorded work" _blank
+    click nc97ace4c8fef2cee8fa0f3c9f52aab18dbd4f42438afe362ffb8f75ce4c04b84 href "https://github.com/kubernetes/minikube/pull/23809" "Open recorded work" _blank
+    click n34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c href "https://github.com/kubernetes/minikube/tree/master" "Open recorded work" _blank
+    classDef work fill:#F8F9F4,stroke:#647D8B,color:#243746
+    class n2ad562319767157087dda0dec6391f4479f8a04869ab0cc8d3a9c3637dae73b5 work
+    style n244210e48437b6556980a70249a99369934a352429034cef9d7bd253b3bf2c01 fill:#F8F9F4,stroke:#829B85,color:#243746
+    class nc97ace4c8fef2cee8fa0f3c9f52aab18dbd4f42438afe362ffb8f75ce4c04b84 work
+    class n34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c work
+    style n1581e27de87bffae0bd4d745cd7964e68528d7a83e2e4c259a782d275df6f558 fill:#F8F9F4,stroke:#829B85,color:#243746
+    linkStyle 0 stroke:#829B85,color:#243746
+    linkStyle 1 stroke:#B77E79,color:#243746

@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "hosts": [
+    {
+      "id": "github",
+      "provider": "github",
+      "url": "https://github.com"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "project",
+      "kind": "project",
+      "label": "astrivant/minikube",
+      "host": "github",
+      "path": "astrivant/minikube",
+      "url": "https://github.com/astrivant/minikube",
+      "settings": {
+        "visibility": "public",
+        "source": "https://api.github.com/repos/astrivant/minikube",
+        "observed_at": "2026-11-23T22:24:21.059318+00:00",
+        "expires_at": "2026-11-24T00:24:21.059318+00:00"
+      }
+    },
+    {
+      "id": "upstream",
+      "kind": "project",
+      "label": "kubernetes/minikube",
+      "host": "github",
+      "path": "kubernetes/minikube",
+      "url": "https://github.com/kubernetes/minikube",
+      "settings": {
+        "visibility": "public",
+        "source": "https://api.github.com/repos/kubernetes/minikube",
+        "observed_at": "2026-11-23T22:24:21.059318+00:00",
+        "expires_at": "2026-11-24T00:24:21.059318+00:00"
+      }
+    },
+    {
+      "id": "target",
+      "kind": "branch",
+      "label": "master",
+      "parent": "upstream",
+      "host": "github",
+      "revision": "cdaedb008576ad3dcb44c8419600225e07e48ed6",
+      "url": "https://github.com/kubernetes/minikube/tree/master"
+    },
+    {
+      "id": "feature",
+      "kind": "branch",
+      "label": "cluster-autoscaler-addon",
+      "parent": "project",
+      "host": "github",
+      "revision": "8cd037701a3d11d32d6d421ed825f8d6e8e2b3cc",
+      "url": "https://github.com/astrivant/minikube/tree/cluster-autoscaler-addon",
+      "work": "review"
+    },
+    {
+      "id": "review",
+      "kind": "review",
+      "label": "Native shared-vmnet autoscaler support",
+      "parent": "upstream",
+      "host": "github",
+      "number": 23809,
+      "revision": "8cd037701a3d11d32d6d421ed825f8d6e8e2b3cc",
+      "state": "open",
+      "draft": true,
+      "url": "https://github.com/kubernetes/minikube/pull/23809",
+      "source": "https://api.github.com/repos/kubernetes/minikube/pulls/23809",
+      "work": "review"
+    }
+  ],
+  "links": [
+    {
+      "id": "source",
+      "source": "review",
+      "target": "feature",
+      "kind": "correlates",
+      "evidence": "https://github.com/kubernetes/minikube/pull/23809",
+      "source_revision": "8cd037701a3d11d32d6d421ed825f8d6e8e2b3cc",
+      "target_revision": "8cd037701a3d11d32d6d421ed825f8d6e8e2b3cc"
+    },
+    {
+      "id": "base",
+      "source": "feature",
+      "target": "target",
+      "kind": "based_on",
+      "evidence": "https://github.com/kubernetes/minikube/pull/23809",
+      "source_revision": "8cd037701a3d11d32d6d421ed825f8d6e8e2b3cc",
+      "target_revision": "cdaedb008576ad3dcb44c8419600225e07e48ed6"
+    }
+  ]
+}
