@@ -44,6 +44,7 @@ func TestSkaffold(t *testing.T) {
 	if cr := ContainerRuntime(); cr != "docker" {
 		t.Skipf("skaffold requires docker-env, currently testing %s container runtime", cr)
 	}
+	MaybeSkipDockerRuntime(t)
 
 	profile := UniqueProfileName("skaffold")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))

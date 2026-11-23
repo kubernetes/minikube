@@ -30,8 +30,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/client"
 	"github.com/docker/go-units"
+	"github.com/moby/moby/client"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
 	"golang.org/x/sync/errgroup"
@@ -98,7 +98,7 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, imgs []st
 
 	var imgClient *client.Client
 	if cr.Name() == "Docker" {
-		imgClient, err = client.NewClientWithOpts(client.FromEnv) // image client
+		imgClient, err = client.New(client.FromEnv) // image client
 		if err != nil {
 			klog.Infof("couldn't get a local image daemon which might be ok: %v", err)
 		}

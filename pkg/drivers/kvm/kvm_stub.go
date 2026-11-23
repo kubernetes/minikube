@@ -28,24 +28,24 @@ import (
 )
 
 // This is a stub driver for unsupported architectures. All function fail with
-// notSupported error or return an zero value.
+// errNotSupported error or return an zero value.
 
-var notSupported = fmt.Errorf("the kvm driver is not supported on %q", runtime.GOARCH)
+var errNotSupported = fmt.Errorf("the kvm driver is not supported on %q", runtime.GOARCH)
 
-func (d *Driver) Create() error                                       { return notSupported }
+func (d *Driver) Create() error                                       { return errNotSupported }
 func (d *Driver) GetCreateFlags() []mcnflag.Flag                      { return nil }
-func (d *Driver) GetIP() (string, error)                              { return "", notSupported }
+func (d *Driver) GetIP() (string, error)                              { return "", errNotSupported }
 func (d *Driver) GetMachineName() string                              { return "" }
-func (d *Driver) GetSSHHostname() (string, error)                     { return "", notSupported }
+func (d *Driver) GetSSHHostname() (string, error)                     { return "", errNotSupported }
 func (d *Driver) GetSSHKeyPath() string                               { return "" }
-func (d *Driver) GetSSHPort() (int, error)                            { return 0, notSupported }
+func (d *Driver) GetSSHPort() (int, error)                            { return 0, errNotSupported }
 func (d *Driver) GetSSHUsername() string                              { return "" }
-func (d *Driver) GetURL() (string, error)                             { return "", notSupported }
-func (d *Driver) GetState() (state.State, error)                      { return state.None, notSupported }
-func (d *Driver) Kill() error                                         { return notSupported }
-func (d *Driver) PreCreateCheck() error                               { return notSupported }
-func (d *Driver) Remove() error                                       { return notSupported }
-func (d *Driver) Restart() error                                      { return notSupported }
-func (d *Driver) SetConfigFromFlags(opts drivers.DriverOptions) error { return notSupported }
-func (d *Driver) Start() error                                        { return notSupported }
-func (d *Driver) Stop() error                                         { return notSupported }
+func (d *Driver) GetURL() (string, error)                             { return "", errNotSupported }
+func (d *Driver) GetState() (state.State, error)                      { return state.None, errNotSupported }
+func (d *Driver) Kill() error                                         { return errNotSupported }
+func (d *Driver) PreCreateCheck() error                               { return errNotSupported }
+func (d *Driver) Remove() error                                       { return errNotSupported }
+func (d *Driver) Restart() error                                      { return errNotSupported }
+func (d *Driver) SetConfigFromFlags(opts drivers.DriverOptions) error { return errNotSupported }
+func (d *Driver) Start() error                                        { return errNotSupported }
+func (d *Driver) Stop() error                                         { return errNotSupported }

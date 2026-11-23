@@ -19,12 +19,10 @@ package mcndockerclient
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 	"k8s.io/minikube/pkg/libmachine/cert"
 )
 
@@ -46,10 +44,9 @@ func DockerClient(dockerHost DockerHost) (*client.Client, error) {
 		},
 	}
 
-	return client.NewClientWithOpts(
+	return client.New(
 		client.WithHost(url),
 		client.WithHTTPClient(httpClient),
-		client.WithAPIVersionNegotiation(),
 	)
 }
 
@@ -63,20 +60,25 @@ func CreateContainer(dockerHost DockerHost, config *container.Config, hostConfig
 	defer docker.Close()
 
 	// Pull plugin image
-	out, err := docker.ImagePull(ctx, config.Image, image.PullOptions{})
+	out, err := docker.ImagePull(ctx, config.Image, client.ImagePullOptions{})
 	if err != nil {
 		return fmt.Errorf("Unable to pull image: %s", err)
 	}
 	defer out.Close()
-	// consume output to ensure pull is finished
-	_, _ = io.Copy(io.Discard, out)
+	if err := out.Wait(ctx); err != nil {
+		return fmt.Errorf("Unable to pull image: %s", err)
+	}
 
-	resp, err := docker.ContainerCreate(ctx, config, hostConfig, nil, nil, name)
+	resp, err := docker.ContainerCreate(ctx, client.ContainerCreateOptions{
+		Config:     config,
+		HostConfig: hostConfig,
+		Name:       name,
+	})
 	if err != nil {
 		return fmt.Errorf("Error while creating container: %s", err)
 	}
 
-	if err = docker.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+	if _, err = docker.ContainerStart(ctx, resp.ID, client.ContainerStartOptions{}); err != nil {
 		return fmt.Errorf("Error while starting container: %s", err)
 	}
 

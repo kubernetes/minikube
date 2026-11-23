@@ -293,7 +293,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.InspektorGadgetAssets, "inspektor-gadget/ig-deployment.yaml.tmpl", vmpath.GuestAddonsDir, "ig-deployment.yaml", "0640"),
 	}, false, "inspektor-gadget", "3rd party (inspektor-gadget.io)", "https://github.com/orgs/inspektor-gadget/people", "https://minikube.sigs.k8s.io/docs/handbook/addons/inspektor-gadget/",
 		map[string]string{
-			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.56.1@sha256:d1c34335183bcf1dcf47924f3a766e4a0bd96471ab12cfde960ea5830fdecb75",
+			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.58.0@sha256:60f40a1eb2c31ffe2188a5bdda46c957e1db19a5dcd6b05129f4faaf29956c41",
 		}, map[string]string{
 			"InspektorGadget": "ghcr.io",
 		}, nil),
@@ -304,8 +304,8 @@ var Addons = map[string]*Addon{
 			"kong-ingress-controller.yaml",
 			"0640"),
 	}, false, "kong", "3rd party (Kong HQ)", "@gAmUssA", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
-		"Kong":        "kong:3@sha256:12972ce1ab6396083e56e7d46fce084836c98cc819344bef44a1f583ec3ab191",
-		"KongIngress": "kong/kubernetes-ingress-controller:3.5.13@sha256:979f12864a13031545d58623d17af7a071b417396fbb3928a169d897b056b68f",
+		"Kong":        "kong:3@sha256:e9b87ddd0e6087792586e2cbba5ce91eadcbdd3d3673249aa4606f7207408c0d",
+		"KongIngress": "kong/kubernetes-ingress-controller:3.5.14@sha256:b83d58296cdd88aa75b2514ca5a7335ddff5018e2127b55b97653306386797d2",
 	}, map[string]string{
 		"Kong":        "docker.io",
 		"KongIngress": "docker.io",
@@ -343,7 +343,7 @@ var Addons = map[string]*Addon{
 			"metrics-server-service.yaml",
 			"0640"),
 	}, false, "metrics-server", "Kubernetes", "", "", map[string]string{
-		"MetricsServer": "metrics-server/metrics-server:v0.9.0@sha256:d9862115e7c7881280d3d75ca26bda8ffc0fc213315979575bf23ce9826205c0",
+		"MetricsServer": "metrics-server/metrics-server:v0.9.1@sha256:9b0ba1926e1d3089673f45461c3c1416109dea33b3ba3434048defd380df329b",
 	}, map[string]string{
 		"MetricsServer": "registry.k8s.io",
 	}, nil),
@@ -384,7 +384,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "registry", "minikube", "", "", map[string]string{
 		"KubeRegistryProxy": "minikube/kube-registry-proxy:v0.0.11@sha256:e321acf067df0a78fba3ff97748c10029ca2c413c5b7207e4ca000c62fcdac93",
-		"Registry":          "registry:3@sha256:852b3e4d378c426dda6b318fe9d9bfe8e92a0eccb9926671ec3d3ea17a196696",
+		"Registry":          "registry:3@sha256:82f6ff4a7f982960c8aa51617fea3aabc485df6e55cce80d22deb1de36f1bc3c",
 	}, map[string]string{
 		"KubeRegistryProxy": "registry.k8s.io",
 		"Registry":          "docker.io",
@@ -593,9 +593,9 @@ var Addons = map[string]*Addon{
 			"volcano-deployment.yaml",
 			"0640"),
 	}, false, "volcano", "third-party (volcano)", "hwdef", "", map[string]string{
-		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.15.2@sha256:2fff65aad011e0cb4cdb3709c7dca34b0ada29f45cc2b7d698173ed8e60d56eb",
-		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.15.2@sha256:6a6bc2560d51165b6f3d732f0e532a3c44eca2b0a39821ff242223a92f40d5f5",
-		"vc_scheduler":          "volcanosh/vc-scheduler:v1.15.2@sha256:afab36286a17a77c2f74695d0b50e8f969402f3f6806df4506aff9779813df5e",
+		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.16.0@sha256:91bbd52a233d559faaa77a979d47f7892eac5c8607890323463e61f7ad553aa1",
+		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.16.0@sha256:9acedb8bb2e2a635bac98d5d05a561aa3f1e153f80f823a285119610a3bc0f1a",
+		"vc_scheduler":          "volcanosh/vc-scheduler:v1.16.0@sha256:157578510d406c7390419dec97e81c5797969231022be39eb92e81feee0bbd71",
 	}, map[string]string{
 		"vc_webhook_manager":    "docker.io",
 		"vc_controller_manager": "docker.io",
@@ -744,7 +744,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "headlamp-clusterrolebinding.yaml", "0640"),
 	}, false, "headlamp", "3rd party (kinvolk.io)", "yolossn", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
 		map[string]string{
-			"Headlamp": "headlamp-k8s/headlamp:v0.45.0@sha256:db3f0e0fc58d358d41daa3fe7fc852437552c7ee873c3645470f7b86a8e0db49",
+			"Headlamp": "headlamp-k8s/headlamp:v0.46.0@sha256:8a0ef97527544baa2b35825940ddf4db6e2d09c30cd5aa31fd269ff604cc8b75",
 		},
 		map[string]string{
 			"Headlamp": "ghcr.io",
@@ -752,7 +752,7 @@ var Addons = map[string]*Addon{
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml.tmpl", vmpath.GuestAddonsDir, "deployment.yaml", "0640"),
 	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
-		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.58@sha256:c6f3402f2599684f295a0fdefb6fbbbfb18a0e43e309ff5456ccb452a4570a79",
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.59@sha256:5f71fecd6330211789b75065ade9587d67b3a6b4678e7e5408e42c22f778c63e",
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
 	}, nil),
@@ -764,7 +764,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.NvidiaDevicePlugin, "nvidia-device-plugin/nvidia-device-plugin.yaml.tmpl", vmpath.GuestAddonsDir, "nvidia-device-plugin.yaml", "0640"),
 	}, false, "nvidia-device-plugin", "3rd party (NVIDIA)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/",
 		map[string]string{
-			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.20.1@sha256:27c1b2553a690ca3d29889dcd61df97525d46f58272c0be8dc63c2b18f120075",
+			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.20.2@sha256:7673383d44a84bece724d9ca8feeadf4eee69cd46475fdff614cbbca6732d463",
 		}, map[string]string{
 			"NvidiaDevicePlugin": "nvcr.io",
 		}, nil),
@@ -776,7 +776,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.YakdAssets, "yakd/yakd-dp.yaml.tmpl", vmpath.GuestAddonsDir, "yakd-dp.yaml", "0640"),
 	}, false, "yakd", "3rd party (marcnuri.com)", "manusa", "https://minikube.sigs.k8s.io/docs/handbook/addons/yakd-kubernetes-dashboard/",
 		map[string]string{
-			"Yakd": "manusa/yakd:0.0.9@sha256:8de49dcce135409b0b9ffea73e0822420eef5bfba5bc14128396647db8c8ad93",
+			"Yakd": "manusa/yakd:0.0.10@sha256:c4a7691b117e5ea60f45618acf5391765135b110b0a9b50c7d4259abbedc9220",
 		},
 		map[string]string{
 			"Yakd": "ghcr.io",

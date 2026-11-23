@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
     - name: myfrontend
-      image: public.ecr.aws/nginx/nginx:alpine
+      image: quay.io/minikube/nginx:alpine
       volumeMounts:
       - mountPath: "/tmp/mount"
         name: mypd

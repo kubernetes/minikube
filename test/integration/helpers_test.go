@@ -29,6 +29,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -749,5 +750,81 @@ func FailFastDockerHubRateLimited(t *testing.T) {
 
 	if remaining <= 0 {
 		t.Fatalf("failing fast: Docker Hub rate limit reached (remaining=%d)", remaining)
+	}
+}
+
+// podResolve resolves name with dig. +search applies the pod search list and
+// ndots, and +short prints the addresses and nothing else.
+func podResolve(ctx context.Context, t *testing.T, pod, name string, kubectlArgs ...string) []net.IP {
+	t.Helper()
+	args := make([]string, 0, len(kubectlArgs)+8)
+	args = append(args, kubectlArgs...)
+	args = append(args, "exec", pod, "--", "dig", "+short", "+search", name)
+	rr, err := Run(t, exec.CommandContext(ctx, args[0], args[1:]...))
+	ips := digAddresses(t, rr.Stdout.String())
+	if len(ips) == 0 {
+		t.Fatalf("Pod %s could not resolve %q: %v\n%s", pod, name, err, rr.Output())
+	}
+	return ips
+}
+
+// digAddresses returns every address in dig +short output, in order.
+// A non-empty line that is not an address is logged.
+func digAddresses(t *testing.T, output string) []net.IP {
+	t.Helper()
+	var ips []net.IP
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		ip := net.ParseIP(line)
+		if ip == nil {
+			t.Logf("dig returned unexpected line %q", line)
+			continue
+		}
+		ips = append(ips, ip)
+	}
+	return ips
+}
+
+func TestDigAddresses(t *testing.T) {
+	tests := []struct {
+		name   string
+		output string
+		want   []string
+	}{
+		{
+			// dig +short +search kubernetes.default.svc.cluster.local
+			name:   "one address",
+			output: "10.96.0.1\n",
+			want:   []string{"10.96.0.1"},
+		},
+		{
+			name:   "multiple addresses",
+			output: "3.33.186.135\n15.197.167.90\n",
+			want:   []string{"3.33.186.135", "15.197.167.90"},
+		},
+		{
+			name:   "unexpected line",
+			output: "10.96.0.1\nnot-an-address\n",
+			want:   []string{"10.96.0.1"},
+		},
+		{
+			name:   "no address",
+			output: "",
+			want:   nil,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var got []string
+			for _, ip := range digAddresses(t, tc.output) {
+				got = append(got, ip.String())
+			}
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("digAddresses() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

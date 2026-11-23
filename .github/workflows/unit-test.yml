@@ -37,7 +37,7 @@ concurrency:
   cancel-in-progress: true
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.26.5'
+  GO_VERSION: '1.27.3'
 permissions:
   contents: read
 jobs:
@@ -58,13 +58,6 @@ jobs:
         - name: Download Dependencies
           timeout-minutes: 3
           run: go mod download
-        # needed because pkg/drivers/kvm/domain.go:28:2:
-        - name: Install libvirt (Linux)
-          timeout-minutes: 2
-          if: runner.os == 'Linux'
-          run: |
-              sudo apt-get update
-              sudo apt-get install -y libvirt-dev
         - name: Install make (Windows)
           timeout-minutes: 1
           if: runner.os == 'Windows'

@@ -9,5 +9,6 @@ spec:
   - name: test
     image: localhost/image-load-in-use:test
     imagePullPolicy: Never
-    command: ["sleep", "infinity"]
+    # Trap TERM so delete does not wait out the 30s grace period.
+    command: ["sh", "-c", "trap exit TERM; sleep infinity & wait"]
   restartPolicy: Never

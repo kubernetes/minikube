@@ -20,17 +20,19 @@ package integration
 
 import (
 	"context"
-	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/download"
 )
 
 // TestPreload verifies that disabling the initial preload, pulling a specific image,
-// and restarting the cluster preserves the image across restarts.
-// also tests --preload-source should work for both github and gcs
+// and restarting the cluster preserves the image across restarts. It also verifies
+// that preloads can be downloaded from the selected source.
 func TestPreload(t *testing.T) {
 	MaybeParallel(t)
 	if NoneDriver() {
@@ -90,41 +92,33 @@ func TestPreload(t *testing.T) {
 		})
 	}
 
-	// PreloadSrc verifies that downloading preload from github and gcs works using --preload-src and --download-only
-	// "auto" is the default preload source (tries both gcs and github); here we explicitly verify each source
+	// PreloadSrc verifies that --preload-source=github downloads a preload.
 	t.Run("PreloadSrc", func(t *testing.T) {
 		MaybeParallel(t)
-		tests := []struct {
-			name              string
-			source            string
-			kubernetesVersion string // using versions that are not used in the test to make sure they dont pre-exist
-			wantLog           string
-		}{
-			{"gcs", "gcs", "v1.34.0-rc.1", "Downloading preload from https://storage.googleapis.com"},
-			{"github", "github", "v1.34.0-rc.2", "Downloading preload from https://github.com"},
-			{"gcs-cached", "gcs", "v1.34.0-rc.2", "in cache, skipping download"},
+		containerRuntime := ContainerRuntime()
+		preloadDir := t.TempDir()
+
+		profile := UniqueProfileName("test-preload-dl-github")
+		ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
+		// --download-only does not create a cluster or profile, so CleanupWithLogs is not needed.
+		defer cancel()
+
+		startArgs := []string{"start", "-p", profile, "--download-only", "--kubernetes-version", constants.DefaultKubernetesVersion, "--preload-source=github", "--alsologtostderr", "--v=1"}
+		startArgs = append(startArgs, StartArgs()...)
+
+		cmd := exec.CommandContext(ctx, Target(), startArgs...)
+		cmd.Env = append(os.Environ(), download.TestPreloadsEnv+"="+preloadDir)
+		rr, err := Run(t, cmd)
+		if err != nil {
+			t.Fatalf("%s failed: %v", rr.Command(), err)
 		}
-
-		for _, tc := range tests {
-			t.Run(tc.name, func(t *testing.T) {
-				if tc.name == "gcs-cached" && DockerDriver() {
-					t.Skip("skipping: flaky on Docker driver: https://github.com/kubernetes/minikube/issues/23164")
-				}
-				profile := UniqueProfileName("test-preload-dl-" + tc.name)
-				ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
-				defer CleanupWithLogs(t, profile, cancel)
-
-				startArgs := []string{"start", "-p", profile, "--download-only", "--kubernetes-version", tc.kubernetesVersion, fmt.Sprintf("--preload-source=%s", tc.source), "--alsologtostderr", "--v=1"}
-				startArgs = append(startArgs, StartArgs()...)
-
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
-				if err != nil {
-					t.Fatalf("%s failed: %v", rr.Command(), err)
-				}
-				if !strings.Contains(rr.Output(), tc.wantLog) {
-					t.Fatalf("Expected to find %q in output, but got:\n%s", tc.wantLog, rr.Output())
-				}
-			})
+		preloadPath := filepath.Join(preloadDir, download.TarballName(constants.DefaultKubernetesVersion, containerRuntime))
+		info, err := os.Stat(preloadPath)
+		if err != nil {
+			t.Fatalf("expected preload to be downloaded to %s, got stat error: %v", preloadPath, err)
+		}
+		if info.Size() == 0 {
+			t.Fatalf("expected downloaded preload to be non-empty: %s", preloadPath)
 		}
 	})
 }

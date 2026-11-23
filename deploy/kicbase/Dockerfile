@@ -18,19 +18,19 @@
 # https://systemd.io/CONTAINER_INTERFACE/
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:trixie-slim-*
-ARG KICBASE_IMAGE="debian:trixie-20260918-slim"
+ARG KICBASE_IMAGE="debian:trixie-20261104-slim"
 # start from debian 13, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need.
 FROM ${KICBASE_IMAGE} AS kicbase
 
-ARG BUILDKIT_VERSION="v0.33.0"
+ARG BUILDKIT_VERSION="v0.34.2"
 ARG CRIO_VERSION="v1.35"
 ARG CRICTL_VERSION="v1.35.0"
-ARG CRI_DOCKERD_VERSION="v0.4.3"
-ARG CRI_DOCKERD_COMMIT="d969e29f500151687337b2a896ab65e8192f3145"
-ARG CNI_PLUGINS_VERSION="v1.9.1"
+ARG CRI_DOCKERD_VERSION="v0.4.10"
+ARG CRI_DOCKERD_COMMIT="2527b04c311a8eddd978a193be9a12a878f4a015"
+ARG CNI_PLUGINS_VERSION="v1.10.0"
 ARG TARGETARCH
-ARG NERDCTL_VERSION="2.4.0"
+ARG NERDCTL_VERSION="2.4.2"
 ARG NERDCTLD_VERSION="0.7.0"
 
 # copy in static files (configs, scripts)
@@ -308,6 +308,12 @@ RUN rm -rf \
   /usr/share/doc/* \
   /usr/share/man/* \
   /usr/share/local/*
+
+# Per https://systemd.io/CONTAINER_INTERFACE/, /etc/machine-id must be present
+# but empty in a container image so it is freshly initialized on each boot.
+# Remove /var/lib/dbus/machine-id so that systemd-machine-id-setup cannot fall
+# back to a baked-in value, which would make every container share the same ID.
+RUN truncate -s 0 /etc/machine-id && rm -f /var/lib/dbus/machine-id
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
 
 # squash all layers into one

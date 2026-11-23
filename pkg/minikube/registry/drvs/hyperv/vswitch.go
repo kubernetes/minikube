@@ -32,7 +32,7 @@ type netAdapter struct {
 
 type vmSwitch struct {
 	Name                    string
-	NetAdapterInterfaceGuid []string
+	NetAdapterInterfaceGUID []string
 }
 
 // returns network adapters matching to the given filtering condition
@@ -178,7 +178,7 @@ func chooseSwitch(adapterName string) (string, netAdapter, error) {
 		// it doesn't seem like Windows allows one VM switch for each adapter
 		adapterSwitches := map[string][]string{}
 		for _, vmSwitch := range externalVMSwitches {
-			for _, connectedAdapter := range vmSwitch.NetAdapterInterfaceGuid {
+			for _, connectedAdapter := range vmSwitch.NetAdapterInterfaceGUID {
 				var switches []string
 				key := strings.ToUpper(fmt.Sprintf("{%s}", connectedAdapter))
 				if _, ok := adapterSwitches[key]; ok {

@@ -13,7 +13,7 @@ on:
       - "!site/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.26.5'
+  GO_VERSION: '1.27.3'
 permissions:
   contents: read
 
@@ -44,7 +44,7 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         timeout-minutes: 3
         with:
           name: minikube_binaries
@@ -58,11 +58,6 @@ jobs:
         timeout-minutes: 1
         with:
           go-version: ${{env.GO_VERSION}}
-      - name: Install libvirt
-        timeout-minutes: 2
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libvirt-dev
       - name: Download Dependencies
         timeout-minutes: 1
         run: go mod download

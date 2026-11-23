@@ -36,7 +36,7 @@ type RawDataDriver struct {
 	Data []byte // passed directly back when invoking json.Marshal on this type
 }
 
-func (r *RawDataDriver) MarshalJSON() ([]byte, error) {
+func (r RawDataDriver) MarshalJSON() ([]byte, error) {
 	return r.Data, nil
 }
 

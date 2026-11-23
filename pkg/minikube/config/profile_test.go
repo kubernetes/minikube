@@ -35,7 +35,7 @@ func TestListProfiles(t *testing.T) {
 		expectName string
 		vmDriver   string
 	}{
-		{0, "p1", "hyperkit"},
+		{0, "p1", "vfkit"},
 		{1, "p2_newformat", "virtualbox"},
 	}
 

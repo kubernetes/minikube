@@ -16,7 +16,7 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 * 2GB of free memory
 * 20GB of free disk space
 * Internet connection
-* Container or virtual machine manager, such as: [Docker]({{<ref "/docs/drivers/docker">}}), [QEMU]({{<ref "/docs/drivers/qemu">}}), [Hyperkit]({{<ref "/docs/drivers/hyperkit">}}), [Hyper-V]({{<ref "/docs/drivers/hyperv">}}), [KVM]({{<ref "/docs/drivers/kvm2">}}), [Parallels]({{<ref "/docs/drivers/parallels">}}), [Podman]({{<ref "/docs/drivers/podman">}}), [VirtualBox]({{<ref "/docs/drivers/virtualbox">}}), or [VMware Fusion/Workstation]({{<ref "/docs/drivers/vmware">}})
+* Container or virtual machine manager, such as: [Docker]({{<ref "/docs/drivers/docker">}}), [QEMU]({{<ref "/docs/drivers/qemu">}}), [Hyper-V]({{<ref "/docs/drivers/hyperv">}}), [KVM]({{<ref "/docs/drivers/kvm2">}}), [Parallels]({{<ref "/docs/drivers/parallels">}}), [Podman]({{<ref "/docs/drivers/podman">}}), [VirtualBox]({{<ref "/docs/drivers/virtualbox">}}), or [VMware Fusion/Workstation]({{<ref "/docs/drivers/vmware">}})
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
@@ -706,10 +706,10 @@ Browse the catalog of easily installed Kubernetes services:
 minikube addons list
 ```
 
-Create a second cluster running an older Kubernetes release:
+Create a second cluster running an older Kubernetes release (must be one of the 3 latest minor versions):
 
 ```shell
-minikube start -p aged --kubernetes-version=v1.34.0
+minikube start -p aged --kubernetes-version=<k8sversion>
 ```
 
 Delete all of the minikube clusters:

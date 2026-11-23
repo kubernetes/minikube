@@ -26,7 +26,7 @@ minikube start
 
 ```
 😄  minikube v1.12.0 on Darwin 10.15.5
-✨  Automatically selected the docker driver. Other choices: hyperkit, virtualbox
+✨  Automatically selected the docker driver. Other choices: virtualbox
 👍  Starting control plane node minikube in cluster minikube
 🔥  Creating docker container (CPUs=2, Memory=3892MB) ...
 🐳  Preparing Kubernetes v1.18.3 on Docker 19.03.2 ...

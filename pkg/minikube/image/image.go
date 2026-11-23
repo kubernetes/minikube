@@ -27,7 +27,6 @@ import (
 	"time"
 
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -35,6 +34,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/moby/moby/client"
 
 	"errors"
 
@@ -73,7 +73,6 @@ func UseRemote(use bool) {
 func DigestByDockerLib(imgClient *client.Client, imgName string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	imgClient.NegotiateAPIVersion(ctx)
 	img, err := imgClient.ImageInspect(ctx, imgName)
 	if err != nil {
 		if !cerrdefs.IsNotFound(err) {

@@ -15,8 +15,6 @@ body:
       label: Joindre le fichier de journal
       description: |
         Astuce : exécutez `minikube logs --file=log.txt`, puis faites glisser et déposez le fichier `log.txt` dans le navigateur.
-        **AVERTISSEMENT :** Si vous utilisez le pilote HyperKit, veuillez vérifier vos journaux et supprimer toute variable d’environnement susceptible de contenir des informations sensibles (par ex. jetons d’accès ou secrets).
-        Toutes les variables d’environnement seront automatiquement supprimées à partir de la version `1.26.0` de minikube, mais pour les versions antérieures, elles doivent être supprimées manuellement.
     validations:
       required: true
   - type: dropdown
@@ -41,7 +39,6 @@ body:
         - N/A
         - Docker
         - Podman
-        - HyperKit
         - Hyper-V
         - KVM2
         - VirtualBox

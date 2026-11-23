@@ -94,6 +94,8 @@ makes sure minikube can start after its profile certs have expired.
 It does this by configuring minikube certs to expire after 3 minutes, then waiting 3 minutes, then starting again.
 It also makes sure minikube prints a cert expiration warning to the user.
 
+## TestTimeout
+
 ## TestDockerFlags
 makes sure the --docker-env and --docker-opt parameters are respected
 
@@ -114,12 +116,6 @@ makes sure the MINIKUBE_FORCE_SYSTEMD environment variable works just as well as
 
 ## TestDockerEnvContainerd
 makes sure that minikube docker-env command works when the runtime is containerd
-
-## TestHyperKitDriverInstallOrUpdate
-makes sure our docker-machine-driver-hyperkit binary can be installed properly
-
-## TestHyperkitDriverSkipUpgrade
-makes sure our docker-machine-driver-hyperkit binary can be installed properly
 
 ## TestErrorSpam
 asserts that there are no unexpected errors displayed in minikube command outputs.
@@ -260,7 +256,7 @@ asserts that all Kubernetes components are healthy
 NOTE: It expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag
 
 Steps:
-- Run `kubectl get po po -l tier=control-plane -n kube-system -o=json` to get all the Kubernetes conponents
+- Run `kubectl get po -l tier=control-plane -n kube-system -o=json` to get all the Kubernetes components
 - For each component, make sure the pod status is `Running`
 
 #### validateStatusCmd
@@ -379,6 +375,16 @@ Steps:
 - Run `minikube ssh echo hello` to make sure we can SSH into the minikube container and run an command
 - Run `minikube ssh cat /etc/hostname` as well to make sure the command is run inside minikube
 
+#### validateSSHHostCmd
+asserts basic "ssh-host" command functionality
+
+Steps:
+- Run `minikube ssh-host` to print the node's ssh host keys
+- Pipe the output to `ssh-keygen -lf -` to make sure it lists one or more valid host keys, whatever the key type
+
+Skips:
+- Skips `none` driver since `ssh-host` is not supported
+
 #### validateCpCmd
 asserts basic "cp" command functionality
 
@@ -453,7 +459,7 @@ for the platforms that support it, we're testing:
 #### validatePersistentVolumeClaim
 makes sure PVCs work properly
 verifies at least one StorageClass exists
-Applies a PVC manifest (pvc.yaml) and verfies PVC named myclaim reaches phase Bound.
+Applies a PVC manifest (pvc.yaml) and verifies PVC named myclaim reaches phase Bound.
 Creates a test pod (sp-pod) that mounts the claim (via createPVTestPod).
 Writes a file foo to the mounted volume at /tmp/mount/foo.
 Deletes the pod, recreates it, and verifies the file foo still exists by listing /tmp/mount, proving data persists across pod restarts.
@@ -544,6 +550,8 @@ verifies a soft restart on a ha (multi-control plane) cluster works.
 #### validateHAAddSecondaryNode
 uses the minikube node add command to add a secondary control-plane node to an existing ha (multi-control plane) cluster.
 
+## TestDigAddresses
+
 ## TestImageBuild
 makes sure the 'minikube image build' command works fine
 
@@ -593,7 +601,7 @@ verifies the docker/podman driver works with a custom subnet
 starts minikube with the static IP flag
 
 ## TestingKicBaseImage
-will return true if the integraiton test is running against a passed --base-image flag
+will return true if the integration test is running against a passed --base-image flag
 
 ## TestMinikubeProfile
 
@@ -749,8 +757,8 @@ makes sure paused clusters show up in minikube status correctly
 
 ## TestPreload
 verifies that disabling the initial preload, pulling a specific image,
-and restarting the cluster preserves the image across restarts.
-also tests --preload-source should work for both github and gcs
+and restarting the cluster preserves the image across restarts. It also verifies
+that preloads can be downloaded from the selected source.
 
 ## TestScheduledStopWindows
 tests the schedule stop functionality on Windows

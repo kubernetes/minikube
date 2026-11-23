@@ -20,15 +20,10 @@ import (
 	"fmt"
 	"os"
 
-	"os/exec"
-	"regexp"
-
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine"
-	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 // tunnel represents the basic API for a tunnel: periodically the state of the tunnel
@@ -114,12 +109,11 @@ func (t *tunnel) cleanup() *Status {
 
 func (t *tunnel) update() *Status {
 	klog.V(3).Info("updating tunnel status...")
-	var h *host.Host
-	t.status.MinikubeState, h, t.status.MinikubeError = t.clusterInspector.getStateAndHost()
+	t.status.MinikubeState, _, t.status.MinikubeError = t.clusterInspector.getStateAndHost()
 	defer t.clusterInspector.machineAPI.Close()
 	if t.status.MinikubeState == Running {
 		klog.V(3).Infof("minikube is running, trying to add route%s", t.status.TunnelID.Route)
-		setupRoute(t, h)
+		setupRoute(t)
 		if t.status.RouteError == nil {
 			t.status.PatchedServices, t.status.LoadBalancerEmulatorError = t.LoadBalancerEmulator.PatchServices()
 		}
@@ -129,7 +123,7 @@ func (t *tunnel) update() *Status {
 	return t.status
 }
 
-func setupRoute(t *tunnel, h *host.Host) {
+func setupRoute(t *tunnel) {
 	exists, conflict, _, err := t.router.Inspect(t.status.TunnelID.Route)
 	if err != nil {
 		t.status.RouteError = fmt.Errorf("error checking for route state: %s", err)
@@ -149,13 +143,6 @@ func setupRoute(t *tunnel, h *host.Host) {
 			return
 		}
 
-		if h.DriverName == driver.HyperKit {
-			// the virtio-net interface acts up with ip tunnels :(
-			setupBridge(t)
-			if t.status.RouteError != nil {
-				return
-			}
-		}
 	}
 
 	// error scenarios
@@ -188,40 +175,4 @@ func setupRoute(t *tunnel, h *host.Host) {
 		return
 	}
 
-}
-
-func setupBridge(t *tunnel) {
-	command := exec.Command("ifconfig", "bridge100")
-	klog.Infof("About to run command: %s\n", command.Args)
-	response, err := command.CombinedOutput()
-	if err != nil {
-		t.status.RouteError = fmt.Errorf("running %v: %v", command.Args, err)
-		return
-	}
-	iface := string(response)
-	pattern := regexp.MustCompile(`.*member: ((?:vm)?en(?:et)?\d+) flags=.*`)
-	submatch := pattern.FindStringSubmatch(iface)
-	if len(submatch) != 2 {
-		t.status.RouteError = fmt.Errorf("couldn't find member in bridge100 interface: %s", iface)
-		return
-	}
-
-	member := submatch[1]
-	command = exec.Command("sudo", "ifconfig", "bridge100", "deletem", member)
-	klog.Infof("About to run command: %s\n", command.Args)
-	response, err = command.CombinedOutput()
-	klog.Info(string(response))
-	if err != nil {
-		t.status.RouteError = fmt.Errorf("couldn't remove member %s: %s", member, err)
-		return
-	}
-
-	command = exec.Command("sudo", "ifconfig", "bridge100", "addm", member)
-	klog.Infof("About to run command: %s\n", command.Args)
-	response, err = command.CombinedOutput()
-	klog.Info(string(response))
-	if err != nil {
-		t.status.RouteError = fmt.Errorf("couldn't re-add member %s: %s", member, err)
-		return
-	}
 }

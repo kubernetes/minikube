@@ -18,6 +18,7 @@ limitations under the License.
 
 package kvm
 
+//nolint:unused // arm64 domain template, only used once the kvm driver is built on arm64 (see kvm_stub.go)
 const domainTmpl = `
 <domain type='kvm'>
   <name>{{.MachineName}}</name>

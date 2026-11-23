@@ -49,10 +49,14 @@ then
     readonly COVERAGE_PATH=./out/coverage.txt
     mkdir -p "$(dirname "${COVERAGE_PATH}")"
     echo "mode: count" >"${COVERAGE_PATH}"
-    pkgs=$(go list -f '{{ if .TestGoFiles }}{{.ImportPath}}{{end}}' ./cmd/... ./pkg/... | xargs)
+    tags="container_image_ostree_stub containers_image_openpgp"
+    if [[ -n "${MINIKUBE_BUILD_TAGS:-}" ]]; then
+        tags="${MINIKUBE_BUILD_TAGS} ${tags}"
+    fi
+    pkgs=$(go list -tags "${tags}" -f '{{ if .TestGoFiles }}{{.ImportPath}}{{end}}' ./cmd/... ./pkg/... | xargs)
     go test \
         -ldflags="$MINIKUBE_LDFLAGS" \
-        -tags "container_image_ostree_stub containers_image_openpgp" \
+        -tags "${tags}" \
         -covermode=count \
         -coverprofile="${cov_tmp}" \
         ${pkgs} \

@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
 )
@@ -57,9 +58,6 @@ const (
 func TestMain(m *testing.M) {
 	flag.Parse()
 	setMaxParallelism()
-	if NeedsAuxDriver() {
-		*startArgs += " --auto-update-drivers=false"
-	}
 	start := time.Now()
 	code := m.Run()
 	fmt.Printf("Tests completed in %s (result code %d)\n", time.Since(start), code)
@@ -85,9 +83,20 @@ func setMaxParallelism() {
 
 	maxp := runtime.GOMAXPROCS(0)
 
-	// Do not ignore what the user has explicitly set
-	if requested != maxp {
-		fmt.Fprintf(os.Stderr, "--test-parallel=%d was set via flags (system has %d cores)\n", requested, maxp)
+	// Do not ignore what the user has explicitly set. Go defaults -test.parallel
+	// to GOMAXPROCS, so comparing to core count cannot detect an explicit value.
+	explicit := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "test.parallel" {
+			explicit = true
+		}
+	})
+	if explicit {
+		if requested < 1 {
+			fmt.Fprintf(os.Stderr, "invalid --test.parallel=%d (must be >= 1)\n", requested)
+			os.Exit(1)
+		}
+		fmt.Fprintf(os.Stderr, "--test.parallel=%d was set via flags (system has %d cores)\n", requested, maxp)
 		return
 	}
 
@@ -172,15 +181,6 @@ func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
 }
 
-func HyperkitDriver() bool {
-	return matchDriverFlag("hyperkit")
-}
-
-// NeedsAuxDriver Returns true if the driver needs an auxiliary driver (kvm, hyperkit,..)
-func NeedsAuxDriver() bool {
-	return HyperkitDriver()
-}
-
 // VMDriver checks if the driver is a VM
 func VMDriver() bool {
 	return !KicDriver() && !NoneDriver()
@@ -199,6 +199,35 @@ func ContainerRuntime() string {
 		}
 	}
 	return constants.Containerd
+}
+
+// MaybeSkipDockerRuntime skips when the docker container runtime is paired with any
+// Kubernetes version >= 1.38 (cri-dockerd lacks the v5 websocket API). With no versions,
+// constants.DefaultKubernetesVersion is used — for tests that do not pass
+// --kubernetes-version themselves. See https://github.com/kubernetes/minikube/issues/24017
+func MaybeSkipDockerRuntime(t *testing.T, versions ...string) {
+	t.Helper()
+	if ContainerRuntime() != constants.Docker {
+		return
+	}
+	if len(versions) == 0 {
+		versions = []string{constants.DefaultKubernetesVersion}
+	}
+	// 1.38.0-0 is the earliest 1.38 prerelease (numeric pre < alpha/beta/rc), so
+	// 1.38.0-beta.0 and 1.38.0 both compare >= this threshold.
+	minUnsupported := semver.MustParse("1.38.0-0")
+	for _, version := range versions {
+		if version == "" {
+			version = constants.DefaultKubernetesVersion
+		}
+		requested, err := semver.Parse(strings.TrimPrefix(version, "v"))
+		if err != nil {
+			continue
+		}
+		if requested.GTE(minUnsupported) {
+			t.Skipf("skipping: docker container runtime is not supported with Kubernetes %s (requires < 1.38.0); see https://github.com/kubernetes/minikube/issues/24017", version)
+		}
+	}
 }
 
 // arm64Platform returns true if running on arm64/* platform
@@ -232,7 +261,7 @@ func Seconds(n int) time.Duration {
 	return time.Duration(*timeOutMultiplier) * time.Duration(n) * time.Second
 }
 
-// TestingKicBaseImage will return true if the integraiton test is running against a passed --base-image flag
+// TestingKicBaseImage will return true if the integration test is running against a passed --base-image flag
 func TestingKicBaseImage() bool {
 	return strings.Contains(*startArgs, "base-image")
 }

@@ -21,6 +21,9 @@ type MiniTestBoskosConfig struct {
 	InstanceImage string `json:"InstanceImage,omitempty"`
 	InstanceType  string `json:"InstanceType,omitempty"`
 	DiskGiB       int    `json:"DiskGiB,omitempty"`
+	// EnableNestedVirtualization adds --enable-nested-virtualization. The kvm driver needs it
+	// to run a hypervisor inside this VM. Enabling it makes the instance harder to place.
+	EnableNestedVirtualization bool `json:"EnableNestedVirtualization,omitempty"`
 	// Boskos flags correspond to https://github.com/kubernetes-sigs/kubetest2/blob/71238a9645df6fbd7eaac9a36f635c22f1566168/kubetest2-gce/deployer/deployer.go
 	BoskosAcquireTimeoutSeconds    int
 	BoskosHeartbeatIntervalSeconds int

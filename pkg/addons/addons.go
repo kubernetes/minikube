@@ -108,6 +108,8 @@ func preStartMessages(name, value string) {
 		out.Styled(style.Warning, "The OLM addon has stopped working, for more details visit: https://github.com/operator-framework/operator-lifecycle-manager/issues/2534")
 	case "nvidia-gpu-device-plugin":
 		out.Styled(style.Warning, "The nvidia-gpu-device-plugin addon is deprecated and it's functionality is merged inside of nvidia-device-plugin addon. It will be removed in a future release. Please use the nvidia-device-plugin addon instead. For more details, visit: https://github.com/kubernetes/minikube/issues/19114.")
+	case "ingress":
+		out.Styled(style.Warning, "The ingress (ingress-nginx) addon is deprecated and unmaintained upstream. Please use the traefik addon instead: 'minikube addons enable traefik'. For more details, visit: https://minikube.sigs.k8s.io/docs/handbook/addons/traefik")
 	}
 }
 

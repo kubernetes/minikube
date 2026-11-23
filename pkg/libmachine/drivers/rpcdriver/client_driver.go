@@ -213,7 +213,7 @@ func (f *DefaultRPCClientDriverFactory) NewRPCClientDriver(driverName string, ra
 	return c, nil
 }
 
-func (c *RPCClientDriver) MarshalJSON() ([]byte, error) {
+func (c RPCClientDriver) MarshalJSON() ([]byte, error) {
 	return c.GetConfigRaw()
 }
 

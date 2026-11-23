@@ -19,6 +19,7 @@ package mcnutils
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,15 +58,16 @@ var (
 	}
 )
 
-func defaultTimeout(network, addr string) (net.Conn, error) {
-	return net.Dial(network, addr)
+func defaultTimeout(ctx context.Context, network, addr string) (net.Conn, error) {
+	var d net.Dialer
+	return d.DialContext(ctx, network, addr)
 }
 
 func getClient() *http.Client {
 	transport := http.Transport{
 		DisableKeepAlives: true,
 		Proxy:             http.ProxyFromEnvironment,
-		Dial:              defaultTimeout,
+		DialContext:       defaultTimeout,
 	}
 
 	return &http.Client{

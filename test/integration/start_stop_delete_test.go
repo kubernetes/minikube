@@ -90,6 +90,7 @@ func TestStartStop(t *testing.T) {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
+				MaybeSkipDockerRuntime(t, tc.version)
 				profile := UniqueProfileName(tc.name)
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 				defer Cleanup(t, profile, cancel)

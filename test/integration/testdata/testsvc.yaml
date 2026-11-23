@@ -8,7 +8,7 @@ metadata:
 spec:
   containers:
   - name: nginx
-    image: public.ecr.aws/nginx/nginx:alpine
+    image: quay.io/minikube/nginx:alpine
     ports:
     - containerPort: 80
       protocol: TCP

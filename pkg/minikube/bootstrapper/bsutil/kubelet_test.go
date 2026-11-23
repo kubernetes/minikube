@@ -37,7 +37,8 @@ func TestGenerateKubeletConfig(t *testing.T) {
 		{
 			description: "old docker",
 			cfg: config.ClusterConfig{
-				Name: "minikube",
+				Name:   "minikube",
+				Driver: "docker",
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.OldestKubernetesVersion,
 					ContainerRuntime:  "docker",
@@ -55,7 +56,7 @@ Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=docker --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100
+ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=docker --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --provider-id=minikube://docker/docker/minikube/minikube
 
 [Install]
 `,
@@ -63,7 +64,8 @@ ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kube
 		{
 			description: "newest cri runtime",
 			cfg: config.ClusterConfig{
-				Name: "minikube",
+				Name:   "minikube",
+				Driver: "podman",
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.NewestKubernetesVersion,
 					ContainerRuntime:  "cri-o",
@@ -81,7 +83,7 @@ Wants=crio.service
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=remote --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100
+ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=remote --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --provider-id=minikube://podman/cri-o/minikube/minikube
 
 [Install]
 `,
@@ -89,7 +91,8 @@ ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kube
 		{
 			description: "default containerd runtime",
 			cfg: config.ClusterConfig{
-				Name: "minikube",
+				Name:   "minikube",
+				Driver: "docker",
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.DefaultKubernetesVersion,
 					ContainerRuntime:  "containerd",
@@ -107,7 +110,7 @@ Wants=containerd.service
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=remote --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100
+ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=remote --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --provider-id=minikube://docker/containerd/minikube/minikube
 
 [Install]
 `,
@@ -115,7 +118,8 @@ ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kube
 		{
 			description: "default containerd runtime with IP override",
 			cfg: config.ClusterConfig{
-				Name: "minikube",
+				Name:   "minikube",
+				Driver: "kvm2",
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.DefaultKubernetesVersion,
 					ContainerRuntime:  "containerd",
@@ -140,7 +144,7 @@ Wants=containerd.service
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=remote --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.200
+ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=remote --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.200 --provider-id=minikube://kvm2/containerd/minikube/minikube
 
 [Install]
 `,
@@ -148,7 +152,8 @@ ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kube
 		{
 			description: "docker with custom image repository",
 			cfg: config.ClusterConfig{
-				Name: "minikube",
+				Name:   "minikube",
+				Driver: "docker",
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.DefaultKubernetesVersion,
 					ContainerRuntime:  "docker",
@@ -167,7 +172,66 @@ Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=docker --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100
+ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=docker --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --provider-id=minikube://docker/docker/minikube/minikube
+
+[Install]
+`,
+		},
+		{
+			description: "non-default profile name",
+			cfg: config.ClusterConfig{
+				Name:   "p1",
+				Driver: "kvm2",
+				KubernetesConfig: config.KubernetesConfig{
+					KubernetesVersion: constants.DefaultKubernetesVersion,
+					ContainerRuntime:  "containerd",
+				},
+				Nodes: []config.Node{
+					{
+						IP:           "192.168.1.100",
+						ControlPlane: true,
+					},
+				},
+			},
+			expected: `[Unit]
+Wants=containerd.service
+
+[Service]
+ExecStart=
+ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=remote --hostname-override=p1 --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --provider-id=minikube://kvm2/containerd/p1/p1
+
+[Install]
+`,
+		},
+		{
+			description: "provider ID override",
+			cfg: config.ClusterConfig{
+				Name:   "p1",
+				Driver: "kvm2",
+				KubernetesConfig: config.KubernetesConfig{
+					KubernetesVersion: constants.DefaultKubernetesVersion,
+					ContainerRuntime:  "containerd",
+					ExtraOptions: config.ExtraOptionSlice{
+						config.ExtraOption{
+							Component: Kubelet,
+							Key:       "provider-id",
+							Value:     "custom://node",
+						},
+					},
+				},
+				Nodes: []config.Node{
+					{
+						IP:           "192.168.1.100",
+						ControlPlane: true,
+					},
+				},
+			},
+			expected: `[Unit]
+Wants=containerd.service
+
+[Service]
+ExecStart=
+ExecStart=/var/lib/minikube/binaries/%s/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime=remote --hostname-override=p1 --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --provider-id=custom://node
 
 [Install]
 `,
