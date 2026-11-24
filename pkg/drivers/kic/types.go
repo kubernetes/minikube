@@ -49,6 +49,13 @@ var (
 	}
 )
 
+// DefaultImages returns the kicbase images used by default, in priority order.
+// Only the primary image is published at the moment; additional registry
+// fallbacks can be appended when they are available.
+func DefaultImages() []string {
+	return []string{BaseImage}
+}
+
 // Config is configuration for the kic driver used by registry
 type Config struct {
 	ClusterName       string            // The cluster the container belongs to

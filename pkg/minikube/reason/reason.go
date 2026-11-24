@@ -73,6 +73,9 @@ var (
 	// minikube was interrupted by an OS signal
 	Interrupted = Kind{ID: "MK_INTERRUPTED", ExitCode: ExProgramConflict}
 
+	// minikube encountered an unexpected internal error
+	InternalError = Kind{ID: "MK_INTERNAL_ERROR", ExitCode: ExFailure}
+
 	// user attempted to run a Windows executable (.exe) inside of WSL rather than using the Linux binary
 	WrongBinaryWSL = Kind{ID: "MK_WRONG_BINARY_WSL", ExitCode: ExProgramUnsupported}
 

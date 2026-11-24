@@ -19,6 +19,9 @@ minikube has no current cluster running
 "MK_INTERRUPTED" (Exit code ExProgramConflict)  
 minikube was interrupted by an OS signal  
 
+"MK_INTERNAL_ERROR" (Exit code ExFailure)  
+minikube encountered an unexpected internal error  
+
 "MK_WRONG_BINARY_WSL" (Exit code ExProgramUnsupported)  
 user attempted to run a Windows executable (.exe) inside of WSL rather than using the Linux binary  
 

@@ -288,12 +288,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: false
-
       - name: Checkout PR branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -316,7 +310,6 @@ jobs:
           sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${DIGEST}\"|;s|gcrRepo = .*|gcrRepo = \"${IMAGE_REF}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${IMAGE_REF}\"|" pkg/drivers/kic/types.go
 
           docker run --rm -t --platform linux/amd64 --entrypoint dpkg "${IMAGE_REF}:${KIC_VERSION}" -l --no-pager > hack/kicbase_version/os-package-list.txt
-          make generate-docs
 
       - name: Commit and push updated kicbase reference
         env:
@@ -390,11 +383,10 @@ jobs:
             STATE=failure
             DESCRIPTION="Built ${IMAGE_REF}:${KIC_VERSION} but failed to update the PR"
             BODY="Hi @${PR_AUTHOR}, we built the kicbase image \`${IMAGE_REF}:${KIC_VERSION}\` (\`${SHA}\`) but failed to update your PR.
-          Please run the following commands and push manually:
+          Please run the following command and push manually:
 
           \`\`\`
           sed -i 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${DIGEST}\"|;s|gcrRepo = .*|gcrRepo = \"${IMAGE_REF}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${IMAGE_REF}\"|' pkg/drivers/kic/types.go
-          make generate-docs
           \`\`\`"
           fi
           gh api --silent -X POST "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
