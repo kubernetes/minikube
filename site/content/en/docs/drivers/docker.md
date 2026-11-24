@@ -62,6 +62,26 @@ It is recommended to set the `--container-runtime` flag to "containerd".
 
 ## Known Issues
 
+- **Docker installed via Snap on Ubuntu 26.04+:** `minikube start --driver=docker` may fail during provisioning with:
+
+  ```text
+  hostname: error while loading shared libraries: /lib/x86_64-linux-gnu/libc.so.6: cannot apply additional memory protection after relocation: Permission denied
+  ```
+
+  This is caused by an AppArmor denial when `hostname` loads libc from a Snap Docker container. Check whether Docker came from Snap:
+
+  ```shell
+  snap list docker
+  ```
+
+  If it did, remove it:
+
+  ```shell
+  sudo snap remove docker
+  ```
+
+  Then install Docker from [Docker's apt repository](https://docs.docker.com/engine/install/ubuntu/) or Ubuntu's `docker.io` package (`sudo apt install docker.io`). See [#24116](https://github.com/kubernetes/minikube/issues/24116) and [#23000](https://github.com/kubernetes/minikube/issues/23000).
+
 - The following Docker runtime security options are currently *unsupported and will not work* with the Docker driver (see [#9607](https://github.com/kubernetes/minikube/issues/9607)):
   - [userns-remap](https://docs.docker.com/engine/security/userns-remap/)
 
