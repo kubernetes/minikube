@@ -144,6 +144,7 @@ SOURCE_DIRS = $(CMD_SOURCE_DIRS) test
 SOURCE_PACKAGES = ./cmd/... ./pkg/... ./deploy/addons/... ./translations/... ./test/...
 
 SOURCE_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep -v _test.go)
+INTEGRATION_FILES = $(shell find test/integration -type f -name "*.go")
 GOTEST_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep _test.go)
 ADDON_FILES = $(shell find "deploy/addons" -type f | grep -v "\.go")
 TRANSLATION_FILES = $(shell find "translations" -type f | grep -v "\.go")
@@ -256,7 +257,7 @@ e2e-darwin-amd64: out/e2e-darwin-amd64 ## build end2end binary for Darwin x86 64
 e2e-darwin-arm64: out/e2e-darwin-arm64 ## build end2end binary for Darwin ARM 64bit
 e2e-windows-amd64.exe: out/e2e-windows-amd64.exe ## build end2end binary for Windows 64bit
 
-out/e2e-%: out/minikube-%
+out/e2e-%: $(SOURCE_FILES) $(ASSET_FILES) $(INTEGRATION_FILES) go.mod
 	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" go test -ldflags="${MINIKUBE_LDFLAGS}" -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o $@
 
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
