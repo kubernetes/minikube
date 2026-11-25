@@ -94,7 +94,7 @@ jobs:
         if: matrix.driver == 'vfkit'
         run: |
           brew install vfkit
-          curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
+          (set -o pipefail; curl --fail --silent --show-error --location https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash)
       - name: Inspect host before test (macos)
         timeout-minutes: 1
         if: contains(matrix.os, 'macos')
