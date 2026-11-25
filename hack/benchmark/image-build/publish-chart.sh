@@ -31,7 +31,9 @@ run_benchmark() {
 }
 
 generate_chart() {
-        go run ./hack/benchmark/image-build/generate-chart.go --csv hack/benchmark/image-build/minikube-image-benchmark/out/results.csv  --past-runs record.json
+        # generate-chart.go is part of the hack module (hack/go.mod), so build it from there.
+        ( cd hack && go build -o ../out/image-build-chart ./benchmark/image-build/generate-chart.go )
+        ./out/image-build-chart --csv hack/benchmark/image-build/minikube-image-benchmark/out/results.csv  --past-runs record.json
 }
 
 copy() {
