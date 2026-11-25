@@ -44,6 +44,27 @@ spec:
 
 You can also achieve persistence by creating a PV in a mounted host folder.
 
+For charts and Deployments that create a PersistentVolumeClaim, you usually do
+not need to write a PersistentVolume yourself. The default `standard`
+StorageClass (from the `storage-provisioner` addon, enabled by default) binds
+the claim to a hostPath volume. A missing or misspelled `storageClassName` is
+a common reason for `pod has unbound immediate PersistentVolumeClaims`.
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+```
+
+Check the default class with `kubectl get storageclass`.
+
 ## Dynamic provisioning and CSI
 
 In addition, minikube implements a very simple, canonical implementation of dynamic storage controller that runs alongside its deployment.  This manages provisioning of  *hostPath* volumes (rather then via the previous, in-tree hostPath provider).  
