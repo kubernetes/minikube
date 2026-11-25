@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -79,6 +80,38 @@ func TestListProfiles(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("error listing profiles %v", err)
+	}
+}
+
+func TestListProfilesWithInvalidKubeconfig(t *testing.T) {
+	miniDir, err := filepath.Abs("./testdata/profile/.minikube")
+	if err != nil {
+		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+	}
+
+	tmpDir := t.TempDir()
+	kubeconfig := filepath.Join(tmpDir, "invalid-kubeconfig")
+	if err := os.WriteFile(kubeconfig, []byte("not: [valid\n"), 0600); err != nil {
+		t.Fatalf("failed to write invalid kubeconfig: %v", err)
+	}
+	val, inv, err := listProfiles(kubeconfig, func() ([]string, error) {
+		return []string{}, nil
+	}, miniDir)
+	if err != nil {
+		t.Fatalf("ListProfiles returned unexpected error: %v", err)
+	}
+
+	if len(val) != 2 {
+		t.Fatalf("ListProfiles valid profile count = %d, expected 2", len(val))
+	}
+	if len(inv) != 3 {
+		t.Fatalf("ListProfiles invalid profile count = %d, expected 3", len(inv))
+	}
+
+	for _, p := range val {
+		if p.ActiveKubeContext {
+			t.Errorf("expected profile %q not to be marked as active kubecontext", p.Name)
+		}
 	}
 }
 
