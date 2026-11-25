@@ -20,7 +20,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -60,7 +59,7 @@ var nodeStartCmd = &cobra.Command{
 		}
 
 		register.Reg.SetStep(register.InitialSetup)
-		r, p, m, h, err := node.Provision(cc, n, viper.GetBool(deleteOnFailure), options)
+		r, p, m, h, err := node.Provision(cc, n, false, options)
 		if err != nil {
 			exit.Error(reason.GuestNodeProvision, "provisioning host for node", err)
 		}
@@ -86,6 +85,5 @@ var nodeStartCmd = &cobra.Command{
 }
 
 func init() {
-	nodeStartCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	nodeCmd.AddCommand(nodeStartCmd)
 }
