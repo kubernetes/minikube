@@ -1373,7 +1373,9 @@ func validateFlags(cmd *cobra.Command, drvName string, existing *config.ClusterC
 	}
 
 	validateBareMetal(drvName, getContainerRuntime(existing))
-	validateRegistryMirror()
+	if err := validateRegistryMirror(registryMirror); err != nil {
+		exit.Message(reason.Usage, "The url provided with the --registry-mirror flag is invalid: {{.err}}", out.V{"err": err})
+	}
 	validateInsecureRegistry()
 }
 
@@ -1590,19 +1592,18 @@ func noLimitMemory(sysLimit, containerLimit int, drvName string) int {
 
 // This function validates if the --registry-mirror
 // args match the format of http://localhost
-func validateRegistryMirror() {
-	if len(registryMirror) > 0 {
-		for _, loc := range registryMirror {
-			URL, err := url.Parse(loc)
-			if err != nil {
-				klog.Errorln("Error Parsing URL: ", err)
-			}
-			if (URL.Scheme != "http" && URL.Scheme != "https") || URL.Path != "" {
-				exit.Message(reason.Usage, "Sorry, the url provided with the --registry-mirror flag is invalid: {{.url}}", out.V{"url": loc})
-			}
-
+func validateRegistryMirror(mirrors []string) error {
+	for _, loc := range mirrors {
+		URL, err := url.Parse(loc)
+		if err != nil {
+			klog.Errorln("Error Parsing URL: ", err)
+			return errors.New(loc)
+		}
+		if (URL.Scheme != "http" && URL.Scheme != "https") || URL.Path != "" {
+			return errors.New(loc)
 		}
 	}
+	return nil
 }
 
 // This function validates if the --image-repository
