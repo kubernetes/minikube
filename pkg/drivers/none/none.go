@@ -257,12 +257,38 @@ func (d *Driver) ensureRuntime() {
 		current = d.runtime.Name()
 	}
 	klog.Infof("Updating runtime from %q to %q", current, d.ContainerRuntime)
-	r, err := cruntime.New(cruntime.Config{Type: d.ContainerRuntime, Runner: d.exec})
-	if err != nil {
+	if err := d.UseContainerRuntime(d.ContainerRuntime); err != nil {
 		klog.Warningf("unable to re-create container runtime: %v", err)
-		return
 	}
+}
+
+// UseContainerRuntime selects the container runtime used by Stop and Kill.
+// An empty name leaves the runtime NewDriver created. NewHost and Load call
+// this when an older machine config has no ContainerRuntime field. The name
+// is stored on the driver so the next save records it.
+func (d *Driver) UseContainerRuntime(name string) error {
+	if name == "" {
+		return nil
+	}
+	if d.exec == nil {
+		d.exec = command.NewExecRunner(true)
+	}
+	r, err := cruntime.New(cruntime.Config{Type: name, Runner: d.exec})
+	if err != nil {
+		return fmt.Errorf("container runtime: %w", err)
+	}
+	d.ContainerRuntime = name
 	d.runtime = r
+	return nil
+}
+
+// RuntimeName returns the container runtime manager name, or "" if it has not
+// been created. Docker's manager reports "Docker".
+func (d *Driver) RuntimeName() string {
+	if d.runtime == nil {
+		return ""
+	}
+	return d.runtime.Name()
 }
 
 // for sake of Encapsulation implementing an interface that encoding/json package looks for.

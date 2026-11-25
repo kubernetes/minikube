@@ -106,6 +106,9 @@ func (api *LocalClient) NewHost(drvName string, rawDriver []byte) (*host.Host, e
 	if err != nil {
 		return nil, fmt.Errorf("Error getting driver %s: %w", string(rawDriver), err)
 	}
+	if err := applyProfileContainerRuntime(d, rawDriver, d.GetMachineName(), api.storePath); err != nil {
+		return nil, err
+	}
 
 	return &host.Host{
 		ConfigVersion: version.ConfigVersion,
@@ -146,7 +149,13 @@ func (api *LocalClient) Load(name string) (*host.Host, error) {
 		return api.legacyClient.Load(name)
 	}
 	h.Driver = def.Init(api.commandOptions)
-	return h, json.Unmarshal(h.RawDriver, h.Driver)
+	if err := json.Unmarshal(h.RawDriver, h.Driver); err != nil {
+		return h, err
+	}
+	if err := applyProfileContainerRuntime(h.Driver, h.RawDriver, name, api.storePath); err != nil {
+		return h, err
+	}
+	return h, nil
 }
 
 // Close closes the client

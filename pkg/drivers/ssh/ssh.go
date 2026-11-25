@@ -17,6 +17,7 @@ limitations under the License.
 package ssh
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -45,10 +46,11 @@ import (
 type Driver struct {
 	*drivers.BaseDriver
 	*common.CommonDriver
-	EnginePort int
-	SSHKey     string
-	runtime    cruntime.Manager
-	exec       command.Runner
+	EnginePort       int
+	SSHKey           string
+	ContainerRuntime string
+	runtime          cruntime.Manager
+	exec             command.Runner
 }
 
 // Config is configuration for the SSH driver
@@ -70,6 +72,7 @@ func NewDriver(c Config) *Driver {
 			MachineName: c.MachineName,
 			StorePath:   c.StorePath,
 		},
+		ContainerRuntime: c.ContainerRuntime,
 	}
 	runner := command.NewSSHRunner(d)
 	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
@@ -80,6 +83,26 @@ func NewDriver(c Config) *Driver {
 	d.runtime = runtime
 	d.exec = runner
 	return d
+}
+
+// UnmarshalJSON restores the container runtime after the driver is loaded
+// from the machine config (see LocalClient.NewHost and LocalClient.Load).
+// An empty ContainerRuntime is Docker. When the field is absent, NewHost and
+// Load fill it from the profile config.
+func (d *Driver) UnmarshalJSON(data []byte) error {
+	type Alias Driver
+	if err := json.Unmarshal(data, (*Alias)(d)); err != nil {
+		return err
+	}
+	if d.exec == nil {
+		d.exec = command.NewSSHRunner(d)
+	}
+	r, err := cruntime.New(cruntime.Config{Type: d.ContainerRuntime, Runner: d.exec})
+	if err != nil {
+		return fmt.Errorf("container runtime: %w", err)
+	}
+	d.runtime = r
+	return nil
 }
 
 // DriverName returns the name of the driver
@@ -249,6 +272,35 @@ func (d *Driver) Kill() error {
 // Remove a host, including any data which may have been written by it.
 func (d *Driver) Remove() error {
 	return nil
+}
+
+// UseContainerRuntime selects the container runtime used by Create, Stop, and Kill.
+// An empty name leaves the runtime NewDriver created. NewHost and Load call
+// this when an older machine config has no ContainerRuntime field. The name is
+// stored on the driver so the next save records it.
+func (d *Driver) UseContainerRuntime(name string) error {
+	if name == "" {
+		return nil
+	}
+	if d.exec == nil {
+		d.exec = command.NewSSHRunner(d)
+	}
+	r, err := cruntime.New(cruntime.Config{Type: name, Runner: d.exec})
+	if err != nil {
+		return fmt.Errorf("container runtime: %w", err)
+	}
+	d.ContainerRuntime = name
+	d.runtime = r
+	return nil
+}
+
+// RuntimeName returns the container runtime manager name, or "" if it has not
+// been created. Docker's manager reports "Docker".
+func (d *Driver) RuntimeName() string {
+	if d.runtime == nil {
+		return ""
+	}
+	return d.runtime.Name()
 }
 
 func copySSHKey(src, dst string) error {
