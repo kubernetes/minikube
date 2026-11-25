@@ -64,11 +64,11 @@ func View() error {
 	if err != nil {
 		return err
 	}
+	tmpl, err := template.New("view").Parse(viewFormat)
+	if err != nil {
+		exit.Error(reason.InternalViewTmpl, "Error creating view template", err)
+	}
 	for k, v := range cfg {
-		tmpl, err := template.New("view").Parse(viewFormat)
-		if err != nil {
-			exit.Error(reason.InternalViewTmpl, "Error creating view template", err)
-		}
 		viewTmplt := ViewTemplate{k, v}
 		err = tmpl.Execute(os.Stdout, viewTmplt)
 		if err != nil {
