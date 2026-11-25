@@ -97,7 +97,9 @@ func (d *CommonDriver) SetConfigFromFlags(_ drivers.DriverOptions) error {
 	return nil
 }
 
-func createRawDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
+// CreateRawDiskImage creates a boot2docker raw disk with the public SSH key.
+// It refuses to overwrite an existing disk. diskSizeMb is the final size in MiB.
+func CreateRawDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
 	tarBuf, err := mcnutils.MakeDiskImage(sshKeyPath)
 	if err != nil {
 		return fmt.Errorf("make disk image: %w", err)
@@ -156,8 +158,8 @@ func MakeDiskImage(d *drivers.BaseDriver, boot2dockerURL string, diskSize int) e
 	diskPath := GetDiskPath(d)
 	klog.Infof("Creating raw disk image: %s...", diskPath)
 	if _, err := os.Stat(diskPath); os.IsNotExist(err) {
-		if err := createRawDiskImage(publicSSHKeyPath(d), diskPath, diskSize); err != nil {
-			return fmt.Errorf("createRawDiskImage(%s): %w", diskPath, err)
+		if err := CreateRawDiskImage(publicSSHKeyPath(d), diskPath, diskSize); err != nil {
+			return fmt.Errorf("CreateRawDiskImage(%s): %w", diskPath, err)
 		}
 		machPath := d.ResolveStorePath(".")
 		if err := fixMachinePermissions(machPath); err != nil {
