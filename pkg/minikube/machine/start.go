@@ -207,6 +207,7 @@ func postStartValidations(h *host.Host, drvName string) {
 	r, err := CommandRunner(h)
 	if err != nil {
 		klog.Warningf("error getting command runner: %v", err)
+		return
 	}
 
 	var kind reason.Kind
