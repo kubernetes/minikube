@@ -24,6 +24,8 @@ import (
 	"time"
 
 	"k8s.io/minikube/hack/update"
+	"k8s.io/minikube/hack/update/kubernetes_versions_list/versionlist"
+	"k8s.io/minikube/pkg/minikube/constants"
 
 	"github.com/google/go-github/v85/github"
 	"golang.org/x/mod/semver"
@@ -74,6 +76,10 @@ func main() {
 	}
 
 	sort.Slice(releases, func(i, j int) bool { return semver.Compare(releases[i], releases[j]) == 1 })
+	releases, err := versionlist.TrimKubernetesVersions(releases, constants.DefaultKubernetesVersion)
+	if err != nil {
+		klog.Fatal(err)
+	}
 
 	formatted, err := formatKubernetesVersionsList(releases)
 	if err != nil {

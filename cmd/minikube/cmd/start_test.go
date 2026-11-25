@@ -66,14 +66,19 @@ func TestGetKubernetesVersion(t *testing.T) {
 			cfg:             &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{KubernetesVersion: "v1.15.0"}},
 		},
 		{
-			description:     "kubernetes-version without patch version",
-			expectedVersion: "v1.16.15",
-			paramVersion:    "v1.16",
+			description:     "oldest supported kubernetes-version without patch version",
+			expectedVersion: "v" + getLatestPatch("1.35"),
+			paramVersion:    "v1.35",
 		},
 		{
-			description:     "kubernetes-version without patch version",
-			expectedVersion: "v1.16.15",
-			paramVersion:    "1.16",
+			description:     "oldest supported kubernetes-version without patch version and v prefix",
+			expectedVersion: "v" + getLatestPatch("1.35"),
+			paramVersion:    "1.35",
+		},
+		{
+			description:     "most recent EOL kubernetes-version without patch version",
+			expectedVersion: "v" + getLatestPatch("1.34"),
+			paramVersion:    "1.34",
 		},
 		{
 			description:     "kubernetes-version given as 'stable', no config",
@@ -112,7 +117,7 @@ func TestGetKubernetesVersion(t *testing.T) {
 
 			// check whether we are getting the expected version
 			if version != test.expectedVersion {
-				t.Fatalf("test failed because the expected version %s is not returned", test.expectedVersion)
+				t.Fatalf("test failed: want %s, got %q (err: %v)", test.expectedVersion, version, err)
 			}
 		})
 	}
