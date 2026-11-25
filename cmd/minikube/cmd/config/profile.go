@@ -46,17 +46,13 @@ var ProfileCmd = &cobra.Command{
 		}
 
 		profile := args[0]
-		// Check whether the profile name is container friendly
-		if !config.ProfileNameValid(profile) {
-			out.WarningT("Profile name '{{.profilename}}' is not valid", out.V{"profilename": profile})
-			exit.Message(reason.Usage, "Only alphanumeric and dashes '-' are permitted. Minimum 1 character, starting with alphanumeric.")
-		}
-		/**
-		we need to add code over here to check whether the profile
-		name is in the list of reserved keywords
-		*/
+		// Checked before ValidateProfileName so users get the hint for deleting an existing reserved profile.
 		if config.ProfileNameInReservedKeywords(profile) {
 			exit.Message(reason.InternalReservedProfile, `Profile name "{{.profilename}}" is reserved keyword. To delete this profile, run: "{{.cmd}}"`, out.V{"profilename": profile, "cmd": mustload.ExampleCmd(profile, "delete")})
+		}
+		// Check whether the profile name is container friendly
+		if err := config.ValidateProfileName(profile); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 
 		if profile == "default" {

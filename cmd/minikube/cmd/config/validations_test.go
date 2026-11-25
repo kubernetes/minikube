@@ -267,3 +267,30 @@ func TestIsValidIPAddressSlice(t *testing.T) {
 
 	runValidations(t, tests, "dns-servers", IsValidIPAddressSlice)
 }
+
+func TestIsValidProfileName(t *testing.T) {
+	var tests = []validationTest{
+		{
+			value:     "minikube",
+			shouldErr: false,
+		},
+		{
+			value:     "pro-file1",
+			shouldErr: false,
+		},
+		{
+			value:     "a",
+			shouldErr: true,
+		},
+		{
+			value:     "bad_name!",
+			shouldErr: true,
+		},
+		{
+			value:     "start",
+			shouldErr: true,
+		},
+	}
+
+	runValidations(t, tests, "profile", IsValidProfileName)
+}
