@@ -35,8 +35,8 @@ ii  diffutils                       1:3.10-4                             amd64  
 ii  dirmngr                         2.4.7-21+deb13u1+b5                  amd64        GNU privacy guard - network certificate management service
 ii  dmsetup                         2:1.02.205-2                         amd64        Linux Kernel Device Mapper userspace library
 ii  docker-buildx-plugin            0.39.1-1~debian.13~trixie            amd64        Docker Buildx plugin extends build capabilities with BuildKit.
-ii  docker-ce                       5:29.10.0-1~debian.13~trixie         amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:29.10.0-1~debian.13~trixie         amd64        Docker CLI: the open-source application container engine
+ii  docker-ce                       5:29.10.1-1~debian.13~trixie         amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:29.10.1-1~debian.13~trixie         amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.22.22                              amd64        Debian package management system
 ii  ebtables                        2.0.11-6                             amd64        Ethernet bridge frame table administration
 ii  ethtool                         1:6.14.2-1                           amd64        display or change Ethernet device settings
