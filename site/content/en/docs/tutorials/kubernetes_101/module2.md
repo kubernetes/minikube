@@ -34,6 +34,7 @@ Let's deploy our first app on Kubernetes with the `kubectl create deployment` co
 
 ```shell
 kubectl create deployment kubernetes-bootcamp --image=registry.k8s.io/minikube/kubernetes-bootcamp:v1
+kubectl rollout status deployment/kubernetes-bootcamp
 ```
 
 Great! You just deployed your first application by creating a deployment. This performed a few things for you:
