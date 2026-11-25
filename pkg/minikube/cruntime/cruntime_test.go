@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"sort"
 	"strings"
 	"testing"
 
@@ -97,6 +98,8 @@ func TestImageExists(t *testing.T) {
 		{"docker", "available-image", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", true},
 		{"crio", "missing-image", "0000000000000000000000000000000000000000000000000000000000000000", false},
 		{"crio", "available-image", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", true},
+		{"containerd", "missing-image", "0000000000000000000000000000000000000000000000000000000000000000", false},
+		{"containerd", "available-image", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", true},
 	}
 	for _, tc := range tests {
 		runner := NewFakeRunner(t)
@@ -115,6 +118,65 @@ func TestImageExists(t *testing.T) {
 				t.Errorf("ImageExists(%s) returned diff (-want +got):\n%s", tc.runtime, diff)
 			}
 		})
+	}
+}
+
+// TestContainerdNerdctlImageOps makes sure the containerd runtime manages
+// images with nerdctl instead of the ctr/crictl debugging tools
+// (see https://github.com/kubernetes/minikube/issues/23670).
+func TestContainerdNerdctlImageOps(t *testing.T) {
+	runner := NewFakeRunner(t)
+	r, err := New(Config{Type: "containerd", Runner: runner})
+	if err != nil {
+		t.Fatalf("New(containerd): %v", err)
+	}
+
+	if err := r.PullImage("test-image:1.0"); err != nil {
+		t.Fatalf("PullImage(): %v", err)
+	}
+	if err := r.TagImage("test-image:1.0", "test-image:2.0"); err != nil {
+		t.Fatalf("TagImage(): %v", err)
+	}
+	if !r.ImageExists("test-image:2.0", "") {
+		t.Errorf("ImageExists(test-image:2.0) = false, want true")
+	}
+	list, err := r.ListImages(ListImagesOptions{})
+	if err != nil {
+		t.Fatalf("ListImages(): %v", err)
+	}
+	tags := []string{}
+	for _, img := range list {
+		tags = append(tags, img.RepoTags...)
+	}
+	for _, want := range []string{"test-image:1.0", "test-image:2.0"} {
+		found := false
+		for _, tag := range tags {
+			if tag == want {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("ListImages() tags %v does not contain %q", tags, want)
+		}
+	}
+	if err := r.RemoveImage("test-image:2.0"); err != nil {
+		t.Fatalf("RemoveImage(): %v", err)
+	}
+	if r.ImageExists("test-image:2.0", "") {
+		t.Errorf("ImageExists(test-image:2.0) = true after RemoveImage, want false")
+	}
+
+	// image ops must go through nerdctl, never ctr or crictl
+	joined := strings.Join(runner.cmds, " ")
+	if !strings.Contains(joined, "nerdctl") {
+		t.Errorf("expected nerdctl invocations, got cmds: %v", runner.cmds)
+	}
+	for _, c := range runner.cmds {
+		if c == "ctr" || c == "crictl" || strings.HasSuffix(c, "/crictl") {
+			t.Errorf("containerd image ops must not invoke %q, got cmds: %v", c, runner.cmds)
+			break
+		}
 	}
 }
 
@@ -247,6 +309,8 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 		return buffer(f.podman(args, root))
 	case "crictl", "/usr/bin/crictl":
 		return buffer(f.crictl(args, root))
+	case "nerdctl":
+		return buffer(f.nerdctl(args, root))
 	case "crio":
 		return buffer(f.crio(args, root))
 	case "containerd":
@@ -399,6 +463,81 @@ func (f *FakeRunner) podman(args []string, _ bool) (string, error) {
 			return "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", nil
 		}
 
+	}
+	return "", nil
+}
+
+// nerdctl is a fake implementation of nerdctl
+func (f *FakeRunner) nerdctl(args []string, _ bool) (string, error) {
+	f.t.Logf("nerdctl args: %s", args)
+	// strip global flags before the subcommand
+	rest := []string{}
+	skipNext := false
+	for _, a := range args {
+		if skipNext {
+			skipNext = false
+			continue
+		}
+		switch a {
+		case "--kube-hide-dupe":
+			continue
+		case "-n", "--namespace":
+			skipNext = true
+			continue
+		}
+		rest = append(rest, a)
+	}
+	args = rest
+	if len(args) == 0 {
+		return "", nil
+	}
+	switch cmd := args[0]; cmd {
+	case "image":
+		if args[1] == "inspect" {
+			name := args[2]
+			sha, ok := f.images[name]
+			if !ok {
+				return "", &exec.ExitError{Stderr: []byte("Error: No such image: " + name)}
+			}
+			return fmt.Sprintf(`[{"RepoTags":["%s"],"Id":"sha256:%s"}]`, name, sha), nil
+		}
+	case "images":
+		lines := []string{}
+		for name, sha := range f.images {
+			repository, tag := name, "latest"
+			if idx := strings.LastIndex(name, ":"); idx != -1 {
+				repository, tag = name[:idx], name[idx+1:]
+			}
+			lines = append(lines, fmt.Sprintf("%s\t%s\t%s\tsha256:%s\tsha256:%s\t1000", name, repository, tag, sha, sha))
+		}
+		sort.Strings(lines)
+		return strings.Join(lines, "\n"), nil
+	case "tag":
+		source, target := args[1], args[2]
+		sha, ok := f.images[source]
+		if !ok {
+			return "", errors.New("no such image")
+		}
+		f.images[target] = sha
+	case "pull":
+		name := args[len(args)-1]
+		if _, ok := f.images[name]; !ok {
+			f.images[name] = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+		}
+	case "push", "save", "load":
+		if cmd == "push" {
+			if _, ok := f.images[args[len(args)-1]]; !ok {
+				return "", errors.New("no such image")
+			}
+		}
+	case "rmi":
+		for _, id := range args[1:] {
+			f.t.Logf("fake nerdctl: Removing id %q", id)
+			if f.images[id] == "" {
+				return "", errors.New("no such image")
+			}
+			delete(f.images, id)
+		}
 	}
 	return "", nil
 }
