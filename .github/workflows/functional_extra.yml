@@ -6,8 +6,12 @@ on:
   workflow_dispatch:
   # pull_request_target runs in the context of the base repo, allowing access to secrets
   # unlike pull_request which runs in the context of the merge commit
-  # every commit needs re-labeling "ok-to-extra-test" label by OWNERS 
+  # every commit needs re-labeling "ok-to-extra-test" label by OWNERS
   # that ensures unvetted code will not run this test
+  #
+  # Broken for fork PRs: actions/checkout v7 refuses this head.sha checkout
+  # on pull_request_target unless allow-unsafe-pr-checkout is set. Do not set
+  # that flag. Convert this to an issue_comment trigger (ok-to-extra-test),
   pull_request_target:
     types: [labeled]
 
