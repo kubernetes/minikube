@@ -64,6 +64,7 @@ VBoxManage.exe: error: Details: code E_FAIL (0x80004005), component MachineWrap,
 		{8832, "macos", "PR_DOCKER_MOUNTS_EOF", `docker: Error response from daemon: Mounts denied: EOF.`},
 		{9165, "", "HOST_HOME_PERMISSION", `open /Users/conradwt/.minikube/profiles/gcloud-local-dev/config.json: permission denied`},
 		{9175, "", "GUEST_CONFIG_CORRUPT", " updating control plane: generating kubeadm cfg: generating extra component config for kubeadm: controlPlane configuration is corrupt: no name: {Name: IP: Port:8443 KubernetesVersion:v1.19.0 ControlPlane:true Worker:true}"},
+		{24023, "linux", "PR_PODMAN_PERMISSION_DENIED_126", "setting up container node: preparing volume for minikube container: podman run --rm --name minikube-preload-sidecar -v minikube:/var gcr.io/k8s-minikube/kicbase:v0.0.50: exit status 126\nstdout:\n\nstderr:\nError: permission denied"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.want, func(t *testing.T) {

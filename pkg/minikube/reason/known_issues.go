@@ -339,6 +339,17 @@ or
 		Regexp: re(`Post "http://ipc/filesharing/share": context deadline exceeded`),
 	},
 
+	// Podman environment
+	{
+		Kind: Kind{
+			ID:       "PR_PODMAN_PERMISSION_DENIED_126",
+			ExitCode: ExProviderPermission,
+			Advice:   "Podman failed to copy kicbase contents into the volume due to user namespace (subuid/subgid) permission errors. Try resetting Podman storage with 'podman system reset' (warning: removes local images/containers) or ensure your /etc/subuid and /etc/subgid mappings cover the required UID ranges.",
+			Issues:   []int{24023},
+		},
+		Regexp: re(`(?is)(podman.*exit status 126|exit status 126.*permission denied|permission denied.*exit status 126|archives/partial.*permission denied)`),
+	},
+
 	// Hyper-V hypervisor
 	{
 		Kind: Kind{
