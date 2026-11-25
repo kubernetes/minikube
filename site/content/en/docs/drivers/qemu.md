@@ -13,6 +13,10 @@ The `qemu` driver uses QEMU (system) for VM creation.
 
 <https://www.qemu.org/>
 
+## Requirements
+
+Requires QEMU 8.0 or later.
+
 ## Usage
 
 To start minikube with the qemu driver:
