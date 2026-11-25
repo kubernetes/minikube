@@ -36,3 +36,14 @@ func OpenURL(url string) error {
 	}
 	return browser.OpenURL(url)
 }
+
+// OpenFirstURL opens the first of the URLs. A service with more than one port
+// has several URLs, but opening a browser tab for each is never what a user
+// wants, so only the first one is opened. The others stay available through
+// the --url flag or "minikube service list".
+func OpenFirstURL(urls []string) error {
+	if len(urls) == 0 {
+		return nil
+	}
+	return OpenURL(urls[0])
+}
