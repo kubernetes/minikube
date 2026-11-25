@@ -31,6 +31,13 @@ const (
 	downloadURL = "https://storage.googleapis.com/minikube/releases/%s/minikube-%s-%s%s"
 )
 
+// HasVolumeName reports whether path starts with a volume name, such as the
+// drive letter in "C:/a" or "C:\\a", or a UNC share. Volume names only exist on
+// Windows, so it always returns false on other platforms.
+func HasVolumeName(path string) bool {
+	return filepath.VolumeName(path) != ""
+}
+
 // CalculateSizeInMB returns the number of MB in the human readable string
 func CalculateSizeInMB(humanReadableSize string) (int, error) {
 	_, err := strconv.ParseInt(humanReadableSize, 10, 64)
