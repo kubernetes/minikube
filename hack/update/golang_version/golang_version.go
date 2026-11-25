@@ -120,16 +120,15 @@ func goVersions() (stable, k8sVersion string, err error) {
 	if err != nil {
 		return "", "", err
 	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("Go build image version endpoint returned %s", resp.Status)
+	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", "", err
 	}
-	// example response: v1.23.0-go1.17-buster.0
-	stable = string(body)
-	k8sVersion = strings.Split(stable, "-")[0]
-	stable = strings.Split(stable, "-")[1]
-	stable = strings.Replace(stable, "go", "", 1)
-	return stable, k8sVersion, nil
+	return parseGoBuildImageVersion(string(body))
 }
 
 func updateGoHashFile(version string) error {
