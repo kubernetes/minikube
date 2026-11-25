@@ -135,6 +135,14 @@ func setDstFileNameFromSrc(dst, src string) string {
 
 // split path to node name and file path
 func newRemotePath(path string) *remotePath {
+	// A Windows path with a drive letter and forward slashes (e.g. "C:/a")
+	// is a local path, not a <node>:<abs path> pair. The backslash form
+	// ("C:\a") already falls through below because the remainder does not
+	// start with "/"; the forward-slash form must be excluded explicitly.
+	if len(path) >= 3 && path[1] == ':' && path[2] == '/' && isASCIILetter(path[0]) {
+		return &remotePath{node: "", path: path}
+	}
+
 	// if destination path is not a absolute path, trying to parse with <node>:<abs path> format
 	sp := strings.SplitN(path, ":", 2)
 	if len(sp) == 2 && len(sp[0]) > 0 && !strings.Contains(sp[0], "/") && strings.HasPrefix(sp[1], "/") {
@@ -142,6 +150,12 @@ func newRemotePath(path string) *remotePath {
 	}
 
 	return &remotePath{node: "", path: path}
+}
+
+// isASCIILetter reports whether c is an ASCII letter, as used by Windows
+// drive letters.
+func isASCIILetter(c byte) bool {
+	return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
 }
 
 func remoteCommandRunner(co *mustload.ClusterController, nodeName string) command.Runner {
