@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -107,10 +108,10 @@ const (
 	dryRun                  = "dry-run"
 	waitTimeout             = "wait-timeout"
 	nativeSSH               = "native-ssh"
-	minUsableMem            = 1800 // Kubernetes (kubeadm) will not start with less
+	minUsableMem            = cmdcfg.MinimumMemoryMB
 	minRecommendedMem       = 1900 // Warn at no lower than existing configurations
-	minimumCPUS             = 2
-	minimumDiskSize         = 2000
+	minimumCPUS             = cmdcfg.MinimumCPUs
+	minimumDiskSize         = cmdcfg.MinimumDiskSizeMB
 	hostOnlyNicType         = "host-only-nic-type"
 	natNicType              = "nat-nic-type"
 	ha                      = "ha"
