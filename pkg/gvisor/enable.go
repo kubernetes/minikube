@@ -17,6 +17,8 @@ limitations under the License.
 package gvisor
 
 import (
+	"archive/tar"
+	"compress/bzip2"
 	"fmt"
 	"io"
 	"log"
@@ -24,9 +26,12 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
+	"time"
 
 	"k8s.io/minikube/pkg/libmachine/mcnutils"
 )
@@ -43,13 +48,19 @@ const (
 `
 )
 
-var (
-	shimURL   = releaseURL() + "containerd-shim-runsc-v1"
-	gvisorURL = releaseURL() + "runsc"
-)
+// gvisorTarballURL points at the bz2 release archive. bz2 (not zstd) is
+// deliberate: the stdlib decompresses it with no new dependencies, and the
+// addon image has no zstd binary to shell out to.
+func gvisorTarballURL() string {
+	return releaseURL() + "gvisor.tar.bz2"
+}
 
 func releaseURL() string {
-	arch := runtime.GOARCH
+	return releaseArchURL(runtime.GOARCH)
+}
+
+func releaseArchURL(goarch string) string {
+	arch := goarch
 	switch arch {
 	case "amd64":
 		arch = "x86_64"
@@ -111,59 +122,176 @@ func makeGvisorDirs() error {
 }
 
 func downloadBinaries() error {
-	if err := runsc(); err != nil {
-		return fmt.Errorf("downloading runsc: %w", err)
+	return downloadBinariesFrom(gvisorTarballURL(), filepath.Join(nodeDir, "usr/bin"))
+}
+
+func downloadBinariesFrom(url, binDir string) error {
+	tmp, err := downloadToTemp(url)
+	if err != nil {
+		return fmt.Errorf("downloading %s: %w", url, err)
 	}
-	if err := gvisorContainerdShim(); err != nil {
-		return fmt.Errorf("downloading gvisor-containerd-shim: %w", err)
+	defer os.Remove(tmp)
+	if err := extractGvisorTarball(tmp, binDir); err != nil {
+		return fmt.Errorf("installing gvisor binaries: %w", err)
 	}
 	return nil
 }
 
-// downloads the gvisor-containerd-shim
-func gvisorContainerdShim() error {
-	dest := filepath.Join(nodeDir, "usr/bin/containerd-shim-runsc-v1")
-	return downloadFileToDest(shimURL, dest)
-}
-
-// downloads the runsc binary and returns a path to the binary
-func runsc() error {
-	dest := filepath.Join(nodeDir, "usr/bin/runsc")
-	return downloadFileToDest(gvisorURL, dest)
-}
-
-// downloadFileToDest downloads the given file to the dest
-// if something already exists at dest, first remove it
-func downloadFileToDest(url, dest string) error {
-	client := &http.Client{}
+// downloadToTemp fetches url to a temp file, failing closed on non-200
+// so an error page is never mistaken for a usable binary.
+func downloadToTemp(url string) (string, error) {
+	client := &http.Client{Timeout: 5 * time.Minute}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return fmt.Errorf("creating request for %s: %w", url, err)
+		return "", fmt.Errorf("creating request for %s: %w", url, err)
 	}
 	req.Header.Set("User-Agent", "minikube")
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("downloading %s: unexpected HTTP status %s", url, resp.Status)
+		return "", fmt.Errorf("unexpected HTTP status %s", resp.Status)
 	}
-	if _, err := os.Stat(dest); err == nil {
-		if err := os.Remove(dest); err != nil {
-			return fmt.Errorf("removing %s for overwrite: %w", dest, err)
+	tmp, err := os.CreateTemp("", "gvisor-*.tar.bz2")
+	if err != nil {
+		return "", fmt.Errorf("creating temp file: %w", err)
+	}
+	tmpName := tmp.Name()
+	n, copyErr := io.Copy(tmp, resp.Body)
+	closeErr := tmp.Close()
+	if copyErr != nil {
+		os.Remove(tmpName)
+		return "", fmt.Errorf("copying response body: %w", copyErr)
+	}
+	if closeErr != nil {
+		os.Remove(tmpName)
+		return "", fmt.Errorf("closing temp file: %w", closeErr)
+	}
+	if n == 0 {
+		os.Remove(tmpName)
+		return "", fmt.Errorf("empty response for %s", url)
+	}
+	return tmpName, nil
+}
+
+// extractGvisorTarball installs runsc, containerd-shim-runsc-v1 and the
+// gvisor-bin sidecars runsc resolves next to its own binary.
+func extractGvisorTarball(tarballPath, binDir string) error {
+	f, err := os.Open(tarballPath)
+	if err != nil {
+		return fmt.Errorf("opening tarball: %w", err)
+	}
+	defer f.Close()
+	return extractTarBz2(f, binDir)
+}
+
+func extractTarBz2(r io.Reader, binDir string) error {
+	return extractTar(bzip2.NewReader(r), binDir)
+}
+
+func extractTar(r io.Reader, binDir string) error {
+	tr := tar.NewReader(r)
+	found := map[string]bool{"runsc": false, "containerd-shim-runsc-v1": false}
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("reading tarball: %w", err)
+		}
+		name := path.Clean(hdr.Name)
+		name = strings.TrimPrefix(name, "./")
+		name = strings.TrimPrefix(name, "/")
+		if name == "." || name == "" || hasDotDotComponent(name) {
+			return fmt.Errorf("rejecting unsafe tar entry %q", hdr.Name)
+		}
+		if !allowedTarEntry(name) {
+			continue
+		}
+		if hdr.Typeflag == tar.TypeDir {
+			if err := os.MkdirAll(filepath.Join(binDir, name), 0755); err != nil {
+				return fmt.Errorf("creating dir for %s: %w", name, err)
+			}
+			continue
+		}
+		if hdr.Typeflag == tar.TypeSymlink || hdr.Typeflag == tar.TypeLink {
+			return fmt.Errorf("rejecting link tar entry %q", hdr.Name)
+		}
+		if hdr.Typeflag != tar.TypeReg && hdr.Typeflag != tar.TypeRegA {
+			continue
+		}
+		dest := filepath.Join(binDir, name)
+		if !strings.HasPrefix(dest, filepath.Clean(binDir)+string(os.PathSeparator)) && dest != filepath.Clean(binDir) {
+			return fmt.Errorf("rejecting tar entry outside bin dir %q", hdr.Name)
+		}
+		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+			return fmt.Errorf("creating dir for %s: %w", name, err)
+		}
+		if err := writeExecutable(tr, dest); err != nil {
+			return fmt.Errorf("installing %s: %w", name, err)
+		}
+		if _, ok := found[name]; ok {
+			found[name] = true
 		}
 	}
-	fi, err := os.Create(dest)
+	for name, ok := range found {
+		if !ok {
+			return fmt.Errorf("tarball missing required binary %q", name)
+		}
+	}
+	return nil
+}
+
+func hasDotDotComponent(name string) bool {
+	for _, part := range strings.Split(name, "/") {
+		if part == ".." {
+			return true
+		}
+	}
+	return false
+}
+
+func allowedTarEntry(name string) bool {
+	if name == "runsc" || name == "containerd-shim-runsc-v1" {
+		return true
+	}
+	if strings.HasPrefix(name, "gvisor-bin/") {
+		base := strings.TrimPrefix(name, "gvisor-bin/")
+		return base != "" && !strings.Contains(base, "/")
+	}
+	return false
+}
+
+func writeExecutable(src io.Reader, dest string) error {
+	tmp, err := os.CreateTemp(filepath.Dir(dest), ".tmp-*")
 	if err != nil {
-		return fmt.Errorf("creating %s: %w", dest, err)
+		return fmt.Errorf("creating temp file: %w", err)
 	}
-	defer fi.Close()
-	if _, err := io.Copy(fi, resp.Body); err != nil {
-		return fmt.Errorf("copying binary: %w", err)
+	tmpName := tmp.Name()
+	n, copyErr := io.Copy(tmp, src)
+	closeErr := tmp.Close()
+	if copyErr != nil {
+		os.Remove(tmpName)
+		return fmt.Errorf("copying binary: %w", copyErr)
 	}
-	if err := fi.Chmod(0777); err != nil {
+	if closeErr != nil {
+		os.Remove(tmpName)
+		return fmt.Errorf("closing temp file: %w", closeErr)
+	}
+	if n == 0 {
+		os.Remove(tmpName)
+		return fmt.Errorf("empty binary %q", dest)
+	}
+	if err := os.Chmod(tmpName, 0755); err != nil {
+		os.Remove(tmpName)
 		return fmt.Errorf("fixing perms: %w", err)
+	}
+	if err := os.Rename(tmpName, dest); err != nil {
+		os.Remove(tmpName)
+		return fmt.Errorf("moving %s into place: %w", dest, err)
 	}
 	return nil
 }
