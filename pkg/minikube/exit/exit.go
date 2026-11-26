@@ -20,7 +20,6 @@ package exit
 import (
 	"fmt"
 	"os"
-	"runtime"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -81,12 +80,15 @@ func Advice(r reason.Kind, msg string, advice string, a ...out.V) {
 	Message(r, msg, a...)
 }
 
-// Error takes a fatal error, matches it against known issues, and outputs the best message for it
+// Error takes a fatal error and outputs the caller's message for it.
+//
+// Known-issue matching used to live here, but it silently replaced the
+// caller-selected reason, message and exit code whenever the raw error
+// text matched a global regex (see #24122): what the developer wrote was
+// not necessarily what users saw. Code that needs to change behavior based
+// on error text should call reason.MatchKnownIssue explicitly, as
+// validateDriver does, so the override is visible at the call site.
 func Error(r reason.Kind, msg string, err error) {
-	ki := reason.MatchKnownIssue(r, err, runtime.GOOS)
-	if ki != nil {
-		Message(*ki, err.Error())
-	}
 	// By default, unmatched errors should show a link
 	r.NewIssueLink = true
 	Message(r, fmt.Sprintf("%s: %v", msg, err))
