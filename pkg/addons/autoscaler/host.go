@@ -80,7 +80,7 @@ type clusterAutoscalerDefaults struct {
 	CooldownSeconds         int    `json:"cooldownSeconds"`
 }
 
-func defaultClusterAutoscalerConfig(cc *config.ClusterConfig, hostIP net.IP, hostMemoryMiB uint64) (clusterAutoscalerDefaults, error) {
+func defaultClusterAutoscalerConfig(cc *config.ClusterConfig, hostIP net.IP, hostMemoryMiB uint64, maximum int) (clusterAutoscalerDefaults, error) {
 	c := clusterAutoscalerDefaults{
 		Profile: cc.Name, Namespace: "kube-system", MinWorkers: 0,
 		ProvisionTimeoutSeconds: 900, CooldownSeconds: 30,
@@ -94,7 +94,17 @@ func defaultClusterAutoscalerConfig(cc *config.ClusterConfig, hostIP net.IP, hos
 	}
 	// Reserve at least a quarter of physical memory for the host and provider.
 	budget := int(hostMemoryMiB * 3 / 4)
-	c.MaxWorkers = min(2, budget/cc.Memory-len(cc.Nodes))
+	available := budget/cc.Memory - len(cc.Nodes)
+	if maximum < 0 || maximum > 16 {
+		return c, fmt.Errorf("requested additional worker limit must be from 1 to 16, or zero for automatic defaults")
+	}
+	if maximum > 0 && maximum > available {
+		return c, fmt.Errorf("requested worker ceiling exceeds the host memory budget; reduce the limit or VM memory")
+	}
+	if maximum == 0 {
+		maximum = 2
+	}
+	c.MaxWorkers = min(maximum, available)
 	if c.MaxWorkers < 1 {
 		return c, fmt.Errorf("not enough host memory for an additional worker; use a cluster with smaller --memory")
 	}
@@ -171,7 +181,7 @@ func prepareClusterAutoscaler(ctx context.Context, cc *config.ClusterConfig, set
 			}
 			memoryBytes = min(memoryBytes, uint64(daemon.TotalMemory))
 		}
-		defaults, err := defaultClusterAutoscalerConfig(cc, hostIP, memoryBytes/(1024*1024))
+		defaults, err := defaultClusterAutoscalerConfig(cc, hostIP, memoryBytes/(1024*1024), settings.MaxWorkers)
 		if err != nil {
 			return err
 		}
@@ -181,6 +191,10 @@ func prepareClusterAutoscaler(ctx context.Context, cc *config.ClusterConfig, set
 		out.Infof("Cluster Autoscaler will allow up to {{.workers}} additional workers.", out.V{"workers": defaults.MaxWorkers})
 	} else if err != nil {
 		return err
+	} else if settings.MaxWorkers > 0 {
+		if err := validateSavedWorkerLimit(configPath, settings.MaxWorkers); err != nil {
+			return err
+		}
 	}
 	if _, err := os.Stat(filepath.Join(settings.StateDir, "provider", "state.json")); os.IsNotExist(err) {
 		if _, err := os.Stat(filepath.Join(settings.StateDir, "host", "bridge.json")); !os.IsNotExist(err) {
@@ -191,6 +205,23 @@ func prepareClusterAutoscaler(ctx context.Context, cc *config.ClusterConfig, set
 	} else {
 		return err
 	}
+}
+
+// validateSavedWorkerLimit preserves the initialized pool instead of silently
+// ignoring a newly requested ceiling or overwriting ownership configuration.
+func validateSavedWorkerLimit(path string, maximum int) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	var saved clusterAutoscalerDefaults
+	if err := json.Unmarshal(data, &saved); err != nil {
+		return fmt.Errorf("reading saved cluster-autoscaler worker limit: %w", err)
+	}
+	if saved.MaxWorkers != maximum {
+		return fmt.Errorf("requested worker ceiling differs from saved cluster-autoscaler config.json; reconcile the existing pool before changing its limit")
+	}
+	return nil
 }
 
 // Use a hard link where possible. Windows symlinks require privileges that an

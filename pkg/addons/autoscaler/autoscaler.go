@@ -133,6 +133,14 @@ func clusterAutoscalerSettings(cc *config.ClusterConfig, enable bool) (config.Cl
 			*target = value
 		}
 	}
+	// Resolve this input only at initial configuration; active ownership keeps its saved scope.
+	if value, present := os.LookupEnv("MINIKUBE_AUTOSCALER_MAX_WORKERS"); present {
+		maximum, err := strconv.Atoi(value)
+		if err != nil || maximum < 1 || maximum > 16 {
+			return settings, fmt.Errorf("MINIKUBE_AUTOSCALER_MAX_WORKERS must be an integer from 1 to 16")
+		}
+		settings.MaxWorkers = maximum
+	}
 	if settings.AddonPath == "" {
 		settings.AddonPath = discoverClusterAutoscaler()
 		if settings.AddonPath == "" {
@@ -210,7 +218,7 @@ func validateClusterAutoscaler(cc *config.ClusterConfig, goos, goarch string) er
 	if (goos != "darwin" && goos != "linux" && goos != "windows") || (goarch != "amd64" && goarch != "arm64") {
 		return fmt.Errorf("cluster-autoscaler supports macOS, Linux and Windows on amd64 and arm64; got %s/%s", goos, goarch)
 	}
-	nativeVM := goos == "darwin" && goarch == "arm64" && cc.Driver == "vfkit"
+	nativeVM := goos == "darwin" && cc.Driver == "vfkit"
 	driver := "kvm2"
 	if goos == "darwin" {
 		driver = "qemu2"
@@ -230,8 +238,10 @@ func validateClusterAutoscaler(cc *config.ClusterConfig, goos, goarch string) er
 		return fmt.Errorf("cluster-autoscaler requires --network=socket_vmnet with qemu2")
 	}
 	v, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
-	if err != nil || v.Major != 1 || v.Minor != 35 {
-		return fmt.Errorf("cluster-autoscaler pins Cluster Autoscaler 1.35 and requires Kubernetes v1.35.x; got %q", cc.KubernetesConfig.KubernetesVersion)
+	// The separately installed provider owns exact release/image compatibility.
+	// Keep only the minimum stable API requirement here so normal Minikube defaults work.
+	if err != nil || v.Major != 1 || v.Minor < 35 || len(v.Pre) != 0 {
+		return fmt.Errorf("cluster-autoscaler requires stable Kubernetes v1.35 or newer; the installed provider validates image compatibility; got %q", cc.KubernetesConfig.KubernetesVersion)
 	}
 	controlPlanes := 0
 	for _, n := range cc.Nodes {

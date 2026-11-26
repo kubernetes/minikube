@@ -217,11 +217,11 @@ func TestClusterAutoscalerFailures(t *testing.T) {
 				}
 				wantError = "incomplete ownership"
 			case "unsupported cluster":
-				cc.KubernetesConfig.KubernetesVersion = "v1.37.0"
+				cc.KubernetesConfig.KubernetesVersion = "v1.34.0"
 				if err := config.Write(cc.Name, cc); err != nil {
 					t.Fatal(err)
 				}
-				wantError = "requires Kubernetes v1.35.x"
+				wantError = "requires stable Kubernetes v1.35 or newer"
 			}
 			err := addons.SetAndSave(cc.Name, "cluster-autoscaler", value, &run.CommandOptions{})
 			if err == nil || !strings.Contains(err.Error(), wantError) {

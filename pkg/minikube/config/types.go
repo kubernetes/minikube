@@ -115,10 +115,11 @@ type ClusterConfig struct {
 // ClusterAutoscalerConfig locates the separately installed autoscaler and its
 // profile-specific state. Credentials remain in StateDir, outside the profile.
 type ClusterAutoscalerConfig struct {
-	AddonPath string
-	StateDir  string
-	Binary    string
-	Image     string
+	AddonPath  string
+	StateDir   string
+	Binary     string
+	Image      string
+	MaxWorkers int
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

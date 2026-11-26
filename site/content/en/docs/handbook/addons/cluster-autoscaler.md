@@ -13,7 +13,7 @@ Existing nodes are kept.
 
 ### Prerequisites
 
-- A running Kubernetes 1.35.x cluster with one control-plane node.
+- A running stable Kubernetes cluster (v1.35 or newer) with one control-plane node. The installed provider validates the matching autoscaler image.
 - Docker running, with Git, Go (the version in the addon's
   [`.go-version`](https://github.com/astrivant/minikube-cluster-autoscaler-addon/blob/main/.go-version)),
   Helm and kubectl installed.
@@ -37,6 +37,13 @@ Minikube discovers this installation, builds the components, and configures and
 starts the addon automatically. By default, it allows up to two additional
 workers, limited by your host's memory. No separate terminal or configuration
 file is needed.
+
+Before first enable, set `MINIKUBE_AUTOSCALER_MAX_WORKERS` to an integer from
+1 through 16 to choose a different ceiling for additional workers. For a
+one-to-four-node cluster, start with one base node and set this value to `3`.
+The explicit ceiling must fit the host memory budget; it is never silently
+reduced. Enabled pools retain their saved configuration, and a conflicting limit
+on re-enable fails until the existing pool configuration is reconciled.
 
 These commands use the default Minikube home directory. For custom paths or
 prebuilt release bundles, see the project's
