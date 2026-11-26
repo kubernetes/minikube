@@ -1,3 +1,5 @@
+<!-- witful-work-graph:begin -->
+
 ```mermaid
 ---
 config: {"flowchart": {"rankSpacing": 90, "subGraphTitleMargin": {"bottom": 24, "top": 0}}, "layout": "dagre", "theme": "base", "themeVariables": {"edgeLabelBackground": "#F8F9F4", "lineColor": "#647D8B", "primaryTextColor": "#243746"}}
@@ -7,7 +9,7 @@ flowchart TB
         n2ad562319767157087dda0dec6391f4479f8a04869ab0cc8d3a9c3637dae73b5["branch: cluster-autoscaler-addon (review)"]
     end
     subgraph n1581e27de87bffae0bd4d745cd7964e68528d7a83e2e4c259a782d275df6f558["`project: kubernetes/minikube`"]
-        nc97ace4c8fef2cee8fa0f3c9f52aab18dbd4f42438afe362ffb8f75ce4c04b84["review #35;23809: Native shared-vmnet autoscaler support (open#59; draft#59; review)"]
+        nc97ace4c8fef2cee8fa0f3c9f52aab18dbd4f42438afe362ffb8f75ce4c04b84["review #35;23809: Native shared-vmnet autoscaler support (open#59; review)"]
         n34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c["branch: master"]
     end
     n2ad562319767157087dda0dec6391f4479f8a04869ab0cc8d3a9c3637dae73b5 -->|based on| n34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c
@@ -25,8 +27,14 @@ flowchart TB
     linkStyle 1 stroke:#B77E79,color:#243746
 ```
 
-- [astrivant/minikube](https://github.com/astrivant/minikube)
-- [kubernetes/minikube](https://github.com/kubernetes/minikube)
-- [master](https://github.com/kubernetes/minikube/tree/master)
-- [cluster-autoscaler-addon](https://github.com/astrivant/minikube/tree/cluster-autoscaler-addon)
-- [Native shared-vmnet autoscaler support](https://github.com/kubernetes/minikube/pull/23809)
+Containment shows ownership; arrows name recorded relationships.
+
+Associated work:
+
+- [branch: cluster\-autoscaler\-addon](<https://github.com/astrivant/minikube/tree/cluster-autoscaler-addon>)
+- [project: astrivant/minikube](<https://github.com/astrivant/minikube>)
+- [review \#23809: Native shared\-vmnet autoscaler support](<https://github.com/kubernetes/minikube/pull/23809>)
+- [branch: master](<https://github.com/kubernetes/minikube/tree/master>)
+- [project: kubernetes/minikube](<https://github.com/kubernetes/minikube>)
+
+<!-- witful-work-graph:end -->

@@ -1,126 +1,16 @@
 {
   "source": {
-    "repository": "astrivant/minikube",
-    "target_repository": "kubernetes/minikube",
-    "base": "cdaedb008576ad3dcb44c8419600225e07e48ed6",
-    "head": "8cd037701a3d11d32d6d421ed825f8d6e8e2b3cc",
+    "repository": "minikube",
+    "base": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "head": "77640bc151256379c236be6495493c02eca58b38",
     "excluded_root": ".github/review-evidence/",
     "scope": "Exact root excluded before aggregation; cross-boundary moves retained."
   },
-  "changed_files": 17,
-  "file_pages": 2,
-  "files": [
-    {
-      "before": "pkg/addons/autoscaler/host.go",
-      "after": "pkg/addons/autoscaler/host.go",
-      "added": 370,
-      "deleted": 0
-    },
-    {
-      "before": "pkg/addons/autoscaler/integration_test.go",
-      "after": "pkg/addons/autoscaler/integration_test.go",
-      "added": 296,
-      "deleted": 0
-    },
-    {
-      "before": "pkg/addons/autoscaler/autoscaler.go",
-      "after": "pkg/addons/autoscaler/autoscaler.go",
-      "added": 253,
-      "deleted": 0
-    },
-    {
-      "before": "pkg/addons/autoscaler/autoscaler_test.go",
-      "after": "pkg/addons/autoscaler/autoscaler_test.go",
-      "added": 170,
-      "deleted": 0
-    },
-    {
-      "before": "pkg/addons/autoscaler/process_test.go",
-      "after": "pkg/addons/autoscaler/process_test.go",
-      "added": 124,
-      "deleted": 0
-    },
-    {
-      "before": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
-      "after": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
-      "added": 60,
-      "deleted": 0
-    },
-    {
-      "before": "deploy/addons/cluster-autoscaler/README.md",
-      "after": "deploy/addons/cluster-autoscaler/README.md",
-      "added": 49,
-      "deleted": 0
-    },
-    {
-      "before": "pkg/minikube/node/start_test.go",
-      "after": "pkg/minikube/node/start_test.go",
-      "added": 43,
-      "deleted": 0
-    },
-    {
-      "before": "pkg/addons/autoscaler/process_windows.go",
-      "after": "pkg/addons/autoscaler/process_windows.go",
-      "added": 31,
-      "deleted": 0
-    },
-    {
-      "before": "pkg/addons/autoscaler/process_unix.go",
-      "after": "pkg/addons/autoscaler/process_unix.go",
-      "added": 28,
-      "deleted": 0
-    },
-    {
-      "before": "pkg/minikube/node/start.go",
-      "after": "pkg/minikube/node/start.go",
-      "added": 19,
-      "deleted": 6
-    },
-    {
-      "before": "cmd/minikube/cmd/delete.go",
-      "after": "cmd/minikube/cmd/delete.go",
-      "added": 16,
-      "deleted": 0
-    },
-    {
-      "before": "pkg/minikube/config/types.go",
-      "after": "pkg/minikube/config/types.go",
-      "added": 13,
-      "deleted": 3
-    },
-    {
-      "before": "cmd/minikube/cmd/stop.go",
-      "after": "cmd/minikube/cmd/stop.go",
-      "added": 12,
-      "deleted": 0
-    },
-    {
-      "before": "pkg/addons/addons.go",
-      "after": "pkg/addons/addons.go",
-      "added": 8,
-      "deleted": 0
-    },
-    {
-      "before": "pkg/addons/config.go",
-      "after": "pkg/addons/config.go",
-      "added": 6,
-      "deleted": 0
-    },
-    {
-      "before": "pkg/minikube/assets/addons.go",
-      "after": "pkg/minikube/assets/addons.go",
-      "added": 3,
-      "deleted": 0
-    }
+  "generated": [
+    "language",
+    "files",
+    "intent"
   ],
-  "artifacts": {
-    "languages.png": "b2d84515a1a3129c71e4adec128a2f02fb316a78c1370157b9f8a3cce49656ee",
-    "directory.png": "52d036b66bb187617ff7bff7ab30f99cb03199f41cc5ae7608cd6bf53bb4cd82",
-    "files-001.png": "c5bade95f9841fd475ce4b8d855427c19de2b4143d81662667b784a89d5a0921",
-    "files-002.png": "5bb743525519f5bd66c83f020d3f9beb6df23356711356b1de9af82cf2e031d2",
-    "intent.png": "0582057ecb51540f1159efa76e07cb7fa63282a113b48a831692583d9427e3c6"
-  },
-  "palette_sha256": "d51ee253badfe7a5683af852a69973690c686e77774fcf7e4b76611db62dfdf1",
-  "intent": "Unavailable canonical source-bound claims. No purpose inferred from touched paths.",
-  "inspection": "Deterministic render only; no image-inspection claim."
+  "intent": "Canonical intent export unavailable; no purpose inferred from touched paths.",
+  "inspection": "Deterministic generation only; no visual-inspection claim."
 }
