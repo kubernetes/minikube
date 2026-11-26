@@ -14,6 +14,7 @@ Existing nodes are kept.
 ### Prerequisites
 
 - A running stable Kubernetes cluster (v1.35 or newer) with one control-plane node. The installed provider validates the matching autoscaler image.
+- A cluster-wide CNI, such as `minikube start --cni=kindnet`, even when initially starting with one node. A single-node bridge-only default does not initialize networking for later elastic workers.
 - Docker running, with Git, Go (the version in the addon's
   [`.go-version`](https://github.com/astrivant/minikube-cluster-autoscaler-addon/blob/main/.go-version)),
   Helm and kubectl installed.
