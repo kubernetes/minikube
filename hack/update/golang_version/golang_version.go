@@ -84,7 +84,7 @@ type Data struct {
 }
 
 func main() {
-	update.Init()
+	update.InitFlags()
 	addGitHubWorkflowFiles()
 
 	// get Golang stable version

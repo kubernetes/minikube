@@ -40,7 +40,7 @@ type Data struct {
 }
 
 func main() {
-	update.Init()
+	update.InitFlags()
 	tags, err := update.ImageTagsFromDockerHub("bitnami/kubectl")
 	if err != nil {
 		klog.Fatal(err)

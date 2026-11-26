@@ -77,7 +77,7 @@ type Data struct {
 }
 
 func main() {
-	update.Init()
+	update.InitFlags()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 

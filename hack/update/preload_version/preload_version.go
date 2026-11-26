@@ -49,7 +49,7 @@ type Data struct {
 }
 
 func main() {
-	update.Init()
+	update.InitFlags()
 	// Get current preload version.
 	vCurrent, err := getPreloadVersion()
 	if err != nil {
