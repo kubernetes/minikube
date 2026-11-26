@@ -38,7 +38,7 @@ const (
 )
 
 // init klog and check general requirements
-func init() {
+func InitFlags() {
 	klog.InitFlags(nil)
 	if err := flag.Set("logtostderr", "false"); err != nil {
 		klog.Warningf("Unable to set flag value for logtostderr: %v", err)

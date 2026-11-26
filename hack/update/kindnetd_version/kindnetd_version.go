@@ -37,6 +37,7 @@ type Data struct {
 }
 
 func main() {
+	update.InitFlags()
 	tags, err := update.ImageTagsFromDockerHub("kindest/kindnetd")
 	if err != nil {
 		klog.Fatal(err)

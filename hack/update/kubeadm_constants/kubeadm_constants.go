@@ -58,6 +58,7 @@ type Data struct {
 }
 
 func main() {
+	update.InitFlags()
 	minver := constants.OldestKubernetesVersion
 
 	releases := []string{}

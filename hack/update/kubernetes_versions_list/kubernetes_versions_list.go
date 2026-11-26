@@ -50,6 +50,7 @@ type Data struct {
 }
 
 func main() {
+	update.InitFlags()
 	releases := []string{}
 
 	ghc := update.GHClient()

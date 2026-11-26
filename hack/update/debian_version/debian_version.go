@@ -72,6 +72,7 @@ func latestSlimTag(tags []string) (string, error) {
 }
 
 func main() {
+	update.InitFlags()
 	tags, err := update.ImageTagsFromDockerHub("library/debian")
 	if err != nil {
 		klog.Fatal(err)
