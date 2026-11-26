@@ -24,10 +24,10 @@ import (
 
 const (
 	// Version is the current version of kic
-	Version = "v0.0.51-1795248759-24108"
+	Version = "v0.0.51-1795600926-24126"
 
 	// SHA of the kic base image
-	baseImageSHA = "f090e26bf50df4d084957215f6ff735acf3bb0e72a95bf6c11e9de8e35d461ad"
+	baseImageSHA = "85af509d9f28d47934a8dd52a229b8d3bacfb4017066e664e18d8a6ecf0d5a3c"
 	// The name of the GCR kicbase repository
 	gcrRepo = "docker.io/kicbase/build"
 	// The name of the Dockerhub kicbase repository
@@ -48,6 +48,13 @@ var (
 		fmt.Sprintf("%s:%s", dockerhubRepo, Version),
 	}
 )
+
+// DefaultImages returns the kicbase images used by default, in priority order.
+// Only the primary image is published at the moment; additional registry
+// fallbacks can be appended when they are available.
+func DefaultImages() []string {
+	return []string{BaseImage}
+}
 
 // Config is configuration for the kic driver used by registry
 type Config struct {

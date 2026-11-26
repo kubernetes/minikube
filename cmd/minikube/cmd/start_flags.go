@@ -171,7 +171,14 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(flags.DownloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.")
 	startCmd.Flags().StringSlice(isoURL, download.DefaultISOURLs(), "Locations to fetch the minikube ISO from.")
-	startCmd.Flags().String(kicBaseImage, kic.BaseImage, "The base image to use for docker/podman drivers. Intended for local development.")
+
+	// Use empty default to suppress the (default ...) value in help text. This
+	// avoids the need to generate the docs when updating the kicbase image.
+	// The default value is set with viper to keep the runtime behavior.
+	// See https://github.com/kubernetes/minikube/issues/24111
+	startCmd.Flags().String(kicBaseImage, "", "The base image to use for docker/podman drivers. Intended for local development. See \"minikube version\" for the default images.")
+	viper.SetDefault(kicBaseImage, kic.BaseImage)
+
 	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
 	startCmd.Flags().StringP(containerRuntime, "c", constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used. Valid options: %s (default: auto)", strings.Join(cruntime.ValidRuntimes(), ", ")))

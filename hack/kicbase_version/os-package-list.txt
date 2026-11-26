@@ -35,8 +35,8 @@ ii  diffutils                       1:3.10-4                             amd64  
 ii  dirmngr                         2.4.7-21+deb13u1+b5                  amd64        GNU privacy guard - network certificate management service
 ii  dmsetup                         2:1.02.205-2                         amd64        Linux Kernel Device Mapper userspace library
 ii  docker-buildx-plugin            0.39.1-1~debian.13~trixie            amd64        Docker Buildx plugin extends build capabilities with BuildKit.
-ii  docker-ce                       5:29.10.0-1~debian.13~trixie         amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:29.10.0-1~debian.13~trixie         amd64        Docker CLI: the open-source application container engine
+ii  docker-ce                       5:29.10.1-1~debian.13~trixie         amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:29.10.1-1~debian.13~trixie         amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.22.22                              amd64        Debian package management system
 ii  ebtables                        2.0.11-6                             amd64        Ethernet bridge frame table administration
 ii  ethtool                         1:6.14.2-1                           amd64        display or change Ethernet device settings
@@ -101,7 +101,7 @@ ii  libgmp10:amd64                  2:6.3.0+dfsg-3                       amd64  
 ii  libgnutls30t64:amd64            3.8.9-3+deb13u4                      amd64        GNU TLS library - main runtime library
 ii  libgpg-error0:amd64             1.51-4                               amd64        GnuPG development runtime library
 ii  libgpgme11t64:amd64             1.24.2-3+deb13u1                     amd64        GPGME - GnuPG Made Easy (library)
-ii  libgssapi-krb5-2:amd64          1.21.3-5+deb13u1                     amd64        MIT Kerberos runtime libraries - krb5 GSS-API Mechanism
+ii  libgssapi-krb5-2:amd64          1.21.3-5+deb13u2                     amd64        MIT Kerberos runtime libraries - krb5 GSS-API Mechanism
 ii  libhogweed6t64:amd64            3.10.1-1                             amd64        low level cryptographic library (public-key cryptos)
 ii  libidn2-0:amd64                 2.3.8-2                              amd64        Internationalized domain names (IDNA2008/TR46) library
 ii  libip4tc2:amd64                 1.8.11-2                             amd64        netfilter libip4tc library
@@ -109,11 +109,11 @@ ii  libip6tc2:amd64                 1.8.11-2                             amd64  
 ii  libjansson4:amd64               2.14-2+b3                            amd64        C library for encoding, decoding and manipulating JSON data
 ii  libjemalloc2:amd64              5.3.0-3                              amd64        general-purpose scalable concurrent malloc(3) implementation
 ii  libjson-c5:amd64                0.18+ds-1                            amd64        JSON manipulation library - shared library
-ii  libk5crypto3:amd64              1.21.3-5+deb13u1                     amd64        MIT Kerberos runtime libraries - Crypto Library
+ii  libk5crypto3:amd64              1.21.3-5+deb13u2                     amd64        MIT Kerberos runtime libraries - Crypto Library
 ii  libkeyutils1:amd64              1.6.3-6                              amd64        Linux Key Management Utilities (library)
 ii  libkmod2:amd64                  34.2-2                               amd64        libkmod shared library
-ii  libkrb5-3:amd64                 1.21.3-5+deb13u1                     amd64        MIT Kerberos runtime libraries
-ii  libkrb5support0:amd64           1.21.3-5+deb13u1                     amd64        MIT Kerberos runtime libraries - Support library
+ii  libkrb5-3:amd64                 1.21.3-5+deb13u2                     amd64        MIT Kerberos runtime libraries
+ii  libkrb5support0:amd64           1.21.3-5+deb13u2                     amd64        MIT Kerberos runtime libraries - Support library
 ii  libksba8:amd64                  1.6.7-2+b1                           amd64        X.509 and CMS support library
 ii  liblastlog2-2:amd64             2.41.5-0+deb13u1                     amd64        lastlog2 database shared library
 ii  libldap2:amd64                  2.6.10+dfsg-1                        amd64        OpenLDAP libraries
@@ -131,7 +131,7 @@ ii  libnfnetlink0:amd64             1.0.2-3                              amd64  
 ii  libnfsidmap1:amd64              1:2.8.3-1                            amd64        NFS idmapping library
 ii  libnftables1:amd64              1.1.3-1                              amd64        Netfilter nftables high level userspace API library
 ii  libnftnl11:amd64                1.2.9-1                              amd64        Netfilter nftables userspace API library
-ii  libnghttp2-14:amd64             1.64.0-1.1+deb13u1                   amd64        library implementing HTTP/2 protocol (shared library)
+ii  libnghttp2-14:amd64             1.64.0-1.1+deb13u2                   amd64        library implementing HTTP/2 protocol (shared library)
 ii  libnghttp3-9:amd64              1.8.0-1                              amd64        HTTP/3 library with QUIC and QPACK (library)
 ii  libnpth0t64:amd64               1.8-3                                amd64        replacement for GNU Pth using system threads
 ii  libnvidia-container-tools       1.20.2-1                             amd64        NVIDIA container runtime library (command-line tools)
@@ -159,7 +159,7 @@ ii  libsepol2:amd64                 3.8.1-1                              amd64  
 ii  libsmartcols1:amd64             2.41.5-0+deb13u1                     amd64        smart column output alignment library
 ii  libsqlite3-0:amd64              3.46.1-7+deb13u2                     amd64        SQLite 3 shared library
 ii  libssh2-1t64:amd64              1.11.1-1+deb13u2                     amd64        SSH2 client-side library
-ii  libssl3t64:amd64                3.5.7-1~deb13u3                      amd64        Secure Sockets Layer toolkit - shared libraries
+ii  libssl3t64:amd64                3.5.9-1~deb13u1                      amd64        Secure Sockets Layer toolkit - shared libraries
 ii  libstdc++6:amd64                14.2.0-19                            amd64        GNU Standard C++ Library v3
 ii  libsubid5:amd64                 1:4.17.4-2                           amd64        subordinate id handling library -- shared library
 ii  libsystemd-shared:amd64         257.13-1~deb13u1                     amd64        systemd shared private library
@@ -199,8 +199,8 @@ ii  nvidia-container-toolkit-base   1.20.2-1                             amd64  
 ii  openssh-client                  1:10.0p1-7+deb13u4                   amd64        secure shell (SSH) client, for secure access to remote machines
 ii  openssh-server                  1:10.0p1-7+deb13u4                   amd64        secure shell (SSH) server, for secure access from remote machines
 ii  openssh-sftp-server             1:10.0p1-7+deb13u4                   amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
-ii  openssl                         3.5.7-1~deb13u3                      amd64        Secure Sockets Layer toolkit - cryptographic utility
-ii  openssl-provider-legacy         3.5.7-1~deb13u3                      amd64        Secure Sockets Layer toolkit - cryptographic utility
+ii  openssl                         3.5.9-1~deb13u1                      amd64        Secure Sockets Layer toolkit - cryptographic utility
+ii  openssl-provider-legacy         3.5.9-1~deb13u1                      amd64        Secure Sockets Layer toolkit - cryptographic utility
 ii  passwd                          1:4.17.4-2                           amd64        change and administer password and group data
 ii  perl                            5.40.1-6+deb13u1                     amd64        Larry Wall's Practical Extraction and Report Language
 ii  perl-base                       5.40.1-6+deb13u1                     amd64        minimal Perl system
@@ -211,13 +211,13 @@ ii  podman                          5.4.2+ds1-2+b2                       amd64  
 ii  procps                          2:4.0.4-9                            amd64        /proc file system utilities
 ii  readline-common                 8.2-6                                all          GNU readline and history libraries, common files
 ii  rpcbind                         1.2.7-1                              amd64        converts RPC program numbers into universal addresses
-ii  rsync                           3.5.0+ds1-0+deb13u1                  amd64        fast, versatile, remote (and local) file-copying tool
+ii  rsync                           3.5.0+ds1-0+deb13u2                  amd64        fast, versatile, remote (and local) file-copying tool
 ii  runit-helper                    2.16.4                               all          dh-runit implementation detail
 ii  sed                             4.9-2+deb13u1                        amd64        GNU stream editor for filtering/transforming text
 ii  sensible-utils                  0.0.25                               all          Utilities for sensible alternative selection
 ii  socat                           1.8.0.3-1+deb13u1                    amd64        multipurpose relay for bidirectional data transfer
 ii  sqv                             1.3.0-3+b2                           amd64        OpenPGP signature verification program from Sequoia
-ii  sudo                            1.9.16p2-3+deb13u2                   amd64        Provide limited super user privileges to specific users
+ii  sudo                            1.9.16p2-3+deb13u5                   amd64        Provide limited super user privileges to specific users
 ii  systemd                         257.13-1~deb13u1                     amd64        system and service manager
 ii  systemd-sysv                    257.13-1~deb13u1                     amd64        system and service manager - SysV compatibility symlinks
 ii  sysvinit-utils                  3.14-4                               amd64        System-V-like utilities

@@ -27,6 +27,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/cmd/minikube/cmd/flags"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -40,17 +41,47 @@ var (
 	listComponentsVersions bool
 )
 
+// versionInfo contains the data printed by the version command. It holds
+// collected version data only; formatting is done separately.
+type versionInfo struct {
+	Version    string
+	Commit     string
+	Kicbase    []string
+	Components map[string]string
+}
+
+// values returns the machine-readable version data. Values are interface{}
+// because the output will also include lists such as kicbase and iso images.
+func (d versionInfo) values() map[string]interface{} {
+	values := map[string]interface{}{
+		"minikubeVersion": d.Version,
+		"commit":          d.Commit,
+	}
+	if len(d.Kicbase) > 0 {
+		values["kicbase"] = d.Kicbase
+	}
+	for key, value := range d.Components {
+		values[key] = value
+	}
+	return values
+}
+
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version of minikube",
 	Long:  `Print the version of minikube.`,
 	Run: func(_ *cobra.Command, _ []string) {
+		switch versionOutput {
+		case "", "yaml", "json":
+		default:
+			exit.Message(reason.InternalOutputUsage, "error: --output must be 'yaml' or 'json'")
+		}
+
 		options := flags.CommandOptions()
-		minikubeVersion := version.GetVersion()
-		gitCommitID := version.GetGitCommitID()
-		data := map[string]interface{}{
-			"minikubeVersion": minikubeVersion,
-			"commit":          gitCommitID,
+		info := versionInfo{
+			Version: version.GetVersion(),
+			Commit:  version.GetGitCommitID(),
+			Kicbase: kic.DefaultImages(),
 		}
 
 		if listComponentsVersions && !shortVersion {
@@ -69,59 +100,74 @@ var versionCmd = &cobra.Command{
 				"runc":        exec.Command("runc", "--version"),
 				"crun":        exec.Command("crun", "--version"),
 			}
+			info.Components = make(map[string]string, len(versionCMDS))
 			for k, v := range versionCMDS {
 				rr, err := runner.RunCmd(v)
 				if err != nil {
 					klog.Warningf("error getting %s's version: %v", k, err)
-					data[k] = "error"
+					info.Components[k] = "error"
 				} else {
 					version := rr.Stdout.String()
 					// remove extra lines after the version
 					version = strings.Split(version, "\n")[0]
-					data[k] = strings.TrimSpace(version)
+					info.Components[k] = strings.TrimSpace(version)
 				}
 
 			}
 
 		}
 
-		switch versionOutput {
-		case "":
-			if !shortVersion {
-				out.Ln("minikube version: %v", minikubeVersion)
-				if gitCommitID != "" {
-					out.Ln("commit: %v", gitCommitID)
-				}
-				keys := slices.Sorted(maps.Keys(data))
-				for _, k := range keys {
-					v := data[k]
-					// for backward compatibility we keep displaying the old way for these two
-					if k == "minikubeVersion" || k == "commit" {
-						continue
-					}
-					if v != "" {
-						out.Ln("\n%s:\n%s", k, v)
-					}
-				}
-			} else {
-				out.Ln("%v", minikubeVersion)
-			}
-		case "json":
-			json, err := json.Marshal(data)
-			if err != nil {
-				exit.Error(reason.InternalJSONMarshal, "version json failure", err)
-			}
-			out.Ln(string(json))
-		case "yaml":
-			yaml, err := yaml.Marshal(data)
-			if err != nil {
-				exit.Error(reason.InternalYamlMarshal, "version yaml failure", err)
-			}
-			out.Ln(string(yaml))
-		default:
-			exit.Message(reason.InternalOutputUsage, "error: --output must be 'yaml' or 'json'")
+		output, err := formatVersion(info, versionOutput, shortVersion)
+		if err != nil {
+			exit.Error(reason.InternalError, "version failure", err)
 		}
+		out.String(output)
 	},
+}
+
+// formatVersion returns the complete command output for the given data and
+// options. It does not read flags or global state, and it does not exit.
+func formatVersion(info versionInfo, output string, short bool) (string, error) {
+	switch output {
+	case "":
+		if short {
+			return info.Version + "\n", nil
+		}
+		ordered := yaml.MapSlice{
+			{Key: "minikube version", Value: info.Version},
+		}
+		if info.Commit != "" {
+			ordered = append(ordered, yaml.MapItem{Key: "commit", Value: info.Commit})
+		}
+		if len(info.Kicbase) > 0 {
+			ordered = append(ordered, yaml.MapItem{Key: "kicbase", Value: info.Kicbase})
+		}
+		for _, key := range slices.Sorted(maps.Keys(info.Components)) {
+			value := info.Components[key]
+			if value != "" {
+				ordered = append(ordered, yaml.MapItem{Key: key, Value: value})
+			}
+		}
+		b, err := yaml.Marshal(ordered)
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	case "json":
+		b, err := json.Marshal(info.values())
+		if err != nil {
+			return "", err
+		}
+		return string(b) + "\n", nil
+	case "yaml":
+		b, err := yaml.Marshal(info.values())
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	default:
+		panic("invalid output format: " + output)
+	}
 }
 
 func init() {
