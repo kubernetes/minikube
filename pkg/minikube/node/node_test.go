@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 // newTwoNodeCluster builds a minimal two-node ClusterConfig suitable for
@@ -138,5 +140,177 @@ func TestRemoveFromProfile_NotFound(t *testing.T) {
 	}
 	if got := len(reloaded.Nodes); got != 2 {
 		t.Fatalf("reloaded Nodes = %d, want 2 (profile should be untouched)", got)
+	}
+}
+
+// mixedCluster builds a 3-node ClusterConfig with primary + orphan + valid
+// worker. Used to regression-test the start-path pruning for
+// kubernetes/minikube#9834: if only existing.Nodes is pruned, the add-loop
+// in startWithDriver re-persists the orphan via SaveProfile(starter.Cfg).
+func mixedCluster(name string) *config.ClusterConfig {
+	return &config.ClusterConfig{
+		Name: name,
+		Nodes: []config.Node{
+			{Name: "", IP: "192.168.49.2", Port: 8443, ControlPlane: true},
+			{Name: "m02", IP: "", Worker: true}, // orphaned: SaveNode ran, Provision did not
+			{Name: "m03", IP: "192.168.49.4", Worker: true},
+		},
+	}
+}
+
+func TestPruneOrphanedNodes_NoOpWhenClean(t *testing.T) {
+	miniHome := t.TempDir()
+	existing := newTwoNodeCluster("prune-clean")
+	inflight := newTwoNodeCluster("prune-clean")
+
+	if err := config.SaveProfile(existing.Name, existing, miniHome); err != nil {
+		t.Fatalf("SaveProfile: %v", err)
+	}
+
+	dropped, err := PruneOrphanedNodes(existing, inflight, existing.Name, miniHome)
+	if err != nil {
+		t.Fatalf("PruneOrphanedNodes: %v", err)
+	}
+	if len(dropped) != 0 {
+		t.Fatalf("dropped = %v, want empty for clean profile", dropped)
+	}
+	if len(existing.Nodes) != 2 || len(inflight.Nodes) != 2 {
+		t.Fatalf("Nodes len: existing=%d inflight=%d, want 2/2", len(existing.Nodes), len(inflight.Nodes))
+	}
+}
+
+func TestPruneOrphanedNodes_MixedCluster(t *testing.T) {
+	miniHome := t.TempDir()
+	// existing is the on-disk view. inflight is the independent copy start
+	// hands to the add-loop as starter.Cfg; they share names but are separate
+	// slices, exactly how configureNodes builds them in production.
+	existing := mixedCluster("prune-mixed")
+	inflight := mixedCluster("prune-mixed")
+
+	if err := config.SaveProfile(existing.Name, existing, miniHome); err != nil {
+		t.Fatalf("SaveProfile: %v", err)
+	}
+
+	dropped, err := PruneOrphanedNodes(existing, inflight, existing.Name, miniHome)
+	if err != nil {
+		t.Fatalf("PruneOrphanedNodes: %v", err)
+	}
+	if len(dropped) != 1 || dropped[0] != "m02" {
+		t.Fatalf("dropped = %v, want [m02]", dropped)
+	}
+
+	// Both slices must be pruned so the add-loop does not re-persist the
+	// orphan via node.Add → SaveNode → SaveProfile(starter.Cfg).
+	if len(existing.Nodes) != 2 {
+		t.Fatalf("existing.Nodes = %d, want 2", len(existing.Nodes))
+	}
+	if len(inflight.Nodes) != 2 {
+		t.Fatalf("inflight.Nodes = %d, want 2 (starter.Cfg must be synced)", len(inflight.Nodes))
+	}
+	for _, n := range existing.Nodes {
+		if n.Name == "m02" {
+			t.Fatalf("existing still contains orphan m02: %+v", n)
+		}
+	}
+	for _, n := range inflight.Nodes {
+		if n.Name == "m02" {
+			t.Fatalf("inflight still contains orphan m02: %+v", n)
+		}
+	}
+
+	// Disk must match memory: load the profile back and check Nodes.
+	reloaded, err := config.Load(existing.Name, miniHome)
+	if err != nil {
+		t.Fatalf("config.Load after prune: %v", err)
+	}
+	if len(reloaded.Nodes) != 2 {
+		t.Fatalf("reloaded Nodes = %d, want 2", len(reloaded.Nodes))
+	}
+	for _, n := range reloaded.Nodes {
+		if n.Name == "m02" {
+			t.Fatalf("on-disk profile still contains orphan m02: %+v", n)
+		}
+	}
+}
+
+func TestPruneOrphanedNodes_PreservesPrimaryWithEmptyIP(t *testing.T) {
+	// Defensive: if the primary somehow ended up with an empty IP (shouldn't
+	// happen, Provision sets it before worker-add runs), the primary is still
+	// preserved. IsPrimaryControlPlane is matched by the name of Nodes[0], so
+	// the predicate relies on ordering rather than IP presence.
+	miniHome := t.TempDir()
+	cc := &config.ClusterConfig{
+		Name: "prune-primary",
+		Nodes: []config.Node{
+			{Name: "", IP: "", Port: 8443, ControlPlane: true},
+			{Name: "m02", IP: "", Worker: true},
+		},
+	}
+	if err := config.SaveProfile(cc.Name, cc, miniHome); err != nil {
+		t.Fatalf("SaveProfile: %v", err)
+	}
+
+	dropped, err := PruneOrphanedNodes(cc, nil, cc.Name, miniHome)
+	if err != nil {
+		t.Fatalf("PruneOrphanedNodes: %v", err)
+	}
+	if len(dropped) != 1 || dropped[0] != "m02" {
+		t.Fatalf("dropped = %v, want [m02]", dropped)
+	}
+	if len(cc.Nodes) != 1 || cc.Nodes[0].Name != "" {
+		t.Fatalf("cc.Nodes = %+v, want only primary", cc.Nodes)
+	}
+}
+
+func TestPruneOrphanedNodes_NilExisting(t *testing.T) {
+	dropped, err := PruneOrphanedNodes(nil, nil, "no-profile")
+	if err != nil {
+		t.Fatalf("PruneOrphanedNodes(nil, nil): %v", err)
+	}
+	if len(dropped) != 0 {
+		t.Fatalf("dropped = %v, want empty for nil existing", dropped)
+	}
+}
+
+func TestDelete_OrphanShortCircuit(t *testing.T) {
+	// Redirect config.SaveProfile / config.Load to a temp dir via MINIKUBE_HOME.
+	// Delete → removeFromProfile does not take a miniHome, so it falls through
+	// to localpath.MiniPath(), which honors the env var set below.
+	miniHome := t.TempDir()
+	t.Setenv(localpath.MinikubeHome, miniHome)
+
+	cc := &config.ClusterConfig{
+		Name: "orphan-delete",
+		Driver: "docker",
+		Nodes: []config.Node{
+			{Name: "", IP: "192.168.49.2", Port: 8443, ControlPlane: true},
+			{Name: "m02", IP: "", Worker: true}, // orphan: IP never set
+		},
+	}
+	if err := config.SaveProfile(cc.Name, cc); err != nil {
+		t.Fatalf("SaveProfile: %v", err)
+	}
+
+	// &run.CommandOptions{} is enough: machine.NewAPIClient never errors, and
+	// machine.DeleteHost reports host-not-exists for a store that has no
+	// backing files; Delete swallows that into klog and proceeds to the
+	// profile update, which is what we assert on.
+	n, err := Delete(*cc, "m02", &run.CommandOptions{})
+	if err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+	if n == nil || n.Name != "m02" {
+		t.Fatalf("Delete returned %+v, want node m02", n)
+	}
+
+	reloaded, err := config.Load(cc.Name)
+	if err != nil {
+		t.Fatalf("config.Load after Delete: %v", err)
+	}
+	if got := len(reloaded.Nodes); got != 1 {
+		t.Fatalf("reloaded Nodes = %d, want 1", got)
+	}
+	if reloaded.Nodes[0].Name != "" {
+		t.Fatalf("surviving node = %q, want primary (empty name)", reloaded.Nodes[0].Name)
 	}
 }
