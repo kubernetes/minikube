@@ -184,8 +184,44 @@ func teardown(cc config.ClusterConfig, name string, options *run.CommandOptions)
 	return n, nil
 }
 
+// removeFromProfile drops the node matching name from cc.Nodes and persists
+// the profile. It returns the removed Node on success. Factored out of Delete
+// so the orphaned-node fast path and the normal teardown path share the same
+// profile-update logic, and so it is directly unit-testable without a driver.
+func removeFromProfile(cc *config.ClusterConfig, name string, miniHome ...string) (*config.Node, error) {
+	n, index, err := Retrieve(*cc, name)
+	if err != nil {
+		return nil, fmt.Errorf("retrieve: %w", err)
+	}
+	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
+	profileName := cc.Name
+	if viper.IsSet(config.ProfileName) {
+		profileName = viper.GetString(config.ProfileName)
+	}
+	return n, config.SaveProfile(profileName, cc, miniHome...)
+}
+
 // Delete calls teardownNode to remove node from cluster and deletes the host.
+// For orphaned nodes (empty IP, usually left behind by a `minikube node add`
+// that was interrupted between SaveNode and Provision), Delete short-circuits
+// the teardown/apiserver path (which would otherwise try to drain and
+// kubeadm-reset a host that was never provisioned) and just evicts the stale
+// entry from the profile. See kubernetes/minikube#9834.
 func Delete(cc config.ClusterConfig, name string, options *run.CommandOptions) (*config.Node, error) {
+	if n, _, err := Retrieve(cc, name); err == nil && n.IP == "" {
+		klog.Infof("node %q has empty IP; skipping teardown (never provisioned)", name)
+		if api, aerr := machine.NewAPIClient(options); aerr == nil {
+			// DeleteHost is a no-op when the host record does not exist, but
+			// still cleans up any orphaned kic container with the same name.
+			if derr := machine.DeleteHost(api, config.MachineName(cc, *n)); derr != nil {
+				klog.Warningf("delete host for orphaned node %q: %v", name, derr)
+			}
+		} else {
+			klog.Warningf("get api client to clean orphan %q: %v", name, aerr)
+		}
+		return removeFromProfile(&cc, name)
+	}
+
 	n, err := teardown(cc, name, options)
 	if err != nil {
 		return n, err
@@ -197,18 +233,11 @@ func Delete(cc config.ClusterConfig, name string, options *run.CommandOptions) (
 		return n, err
 	}
 
-	err = machine.DeleteHost(api, m)
-	if err != nil {
+	if err = machine.DeleteHost(api, m); err != nil {
 		return n, err
 	}
 
-	_, index, err := Retrieve(cc, name)
-	if err != nil {
-		return n, fmt.Errorf("retrieve: %w", err)
-	}
-
-	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
+	return removeFromProfile(&cc, name)
 }
 
 // Retrieve finds the node by name in the given cluster
