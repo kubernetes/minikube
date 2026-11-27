@@ -45,8 +45,31 @@ var nodeDeleteCmd = &cobra.Command{
 
 		options := flags.CommandOptions()
 		name := args[0]
+		cname := ClusterFlagValue()
 
-		co := mustload.Healthy(ClusterFlagValue(), options)
+		// Orphaned nodes (empty IP, usually from an interrupted `minikube node
+		// add`) cannot be deleted through the Healthy path because the
+		// apiserver preflight assumes a provisioned cluster. Dispatch to
+		// node.Delete directly via the Partial loader so the stale entry is
+		// still evicted from the profile. See kubernetes/minikube#9834.
+		_, cc := mustload.Partial(cname, options)
+		if target, _, rerr := node.Retrieve(*cc, name); rerr == nil && target.IP == "" {
+			out.Step(style.DeletingHost, "Removing orphaned node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+			n, err := node.Delete(*cc, name, options)
+			if err != nil {
+				exit.Error(reason.GuestNodeDelete, "deleting node", err)
+			}
+			if driver.IsKIC(cc.Driver) {
+				machineName := config.MachineName(*cc, *n)
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+				defer cancel()
+				delete.PossibleLeftOvers(ctx, machineName, cc.Driver)
+			}
+			out.Step(style.Deleted, "Node {{.name}} was successfully deleted.", out.V{"name": name})
+			return
+		}
+
+		co := mustload.Healthy(cname, options)
 		out.Step(style.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": co.Config.Name})
 
 		n, err := node.Delete(*co.Config, name, options)

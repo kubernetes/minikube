@@ -480,6 +480,21 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		}
 	}
 
+	// Prune orphaned non-primary nodes left behind by an interrupted
+	// `minikube node add` (empty IP). The primary control-plane node is
+	// skipped because startMachine owns its lifecycle and may still be
+	// re-provisioning it. Both on-disk (existing) and in-flight
+	// (starter.Cfg) copies are pruned so the add-loop below does not
+	// re-persist the orphan via node.Add → SaveNode → SaveProfile(starter.Cfg).
+	// See kubernetes/minikube#9834.
+	dropped, err := node.PruneOrphanedNodes(existing, starter.Cfg, ClusterFlagValue())
+	for _, name := range dropped {
+		out.WarningT("Dropping orphaned node {{.name}} from cluster (empty IP; likely interrupted during add).", out.V{"name": name})
+	}
+	if err != nil {
+		klog.Warningf("failed to persist profile after pruning orphan nodes: %v", err)
+	}
+
 	// target total and number of control-plane nodes
 	numCPNodes := 1
 	numNodes := viper.GetInt(nodes)

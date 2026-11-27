@@ -184,8 +184,46 @@ func teardown(cc config.ClusterConfig, name string, options *run.CommandOptions)
 	return n, nil
 }
 
+// removeFromProfile drops the node matching name from cc.Nodes and persists
+// the profile. It returns the removed Node on success. Factored out of Delete
+// so the orphaned-node fast path and the normal teardown path share the same
+// profile-update logic, and so it is directly unit-testable without a driver.
+func removeFromProfile(cc *config.ClusterConfig, name string, miniHome ...string) (*config.Node, error) {
+	n, index, err := Retrieve(*cc, name)
+	if err != nil {
+		return nil, fmt.Errorf("retrieve: %w", err)
+	}
+	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
+	profileName := cc.Name
+	if viper.IsSet(config.ProfileName) {
+		profileName = viper.GetString(config.ProfileName)
+	}
+	return n, config.SaveProfile(profileName, cc, miniHome...)
+}
+
 // Delete calls teardownNode to remove node from cluster and deletes the host.
+// For orphaned nodes (empty IP, usually left behind by a `minikube node add`
+// that was interrupted between SaveNode and Provision), Delete short-circuits
+// the teardown/apiserver path (which would otherwise try to drain and
+// kubeadm-reset a host that was never provisioned) and just evicts the stale
+// entry from the profile. See kubernetes/minikube#9834.
 func Delete(cc config.ClusterConfig, name string, options *run.CommandOptions) (*config.Node, error) {
+	if n, _, err := Retrieve(cc, name); err == nil && n.IP == "" {
+		klog.Infof("node %q has empty IP; skipping teardown (never provisioned)", name)
+		if api, aerr := machine.NewAPIClient(options); aerr == nil {
+			// DeleteHost reports mcnerror.ErrHostDoesNotExist for a missing
+			// host, which we swallow; it still runs KIC container cleanup
+			// (docker/podman rm) as a side effect for any stale leftover
+			// with the same name.
+			if derr := machine.DeleteHost(api, config.MachineName(cc, *n)); derr != nil {
+				klog.Warningf("delete host for orphaned node %q: %v", name, derr)
+			}
+		} else {
+			klog.Warningf("get api client to clean orphan %q: %v", name, aerr)
+		}
+		return removeFromProfile(&cc, name)
+	}
+
 	n, err := teardown(cc, name, options)
 	if err != nil {
 		return n, err
@@ -197,18 +235,11 @@ func Delete(cc config.ClusterConfig, name string, options *run.CommandOptions) (
 		return n, err
 	}
 
-	err = machine.DeleteHost(api, m)
-	if err != nil {
+	if err = machine.DeleteHost(api, m); err != nil {
 		return n, err
 	}
 
-	_, index, err := Retrieve(cc, name)
-	if err != nil {
-		return n, fmt.Errorf("retrieve: %w", err)
-	}
-
-	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
+	return removeFromProfile(&cc, name)
 }
 
 // Retrieve finds the node by name in the given cluster
@@ -226,6 +257,49 @@ func Retrieve(cc config.ClusterConfig, name string) (*config.Node, int, error) {
 	}
 
 	return nil, -1, errors.New("Could not find node " + name)
+}
+
+// PruneOrphanedNodes drops non-primary nodes with an empty IP from existing
+// (on-disk profile) and keeps inflight (the in-flight ClusterConfig held by
+// start) in sync, so a later node.Add → config.SaveNode does not re-persist
+// a pruned entry via SaveProfile(inflight). An interrupted
+// `minikube node add` leaves the profile with a Node whose IP is "" because
+// SaveNode runs before Provision; the next `minikube start` then fails to
+// bring the orphan up. This is the recovery half of kubernetes/minikube#9834.
+//
+// The primary control-plane node is never pruned here: startMachine owns its
+// lifecycle and may still be re-provisioning it. Returns the names of nodes
+// that were dropped (iteration order) so the caller can surface them to the
+// user. The profile is persisted via config.SaveProfile only when at least
+// one node was dropped.
+func PruneOrphanedNodes(existing, inflight *config.ClusterConfig, profileName string, miniHome ...string) ([]string, error) {
+	if existing == nil {
+		return nil, nil
+	}
+	var dropped []string
+	keptExisting := existing.Nodes[:0]
+	for _, n := range existing.Nodes {
+		if n.IP == "" && !config.IsPrimaryControlPlane(*existing, n) {
+			dropped = append(dropped, n.Name)
+			continue
+		}
+		keptExisting = append(keptExisting, n)
+	}
+	if len(dropped) == 0 {
+		return nil, nil
+	}
+	existing.Nodes = keptExisting
+	if inflight != nil {
+		keptInflight := inflight.Nodes[:0]
+		for _, n := range inflight.Nodes {
+			if n.IP == "" && !config.IsPrimaryControlPlane(*inflight, n) {
+				continue
+			}
+			keptInflight = append(keptInflight, n)
+		}
+		inflight.Nodes = keptInflight
+	}
+	return dropped, config.SaveProfile(profileName, existing, miniHome...)
 }
 
 // Save saves a node to a cluster
