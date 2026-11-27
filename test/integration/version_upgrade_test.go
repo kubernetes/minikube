@@ -300,7 +300,6 @@ func TestMissingContainerUpgrade(t *testing.T) {
 	if TestingKicBaseImage() {
 		t.Skipf("Skipping, test does not make sense with --base-image")
 	}
-	t.Skip("Docker node container recovery is tracked in https://github.com/kubernetes/minikube/issues/23798")
 
 	MaybeParallel(t)
 	profile := UniqueProfileName("missing-upgrade")
