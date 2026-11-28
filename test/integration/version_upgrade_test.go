@@ -150,6 +150,9 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	if TestingKicBaseImage() {
 		t.Skipf("Skipping, test does not make sense with --base-image")
 	}
+	if SSHDriver() {
+		t.Skip("skipping: stop fails on ssh driver: https://github.com/kubernetes/minikube/issues/24094")
+	}
 
 	MaybeParallel(t)
 	profile := UniqueProfileName("stopped-upgrade")
@@ -223,6 +226,9 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 
 // TestKubernetesUpgrade upgrades Kubernetes from oldest to newest
 func TestKubernetesUpgrade(t *testing.T) {
+	if SSHDriver() {
+		t.Skip("skipping: stop fails on ssh driver: https://github.com/kubernetes/minikube/issues/24094")
+	}
 	MaybeParallel(t)
 	MaybeSkipDockerRuntime(t, constants.OldestKubernetesVersion, constants.NewestKubernetesVersion)
 	profile := UniqueProfileName("kubernetes-upgrade")

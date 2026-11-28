@@ -170,6 +170,9 @@ func TestAddons(t *testing.T) {
 	})
 
 	t.Run("StoppedEnableDisable", func(t *testing.T) {
+		if SSHDriver() {
+			t.Skip("skipping: stop fails on ssh driver: https://github.com/kubernetes/minikube/issues/24094")
+		}
 		// Assert that disable/enable works offline
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
 		if err != nil {

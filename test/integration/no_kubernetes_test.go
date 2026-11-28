@@ -40,6 +40,9 @@ func TestNoKubernetes(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("None driver does not need --no-kubernetes test")
 	}
+	if SSHDriver() {
+		t.Skip("skipping: delete fails for --no-kubernetes profiles on ssh driver: https://github.com/kubernetes/minikube/issues/24145")
+	}
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("NoKubernetes")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))

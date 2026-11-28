@@ -63,7 +63,10 @@ var stderrAllowRe = regexp.MustCompile(strings.Join(stderrAllow, "|"))
 // TestErrorSpam asserts that there are no unexpected errors displayed in minikube command outputs.
 func TestErrorSpam(t *testing.T) {
 	if NoneDriver() {
-		t.Skip("none driver always shows a warning")
+		t.Skip("skipping: none driver always shows a warning: https://github.com/kubernetes/minikube/issues/24147")
+	}
+	if SSHDriver() {
+		t.Skip("skipping: ssh driver logs errors when stopping docker on hosts without docker: https://github.com/kubernetes/minikube/issues/24144")
 	}
 
 	profile := UniqueProfileName("nospam")

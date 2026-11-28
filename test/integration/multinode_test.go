@@ -39,6 +39,9 @@ func TestMultiNode(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver does not support multinode")
 	}
+	if SSHDriver() {
+		t.Skip("ssh driver does not support multinode")
+	}
 	if KVMDriver() {
 		t.Skip("skipping: flaky on KVM driver, serial subtests are tightly coupled and cannot be skipped individually: https://github.com/kubernetes/minikube/issues/23134")
 	}

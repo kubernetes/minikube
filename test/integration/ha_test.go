@@ -39,6 +39,9 @@ func TestMultiControlPlane(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver does not support multinode/ha(multi-control plane) cluster")
 	}
+	if SSHDriver() {
+		t.Skip("ssh driver does not support multinode/ha(multi-control plane) cluster")
+	}
 
 	if DockerDriver() {
 		rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}"))

@@ -38,6 +38,9 @@ func TestPreload(t *testing.T) {
 	if NoneDriver() {
 		t.Skipf("skipping %s - incompatible with none driver", t.Name())
 	}
+	if SSHDriver() {
+		t.Skipf("skipping %s - incompatible with ssh driver", t.Name())
+	}
 
 	profile := UniqueProfileName("test-preload")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
