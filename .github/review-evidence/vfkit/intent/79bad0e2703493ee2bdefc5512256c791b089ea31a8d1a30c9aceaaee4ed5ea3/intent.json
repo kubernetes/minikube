@@ -1,0 +1,490 @@
+{
+  "inputs": {
+    "renderer/image_provenance/__init__.py": "4f6fbee00f2aaec7b9603b4501711ecad6481df8dea44c2061e59c80aef7fdd6",
+    "renderer/image_provenance/cli.py": "8bf7fd1726fc851d2b1c2f52b262886a7065b39cbe2934a77cc813119a447fc6",
+    "renderer/image_provenance/core.py": "19d15d127c0b30fff8d3c3ff19763375a0acbad3c3145b535d42af742e4e5e3f",
+    "renderer/pr_files/__init__.py": "8ba23c3c18fb2390baa4b588062636cc4c347be53500b388084edc94b81df1e0",
+    "renderer/pr_files/cli.py": "082d92c3c6ae5276fe035cb8de4fa28c993d33ee0e741993b361796d8bfa0525",
+    "renderer/pr_files/descriptions.py": "38f75acbd8a930cc9bdb82a6ba1537dc1bb77550a998924216262dec8dc8636d",
+    "renderer/pr_files/grouping.py": "f32cc09ecbca42a26a978c7e2dfa8aa36353cc2c0ae4c43a03faaaf51f9fc750",
+    "renderer/pr_files/models.py": "1543595d1fac65d569f225d02714c5ab13231753181ade47622a3fb515c97b5d",
+    "renderer/pr_files/plotting.py": "b76c9be9f537b3265d16288526bda395141bf4417687894769e9df08013443de",
+    "renderer/pr_intent/__init__.py": "0cc1ccc65f5e7f158bb61bbb067e64990a4e45763ce03e4747fe04200a09adfc",
+    "renderer/pr_intent/cli.py": "c3ff35519187c00b3cb4109676e4632ee9b09ce2405790e1d950112f71a57f7a",
+    "renderer/pr_intent/client.py": "ee8132f0c830e4514610cc1769c25eba126f02083f6aeb5ae6fefdde37ea8e67",
+    "renderer/pr_intent/graph.py": "487f8897e19e1cfc4b6ed9c0041746fc3c7170573bc732c296b03572270dd586",
+    "renderer/pr_intent/plotting.py": "38591921ebcc5d8a29a2e5b18c62404e283964498ed16b8924632626bad231f6",
+    "renderer/pr_intent/source.py": "a2043d3d78a91cd08e3f0c3c4b8398da680c15ca670ea393f417b90441ccf1cd",
+    "renderer/pr_language.py": "f837eab96ca93df61d4973d74a764e2fa59e6d08f76391c697d923c0e6792884",
+    "renderer/pr_presentation.py": "e1502b1ceea631fe8f631e65b55655a4d14613fd8eb2a885b1df44edc0f8982f",
+    "renderer/resources/fonts/EBGaramond-Regular.otf": "d3e1471a4a0f836716bad35326d3c0ab5caddb74ae5c1917f99f8225abf43a7d",
+    "renderer/resources/intent-result.schema.json": "19e00a10d5a159220f5035bd378da53110017ece9e6286aeb2438b858f01f9a4",
+    "renderer/review_paths/core.py": "dae80a01a58b368925ca69bfc9498ba27f68678d1c95d41e366517fd6937df04",
+    "environment/poetry.lock": "2cd3b89141edfdf8f61a3e50006d806c839dab1ae7060bb408d922c0b8b2b6b1",
+    "data/palette": "149d8efaef55c657d889c6507a76ecd624947bca2f37b3fa359841a21f2b5147"
+  },
+  "source": {
+    "target": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "base": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "head": "77640bc151256379c236be6495493c02eca58b38",
+    "tree": "b4d02f07cba92feef8c8827579be4e2942a40469",
+    "staged": false,
+    "deltas": [
+      {
+        "before": ".github/review-evidence/vfkit/directory.png",
+        "after": ".github/review-evidence/vfkit/directory.png",
+        "added": null,
+        "deleted": null
+      },
+      {
+        "before": ".github/review-evidence/vfkit/files-001.png",
+        "after": ".github/review-evidence/vfkit/files-001.png",
+        "added": null,
+        "deleted": null
+      },
+      {
+        "before": ".github/review-evidence/vfkit/files-002.png",
+        "after": ".github/review-evidence/vfkit/files-002.png",
+        "added": null,
+        "deleted": null
+      },
+      {
+        "before": ".github/review-evidence/vfkit/files.md",
+        "after": ".github/review-evidence/vfkit/files.md",
+        "added": 5,
+        "deleted": 0
+      },
+      {
+        "before": ".github/review-evidence/vfkit/intent.png",
+        "after": ".github/review-evidence/vfkit/intent.png",
+        "added": null,
+        "deleted": null
+      },
+      {
+        "before": ".github/review-evidence/vfkit/languages.png",
+        "after": ".github/review-evidence/vfkit/languages.png",
+        "added": null,
+        "deleted": null
+      },
+      {
+        "before": ".github/review-evidence/vfkit/verification.json",
+        "after": ".github/review-evidence/vfkit/verification.json",
+        "added": 126,
+        "deleted": 0
+      },
+      {
+        "before": ".github/review-evidence/vfkit/work.json",
+        "after": ".github/review-evidence/vfkit/work.json",
+        "added": 93,
+        "deleted": 0
+      },
+      {
+        "before": ".github/review-evidence/vfkit/work.md",
+        "after": ".github/review-evidence/vfkit/work.md",
+        "added": 32,
+        "deleted": 0
+      },
+      {
+        "before": ".github/review-evidence/vfkit/work.mmd",
+        "after": ".github/review-evidence/vfkit/work.mmd",
+        "added": 24,
+        "deleted": 0
+      },
+      {
+        "before": "cmd/minikube/cmd/delete.go",
+        "after": "cmd/minikube/cmd/delete.go",
+        "added": 16,
+        "deleted": 0
+      },
+      {
+        "before": "cmd/minikube/cmd/stop.go",
+        "after": "cmd/minikube/cmd/stop.go",
+        "added": 12,
+        "deleted": 0
+      },
+      {
+        "before": "deploy/addons/cluster-autoscaler/README.md",
+        "after": "deploy/addons/cluster-autoscaler/README.md",
+        "added": 49,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/addons.go",
+        "after": "pkg/addons/addons.go",
+        "added": 8,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/autoscaler.go",
+        "after": "pkg/addons/autoscaler/autoscaler.go",
+        "added": 263,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/autoscaler_test.go",
+        "after": "pkg/addons/autoscaler/autoscaler_test.go",
+        "added": 227,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/host.go",
+        "after": "pkg/addons/autoscaler/host.go",
+        "added": 401,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/integration_test.go",
+        "after": "pkg/addons/autoscaler/integration_test.go",
+        "added": 296,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_test.go",
+        "after": "pkg/addons/autoscaler/process_test.go",
+        "added": 124,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_unix.go",
+        "after": "pkg/addons/autoscaler/process_unix.go",
+        "added": 28,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_windows.go",
+        "after": "pkg/addons/autoscaler/process_windows.go",
+        "added": 31,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/config.go",
+        "after": "pkg/addons/config.go",
+        "added": 6,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/assets/addons.go",
+        "after": "pkg/minikube/assets/addons.go",
+        "added": 3,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/config/types.go",
+        "after": "pkg/minikube/config/types.go",
+        "added": 14,
+        "deleted": 3
+      },
+      {
+        "before": "pkg/minikube/node/start.go",
+        "after": "pkg/minikube/node/start.go",
+        "added": 19,
+        "deleted": 6
+      },
+      {
+        "before": "pkg/minikube/node/start_test.go",
+        "after": "pkg/minikube/node/start_test.go",
+        "added": 43,
+        "deleted": 0
+      },
+      {
+        "before": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "after": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "added": 68,
+        "deleted": 0
+      }
+    ]
+  },
+  "view": {
+    "nodes": [
+      {
+        "id": "F1",
+        "label": ".github/review-evidence/vfkit/directory.png",
+        "kind": "file",
+        "status": "changed",
+        "weight": 1.0,
+        "group": ".github/review-evidence/vfkit",
+        "context": false
+      },
+      {
+        "id": "F2",
+        "label": ".github/review-evidence/vfkit/files-001.png",
+        "kind": "file",
+        "status": "changed",
+        "weight": 1.0,
+        "group": ".github/review-evidence/vfkit",
+        "context": false
+      },
+      {
+        "id": "F3",
+        "label": ".github/review-evidence/vfkit/files-002.png",
+        "kind": "file",
+        "status": "changed",
+        "weight": 1.0,
+        "group": ".github/review-evidence/vfkit",
+        "context": false
+      },
+      {
+        "id": "F4",
+        "label": ".github/review-evidence/vfkit/files.md",
+        "kind": "file",
+        "status": "changed",
+        "weight": 5.0,
+        "group": ".github/review-evidence/vfkit",
+        "context": false
+      },
+      {
+        "id": "F5",
+        "label": ".github/review-evidence/vfkit/intent.png",
+        "kind": "file",
+        "status": "changed",
+        "weight": 1.0,
+        "group": ".github/review-evidence/vfkit",
+        "context": false
+      },
+      {
+        "id": "F6",
+        "label": ".github/review-evidence/vfkit/languages.png",
+        "kind": "file",
+        "status": "changed",
+        "weight": 1.0,
+        "group": ".github/review-evidence/vfkit",
+        "context": false
+      },
+      {
+        "id": "F7",
+        "label": ".github/review-evidence/vfkit/verification.json",
+        "kind": "file",
+        "status": "changed",
+        "weight": 126.0,
+        "group": ".github/review-evidence/vfkit",
+        "context": false
+      },
+      {
+        "id": "F8",
+        "label": ".github/review-evidence/vfkit/work.json",
+        "kind": "file",
+        "status": "changed",
+        "weight": 93.0,
+        "group": ".github/review-evidence/vfkit",
+        "context": false
+      },
+      {
+        "id": "F9",
+        "label": ".github/review-evidence/vfkit/work.md",
+        "kind": "file",
+        "status": "changed",
+        "weight": 32.0,
+        "group": ".github/review-evidence/vfkit",
+        "context": false
+      },
+      {
+        "id": "F10",
+        "label": ".github/review-evidence/vfkit/work.mmd",
+        "kind": "file",
+        "status": "changed",
+        "weight": 24.0,
+        "group": ".github/review-evidence/vfkit",
+        "context": false
+      },
+      {
+        "id": "F11",
+        "label": "cmd/minikube/cmd/delete.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 16.0,
+        "group": "cmd/minikube/cmd",
+        "context": false
+      },
+      {
+        "id": "F12",
+        "label": "cmd/minikube/cmd/stop.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 12.0,
+        "group": "cmd/minikube/cmd",
+        "context": false
+      },
+      {
+        "id": "F13",
+        "label": "deploy/addons/cluster-autoscaler/README.md",
+        "kind": "file",
+        "status": "changed",
+        "weight": 49.0,
+        "group": "deploy/addons/cluster-autoscaler",
+        "context": false
+      },
+      {
+        "id": "F14",
+        "label": "pkg/addons/addons.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 8.0,
+        "group": "pkg/addons",
+        "context": false
+      },
+      {
+        "id": "F15",
+        "label": "pkg/addons/autoscaler/autoscaler.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 263.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F16",
+        "label": "pkg/addons/autoscaler/autoscaler_test.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 227.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F17",
+        "label": "pkg/addons/autoscaler/host.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 401.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F18",
+        "label": "pkg/addons/autoscaler/integration_test.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 296.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F19",
+        "label": "pkg/addons/autoscaler/process_test.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 124.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F20",
+        "label": "pkg/addons/autoscaler/process_unix.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 28.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F21",
+        "label": "pkg/addons/autoscaler/process_windows.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 31.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F22",
+        "label": "pkg/addons/config.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 6.0,
+        "group": "pkg/addons",
+        "context": false
+      },
+      {
+        "id": "F23",
+        "label": "pkg/minikube/assets/addons.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 3.0,
+        "group": "pkg/minikube/assets",
+        "context": false
+      },
+      {
+        "id": "F24",
+        "label": "pkg/minikube/config/types.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 17.0,
+        "group": "pkg/minikube/config",
+        "context": false
+      },
+      {
+        "id": "F25",
+        "label": "pkg/minikube/node/start.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 25.0,
+        "group": "pkg/minikube/node",
+        "context": false
+      },
+      {
+        "id": "F26",
+        "label": "pkg/minikube/node/start_test.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 43.0,
+        "group": "pkg/minikube/node",
+        "context": false
+      },
+      {
+        "id": "F27",
+        "label": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "kind": "file",
+        "status": "changed",
+        "weight": 68.0,
+        "group": "site/content/en/docs/handbook/addons",
+        "context": false
+      }
+    ],
+    "links": [],
+    "missing": [
+      ".github/review-evidence/vfkit/directory.png",
+      ".github/review-evidence/vfkit/files-001.png",
+      ".github/review-evidence/vfkit/files-002.png",
+      ".github/review-evidence/vfkit/files.md",
+      ".github/review-evidence/vfkit/intent.png",
+      ".github/review-evidence/vfkit/languages.png",
+      ".github/review-evidence/vfkit/verification.json",
+      ".github/review-evidence/vfkit/work.json",
+      ".github/review-evidence/vfkit/work.md",
+      ".github/review-evidence/vfkit/work.mmd",
+      "cmd/minikube/cmd/delete.go",
+      "cmd/minikube/cmd/stop.go",
+      "deploy/addons/cluster-autoscaler/README.md",
+      "pkg/addons/addons.go",
+      "pkg/addons/autoscaler/autoscaler.go",
+      "pkg/addons/autoscaler/autoscaler_test.go",
+      "pkg/addons/autoscaler/host.go",
+      "pkg/addons/autoscaler/integration_test.go",
+      "pkg/addons/autoscaler/process_test.go",
+      "pkg/addons/autoscaler/process_unix.go",
+      "pkg/addons/autoscaler/process_windows.go",
+      "pkg/addons/config.go",
+      "pkg/minikube/assets/addons.go",
+      "pkg/minikube/config/types.go",
+      "pkg/minikube/node/start.go",
+      "pkg/minikube/node/start_test.go",
+      "site/content/en/docs/handbook/addons/cluster-autoscaler.md"
+    ],
+    "state": "unavailable: no local intent export",
+    "graph_revision": "",
+    "input_sha256": "",
+    "omitted_dependencies": 0,
+    "omitted_evidence": 0
+  },
+  "palette_sha256": "149d8efaef55c657d889c6507a76ecd624947bca2f37b3fa359841a21f2b5147",
+  "seed": 1729,
+  "renderer": 1,
+  "implementation_sha256": "6dce0fe6b93aaa5ebb36e057ef3022bc5a639cfc892ff6fa534a1c130c730d06",
+  "matplotlib": "3.11.2",
+  "networkx": "3.7",
+  "numpy": "2.5.3",
+  "witful": "0.8.4",
+  "model_calls": 0,
+  "evaluated_at": null,
+  "image_sha256": "c42449e6b0487fb1e9d251af9c044a34f6b017de9a27d6ac15e721e28f062770"
+}

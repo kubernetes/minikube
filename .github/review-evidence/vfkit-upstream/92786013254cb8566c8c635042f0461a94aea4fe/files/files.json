@@ -1,0 +1,421 @@
+{
+  "measurement": {
+    "base": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "merge_base": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "head": "92786013254cb8566c8c635042f0461a94aea4fe",
+    "classifier": "Pygments 2.21.0",
+    "deltas": [
+      {
+        "before": ".github/work-graph.json",
+        "after": ".github/work-graph.json",
+        "added": 72,
+        "deleted": 0
+      },
+      {
+        "before": ".github/work-graph.md",
+        "after": ".github/work-graph.md",
+        "added": 40,
+        "deleted": 0
+      },
+      {
+        "before": "cmd/minikube/cmd/delete.go",
+        "after": "cmd/minikube/cmd/delete.go",
+        "added": 16,
+        "deleted": 0
+      },
+      {
+        "before": "cmd/minikube/cmd/stop.go",
+        "after": "cmd/minikube/cmd/stop.go",
+        "added": 12,
+        "deleted": 0
+      },
+      {
+        "before": "deploy/addons/cluster-autoscaler/README.md",
+        "after": "deploy/addons/cluster-autoscaler/README.md",
+        "added": 49,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/addons.go",
+        "after": "pkg/addons/addons.go",
+        "added": 8,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/autoscaler.go",
+        "after": "pkg/addons/autoscaler/autoscaler.go",
+        "added": 263,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/autoscaler_test.go",
+        "after": "pkg/addons/autoscaler/autoscaler_test.go",
+        "added": 227,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/host.go",
+        "after": "pkg/addons/autoscaler/host.go",
+        "added": 401,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/integration_test.go",
+        "after": "pkg/addons/autoscaler/integration_test.go",
+        "added": 296,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_test.go",
+        "after": "pkg/addons/autoscaler/process_test.go",
+        "added": 124,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_unix.go",
+        "after": "pkg/addons/autoscaler/process_unix.go",
+        "added": 28,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_windows.go",
+        "after": "pkg/addons/autoscaler/process_windows.go",
+        "added": 31,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/config.go",
+        "after": "pkg/addons/config.go",
+        "added": 6,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/assets/addons.go",
+        "after": "pkg/minikube/assets/addons.go",
+        "added": 3,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+        "added": 12,
+        "deleted": 3
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/registration.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/registration.go",
+        "added": 65,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+        "added": 84,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/config/types.go",
+        "after": "pkg/minikube/config/types.go",
+        "added": 14,
+        "deleted": 3
+      },
+      {
+        "before": "pkg/minikube/node/start.go",
+        "after": "pkg/minikube/node/start.go",
+        "added": 19,
+        "deleted": 6
+      },
+      {
+        "before": "pkg/minikube/node/start_test.go",
+        "after": "pkg/minikube/node/start_test.go",
+        "added": 43,
+        "deleted": 0
+      },
+      {
+        "before": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "after": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "added": 68,
+        "deleted": 0
+      }
+    ],
+    "shares": [
+      {
+        "language": "Go",
+        "added": 1652,
+        "deleted": 12
+      },
+      {
+        "language": "Markdown",
+        "added": 157,
+        "deleted": 0
+      },
+      {
+        "language": "JSON",
+        "added": 72,
+        "deleted": 0
+      }
+    ],
+    "excluded_root": ".github/review-evidence/"
+  },
+  "rows": [
+    {
+      "delta": {
+        "before": "pkg/addons/autoscaler/host.go",
+        "after": "pkg/addons/autoscaler/host.go",
+        "added": 401,
+        "deleted": 0
+      },
+      "description": "+401 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/addons/autoscaler/integration_test.go",
+        "after": "pkg/addons/autoscaler/integration_test.go",
+        "added": 296,
+        "deleted": 0
+      },
+      "description": "+296 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/addons/autoscaler/autoscaler.go",
+        "after": "pkg/addons/autoscaler/autoscaler.go",
+        "added": 263,
+        "deleted": 0
+      },
+      "description": "+263 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/addons/autoscaler/autoscaler_test.go",
+        "after": "pkg/addons/autoscaler/autoscaler_test.go",
+        "added": 227,
+        "deleted": 0
+      },
+      "description": "+227 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/addons/autoscaler/process_test.go",
+        "after": "pkg/addons/autoscaler/process_test.go",
+        "added": 124,
+        "deleted": 0
+      },
+      "description": "+124 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+        "added": 84,
+        "deleted": 0
+      },
+      "description": "+84 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": ".github/work-graph.json",
+        "after": ".github/work-graph.json",
+        "added": 72,
+        "deleted": 0
+      },
+      "description": "+72 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "after": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "added": 68,
+        "deleted": 0
+      },
+      "description": "+68 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/minikube/bootstrapper/kubeadm/registration.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/registration.go",
+        "added": 65,
+        "deleted": 0
+      },
+      "description": "+65 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "deploy/addons/cluster-autoscaler/README.md",
+        "after": "deploy/addons/cluster-autoscaler/README.md",
+        "added": 49,
+        "deleted": 0
+      },
+      "description": "+49 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/minikube/node/start_test.go",
+        "after": "pkg/minikube/node/start_test.go",
+        "added": 43,
+        "deleted": 0
+      },
+      "description": "+43 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": ".github/work-graph.md",
+        "after": ".github/work-graph.md",
+        "added": 40,
+        "deleted": 0
+      },
+      "description": "+40 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/addons/autoscaler/process_windows.go",
+        "after": "pkg/addons/autoscaler/process_windows.go",
+        "added": 31,
+        "deleted": 0
+      },
+      "description": "+31 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/addons/autoscaler/process_unix.go",
+        "after": "pkg/addons/autoscaler/process_unix.go",
+        "added": 28,
+        "deleted": 0
+      },
+      "description": "+28 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/minikube/node/start.go",
+        "after": "pkg/minikube/node/start.go",
+        "added": 19,
+        "deleted": 6
+      },
+      "description": "+19 added / -6 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/minikube/config/types.go",
+        "after": "pkg/minikube/config/types.go",
+        "added": 14,
+        "deleted": 3
+      },
+      "description": "+14 added / -3 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "cmd/minikube/cmd/delete.go",
+        "after": "cmd/minikube/cmd/delete.go",
+        "added": 16,
+        "deleted": 0
+      },
+      "description": "+16 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+        "added": 12,
+        "deleted": 3
+      },
+      "description": "+12 added / -3 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "cmd/minikube/cmd/stop.go",
+        "after": "cmd/minikube/cmd/stop.go",
+        "added": 12,
+        "deleted": 0
+      },
+      "description": "+12 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/addons/addons.go",
+        "after": "pkg/addons/addons.go",
+        "added": 8,
+        "deleted": 0
+      },
+      "description": "+8 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/addons/config.go",
+        "after": "pkg/addons/config.go",
+        "added": 6,
+        "deleted": 0
+      },
+      "description": "+6 added / -0 removed",
+      "kind": "diff"
+    },
+    {
+      "delta": {
+        "before": "pkg/minikube/assets/addons.go",
+        "after": "pkg/minikube/assets/addons.go",
+        "added": 3,
+        "deleted": 0
+      },
+      "description": "+3 added / -0 removed",
+      "kind": "diff"
+    }
+  ],
+  "pages": [
+    {
+      "file": "files-001.png",
+      "paths": [
+        "pkg/addons/autoscaler/host.go",
+        "pkg/addons/autoscaler/integration_test.go",
+        "pkg/addons/autoscaler/autoscaler.go",
+        "pkg/addons/autoscaler/autoscaler_test.go",
+        "pkg/addons/autoscaler/process_test.go",
+        "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+        ".github/work-graph.json",
+        "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "pkg/minikube/bootstrapper/kubeadm/registration.go",
+        "deploy/addons/cluster-autoscaler/README.md",
+        "pkg/minikube/node/start_test.go",
+        ".github/work-graph.md"
+      ],
+      "sha256": "9b92b1af8046a92f60cf354b7528ed32fac6414a1280215e032399c420e612a3"
+    },
+    {
+      "file": "files-002.png",
+      "paths": [
+        "pkg/addons/autoscaler/process_windows.go",
+        "pkg/addons/autoscaler/process_unix.go",
+        "pkg/minikube/node/start.go",
+        "pkg/minikube/config/types.go",
+        "cmd/minikube/cmd/delete.go",
+        "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+        "cmd/minikube/cmd/stop.go",
+        "pkg/addons/addons.go",
+        "pkg/addons/config.go",
+        "pkg/minikube/assets/addons.go"
+      ],
+      "sha256": "4f471d5b3c98c4f731889730126d502daf0c523a57a4c04685f1e6d3a6bb9c06"
+    }
+  ],
+  "excluded_root": ".github/review-evidence/",
+  "model_calls": 0,
+  "palette_sha256": "df3607dacd40a0c4dbfb4b0053752953f4b40d060401fe4e42a3d842f6a8a15c"
+}

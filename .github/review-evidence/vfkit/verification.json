@@ -1,0 +1,16 @@
+{
+  "source": {
+    "repository": "minikube",
+    "base": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "head": "77640bc151256379c236be6495493c02eca58b38",
+    "excluded_root": ".github/review-evidence/",
+    "scope": "Exact root excluded before aggregation; cross-boundary moves retained."
+  },
+  "generated": [
+    "language",
+    "files",
+    "intent"
+  ],
+  "intent": "Canonical intent export unavailable; no purpose inferred from touched paths.",
+  "inspection": "Deterministic generation only; no visual-inspection claim."
+}

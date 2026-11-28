@@ -411,15 +411,32 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig, options *run.Comma
 
 		klog.Infof("found existing configuration files, will attempt cluster restart")
 
-		var rerr error
-		if rerr := k.restartPrimaryControlPlane(cfg); rerr == nil {
+		rerr := k.restartPrimaryControlPlane(cfg)
+		if rerr == nil {
 			return nil
+		}
+		// A configured external provider retains namespace and node identities.
+		// Reset would invalidate that ownership even while the addon is disabled.
+		if cfg.ClusterAutoscaler != nil {
+			return fmt.Errorf("restart managed control plane; preserve existing cluster state: %w", rerr)
 		}
 		out.ErrT(style.Embarrassed, "Unable to restart control-plane node(s), will reset cluster: {{.error}}", out.V{"error": rerr})
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 			klog.Warningf("delete failed: %v", err)
 		}
 		// Fall-through to init
+	}
+
+	// Boot-local configuration can be absent while the persistent etcd database
+	// remains. Preserve it on missing configuration or an ambiguous transport.
+	if cfg.ClusterAutoscaler != nil {
+		retained, err := k.guestFilePresent(path.Join(bsutil.EtcdDataDir(), "member/snap/db"))
+		if err != nil {
+			return fmt.Errorf("inspect retained managed control-plane data before initialization: %w", err)
+		}
+		if retained {
+			return errors.New("managed control-plane data exists; restore retained configuration before retrying")
+		}
 	}
 
 	conf := constants.KubeadmYamlPath
@@ -1012,6 +1029,14 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return fmt.Errorf("add control-plane alias: %w", err)
 	}
 
+	// Managed VM workers retain their API identity across reboot. Their client
+	// certificate is persistent, while /etc/kubernetes belongs to the boot image.
+	if cfg.ClusterAutoscaler != nil && !n.ControlPlane {
+		if err := k.restoreManagedKubeletConfig(cfg); err != nil {
+			return fmt.Errorf("restore managed worker identity: %w", err)
+		}
+	}
+
 	// "ensure" kubelet is started, intentionally non-fatal in case of an error
 	if err := sysinit.New(k.c).Start("kubelet"); err != nil {
 		klog.Errorf("Couldn't ensure kubelet is started this might cause issues (will continue): %v", err)
@@ -1063,9 +1088,6 @@ func (k *Bootstrapper) labelAndUntaintNode(cfg config.ClusterConfig, n config.No
 		primaryLbl = "minikube.k8s.io/primary=true"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
-	defer cancel()
-
 	// node name is usually based on profile/cluster name, except for "none" driver where it assumes hostname
 	nodeName := config.MachineName(cfg, n)
 	if driver.IsNone(cfg.Driver) {
@@ -1073,6 +1095,18 @@ func (k *Bootstrapper) labelAndUntaintNode(cfg config.ClusterConfig, n config.No
 			nodeName = n
 		}
 	}
+
+	// kubeadm join can complete before kubelet registers the Node. Wait for
+	// that exact worker before labeling; control-plane bootstrap keeps its
+	// existing path because the host kubeconfig is established later there.
+	if !n.ControlPlane {
+		if err := k.waitForWorkerRegistration(cfg, nodeName); err != nil {
+			return fmt.Errorf("wait for worker registration: %w", err)
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
+	defer cancel()
 
 	// example:
 	// sudo /var/lib/minikube/binaries/<version>/kubectl --kubeconfig=/var/lib/minikube/kubeconfig label --overwrite nodes test-357 minikube.k8s.io/version=<version> minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700

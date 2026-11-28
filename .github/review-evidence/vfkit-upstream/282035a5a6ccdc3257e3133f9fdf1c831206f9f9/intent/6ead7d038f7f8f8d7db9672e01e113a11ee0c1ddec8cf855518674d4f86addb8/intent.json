@@ -1,0 +1,459 @@
+{
+  "inputs": {
+    "renderer/image_provenance/__init__.py": "4f6fbee00f2aaec7b9603b4501711ecad6481df8dea44c2061e59c80aef7fdd6",
+    "renderer/image_provenance/cli.py": "8bf7fd1726fc851d2b1c2f52b262886a7065b39cbe2934a77cc813119a447fc6",
+    "renderer/image_provenance/core.py": "19d15d127c0b30fff8d3c3ff19763375a0acbad3c3145b535d42af742e4e5e3f",
+    "renderer/pr_files/__init__.py": "8ba23c3c18fb2390baa4b588062636cc4c347be53500b388084edc94b81df1e0",
+    "renderer/pr_files/cli.py": "082d92c3c6ae5276fe035cb8de4fa28c993d33ee0e741993b361796d8bfa0525",
+    "renderer/pr_files/descriptions.py": "38f75acbd8a930cc9bdb82a6ba1537dc1bb77550a998924216262dec8dc8636d",
+    "renderer/pr_files/grouping.py": "f32cc09ecbca42a26a978c7e2dfa8aa36353cc2c0ae4c43a03faaaf51f9fc750",
+    "renderer/pr_files/models.py": "1543595d1fac65d569f225d02714c5ab13231753181ade47622a3fb515c97b5d",
+    "renderer/pr_files/plotting.py": "b76c9be9f537b3265d16288526bda395141bf4417687894769e9df08013443de",
+    "renderer/pr_intent/__init__.py": "0cc1ccc65f5e7f158bb61bbb067e64990a4e45763ce03e4747fe04200a09adfc",
+    "renderer/pr_intent/cli.py": "938a7a195b44b967c2954bfd869ebf76bac0b136f9cba0d188b6ca328afbd87f",
+    "renderer/pr_intent/client.py": "ee8132f0c830e4514610cc1769c25eba126f02083f6aeb5ae6fefdde37ea8e67",
+    "renderer/pr_intent/graph.py": "487f8897e19e1cfc4b6ed9c0041746fc3c7170573bc732c296b03572270dd586",
+    "renderer/pr_intent/plotting.py": "38591921ebcc5d8a29a2e5b18c62404e283964498ed16b8924632626bad231f6",
+    "renderer/pr_intent/source.py": "9f91202a3047b8c8ae17822dc9f4cd5ed10f392b64d87d03894437eb1928bb9a",
+    "renderer/pr_language.py": "432083a1b472452a34dbc2495d4a459028bb1bdf67d4073859eb97523a543a9d",
+    "renderer/pr_presentation.py": "e1502b1ceea631fe8f631e65b55655a4d14613fd8eb2a885b1df44edc0f8982f",
+    "renderer/resources/fonts/EBGaramond-Regular.otf": "d3e1471a4a0f836716bad35326d3c0ab5caddb74ae5c1917f99f8225abf43a7d",
+    "renderer/resources/intent-result.schema.json": "19e00a10d5a159220f5035bd378da53110017ece9e6286aeb2438b858f01f9a4",
+    "renderer/review_paths/core.py": "192487505ae783c2a2fc42c38cb121b7b65f187e9f54266febffa67f640e3227",
+    "environment/poetry.lock": "2cd3b89141edfdf8f61a3e50006d806c839dab1ae7060bb408d922c0b8b2b6b1",
+    "data/palette": "df3607dacd40a0c4dbfb4b0053752953f4b40d060401fe4e42a3d842f6a8a15c"
+  },
+  "source": {
+    "target": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "base": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "head": "282035a5a6ccdc3257e3133f9fdf1c831206f9f9",
+    "tree": "00de3f5595281f8533720fcd9f81f2fa329dd74f",
+    "staged": false,
+    "deltas": [
+      {
+        "before": ".github/work-graph.json",
+        "after": ".github/work-graph.json",
+        "added": 72,
+        "deleted": 0
+      },
+      {
+        "before": ".github/work-graph.md",
+        "after": ".github/work-graph.md",
+        "added": 40,
+        "deleted": 0
+      },
+      {
+        "before": "cmd/minikube/cmd/delete.go",
+        "after": "cmd/minikube/cmd/delete.go",
+        "added": 16,
+        "deleted": 0
+      },
+      {
+        "before": "cmd/minikube/cmd/stop.go",
+        "after": "cmd/minikube/cmd/stop.go",
+        "added": 12,
+        "deleted": 0
+      },
+      {
+        "before": "deploy/addons/cluster-autoscaler/README.md",
+        "after": "deploy/addons/cluster-autoscaler/README.md",
+        "added": 49,
+        "deleted": 0
+      },
+      {
+        "before": "deploy/addons/storage-provisioner-rancher/storage-provisioner-rancher.yaml.tmpl",
+        "after": "deploy/addons/storage-provisioner-rancher/storage-provisioner-rancher.yaml.tmpl",
+        "added": 1,
+        "deleted": 1
+      },
+      {
+        "before": "deploy/addons/storage_persistence_test.go",
+        "after": "deploy/addons/storage_persistence_test.go",
+        "added": 61,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/addons.go",
+        "after": "pkg/addons/addons.go",
+        "added": 8,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/autoscaler.go",
+        "after": "pkg/addons/autoscaler/autoscaler.go",
+        "added": 263,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/autoscaler_test.go",
+        "after": "pkg/addons/autoscaler/autoscaler_test.go",
+        "added": 227,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/host.go",
+        "after": "pkg/addons/autoscaler/host.go",
+        "added": 401,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/integration_test.go",
+        "after": "pkg/addons/autoscaler/integration_test.go",
+        "added": 296,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_test.go",
+        "after": "pkg/addons/autoscaler/process_test.go",
+        "added": 124,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_unix.go",
+        "after": "pkg/addons/autoscaler/process_unix.go",
+        "added": 28,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_windows.go",
+        "after": "pkg/addons/autoscaler/process_windows.go",
+        "added": 31,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/config.go",
+        "after": "pkg/addons/config.go",
+        "added": 6,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/assets/addons.go",
+        "after": "pkg/minikube/assets/addons.go",
+        "added": 3,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+        "added": 12,
+        "deleted": 3
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/registration.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/registration.go",
+        "added": 65,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+        "added": 84,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/config/types.go",
+        "after": "pkg/minikube/config/types.go",
+        "added": 14,
+        "deleted": 3
+      },
+      {
+        "before": "pkg/minikube/node/start.go",
+        "after": "pkg/minikube/node/start.go",
+        "added": 46,
+        "deleted": 9
+      },
+      {
+        "before": "pkg/minikube/node/start_test.go",
+        "after": "pkg/minikube/node/start_test.go",
+        "added": 82,
+        "deleted": 0
+      },
+      {
+        "before": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "after": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "added": 80,
+        "deleted": 0
+      },
+      {
+        "before": "site/content/en/docs/handbook/persistent_volumes.md",
+        "after": "site/content/en/docs/handbook/persistent_volumes.md",
+        "added": 13,
+        "deleted": 0
+      }
+    ],
+    "excluded_root": ".github/review-evidence/"
+  },
+  "view": {
+    "nodes": [
+      {
+        "id": "F1",
+        "label": ".github/work-graph.json",
+        "kind": "file",
+        "status": "changed",
+        "weight": 72.0,
+        "group": ".github",
+        "context": false
+      },
+      {
+        "id": "F2",
+        "label": ".github/work-graph.md",
+        "kind": "file",
+        "status": "changed",
+        "weight": 40.0,
+        "group": ".github",
+        "context": false
+      },
+      {
+        "id": "F3",
+        "label": "cmd/minikube/cmd/delete.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 16.0,
+        "group": "cmd/minikube/cmd",
+        "context": false
+      },
+      {
+        "id": "F4",
+        "label": "cmd/minikube/cmd/stop.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 12.0,
+        "group": "cmd/minikube/cmd",
+        "context": false
+      },
+      {
+        "id": "F5",
+        "label": "deploy/addons/cluster-autoscaler/README.md",
+        "kind": "file",
+        "status": "changed",
+        "weight": 49.0,
+        "group": "deploy/addons/cluster-autoscaler",
+        "context": false
+      },
+      {
+        "id": "F6",
+        "label": "deploy/addons/storage-provisioner-rancher/storage-provisioner-rancher.yaml.tmpl",
+        "kind": "file",
+        "status": "changed",
+        "weight": 2.0,
+        "group": "deploy/addons/storage-provisioner-rancher",
+        "context": false
+      },
+      {
+        "id": "F7",
+        "label": "deploy/addons/storage_persistence_test.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 61.0,
+        "group": "deploy/addons",
+        "context": false
+      },
+      {
+        "id": "F8",
+        "label": "pkg/addons/addons.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 8.0,
+        "group": "pkg/addons",
+        "context": false
+      },
+      {
+        "id": "F9",
+        "label": "pkg/addons/autoscaler/autoscaler.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 263.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F10",
+        "label": "pkg/addons/autoscaler/autoscaler_test.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 227.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F11",
+        "label": "pkg/addons/autoscaler/host.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 401.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F12",
+        "label": "pkg/addons/autoscaler/integration_test.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 296.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F13",
+        "label": "pkg/addons/autoscaler/process_test.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 124.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F14",
+        "label": "pkg/addons/autoscaler/process_unix.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 28.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F15",
+        "label": "pkg/addons/autoscaler/process_windows.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 31.0,
+        "group": "pkg/addons/autoscaler",
+        "context": false
+      },
+      {
+        "id": "F16",
+        "label": "pkg/addons/config.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 6.0,
+        "group": "pkg/addons",
+        "context": false
+      },
+      {
+        "id": "F17",
+        "label": "pkg/minikube/assets/addons.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 3.0,
+        "group": "pkg/minikube/assets",
+        "context": false
+      },
+      {
+        "id": "F18",
+        "label": "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 15.0,
+        "group": "pkg/minikube/bootstrapper/kubeadm",
+        "context": false
+      },
+      {
+        "id": "F19",
+        "label": "pkg/minikube/bootstrapper/kubeadm/registration.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 65.0,
+        "group": "pkg/minikube/bootstrapper/kubeadm",
+        "context": false
+      },
+      {
+        "id": "F20",
+        "label": "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 84.0,
+        "group": "pkg/minikube/bootstrapper/kubeadm",
+        "context": false
+      },
+      {
+        "id": "F21",
+        "label": "pkg/minikube/config/types.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 17.0,
+        "group": "pkg/minikube/config",
+        "context": false
+      },
+      {
+        "id": "F22",
+        "label": "pkg/minikube/node/start.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 55.0,
+        "group": "pkg/minikube/node",
+        "context": false
+      },
+      {
+        "id": "F23",
+        "label": "pkg/minikube/node/start_test.go",
+        "kind": "file",
+        "status": "changed",
+        "weight": 82.0,
+        "group": "pkg/minikube/node",
+        "context": false
+      },
+      {
+        "id": "F24",
+        "label": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "kind": "file",
+        "status": "changed",
+        "weight": 80.0,
+        "group": "site/content/en/docs/handbook/addons",
+        "context": false
+      },
+      {
+        "id": "F25",
+        "label": "site/content/en/docs/handbook/persistent_volumes.md",
+        "kind": "file",
+        "status": "changed",
+        "weight": 13.0,
+        "group": "site/content/en/docs/handbook",
+        "context": false
+      }
+    ],
+    "links": [],
+    "missing": [
+      ".github/work-graph.json",
+      ".github/work-graph.md",
+      "cmd/minikube/cmd/delete.go",
+      "cmd/minikube/cmd/stop.go",
+      "deploy/addons/cluster-autoscaler/README.md",
+      "deploy/addons/storage-provisioner-rancher/storage-provisioner-rancher.yaml.tmpl",
+      "deploy/addons/storage_persistence_test.go",
+      "pkg/addons/addons.go",
+      "pkg/addons/autoscaler/autoscaler.go",
+      "pkg/addons/autoscaler/autoscaler_test.go",
+      "pkg/addons/autoscaler/host.go",
+      "pkg/addons/autoscaler/integration_test.go",
+      "pkg/addons/autoscaler/process_test.go",
+      "pkg/addons/autoscaler/process_unix.go",
+      "pkg/addons/autoscaler/process_windows.go",
+      "pkg/addons/config.go",
+      "pkg/minikube/assets/addons.go",
+      "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+      "pkg/minikube/bootstrapper/kubeadm/registration.go",
+      "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+      "pkg/minikube/config/types.go",
+      "pkg/minikube/node/start.go",
+      "pkg/minikube/node/start_test.go",
+      "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+      "site/content/en/docs/handbook/persistent_volumes.md"
+    ],
+    "state": "unavailable: unenrolled",
+    "graph_revision": "",
+    "input_sha256": "",
+    "omitted_dependencies": 0,
+    "omitted_evidence": 0
+  },
+  "palette_sha256": "df3607dacd40a0c4dbfb4b0053752953f4b40d060401fe4e42a3d842f6a8a15c",
+  "seed": 1729,
+  "renderer": 1,
+  "implementation_sha256": "abd0a1ea6c959c5834d9cd464a0d4a8374ced1dd93003d10253ab550ad0e2ccf",
+  "matplotlib": "3.11.2",
+  "networkx": "3.7",
+  "numpy": "2.5.3",
+  "witful": "0.8.4",
+  "model_calls": 0,
+  "evaluated_at": null,
+  "image_sha256": "35958ea69aff4890591391d7b67669ed9325c2fa4e56dcddf3420624cbacb17d"
+}

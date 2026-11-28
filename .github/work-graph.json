@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "hosts": [
+    {
+      "id": "github",
+      "provider": "github",
+      "url": "https://github.com"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "minikube",
+      "kind": "project",
+      "label": "Minikube",
+      "host": "github",
+      "path": "kubernetes/minikube",
+      "url": "https://github.com/kubernetes/minikube"
+    },
+    {
+      "id": "master",
+      "kind": "branch",
+      "label": "master",
+      "parent": "minikube",
+      "host": "github",
+      "url": "https://github.com/kubernetes/minikube/tree/master"
+    },
+    {
+      "id": "review",
+      "kind": "review",
+      "label": "Bounded native VM autoscaler integration",
+      "parent": "minikube",
+      "host": "github",
+      "url": "https://github.com/kubernetes/minikube/pull/23809",
+      "number": 23809,
+      "state": "open",
+      "work": "active"
+    },
+    {
+      "id": "fork",
+      "kind": "project",
+      "label": "Minikube integration fork",
+      "host": "github",
+      "path": "astrivant/minikube",
+      "url": "https://github.com/astrivant/minikube"
+    },
+    {
+      "id": "feature",
+      "kind": "branch",
+      "label": "cluster-autoscaler-addon",
+      "parent": "fork",
+      "host": "github",
+      "url": "https://github.com/astrivant/minikube/tree/cluster-autoscaler-addon",
+      "work": "active"
+    }
+  ],
+  "links": [
+    {
+      "id": "base",
+      "kind": "based_on",
+      "source": "feature",
+      "target": "master",
+      "evidence": "The existing contribution targets upstream master."
+    },
+    {
+      "id": "review-source",
+      "kind": "correlates",
+      "source": "review",
+      "target": "feature",
+      "evidence": "https://github.com/kubernetes/minikube/pull/23809"
+    }
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "measurement": {
+    "base": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "merge_base": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "head": "77640bc151256379c236be6495493c02eca58b38",
+    "classifier": "Pygments 2.21.0",
+    "deltas": [
+      {
+        "before": ".github/review-evidence/vfkit/directory.png",
+        "after": ".github/review-evidence/vfkit/directory.png",
+        "added": null,
+        "deleted": null
+      },
+      {
+        "before": ".github/review-evidence/vfkit/files-001.png",
+        "after": ".github/review-evidence/vfkit/files-001.png",
+        "added": null,
+        "deleted": null
+      },
+      {
+        "before": ".github/review-evidence/vfkit/files-002.png",
+        "after": ".github/review-evidence/vfkit/files-002.png",
+        "added": null,
+        "deleted": null
+      },
+      {
+        "before": ".github/review-evidence/vfkit/files.md",
+        "after": ".github/review-evidence/vfkit/files.md",
+        "added": 5,
+        "deleted": 0
+      },
+      {
+        "before": ".github/review-evidence/vfkit/intent.png",
+        "after": ".github/review-evidence/vfkit/intent.png",
+        "added": null,
+        "deleted": null
+      },
+      {
+        "before": ".github/review-evidence/vfkit/languages.png",
+        "after": ".github/review-evidence/vfkit/languages.png",
+        "added": null,
+        "deleted": null
+      },
+      {
+        "before": ".github/review-evidence/vfkit/verification.json",
+        "after": ".github/review-evidence/vfkit/verification.json",
+        "added": 126,
+        "deleted": 0
+      },
+      {
+        "before": ".github/review-evidence/vfkit/work.json",
+        "after": ".github/review-evidence/vfkit/work.json",
+        "added": 93,
+        "deleted": 0
+      },
+      {
+        "before": ".github/review-evidence/vfkit/work.md",
+        "after": ".github/review-evidence/vfkit/work.md",
+        "added": 32,
+        "deleted": 0
+      },
+      {
+        "before": ".github/review-evidence/vfkit/work.mmd",
+        "after": ".github/review-evidence/vfkit/work.mmd",
+        "added": 24,
+        "deleted": 0
+      },
+      {
+        "before": "cmd/minikube/cmd/delete.go",
+        "after": "cmd/minikube/cmd/delete.go",
+        "added": 16,
+        "deleted": 0
+      },
+      {
+        "before": "cmd/minikube/cmd/stop.go",
+        "after": "cmd/minikube/cmd/stop.go",
+        "added": 12,
+        "deleted": 0
+      },
+      {
+        "before": "deploy/addons/cluster-autoscaler/README.md",
+        "after": "deploy/addons/cluster-autoscaler/README.md",
+        "added": 49,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/addons.go",
+        "after": "pkg/addons/addons.go",
+        "added": 8,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/autoscaler.go",
+        "after": "pkg/addons/autoscaler/autoscaler.go",
+        "added": 263,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/autoscaler_test.go",
+        "after": "pkg/addons/autoscaler/autoscaler_test.go",
+        "added": 227,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/host.go",
+        "after": "pkg/addons/autoscaler/host.go",
+        "added": 401,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/integration_test.go",
+        "after": "pkg/addons/autoscaler/integration_test.go",
+        "added": 296,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_test.go",
+        "after": "pkg/addons/autoscaler/process_test.go",
+        "added": 124,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_unix.go",
+        "after": "pkg/addons/autoscaler/process_unix.go",
+        "added": 28,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_windows.go",
+        "after": "pkg/addons/autoscaler/process_windows.go",
+        "added": 31,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/config.go",
+        "after": "pkg/addons/config.go",
+        "added": 6,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/assets/addons.go",
+        "after": "pkg/minikube/assets/addons.go",
+        "added": 3,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/config/types.go",
+        "after": "pkg/minikube/config/types.go",
+        "added": 14,
+        "deleted": 3
+      },
+      {
+        "before": "pkg/minikube/node/start.go",
+        "after": "pkg/minikube/node/start.go",
+        "added": 19,
+        "deleted": 6
+      },
+      {
+        "before": "pkg/minikube/node/start_test.go",
+        "after": "pkg/minikube/node/start_test.go",
+        "added": 43,
+        "deleted": 0
+      },
+      {
+        "before": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "after": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "added": 68,
+        "deleted": 0
+      }
+    ],
+    "shares": [
+      {
+        "language": "Go",
+        "added": 1491,
+        "deleted": 9
+      },
+      {
+        "language": "JSON",
+        "added": 219,
+        "deleted": 0
+      },
+      {
+        "language": "Markdown",
+        "added": 154,
+        "deleted": 0
+      },
+      {
+        "language": "Unknown",
+        "added": 24,
+        "deleted": 0
+      }
+    ]
+  },
+  "palette_sha256": "149d8efaef55c657d889c6507a76ecd624947bca2f37b3fa359841a21f2b5147",
+  "matplotlib": "3.11.2"
+}
