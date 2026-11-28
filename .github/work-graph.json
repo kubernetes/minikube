@@ -40,6 +40,17 @@
       "host": "github",
       "url": "https://github.com/astrivant/minikube/tree/fix/worker-registration-before-labels",
       "work": "active"
+    },
+    {
+      "id": "review",
+      "kind": "review",
+      "label": "Worker registration before labels",
+      "parent": "minikube",
+      "host": "github",
+      "url": "https://github.com/kubernetes/minikube/pull/24134",
+      "number": 24134,
+      "state": "open",
+      "work": "review"
     }
   ],
   "links": [
@@ -49,6 +60,13 @@
       "source": "feature",
       "target": "master",
       "evidence": "The existing contribution targets upstream master."
+    },
+    {
+      "id": "review-source",
+      "kind": "correlates",
+      "source": "review",
+      "target": "feature",
+      "evidence": "https://github.com/kubernetes/minikube/pull/24134"
     }
   ]
 }
