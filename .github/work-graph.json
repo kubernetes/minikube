@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "hosts": [
+    {
+      "id": "github",
+      "provider": "github",
+      "url": "https://github.com"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "minikube",
+      "kind": "project",
+      "label": "Minikube",
+      "host": "github",
+      "path": "kubernetes/minikube",
+      "url": "https://github.com/kubernetes/minikube"
+    },
+    {
+      "id": "master",
+      "kind": "branch",
+      "label": "master",
+      "parent": "minikube",
+      "host": "github",
+      "url": "https://github.com/kubernetes/minikube/tree/master"
+    },
+    {
+      "id": "fork",
+      "kind": "project",
+      "label": "Minikube integration fork",
+      "host": "github",
+      "path": "astrivant/minikube",
+      "url": "https://github.com/astrivant/minikube"
+    },
+    {
+      "id": "feature",
+      "kind": "branch",
+      "label": "fix/worker-registration-before-labels",
+      "parent": "fork",
+      "host": "github",
+      "url": "https://github.com/astrivant/minikube/tree/fix/worker-registration-before-labels",
+      "work": "active"
+    }
+  ],
+  "links": [
+    {
+      "id": "base",
+      "kind": "based_on",
+      "source": "feature",
+      "target": "master",
+      "evidence": "The existing contribution targets upstream master."
+    }
+  ]
+}

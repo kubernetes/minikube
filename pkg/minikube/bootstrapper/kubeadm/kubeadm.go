@@ -1063,9 +1063,6 @@ func (k *Bootstrapper) labelAndUntaintNode(cfg config.ClusterConfig, n config.No
 		primaryLbl = "minikube.k8s.io/primary=true"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
-	defer cancel()
-
 	// node name is usually based on profile/cluster name, except for "none" driver where it assumes hostname
 	nodeName := config.MachineName(cfg, n)
 	if driver.IsNone(cfg.Driver) {
@@ -1073,6 +1070,17 @@ func (k *Bootstrapper) labelAndUntaintNode(cfg config.ClusterConfig, n config.No
 			nodeName = n
 		}
 	}
+
+	// Joining establishes kubelet credentials before the Node is necessarily
+	// visible. Wait for worker registration before spending the labeling budget.
+	if !n.ControlPlane {
+		if err := k.waitForWorkerRegistration(cfg, nodeName); err != nil {
+			return fmt.Errorf("wait for worker registration: %w", err)
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
+	defer cancel()
 
 	// example:
 	// sudo /var/lib/minikube/binaries/<version>/kubectl --kubeconfig=/var/lib/minikube/kubeconfig label --overwrite nodes test-357 minikube.k8s.io/version=<version> minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700
