@@ -1,0 +1,203 @@
+{
+  "measurement": {
+    "base": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "merge_base": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "head": "7c60474b6fcad5a6b0b5d5e7dfd62a3b34dc710b",
+    "classifier": "Pygments 2.21.0",
+    "deltas": [
+      {
+        "before": ".github/work-graph.json",
+        "after": ".github/work-graph.json",
+        "added": 72,
+        "deleted": 0
+      },
+      {
+        "before": ".github/work-graph.md",
+        "after": ".github/work-graph.md",
+        "added": 40,
+        "deleted": 0
+      },
+      {
+        "before": "cmd/minikube/cmd/delete.go",
+        "after": "cmd/minikube/cmd/delete.go",
+        "added": 16,
+        "deleted": 0
+      },
+      {
+        "before": "cmd/minikube/cmd/stop.go",
+        "after": "cmd/minikube/cmd/stop.go",
+        "added": 12,
+        "deleted": 0
+      },
+      {
+        "before": "deploy/addons/cluster-autoscaler/README.md",
+        "after": "deploy/addons/cluster-autoscaler/README.md",
+        "added": 49,
+        "deleted": 0
+      },
+      {
+        "before": "deploy/addons/storage-provisioner-rancher/storage-provisioner-rancher.yaml.tmpl",
+        "after": "deploy/addons/storage-provisioner-rancher/storage-provisioner-rancher.yaml.tmpl",
+        "added": 1,
+        "deleted": 1
+      },
+      {
+        "before": "deploy/addons/storage_persistence_test.go",
+        "after": "deploy/addons/storage_persistence_test.go",
+        "added": 61,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/addons.go",
+        "after": "pkg/addons/addons.go",
+        "added": 8,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/autoscaler.go",
+        "after": "pkg/addons/autoscaler/autoscaler.go",
+        "added": 263,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/autoscaler_test.go",
+        "after": "pkg/addons/autoscaler/autoscaler_test.go",
+        "added": 227,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/host.go",
+        "after": "pkg/addons/autoscaler/host.go",
+        "added": 401,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/integration_test.go",
+        "after": "pkg/addons/autoscaler/integration_test.go",
+        "added": 296,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_test.go",
+        "after": "pkg/addons/autoscaler/process_test.go",
+        "added": 124,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_unix.go",
+        "after": "pkg/addons/autoscaler/process_unix.go",
+        "added": 28,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/autoscaler/process_windows.go",
+        "after": "pkg/addons/autoscaler/process_windows.go",
+        "added": 31,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/addons/config.go",
+        "after": "pkg/addons/config.go",
+        "added": 6,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/assets/addons.go",
+        "after": "pkg/minikube/assets/addons.go",
+        "added": 3,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/controlplane_recovery_test.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/controlplane_recovery_test.go",
+        "added": 109,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+        "added": 39,
+        "deleted": 5
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/registration.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/registration.go",
+        "added": 65,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+        "added": 84,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/worker_identity.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/worker_identity.go",
+        "added": 90,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/worker_identity_test.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/worker_identity_test.go",
+        "added": 113,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/config/types.go",
+        "after": "pkg/minikube/config/types.go",
+        "added": 14,
+        "deleted": 3
+      },
+      {
+        "before": "pkg/minikube/node/start.go",
+        "after": "pkg/minikube/node/start.go",
+        "added": 46,
+        "deleted": 9
+      },
+      {
+        "before": "pkg/minikube/node/start_test.go",
+        "after": "pkg/minikube/node/start_test.go",
+        "added": 82,
+        "deleted": 0
+      },
+      {
+        "before": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "after": "site/content/en/docs/handbook/addons/cluster-autoscaler.md",
+        "added": 93,
+        "deleted": 0
+      },
+      {
+        "before": "site/content/en/docs/handbook/persistent_volumes.md",
+        "after": "site/content/en/docs/handbook/persistent_volumes.md",
+        "added": 13,
+        "deleted": 0
+      }
+    ],
+    "shares": [
+      {
+        "language": "Go",
+        "added": 2118,
+        "deleted": 17
+      },
+      {
+        "language": "Markdown",
+        "added": 195,
+        "deleted": 0
+      },
+      {
+        "language": "JSON",
+        "added": 72,
+        "deleted": 0
+      },
+      {
+        "language": "Cheetah",
+        "added": 1,
+        "deleted": 1
+      }
+    ],
+    "excluded_root": ".github/review-evidence/"
+  },
+  "palette_sha256": "df3607dacd40a0c4dbfb4b0053752953f4b40d060401fe4e42a3d842f6a8a15c",
+  "matplotlib": "3.11.2"
+}
