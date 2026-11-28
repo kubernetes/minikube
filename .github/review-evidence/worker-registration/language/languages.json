@@ -1,0 +1,66 @@
+{
+  "measurement": {
+    "base": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "merge_base": "61e410233d20e551ff1ec58895ef3d09051300ad",
+    "head": "8dede42472f1f5fd223188522a19849ed9cd25ba",
+    "classifier": "Pygments 2.21.0",
+    "deltas": [
+      {
+        "before": ".github/work-graph.json",
+        "after": ".github/work-graph.json",
+        "added": 72,
+        "deleted": 0
+      },
+      {
+        "before": ".github/work-graph.md",
+        "after": ".github/work-graph.md",
+        "added": 40,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/kubeadm.go",
+        "added": 11,
+        "deleted": 3
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/registration.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/registration.go",
+        "added": 70,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/registration_race_test.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/registration_race_test.go",
+        "added": 109,
+        "deleted": 0
+      },
+      {
+        "before": "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+        "after": "pkg/minikube/bootstrapper/kubeadm/registration_test.go",
+        "added": 94,
+        "deleted": 0
+      }
+    ],
+    "shares": [
+      {
+        "language": "Go",
+        "added": 284,
+        "deleted": 3
+      },
+      {
+        "language": "JSON",
+        "added": 72,
+        "deleted": 0
+      },
+      {
+        "language": "Markdown",
+        "added": 40,
+        "deleted": 0
+      }
+    ],
+    "excluded_root": ".github/review-evidence/"
+  },
+  "palette_sha256": "df3607dacd40a0c4dbfb4b0053752953f4b40d060401fe4e42a3d842f6a8a15c",
+  "matplotlib": "3.11.2"
+}
