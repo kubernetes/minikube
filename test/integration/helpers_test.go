@@ -527,7 +527,8 @@ func RepoRoot(t *testing.T) string {
 // MaybeParallel sets that the test should run in parallel
 func MaybeParallel(t *testing.T) {
 	t.Helper()
-	// TODO: Allow parallelized tests on "none" that do not require independent clusters
+	// TODO: Allow parallelized tests on "none" and "ssh" that do not require independent clusters
+	// https://github.com/kubernetes/minikube/issues/24146
 	if NoneDriver() || SSHDriver() {
 		return
 	}

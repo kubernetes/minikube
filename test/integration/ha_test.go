@@ -36,8 +36,11 @@ import (
 
 // TestMultiControlPlane tests all ha (multi-control plane) cluster functionality
 func TestMultiControlPlane(t *testing.T) {
-	if NoneDriver() || SSHDriver() {
-		t.Skip("none and ssh drivers do not support multinode/ha(multi-control plane) cluster")
+	if NoneDriver() {
+		t.Skip("none driver does not support multinode/ha(multi-control plane) cluster")
+	}
+	if SSHDriver() {
+		t.Skip("ssh driver does not support multinode/ha(multi-control plane) cluster")
 	}
 
 	if DockerDriver() {

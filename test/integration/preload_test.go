@@ -35,8 +35,11 @@ import (
 // that preloads can be downloaded from the selected source.
 func TestPreload(t *testing.T) {
 	MaybeParallel(t)
-	if NoneDriver() || SSHDriver() {
-		t.Skipf("skipping %s - incompatible with none and ssh drivers", t.Name())
+	if NoneDriver() {
+		t.Skipf("skipping %s - incompatible with none driver", t.Name())
+	}
+	if SSHDriver() {
+		t.Skipf("skipping %s - incompatible with ssh driver", t.Name())
 	}
 
 	profile := UniqueProfileName("test-preload")
