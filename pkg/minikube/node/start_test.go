@@ -19,6 +19,7 @@ package node
 import (
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/run"
 )
@@ -39,5 +40,43 @@ func TestAddingNodePreservesAddons(t *testing.T) {
 		if !cc.Addons["cluster-autoscaler"] || !cc.Addons["metrics-server"] || cc.Addons["dashboard"] {
 			t.Fatalf("adding a node changed addon settings: %v", cc.Addons)
 		}
+	}
+}
+
+// TestManagedWorkerRestartPreservesIdentity keeps VM resume separate from a new join.
+func TestManagedWorkerRestartPreservesIdentity(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		existing     bool
+		controlPlane bool
+		managed      bool
+		preserve     bool
+	}{
+		{"managed-existing-worker", true, false, true, true},
+		{"managed-new-worker", false, false, true, false},
+		{"unmanaged-existing-worker", true, false, false, false},
+		{"managed-control-plane", true, true, true, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &config.ClusterConfig{VerifyComponents: map[string]bool{kverify.APIServerWaitKey: true}}
+			if tt.managed {
+				cfg.ClusterAutoscaler = &config.ClusterAutoscalerConfig{}
+			}
+			starter := Starter{PreExists: tt.existing, Cfg: cfg, Node: &config.Node{ControlPlane: tt.controlPlane}}
+			if got := preserveManagedWorker(starter); got != tt.preserve {
+				t.Fatalf("preserve managed identity = %v; want %v", got, tt.preserve)
+			}
+			ready := readinessConfiguration(starter)
+			if ready.VerifyComponents[kverify.NodeReadyKey] != tt.preserve || !ready.VerifyComponents[kverify.APIServerWaitKey] {
+				t.Fatalf("resume readiness lost required checks: %v", ready.VerifyComponents)
+			}
+			if cfg.VerifyComponents[kverify.NodeReadyKey] {
+				t.Fatal("readiness mutated the caller's component policy")
+			}
+			ready.VerifyComponents[kverify.APIServerWaitKey] = false
+			if !cfg.VerifyComponents[kverify.APIServerWaitKey] {
+				t.Fatal("readiness map aliases the caller")
+			}
+		})
 	}
 }

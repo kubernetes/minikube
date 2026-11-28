@@ -66,3 +66,15 @@ minikube addons disable cluster-autoscaler
 ```
 
 This stops autoscaling and its background processes. Existing nodes are retained.
+
+### Restarting managed VM workers
+
+An existing worker in a provider-managed VM profile retains its Kubernetes Node
+identity during restart. Minikube updates and starts its kubelet, waits for the
+worker to become Ready, and leaves destructive teardown and rejoin outside this
+managed resume path. The provider continues to validate its original UID and
+ownership metadata before admitting scaling operations.
+
+A profile whose workers already rejoined under the legacy VM restart behavior
+retains its paused ownership journal for explicit reconciliation. Preserve the
+original state and data while preparing that recovery.

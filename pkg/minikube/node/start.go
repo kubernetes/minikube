@@ -18,6 +18,7 @@ package node
 
 import (
 	"fmt"
+	"maps"
 	"net"
 	"os"
 	"os/exec"
@@ -43,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/libmachine"
 	"k8s.io/minikube/pkg/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -177,8 +179,9 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		}
 
 		// join cluster only on first node start
-		// except for vm driver in non-ha (non-multi-control plane) cluster - fallback to old behaviour
-		if !starter.PreExists || (driver.IsVM(starter.Cfg.Driver) && !config.IsHA(*starter.Cfg)) {
+		// Keep the legacy VM fallback for unmanaged clusters. Managed workers retain
+		// their registered UID; destructive rejoin would invalidate provider custody.
+		if !starter.PreExists || (driver.IsVM(starter.Cfg.Driver) && !config.IsHA(*starter.Cfg) && !preserveManagedWorker(starter)) {
 			// make sure to use the command runner for the primary control plane to generate the join token
 			pcpBs, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
 			if err != nil {
@@ -224,7 +227,7 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 		klog.Infof("HA (multi-control plane) cluster: will skip waiting for primary control-plane node %+v", starter.Node)
 	} else {
 		klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
-		if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
+		if err := bs.WaitForNode(readinessConfiguration(starter), *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 			return nil, fmt.Errorf("wait %s for node: %w", viper.GetDuration(waitTimeout), err)
 		}
 	}
@@ -244,6 +247,27 @@ func Start(starter Starter, options *run.CommandOptions) (*kubeconfig.Settings, 
 	// Write enabled addons to the config before completion
 	klog.Infof("writing updated cluster config ...")
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+}
+
+// preserveManagedWorker keeps an existing external-provider worker's Kubernetes identity.
+// The provider independently validates its original UID and metadata before admission.
+func preserveManagedWorker(starter Starter) bool {
+	return starter.PreExists && !starter.Node.ControlPlane && starter.Cfg.ClusterAutoscaler != nil
+}
+
+// readinessConfiguration requires a resumed managed worker to become Ready without
+// changing the caller's configured checks. A failed resume preserves its journal;
+// the managed path never falls back to destructive teardown and name-based rejoin.
+func readinessConfiguration(starter Starter) config.ClusterConfig {
+	cfg := *starter.Cfg
+	cfg.VerifyComponents = maps.Clone(cfg.VerifyComponents)
+	if preserveManagedWorker(starter) {
+		if cfg.VerifyComponents == nil {
+			cfg.VerifyComponents = map[string]bool{}
+		}
+		cfg.VerifyComponents[kverify.NodeReadyKey] = true
+	}
+	return cfg
 }
 
 // updateNodeAddonConfig preserves cluster-wide addon settings when adding a
