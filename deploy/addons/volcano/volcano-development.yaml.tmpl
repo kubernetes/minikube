@@ -152,6 +152,7 @@ spec:
             - --admission-conf=/admission.local.config/configmap/volcano-admission.conf
             - --webhook-namespace=volcano-system
             - --webhook-service-name=volcano-admission-service
+            - --enable-root-queue-protection=true
             - --enable-healthz=true
             - --logtostderr
             - --port=8443
