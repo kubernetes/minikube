@@ -1012,6 +1012,14 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return fmt.Errorf("add control-plane alias: %w", err)
 	}
 
+	// Managed VM workers retain their API identity across reboot. Their client
+	// certificate is persistent, while /etc/kubernetes belongs to the boot image.
+	if cfg.ClusterAutoscaler != nil && !n.ControlPlane {
+		if err := k.restoreManagedKubeletConfig(cfg); err != nil {
+			return fmt.Errorf("restore managed worker identity: %w", err)
+		}
+	}
+
 	// "ensure" kubelet is started, intentionally non-fatal in case of an error
 	if err := sysinit.New(k.c).Start("kubelet"); err != nil {
 		klog.Errorf("Couldn't ensure kubelet is started this might cause issues (will continue): %v", err)
