@@ -411,15 +411,32 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig, options *run.Comma
 
 		klog.Infof("found existing configuration files, will attempt cluster restart")
 
-		var rerr error
-		if rerr := k.restartPrimaryControlPlane(cfg); rerr == nil {
+		rerr := k.restartPrimaryControlPlane(cfg)
+		if rerr == nil {
 			return nil
+		}
+		// A configured external provider retains namespace and node identities.
+		// Reset would invalidate that ownership even while the addon is disabled.
+		if cfg.ClusterAutoscaler != nil {
+			return fmt.Errorf("restart managed control plane; preserve existing cluster state: %w", rerr)
 		}
 		out.ErrT(style.Embarrassed, "Unable to restart control-plane node(s), will reset cluster: {{.error}}", out.V{"error": rerr})
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 			klog.Warningf("delete failed: %v", err)
 		}
 		// Fall-through to init
+	}
+
+	// Boot-local configuration can be absent while the persistent etcd database
+	// remains. Preserve it on missing configuration or an ambiguous transport.
+	if cfg.ClusterAutoscaler != nil {
+		retained, err := k.guestFilePresent(path.Join(bsutil.EtcdDataDir(), "member/snap/db"))
+		if err != nil {
+			return fmt.Errorf("inspect retained managed control-plane data before initialization: %w", err)
+		}
+		if retained {
+			return errors.New("managed control-plane data exists; restore retained configuration before retrying")
+		}
 	}
 
 	conf := constants.KubeadmYamlPath

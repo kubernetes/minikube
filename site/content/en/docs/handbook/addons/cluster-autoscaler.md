@@ -67,6 +67,18 @@ minikube addons disable cluster-autoscaler
 
 This stops autoscaling and its background processes. Existing nodes are retained.
 
+### Restoring a managed control plane
+
+A configured provider retains its control-plane namespace and Node identities.
+If an existing control plane fails to restart, `minikube start` returns the
+original error and preserves its state. This applies while the addon is enabled
+and while its saved configuration is disabled.
+
+When boot-local configuration is missing and the persistent etcd database remains,
+restore the retained configuration before retrying. A failed data-presence probe
+also holds initialization. A fresh managed profile without retained etcd data
+continues through normal initialization.
+
 ### Restarting managed VM workers
 
 An existing worker in a provider-managed VM profile retains its Kubernetes Node
