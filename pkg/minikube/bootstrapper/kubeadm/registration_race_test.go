@@ -76,6 +76,8 @@ func TestLabelAndUntaintNodeWaitsForWorkerRegistration(t *testing.T) {
 			_ = json.NewEncoder(w).Encode(&metav1.Status{
 				TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Status"},
 				Status:   metav1.StatusFailure, Reason: metav1.StatusReasonNotFound, Code: http.StatusNotFound,
+				Message: fmt.Sprintf("nodes %q not found", nodeName),
+				Details: &metav1.StatusDetails{Kind: "nodes", Name: nodeName},
 			})
 			return
 		}
