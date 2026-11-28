@@ -496,6 +496,10 @@ func profileDeletionErr(cname string, additionalInfo string) error {
 }
 
 func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.Node, bsName string) error {
+	if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
+		klog.Infof("skipping uninstall: Kubernetes is not installed in profile %q", cc.Name)
+		return nil
+	}
 	out.Styled(style.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
 	host, err := machine.LoadHost(api, config.MachineName(cc, n))
 	if err != nil {

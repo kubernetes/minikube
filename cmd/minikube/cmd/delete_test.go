@@ -32,6 +32,7 @@ import (
 
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/run"
 )
@@ -380,5 +381,17 @@ func buildBinary(t *testing.T, src, out string) {
 	cmd := exec.Command("go", "build", "-o", out, src)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("failed to build %s: %v\nOutput: %s", out, err, string(output))
+	}
+}
+
+// TestUninstallKubernetesNoKubernetes checks that uninstall is skipped for --no-kubernetes profiles
+func TestUninstallKubernetesNoKubernetes(t *testing.T) {
+	cc := config.ClusterConfig{
+		Name:             "nok8s",
+		KubernetesConfig: config.KubernetesConfig{KubernetesVersion: constants.NoKubernetesVersion},
+	}
+	// api is nil, so uninstallKubernetes must return before using it
+	if err := uninstallKubernetes(nil, cc, config.Node{}, "kubeadm"); err != nil {
+		t.Fatalf("uninstallKubernetes() = %v, want nil", err)
 	}
 }
