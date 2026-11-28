@@ -300,7 +300,6 @@ func TestMissingContainerUpgrade(t *testing.T) {
 	if TestingKicBaseImage() {
 		t.Skipf("Skipping, test does not make sense with --base-image")
 	}
-	t.Skip("Docker node container recovery is tracked in https://github.com/kubernetes/minikube/issues/23798")
 
 	MaybeParallel(t)
 	profile := UniqueProfileName("missing-upgrade")
@@ -342,5 +341,38 @@ func TestMissingContainerUpgrade(t *testing.T) {
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed missing container upgrade from %s. args: %s : %v", legacyVersion, rr.Command(), err)
+	}
+}
+
+// TestMissingContainerRestart tests restarting a KIC cluster on the same version after its container is removed
+func TestMissingContainerRestart(t *testing.T) {
+	if !KicDriver() {
+		t.Skipf("This test is only for Docker or Podman")
+	}
+
+	MaybeParallel(t)
+	profile := UniqueProfileName("missing-restart")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(55))
+
+	defer CleanupWithLogs(t, profile, cancel)
+
+	args := append([]string{"start", "-p", profile, "--memory=3072"}, StartArgs()...)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("initial start failed: %s: %v", rr.Command(), err)
+	}
+
+	bin := "docker"
+	if PodmanDriver() {
+		bin = "podman"
+	}
+	if rr, err := Run(t, exec.CommandContext(ctx, bin, "rm", "-f", profile)); err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+
+	args = append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "-v=1"}, StartArgs()...)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Errorf("failed missing container restart. args: %s : %v", rr.Command(), err)
 	}
 }

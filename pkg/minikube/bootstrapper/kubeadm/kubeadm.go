@@ -171,6 +171,28 @@ func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) {
 	}
 }
 
+// controlPlaneArtifactsExist checks whether the ephemeral /etc/kubernetes control-plane
+// configs and static pod manifests exist in the guest. On container drivers (Docker/Podman),
+// /var persists across container removal while /etc/kubernetes does not.
+func (k *Bootstrapper) controlPlaneArtifactsExist() bool {
+	paths := []string{
+		"/etc/kubernetes/admin.conf",
+		"/etc/kubernetes/kubelet.conf",
+		"/etc/kubernetes/controller-manager.conf",
+		"/etc/kubernetes/scheduler.conf",
+		path.Join(vmpath.GuestManifestsDir, "kube-apiserver.yaml"),
+		path.Join(vmpath.GuestManifestsDir, "kube-controller-manager.yaml"),
+		path.Join(vmpath.GuestManifestsDir, "kube-scheduler.yaml"),
+		path.Join(vmpath.GuestManifestsDir, "etcd.yaml"),
+	}
+	args := append([]string{"ls"}, paths...)
+	if _, err := k.c.RunCmd(exec.Command("sudo", args...)); err != nil {
+		klog.Infof("missing control-plane artifacts in /etc/kubernetes: %v", err)
+		return false
+	}
+	return true
+}
+
 // init initialises primary control-plane using kubeadm.
 func (k *Bootstrapper) init(cfg config.ClusterConfig, options *run.CommandOptions) error {
 	ver, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
@@ -626,15 +648,19 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 
 	// check whether or not the cluster needs to be reconfigured
 	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err == nil {
-		// DANGER: This log message is hard-coded in an integration test!
-		klog.Infof("The running cluster does not require reconfiguration: %s", host)
-		// taking a shortcut, as the cluster seems to be properly configured
-		// except for vm driver in non-ha (non-multi-control plane) cluster - fallback to old behaviour
-		// here we're making a tradeoff to avoid significant (10sec) waiting on restarting stopped non-ha (non-multi-control plane) cluster with vm driver
-		// where such cluster needs to be reconfigured b/c of (currently) ephemeral config, but then also,
-		// starting already started such cluster (hard to know w/o investing that time) will fallthrough the same path and reconfigure cluster
-		if config.IsHA(cfg) || !driver.IsVM(cfg.Driver) {
-			return nil
+		if k.controlPlaneArtifactsExist() {
+			// DANGER: This log message is hard-coded in an integration test!
+			klog.Infof("The running cluster does not require reconfiguration: %s", host)
+			// taking a shortcut, as the cluster seems to be properly configured
+			// except for vm driver in non-ha (non-multi-control plane) cluster - fallback to old behaviour
+			// here we're making a tradeoff to avoid significant (10sec) waiting on restarting stopped non-ha (non-multi-control plane) cluster with vm driver
+			// where such cluster needs to be reconfigured b/c of (currently) ephemeral config, but then also,
+			// starting already started such cluster (hard to know w/o investing that time) will fallthrough the same path and reconfigure cluster
+			if config.IsHA(cfg) || !driver.IsVM(cfg.Driver) {
+				return nil
+			}
+		} else {
+			klog.Infof("detected missing control-plane artifacts in /etc/kubernetes (will reconfigure cluster from %s)", conf)
 		}
 	} else {
 		klog.Infof("detected kubeadm config drift (will reconfigure cluster from new %s):\n%s", conf, rr.Output())
