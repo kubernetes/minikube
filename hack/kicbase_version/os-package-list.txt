@@ -5,7 +5,7 @@ Desired=Unknown/Install/Remove/Purge/Hold
 +++-===============================-====================================-============-========================================================================================
 ii  adduser                         3.152                                all          add and remove users and groups
 ii  apt                             3.0.4                                amd64        commandline package manager
-ii  base-files                      13.8+deb13u7                         amd64        Debian base system miscellaneous files
+ii  base-files                      13.8+deb13u8                         amd64        Debian base system miscellaneous files
 ii  base-passwd                     3.6.7                                amd64        Debian base system master password and group files
 ii  bash                            5.2.37-2+b10                         amd64        GNU Bourne Again SHell
 ii  bind9-dnsutils                  1:9.20.30-1~deb13u1                  amd64        Clients provided with BIND 9
@@ -72,8 +72,8 @@ ii  libbpf1:amd64                   1:1.5.0-3                            amd64  
 ii  libbrotli1:amd64                1.1.0-2+deb13u1                      amd64        library implementing brotli encoder and decoder (shared libraries)
 ii  libbsd0:amd64                   0.12.2-2                             amd64        utility functions from BSD systems - shared library
 ii  libbz2-1.0:amd64                1.0.8-6                              amd64        high-quality block-sorting file compressor library - runtime
-ii  libc-bin                        2.41-12+deb13u4                      amd64        GNU C Library: Binaries
-ii  libc6:amd64                     2.41-12+deb13u4                      amd64        GNU C Library: Shared libraries
+ii  libc-bin                        2.41-12+deb13u5                      amd64        GNU C Library: Binaries
+ii  libc6:amd64                     2.41-12+deb13u5                      amd64        GNU C Library: Shared libraries
 ii  libcap-ng0:amd64                0.8.5-4+b1                           amd64        alternate POSIX capabilities library
 ii  libcap2:amd64                   1:2.75-10+deb13u1+b3                 amd64        POSIX 1003.1e capabilities (library)
 ii  libcap2-bin                     1:2.75-10+deb13u1+b3                 amd64        POSIX 1003.1e capabilities (utilities)
@@ -161,7 +161,7 @@ ii  libsqlite3-0:amd64              3.46.1-7+deb13u2                     amd64  
 ii  libssh2-1t64:amd64              1.11.1-1+deb13u2                     amd64        SSH2 client-side library
 ii  libssl3t64:amd64                3.5.9-1~deb13u1                      amd64        Secure Sockets Layer toolkit - shared libraries
 ii  libstdc++6:amd64                14.2.0-19                            amd64        GNU Standard C++ Library v3
-ii  libsubid5:amd64                 1:4.17.4-2                           amd64        subordinate id handling library -- shared library
+ii  libsubid5:amd64                 1:4.17.4-2+deb13u1                   amd64        subordinate id handling library -- shared library
 ii  libsystemd-shared:amd64         257.13-1~deb13u1                     amd64        systemd shared private library
 ii  libsystemd0:amd64               257.13-1~deb13u1                     amd64        systemd utility library
 ii  libtasn1-6:amd64                4.20.0-2+deb13u1                     amd64        Manage ASN.1 structures (runtime)
@@ -183,7 +183,7 @@ ii  libxxhash0:amd64                0.8.3-2                              amd64  
 ii  libyajl2:amd64                  2.1.0-5+b2                           amd64        Yet Another JSON Library
 ii  libzstd1:amd64                  1.5.7+dfsg-1                         amd64        fast lossless compression algorithm
 ii  login                           1:4.16.0-2+really2.41.5-0+deb13u1    amd64        system login tools
-ii  login.defs                      1:4.17.4-2                           all          system user management configuration
+ii  login.defs                      1:4.17.4-2+deb13u1                   all          system user management configuration
 ii  lz4                             1.10.0-4                             amd64        Fast LZ compression algorithm library - tool
 ii  mawk                            1.3.4.20250131-1                     amd64        Pattern scanning and text processing language
 ii  mount                           2.41.5-0+deb13u1                     amd64        tools for mounting and manipulating filesystems
@@ -201,7 +201,7 @@ ii  openssh-server                  1:10.0p1-7+deb13u4                   amd64  
 ii  openssh-sftp-server             1:10.0p1-7+deb13u4                   amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
 ii  openssl                         3.5.9-1~deb13u1                      amd64        Secure Sockets Layer toolkit - cryptographic utility
 ii  openssl-provider-legacy         3.5.9-1~deb13u1                      amd64        Secure Sockets Layer toolkit - cryptographic utility
-ii  passwd                          1:4.17.4-2                           amd64        change and administer password and group data
+ii  passwd                          1:4.17.4-2+deb13u1                   amd64        change and administer password and group data
 ii  perl                            5.40.1-6+deb13u1                     amd64        Larry Wall's Practical Extraction and Report Language
 ii  perl-base                       5.40.1-6+deb13u1                     amd64        minimal Perl system
 ii  perl-modules-5.40               5.40.1-6+deb13u1                     all          Core Perl modules
@@ -228,4 +228,4 @@ ii  udev                            257.13-1~deb13u1                     amd64  
 ii  util-linux                      2.41.5-0+deb13u1                     amd64        miscellaneous system utilities
 ii  vim-common                      2:9.1.1230-2+deb13u2                 all          Vi IMproved - Common files
 ii  vim-tiny                        2:9.1.1230-2+deb13u2                 amd64        Vi IMproved - enhanced vi editor - compact version
-ii  zlib1g:amd64                    1:1.3.dfsg+really1.3.1-1+b1          amd64        compression library - runtime
+ii  zlib1g:amd64                    1:1.3.dfsg+really1.3.1-1+deb13u1     amd64        compression library - runtime
