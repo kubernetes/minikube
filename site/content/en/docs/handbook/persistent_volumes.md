@@ -53,3 +53,16 @@ The default [Storage Provisioner Controller](https://github.com/kubernetes/minik
 Note that this is not a CSI based storage provider, rather, it simply declares a PersistentVolume object of type hostpath dynamically when the controller see's that there is an outstanding storage request.
 
 There is also [CSI Hostpath Driver]({{< ref "/docs/tutorials/volume_snapshots_and_csi" >}}) addon that enables dynamic provisioning and supports multi-node clusters as well as snapshots.
+
+## Rancher local-path storage
+
+The `storage-provisioner-rancher` addon creates new volumes under
+`/var/lib/minikube/local-path-provisioner`, on the VM's persistent data disk.
+Volumes remain local to their original node across `minikube stop` and
+`minikube start`. Deleting a profile removes its data disks.
+
+Existing PersistentVolumes retain their recorded paths. Earlier addon versions
+used `/opt/local-path-provisioner`, which resides on the temporary root filesystem
+in the Minikube VM. Preserve and migrate those volumes while the original guest
+is running before rebooting it. Updating the addon changes the location used for
+new volumes; existing data needs an explicit migration.
