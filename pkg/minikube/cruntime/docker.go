@@ -234,14 +234,14 @@ func (r *Docker) Disable() error {
 	klog.Info("disabling docker service ...")
 	// because #10373
 	if err := r.Init.ForceStop("docker.socket"); err != nil {
-		klog.ErrorS(err, "Failed to stop", "socket", "docker.socket")
+		klog.Warningf("Failed to stop socket %q (might be ok): %v", "docker.socket", err)
 	}
 	if err := r.Init.ForceStop("docker.service"); err != nil {
-		klog.ErrorS(err, "Failed to stop", "service", "docker.service")
+		klog.Warningf("Failed to stop service %q (might be ok): %v", "docker.service", err)
 		return err
 	}
 	if err := r.Init.Disable("docker.socket"); err != nil {
-		klog.ErrorS(err, "Failed to disable", "socket", "docker.socket")
+		klog.Warningf("Failed to disable socket %q (might be ok): %v", "docker.socket", err)
 	}
 	return r.Init.Mask("docker.service")
 }
